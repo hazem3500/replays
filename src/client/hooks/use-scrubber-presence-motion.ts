@@ -1,4 +1,5 @@
 import { animate } from 'motion/mini';
+import { haltMotion } from '../lib/halt-motion.ts';
 import { useLayoutEffect, type RefObject } from 'react';
 
 const TARGETS =
@@ -76,7 +77,8 @@ export function useScrubberPresenceMotion(scope: RefObject<HTMLDivElement | null
         if (states.get(node) === identity && !instant) continue;
         const first = !states.has(node);
         states.set(node, identity);
-        running.get(node)?.stop();
+        const previous = running.get(node);
+        if (previous) haltMotion(node, previous);
         running.delete(node);
         if (first || instant || reduced.matches || node.hasAttribute('data-instant') || typeof node.animate !== 'function')
           render(node, target);

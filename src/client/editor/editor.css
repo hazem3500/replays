@@ -245,8 +245,8 @@
   .editor-shell[data-mobile] .editor-conflict, .editor-shell[data-mobile] .editor-suggest { grid-area: status; flex-wrap: wrap; margin: 4px 10px 0; white-space: normal; font-size: var(--text-xs); }
   .editor-shell.app-shell[data-mobile] .editor-dock:has(.editor-operation-status) { grid-template-areas: 'status' 'timeline' 'note' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto auto; }
   .editor-shell[data-mobile] .editor-operation-status { grid-area: note; margin: 0; padding: 0 10px 4px; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
-  .editor-shell[data-mobile] :is(button, summary, input:not([type="checkbox"]), [role="switch"], [role="slider"]) { min-height: 44px; }
-  .editor-shell[data-mobile] :is(button, summary, [role="switch"]) { min-width: 44px; }
+  .editor-shell[data-mobile] :is(button, summary, input:not([type="checkbox"]), [role="switch"], [role="slider"]):not([data-slot="switch"]) { min-height: 44px; }
+  .editor-shell[data-mobile] :is(button, summary, [role="switch"]):not([data-slot="switch"]) { min-width: 44px; }
   .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   body:has(.editor-shell[data-mobile]) [data-testid="editor-export-status"] button { min-height: 44px; min-width: 44px; }
   @media (max-height: 520px) and (min-width: 721px) {

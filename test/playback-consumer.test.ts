@@ -66,10 +66,20 @@ describe('independent playback consumer', () => {
     const second = playback(recording('consumer-two'));
     first.actions.seek(800);
     first.actions.setSpeed(2);
-    first.actions.setSkipInactive(false);
-    expect(first.getSnapshot()).toMatchObject({ time: 800, state: { speed: 2, skipInactive: false } });
-    expect(second.getSnapshot()).toMatchObject({ time: 0, state: { speed: 1, skipInactive: true } });
+    first.actions.setSkipInactive(true);
+    expect(first.getSnapshot()).toMatchObject({ time: 800, state: { speed: 2, skipInactive: true } });
+    expect(second.getSnapshot()).toMatchObject({ time: 0, state: { speed: 1, skipInactive: false } });
     expect(first.getSnapshot()).toBe(first.getSnapshot());
+  });
+
+  it('starts unloaded and replacement sessions without skipping inactivity', () => {
+    const instance = playback();
+    expect(instance.getSnapshot().state.skipInactive).toBe(false);
+    instance.load(recording());
+    instance.actions.setSkipInactive(true);
+    expect(instance.getSnapshot().state.skipInactive).toBe(true);
+    instance.load(recording('replacement'));
+    expect(instance.getSnapshot().state.skipInactive).toBe(false);
   });
 
   it('rejects invalid replacement data without losing the current recording or playhead', () => {

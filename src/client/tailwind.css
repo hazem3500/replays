@@ -111,7 +111,7 @@
     .np-request button { min-height: 40px; }
     .seek-time { min-width: 40px; min-height: 40px; }
     .empty-link, .sha-button { margin-block: -12px; padding-block: 12px; }
-    [data-slot="dialog-content"] button, [data-slot="popover-content"] button, [data-slot="drawer-content"] button { min-height: 40px; }
+    [data-slot="dialog-content"] button:not([data-slot="switch"]), [data-slot="popover-content"] button:not([data-slot="switch"]), [data-slot="drawer-content"] button:not([data-slot="switch"]) { min-height: 40px; }
     .replay-info .info-actions button, .replay-info .info-actions a, .replay-info .info-action button { min-width: 40px; min-height: 40px; }
     .info-detail dd > a { display: inline-flex; min-height: 40px; align-items: center; }
     [data-slot="dropdown-menu-item"], [data-slot="dropdown-menu-radio-item"], [data-slot="dropdown-menu-checkbox-item"],

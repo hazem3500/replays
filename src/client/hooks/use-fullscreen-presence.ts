@@ -1,6 +1,8 @@
 import { animate } from 'motion/mini';
 import { useLayoutEffect, useRef } from 'react';
 
+import { haltMotion } from '../lib/halt-motion.ts';
+
 /** Keeps the fullscreen action mounted for keyboard access while Motion handles its pointer presence. */
 export function useFullscreenPresence() {
   const ref = useRef<HTMLButtonElement>(null);
@@ -17,7 +19,7 @@ export function useFullscreenPresence() {
       const focused = stage.contains(document.activeElement);
       const shown = coarse.matches || focused || stage.matches(':hover');
       if (shown === previous && !reduced.matches) return;
-      animation?.stop();
+      if (animation) haltMotion(button, animation);
       button.style.pointerEvents = shown ? 'auto' : 'none';
       if (previous === undefined || reduced.matches || focused) {
         button.style.opacity = shown ? '1' : '0';

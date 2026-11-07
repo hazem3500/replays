@@ -1,4 +1,5 @@
 import { animate } from 'motion/mini';
+import { haltMotion } from '../lib/halt-motion.ts';
 import { useLayoutEffect, type RefObject } from 'react';
 
 import { emphasis, PRESENCE_SELECTORS as SELECTORS, type Emphasis, type PresenceKind } from './viewer-presence-targets.ts';
@@ -38,7 +39,8 @@ function applyEmphasis(node: HTMLElement, target: Emphasis, state: AnimationStat
   const identity = JSON.stringify(target);
   if (!initial && states.get(node) === identity) return;
   states.set(node, identity);
-  running.get(node)?.stop();
+  const previous = running.get(node);
+  if (previous) haltMotion(node, previous);
   running.delete(node);
   const visibility = kind === 'plugin' || target.hidden !== undefined;
   if (visibility && target.opacity) node.style.setProperty('visibility', 'visible');
@@ -94,7 +96,8 @@ export function useViewerPresenceMotion(scope: RefObject<HTMLElement | null>, ki
       if (!live) return;
       for (const node of states.keys()) {
         if (root.contains(node)) continue;
-        running.get(node)?.stop();
+        const previous = running.get(node);
+        if (previous) haltMotion(node, previous);
         running.delete(node);
         states.delete(node);
       }
@@ -134,7 +137,7 @@ export function useViewerPresenceMotion(scope: RefObject<HTMLElement | null>, ki
       root.removeEventListener('focusout', onFocusOut);
       reduced.removeEventListener('change', reset);
       pointer.removeEventListener('change', reset);
-      for (const controls of running.values()) controls.stop();
+      for (const [node, controls] of running) haltMotion(node, controls);
       for (const node of states.keys()) {
         node.style.removeProperty('opacity');
         node.style.removeProperty('transform');
