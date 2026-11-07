@@ -130,7 +130,8 @@ function passKeys(options) {
 
 /** Main owns browser coverage; pull requests keep the blocking Gate. */
 export function suitesReason({ event, ref } = {}) {
-  return ref === 'refs/heads/main' && ['push', 'schedule', 'workflow_dispatch'].includes(event) ? `${event} on main` : '';
+  if (event === 'workflow_dispatch') return `manual run on ${ref}`;
+  return ref === 'refs/heads/main' && ['push', 'schedule'].includes(event) ? `${event} on main` : '';
 }
 
 /** Nightly coverage catches dependency and runner drift even when source inputs are unchanged. */
