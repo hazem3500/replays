@@ -155,7 +155,7 @@ jobs:
 
   smoke-scope:
     name: Select main smoke suites
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
     outputs:
@@ -210,7 +210,7 @@ jobs:
           # there. Server-side rendering runs it with --no-sandbox, like the Docker image does.
           CHROMIUM_NO_SANDBOX: '1'
       # why: uploaded before the single-page run, which would replace this shard's report and results.
-      - if: failure()
+      - if: always()
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:

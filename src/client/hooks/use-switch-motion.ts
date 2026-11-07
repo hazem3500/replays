@@ -1,6 +1,8 @@
 import { animate } from 'motion/mini';
 import { useImperativeHandle, useLayoutEffect, useRef, type Ref } from 'react';
 
+import { haltMotion } from '../lib/halt-motion.ts';
+
 /** The switch's checked state stays in Base UI; only the thumb's visual transform is animated. */
 export function useSwitchMotion(forwardedRef: Ref<HTMLSpanElement> | undefined, checked: boolean) {
   const element = useRef<HTMLSpanElement>(null);
@@ -20,7 +22,7 @@ export function useSwitchMotion(forwardedRef: Ref<HTMLSpanElement> | undefined, 
       return;
     }
     const controls = animate([node], { transform: [getComputedStyle(node).transform, transform] }, { duration: 0.16, ease: 'easeOut' });
-    return () => controls.stop();
+    return () => haltMotion(node, controls);
   }, [checked]);
   return element;
 }

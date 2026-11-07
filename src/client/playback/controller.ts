@@ -45,7 +45,7 @@ export class ReplayController {
   private layer: EffectsLayer | undefined;
   private cursor: ReplayCursor | undefined;
   private time = 0;
-  private state: PlayerState = { status: 'paused', speed: 1, skipInactive: true };
+  private state: PlayerState = { status: 'paused', speed: 1, skipInactive: false };
   private viewport: Viewport;
   private frame = 0;
   private resumeAfterScrub = false;

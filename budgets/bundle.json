@@ -205,7 +205,7 @@
     "dist/client/assets/HostSurface-HASH.js": {
       "raw": 1266,
       "gzip": 704,
-      "brotli": 631
+      "brotli": 626
     },
     "dist/client/assets/index-queries-HASH.js": {
       "raw": 6806,
@@ -270,7 +270,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 70
+      "brotli": 67
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -339,7 +339,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1018,
-      "gzip": 626,
+      "gzip": 623,
       "brotli": 567
     },
     "dist/client/assets/ReplayIndex-HASH.js": {
@@ -455,7 +455,7 @@
     "dist/client/index.html": {
       "raw": 14204,
       "gzip": 4627,
-      "brotli": 3876
+      "brotli": 3875
     },
     "dist/client/render.html": {
       "raw": 1283,

@@ -86,16 +86,16 @@ describe('playback menu in fullscreen', () => {
     const menu = find('[data-slot="popover-content"][aria-label="Playback"]');
     expect(fullscreen?.contains(menu)).toBe(true);
     const skip = find('[role="switch"]');
-    expect(skip.getAttribute('aria-checked')).toBe('true');
-    await click(skip);
-    expect(player.getState().skipInactive).toBe(false);
     expect(skip.getAttribute('aria-checked')).toBe('false');
-    expect(find('.playback-options').getAttribute('aria-expanded')).toBe('true');
     await click(skip);
     expect(player.getState().skipInactive).toBe(true);
-    await click(find('.playback-skip label'));
+    expect(skip.getAttribute('aria-checked')).toBe('true');
+    expect(find('.playback-options').getAttribute('aria-expanded')).toBe('true');
+    await click(skip);
     expect(player.getState().skipInactive).toBe(false);
-    expect(skip.getAttribute('aria-checked')).toBe('false');
+    await click(find('.playback-skip label'));
+    expect(player.getState().skipInactive).toBe(true);
+    expect(skip.getAttribute('aria-checked')).toBe('true');
   });
 
   it('changes speed with slider arrows without triggering viewer keyboard shortcuts', async () => {

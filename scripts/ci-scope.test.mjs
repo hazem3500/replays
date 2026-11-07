@@ -145,14 +145,18 @@ describe('browser-backed suite placement', () => {
     assert.equal(run('pull_request', { CI_LABELS: '["run-e2e"]' }).values.wanted, 'false');
   });
 
-  it('runs main pushes, schedules and manual main runs', () => {
-    for (const event of ['push', 'schedule', 'workflow_dispatch']) {
+  it('runs main pushes and schedules', () => {
+    for (const event of ['push', 'schedule']) {
       assert.equal(suitesReason({ event, ref: 'refs/heads/main' }), `${event} on main`);
     }
   });
 
-  it('rejects manual runs on feature branches and unknown events', () => {
-    assert.equal(suitesReason({ event: 'workflow_dispatch', ref: 'refs/heads/feature' }), '');
+  it('runs explicitly dispatched feature branches', () => {
+    assert.equal(suitesReason({ event: 'workflow_dispatch', ref: 'refs/heads/feature' }), 'manual run on refs/heads/feature');
+    assert.equal(run('workflow_dispatch', { CI_REF: 'refs/heads/feature' }).values.wanted, 'true');
+  });
+
+  it('rejects unknown events', () => {
     assert.equal(suitesReason({ event: 'pull_request_target', ref: 'refs/heads/main' }), '');
     assert.equal(suitesReason(), '');
   });

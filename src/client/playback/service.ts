@@ -39,7 +39,7 @@ export interface ReplayPlayback {
   destroy(): void;
 }
 
-const EMPTY_STATE: Readonly<PlayerState> = Object.freeze({ status: 'paused', speed: 1, skipInactive: true });
+const EMPTY_STATE: Readonly<PlayerState> = Object.freeze({ status: 'paused', speed: 1, skipInactive: false });
 const EMPTY_VIEWPORT: Readonly<Viewport> = Object.freeze({ width: 0, height: 0 });
 
 class PlaybackService implements ReplayPlayback {
