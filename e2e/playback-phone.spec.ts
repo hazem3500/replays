@@ -65,7 +65,7 @@ test('cancels a native switch animation when its connected popup becomes unrende
     }
     if (!(node instanceof HTMLButtonElement)) throw new Error('Expected a native switch button');
     node.click();
-    return { hidden, rejectedCommit, native: animations.every((animation) => animation instanceof Animation) };
+    return { hidden, rejectedCommit, native: animations.every((entry) => entry instanceof Animation) };
   });
   expect(result).toEqual({ hidden: true, rejectedCommit: true, native: true });
   await expect(control).toHaveAttribute('aria-checked', 'false');
