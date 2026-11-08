@@ -303,6 +303,7 @@ function Group({ title, rows }: { title: string; rows: Row[] }) {
 
 function Fields({ title, rows, testId }: { title: string; rows: FieldRow[]; testId: string }) {
   const heading = useId();
+  if (!rows.length) return null;
   return (
     <section className="ctx-section ctx-group ctx-fields" aria-labelledby={heading} data-testid={testId}>
       <h2 id={heading} className="ctx-heading">
