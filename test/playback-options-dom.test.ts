@@ -178,7 +178,9 @@ describe('step number option', () => {
   it('keeps numbering beside captions and forwards switch and label changes', async () => {
     const setCaptionNumbers = vi.fn<(value: boolean) => void>();
     await renderTransport({ steps, captions: true, setCaptionNumbers });
-    await click(find('[aria-label="Caption settings"]'));
+    await act(async () =>
+      find('[data-testid="captions-switch"]').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })),
+    );
     const menu = find('[data-slot="popover-content"][aria-label="Caption settings"]');
     const numbers = find('[data-slot="popover-content"][aria-label="Caption settings"] [role="switch"]');
     expect(numbers.getAttribute('aria-checked')).toBe('false');
@@ -186,13 +188,15 @@ describe('step number option', () => {
     expect(setCaptionNumbers.mock.calls[0]?.[0]).toBe(true);
     await click(menu.querySelector('label')!);
     expect(setCaptionNumbers).toHaveBeenCalledTimes(2);
-    expect(find('[aria-label="Caption settings"][aria-haspopup]').getAttribute('aria-expanded')).toBe('true');
+    expect(find('[data-testid="captions-switch"][aria-haspopup]').getAttribute('aria-expanded')).toBe('true');
   });
 
   it('retains the choice while captions are hidden and disables changes', async () => {
     const setCaptionNumbers = vi.fn<(value: boolean) => void>();
     await renderTransport({ steps, captions: false, captionNumbers: true, setCaptionNumbers });
-    await click(find('[aria-label="Caption settings"]'));
+    await act(async () =>
+      find('[data-testid="captions-switch"]').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })),
+    );
     const numbers = find<HTMLButtonElement>('[data-slot="popover-content"][aria-label="Caption settings"] [role="switch"]');
     expect(numbers.getAttribute('aria-checked')).toBe('true');
     expect(numbers.disabled).toBe(true);

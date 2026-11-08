@@ -109,6 +109,7 @@ const offer: RecordingChoiceOffer = {
   ],
   profiles: [{ id: 'triage', label: mark('profile.label'), description: mark('profile.description') }],
   networkBodies: { allowed: true },
+  diagnostics: { performance: true, debugging: true },
   initial: { privacy: 'masked', profile: 'triage' },
   defaults: { privacy: 'masked', profile: 'triage' },
 };
@@ -192,6 +193,9 @@ const OPTIONS_KEYS = new Set([
   'privacyMode',
   'privacyHint',
   'networkLabel',
+  'diagnosticsLabel',
+  'performanceLabel',
+  'debuggingLabel',
   'networkBodies',
   'record',
 ]);

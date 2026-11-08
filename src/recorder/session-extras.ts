@@ -27,17 +27,22 @@ export function snapshotContext(context: RecorderOptions['context'], startedAt: 
   }
 }
 
-export function finishSessionExtras(bundle: ReplayBundle, session: Session): void {
+export function finishSessionExtras(bundle: ReplayBundle, session: Session): ReplayBundle {
   const track = session.performance;
-  if (track) {
-    const origin = bundle.events[0]?.timestamp ?? session.startedAt;
-    const relative = <T extends { at: number }>(entry: T): T => ({ ...entry, at: Math.max(0, entry.at - origin) });
-    bundle.performance = {
-      ...track,
-      entries: track.entries.map(relative),
-      ...(track.frames ? { frames: track.frames.map(relative) } : {}),
-      ...(track.layoutShifts ? { layoutShifts: track.layoutShifts.map(relative) } : {}),
-    };
-  }
-  if (session.context) bundle.context = session.context;
+  const origin = bundle.events[0]?.timestamp ?? session.startedAt;
+  const relative = <T extends { at: number }>(entry: T): T => ({ ...entry, at: Math.max(0, entry.at - origin) });
+  return {
+    ...bundle,
+    ...(track
+      ? {
+          performance: {
+            ...track,
+            entries: track.entries.map(relative),
+            ...(track.frames ? { frames: track.frames.map(relative) } : {}),
+            ...(track.layoutShifts ? { layoutShifts: track.layoutShifts.map(relative) } : {}),
+          },
+        }
+      : {}),
+    ...(session.context ? { context: session.context } : {}),
+  };
 }

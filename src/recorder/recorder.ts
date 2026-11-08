@@ -230,16 +230,18 @@ export function createRecorder(options: RecorderOptions): Recorder {
       }
 
       try {
-        const bundle = buildReplayBundle({
-          title,
-          events: current.events,
-          console: current.console,
-          network: current.network,
-          steps: current.steps,
-          captured: current.captured,
-          ...(active.profile ? { profile: active.profile } : {}),
-        });
-        finishSessionExtras(bundle, current);
+        const bundle = finishSessionExtras(
+          buildReplayBundle({
+            title,
+            events: current.events,
+            console: current.console,
+            network: current.network,
+            steps: current.steps,
+            captured: current.captured,
+            ...(active.profile ? { profile: active.profile } : {}),
+          }),
+          current,
+        );
         const summary = recordingSummary(bundle, current.bytes, reason);
         recording = { bundle, summary };
         setState({ status: 'review', summary });

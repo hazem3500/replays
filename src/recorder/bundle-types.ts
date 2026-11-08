@@ -8,6 +8,9 @@
  * that runtime validator is never imported by the browser entry.
  */
 
+import type { ReplayContext } from '../shared/context.ts';
+import type { ReplayPerformanceTrack } from '../shared/replay.ts';
+
 export type ReplayConsoleLevel = 'debug' | 'info' | 'log' | 'warn' | 'error';
 
 export type ReplayConsoleEntry = {
@@ -111,8 +114,8 @@ export type ReplayBundle = {
   console: ReplayConsoleEntry[];
   network: ReplayNetworkEntry[];
   steps: ReplayStep[];
-  context?: import('../shared/context.ts').ReplayContext;
-  performance?: import('../shared/replay.ts').ReplayPerformanceTrack;
+  context?: ReplayContext;
+  performance?: ReplayPerformanceTrack;
 };
 
 /** The rrweb event types the recorder relies on (`@rrweb/types` EventType). */

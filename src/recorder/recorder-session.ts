@@ -1,6 +1,7 @@
 import { captureFramePacing } from './frame-pacing.ts';
 import { capturePerformance } from './diagnostics.ts';
 import type { ReplayPerformanceTrack } from '../shared/replay.ts';
+import type { ReplayContext } from '../shared/context.ts';
 import { captureInteractionSteps } from './interaction-steps.ts';
 import type * as BodyCapture from './body-capture.ts';
 import type { RawStep } from './bundle.ts';
@@ -24,7 +25,7 @@ export type Session = {
   startedAt: number;
   captured: ReplayCaptured;
   performance?: ReplayPerformanceTrack;
-  context?: import('../shared/context.ts').ReplayContext;
+  context?: ReplayContext;
   cleanups: Array<() => void>;
 };
 

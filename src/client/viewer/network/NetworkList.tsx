@@ -20,6 +20,8 @@ import type { HostSurfaceContext } from '../../plugins/surface-contracts.ts';
 import { defaultNetworkColumns, networkColumns, type NetworkColumn } from './columns.ts';
 
 export const REQUEST_DETAIL_ID = 'request-detail';
+const DEFAULT_SORT: NetworkSort = { key: 'time', direction: 'ascending' };
+const ignoreSort = () => {};
 
 const STRINGS = {
   durationHint: 'Bars use a log scale: each step along the bar is ten times longer',
@@ -90,8 +92,8 @@ function requestKey(
  * one line on a panel wide enough, two lines on a phone (CSS container query); the request's step is the "why".
  */
 export function NetworkList({
-  sort = { key: 'time', direction: 'ascending' },
-  onSort = () => {},
+  sort = DEFAULT_SORT,
+  onSort = ignoreSort,
   rows,
   steps,
   ceiling,
@@ -263,6 +265,7 @@ function RequestRow({
               type="button"
               id={`request-switch-${row.id}`}
               data-request-id={row.id}
+              aria-label={`${row.entry.method} ${row.entry.url}`}
               aria-expanded={selected}
               aria-controls={selected ? REQUEST_DETAIL_ID : undefined}
               onClick={() => onSelect(selected ? undefined : row.id)}

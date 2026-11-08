@@ -1,3 +1,4 @@
+import type { RecorderHostContext } from './host-context.ts';
 import type { RecorderBodyLimits } from './body-limits.ts';
 import type { ReplayConsoleLevel } from './bundle-types.ts';
 import type { HttpUploadOptions } from './http-upload.ts';
@@ -297,7 +298,7 @@ export type RecorderOptions = {
   ui?: RecorderUi;
   app?: RecorderApp;
   /** Allowlisted host facts, resolved and copied once at recording start. Getter/validation failure omits context without discarding capture. Masked recordings do not call the getter. */
-  context?: import('./host-context.ts').RecorderHostContext | (() => import('./host-context.ts').RecorderHostContext);
+  context?: RecorderHostContext | (() => RecorderHostContext);
   /** Replay title support sees. Default `Issue report from <app name>`. */
   title?: string;
   /** Default 3 minutes; clamped to 5 s … 10 minutes. */
