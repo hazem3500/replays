@@ -629,10 +629,11 @@ function RunMenuItems({
             value={playableReplayId(run, detailed) ?? `missing-${run.id}`}
             disabled={!playableReplayId(run, detailed)}
             closeOnClick
+            className="run-picker-item"
           >
             <span className="run-seq">{sequenceLabel(run)}</span>
-            <span className="min-w-0 flex-1 truncate">{run.label}</span>
-            {isExpired(run, detailed) ? <span className="text-muted-foreground">Expired</span> : null}
+            <span className="run-picker-label">{run.label}</span>
+            {isExpired(run, detailed) ? <span className="run-picker-expired">Expired</span> : null}
             <span className={`status-dot tone-${statusTone(run, detailed)}`} aria-hidden="true" />
           </DropdownMenuRadioItem>
         ))}
