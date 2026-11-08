@@ -42,6 +42,7 @@ export function CaptionControls({ edited = false }: { edited?: boolean }) {
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverContent
             anchor={anchor}
+            finalFocus={() => anchor.current?.querySelector<HTMLButtonElement>('button') ?? false}
             side="top"
             align="end"
             portalContainer={portalContainer}
