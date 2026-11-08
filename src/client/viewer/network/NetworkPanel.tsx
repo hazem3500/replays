@@ -52,10 +52,12 @@ function emptyCopy(total: number, human: boolean) {
 
 function ribbonMarks(rows: readonly NetworkRow[], ticks: boolean): RibbonMark[] {
   return rows.flatMap((row): RibbonMark[] => {
-    if (row.failed) return [{ id: row.id, at: row.at, end: row.at, tone: 'danger', lane: 'full' }];
-    if (row.pending) return [{ id: row.id, at: row.at, end: row.at, tone: 'neutral', lane: 'full' }];
-    if (row.slow) return [{ id: row.id, at: row.at, end: row.end, tone: 'warning', lane: 'cap' }];
-    return ticks ? [{ id: row.id, at: row.at, end: row.end, tone: 'neutral', lane: 'tick' }] : [];
+    const label = `${row.entry.method} ${row.entry.url}`;
+    const base = { id: row.id, at: row.at, label };
+    if (row.failed) return [{ ...base, end: row.at, tone: 'danger', lane: 'full' }];
+    if (row.pending) return [{ ...base, end: row.at, tone: 'neutral', lane: 'full' }];
+    if (row.slow) return [{ ...base, end: row.end, tone: 'warning', lane: 'cap' }];
+    return ticks ? [{ ...base, end: row.end, tone: 'neutral', lane: 'tick' }] : [];
   });
 }
 
@@ -124,10 +126,7 @@ export function NetworkPanel({
           testId="network-ribbon"
           duration={duration}
           density={dense ? startDensity(unranged, duration, DENSITY_BINS) : undefined}
-          marks={ribbonMarks(unranged, !dense).map((mark) => ({
-            ...mark,
-            label: unranged.find((row) => row.id === mark.id)?.entry.url ?? mark.id,
-          }))}
+          marks={ribbonMarks(unranged, !dense)}
           onHighlight={setHovered}
           range={filter.range}
           onRange={(range) => setFilter({ ...filter, range })}
