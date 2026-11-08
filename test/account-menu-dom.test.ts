@@ -81,4 +81,9 @@ describe('the account menu', () => {
     openMore();
     expect(document.querySelector('[data-testid="sign-out"]')).toBeNull();
   });
+
+  it('shows nothing on desktop when the auth mode has no way to sign out', () => {
+    renderBar({ id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } });
+    expect(host.querySelector('[data-testid="account-menu"]')).toBeNull();
+  });
 });

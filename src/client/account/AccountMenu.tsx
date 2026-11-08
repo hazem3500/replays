@@ -48,9 +48,13 @@ export function accountMenuItems(account: Account | undefined): TopbarMenuItem[]
   ];
 }
 
-/** Desktop: one quiet account button; its menu names who is signed in and, when the auth mode can, signs them out. */
+/**
+ * Desktop: one quiet account button that names who is signed in and signs them out. Modes without a sign-out URL
+ * (IAP) render nothing — a label-only control is noise next to the rest of the bar.
+ */
 export function AccountMenu({ account }: { account: Account }) {
   const signOutUrl = account.session?.signOutUrl;
+  if (!signOutUrl) return null;
   return (
     <DropdownMenu>
       <Hint label={STRINGS.account} side="bottom" align="end">
@@ -72,15 +76,11 @@ export function AccountMenu({ account }: { account: Account }) {
         <DropdownMenuGroup>
           <DropdownMenuLabel className="font-normal text-[var(--text-secondary)]">{STRINGS.signedInAs(who(account))}</DropdownMenuLabel>
         </DropdownMenuGroup>
-        {signOutUrl ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem render={<a href={signOutUrl} className="menu-link" aria-label={STRINGS.signOut} />} data-testid="sign-out">
-              <LogOutIcon aria-hidden="true" />
-              {STRINGS.signOut}
-            </DropdownMenuItem>
-          </>
-        ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem render={<a href={signOutUrl} className="menu-link" aria-label={STRINGS.signOut} />} data-testid="sign-out">
+          <LogOutIcon aria-hidden="true" />
+          {STRINGS.signOut}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
