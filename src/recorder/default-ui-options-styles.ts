@@ -18,7 +18,7 @@ export const OPTIONS_STYLES = `
 .options-menu { position: fixed; inset-inline-start: 50%; inset-block-end: calc(16px + var(--pill-h) + 8px); transform: translateX(-50%); inline-size: 280px; max-inline-size: calc(100vw - 24px); max-block-size: min(560px, calc(100dvh - var(--pill-h) - 40px)); overflow: auto; overscroll-behavior: contain; padding: 4px; border: 1px solid var(--r-border); border-radius: calc(var(--r-radius) + 6px); background: var(--r-bg); color: var(--r-fg); font-size: 13px; font-weight: 500; line-height: 20px; -webkit-font-smoothing: antialiased; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 12px 32px -12px rgb(0 0 0 / .4); }
 .options-menu[hidden] { display: none; }
 .options-group + .options-group { margin-block-start: 4px; padding-block-start: 4px; border-block-start: 1px solid var(--r-border); }
-.options-heading { padding: 4px 8px 2px; color: var(--r-secondary); font-size: 12px; line-height: 16px; }
+.options-heading { padding-block: 4px 2px; padding-inline: 30px 8px; color: var(--r-secondary); font-size: 12px; line-height: 16px; }
 .options-item { position: relative; display: flex; min-block-size: 32px; padding: 5px 8px 5px 30px; border-radius: var(--r-radius); cursor: pointer; outline: none; }
 .options-item:not([aria-disabled=true]):is(:hover, :focus) { background: var(--r-hover); }
 .options-item:focus-visible { box-shadow: inset 0 0 0 2px var(--r-primary); }
