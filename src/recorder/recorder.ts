@@ -12,9 +12,7 @@ import type { Recorder, RecorderOptions, RecorderState, RecordingChoice, Recordi
 import type { IssueReport, IssueReportReceipt } from './upload.ts';
 import { createUploadProgress } from './upload-progress.ts';
 import { toUpload } from './http-upload.ts';
-import { redactText } from './redact.ts';
-import { capAtWord } from './step-label.ts';
-import { recorderContext } from './host-context.ts';
+import { annotateSession, finishSessionExtras, snapshotContext } from './session-extras.ts';
 
 export {
   DEFAULT_MAX_BYTES,
@@ -103,16 +101,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const recorder: Recorder = {
     getState: () => state,
     annotateStep(step) {
-      if (destroyed || state.status !== 'recording' || !session || active.privacy.sanitize || session.steps.length >= 500) return false;
-      if (!step || typeof step.label !== 'string') return false;
-      const label = capAtWord(redactText(step.label, 200), 200).trim();
-      if (!label) return false;
-      const action = { at: Date.now(), kind: 'action' as const, label };
-      const bytes = new TextEncoder().encode(JSON.stringify(action)).length;
-      if (session.bytes + bytes > maxBytes) return false;
-      session.steps.push(action);
-      session.bytes += bytes;
-      return true;
+      if (destroyed || state.status !== 'recording' || active.privacy.sanitize) return false;
+      return annotateSession(session, step?.label, maxBytes);
     },
 
     subscribe(listener) {
@@ -171,13 +161,9 @@ export function createRecorder(options: RecorderOptions): Recorder {
         capturedRecord(capture, Boolean(bodies), !privacy.sanitize, chosen.by === 'customer' ? chosen.mode : undefined),
         startedAt,
       );
-      if (options.context && !privacy.sanitize) {
-        try {
-          const context = typeof options.context === 'function' ? options.context() : options.context;
-          current.context = recorderContext(context, new Date(startedAt).toISOString());
-        } catch {
-          warn('Host context was omitted because it could not be captured safely');
-        }
+      if (!privacy.sanitize) {
+        const context = snapshotContext(options.context, startedAt, warn);
+        if (context) current.context = context;
       }
       session = current;
       try {
@@ -253,20 +239,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
           captured: current.captured,
           ...(active.profile ? { profile: active.profile } : {}),
         });
-        if (current.performance) {
-          const origin = bundle.events[0]?.timestamp ?? current.startedAt;
-          bundle.performance = {
-            ...current.performance,
-            entries: current.performance.entries.map((entry) => ({ ...entry, at: Math.max(0, entry.at - origin) })),
-            ...(current.performance.frames
-              ? { frames: current.performance.frames.map((entry) => ({ ...entry, at: Math.max(0, entry.at - origin) })) }
-              : {}),
-            ...(current.performance.layoutShifts
-              ? { layoutShifts: current.performance.layoutShifts.map((entry) => ({ ...entry, at: Math.max(0, entry.at - origin) })) }
-              : {}),
-          };
-        }
-        if (current.context) bundle.context = current.context;
+        finishSessionExtras(bundle, current);
         const summary = recordingSummary(bundle, current.bytes, reason);
         recording = { bundle, summary };
         setState({ status: 'review', summary });
