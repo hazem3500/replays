@@ -30,14 +30,12 @@ export function sortNetworkRows(rows: readonly NetworkRow[], sort: NetworkSort, 
   return [...rows].sort((a, b) => {
     const left = value(a);
     const right = value(b);
-    const order =
-      typeof left === 'number' && typeof right === 'number'
-        ? left === right
-          ? 0
-          : left < right
-            ? -1
-            : 1
-        : String(left).localeCompare(String(right));
+    let order = String(left).localeCompare(String(right));
+    if (typeof left === 'number' && typeof right === 'number') {
+      order = 0;
+      if (left < right) order = -1;
+      if (left > right) order = 1;
+    }
     return (sort.direction === 'ascending' ? order : -order) || a.at - b.at || a.id.localeCompare(b.id);
   });
 }

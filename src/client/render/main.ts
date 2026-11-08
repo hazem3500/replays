@@ -24,14 +24,7 @@ import { captionEdge } from '../caption-placement.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
-import {
-  CAPTION_IN_MS,
-  captionAt,
-  captionDisplayText,
-  captionKey,
-  exportCaptionScale,
-  type CaptionFrame,
-} from '../step-caption.ts';
+import { CAPTION_IN_MS, captionAt, captionDisplayText, captionKey, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
 import { jpegThumbHash } from './thumbhash-capture.ts';
 import { dirtyAt, exportMap, exportTimes, type PlaybackMap, posterMoment, poseKey, type PreviewPlan, previewPlan } from './frames.ts';
 

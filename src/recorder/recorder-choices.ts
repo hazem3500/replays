@@ -177,6 +177,12 @@ function assertCustomerUnmask(host: Host): void {
   throw new Error(`choices.by "customer" allows only privacy.unmaskTextSelector "${PUBLIC_SELECTOR}"; mark product text with it`);
 }
 
+function settledDiagnostic(host: Host, key: 'performance' | 'debugging', choice: LooseChoice, explicit: boolean): boolean {
+  if (host.capture?.[key] !== true) return false;
+  if (host.choices?.by === 'customer') return explicit && choice[key] === true;
+  return (choice[key] ?? host.choices?.defaults?.[key]) === true;
+}
+
 /** Whether the host offers anything at all: a cap above fully masked, allowed bodies, or the interface mode. */
 function offersAnything(host: Host, cap: Cap, bodiesAllowed: boolean): boolean {
   const interfaceListed = host.choices?.by === 'customer' || (host.choices?.privacy ?? []).includes('interface-visible');
@@ -217,14 +223,8 @@ export function recorderChoices(host: Host, build: SettingsBuilder) {
       ...(bodiesOffered ? { networkBodies: bodies } : {}),
       ...(diagnostics
         ? {
-            performance:
-              host.capture?.performance === true &&
-              (!customer || explicit) &&
-              (choice.performance ?? (customer ? false : defaults?.performance)) === true,
-            debugging:
-              host.capture?.debugging === true &&
-              (!customer || explicit) &&
-              (choice.debugging ?? (customer ? false : defaults?.debugging)) === true,
+            performance: settledDiagnostic(host, 'performance', choice, explicit),
+            debugging: settledDiagnostic(host, 'debugging', choice, explicit),
           }
         : {}),
     };

@@ -1,5 +1,32 @@
 import type { ReplayPerformanceEntry, ReplayPerformanceTrack } from '../shared/replay.ts';
 
+const KINDS: Record<string, ReplayPerformanceEntry['kind']> = {
+  longtask: 'long-task',
+  event: 'slow-interaction',
+  paint: 'first-contentful-paint',
+  'largest-contentful-paint': 'largest-contentful-paint',
+};
+
+function timingSignal(type: string, entry: PerformanceEntry): ReplayPerformanceEntry | undefined {
+  const kind = KINDS[type];
+  if (!kind) return;
+  if (type === 'paint' && entry.name !== 'first-contentful-paint') return;
+  if (type === 'event' && entry.duration < 104) return;
+  const value = type === 'paint' || type === 'largest-contentful-paint' ? entry.startTime : entry.duration;
+  if (!Number.isFinite(value) || value < 0) return;
+  const signal: ReplayPerformanceEntry = { at: performance.timeOrigin + entry.startTime, kind, value };
+  if (type === 'event' && /^(click|keydown|keyup|input|beforeinput|pointerdown|pointerup|compositionend)$/.test(entry.name)) {
+    signal.eventType = entry.name;
+  }
+  return signal;
+}
+
+function layoutShift(entry: PerformanceEntry) {
+  const shift = entry as PerformanceEntry & { value?: number; hadRecentInput?: boolean };
+  if (typeof shift.value !== 'number' || !Number.isFinite(shift.value) || shift.value < 0) return;
+  return { at: performance.timeOrigin + entry.startTime, value: shift.value, hadRecentInput: shift.hadRecentInput === true };
+}
+
 /** Observes only numeric browser timing entries, never DOM content or application state. */
 export function capturePerformance(
   onEntry: (entry: ReplayPerformanceEntry) => void,
@@ -9,6 +36,20 @@ export function capturePerformance(
   const observers: PerformanceObserver[] = [];
   let count = 0;
   let active = true;
+  const retain = (type: string, entry: PerformanceEntry) => {
+    if (!Number.isFinite(entry.startTime) || entry.startTime < 0) return;
+    if (type === 'layout-shift') {
+      const sample = layoutShift(entry);
+      if (!sample) return;
+      (track.layoutShifts ??= []).push(sample);
+      grow(JSON.stringify(sample).length);
+    } else {
+      const signal = timingSignal(type, entry);
+      if (!signal) return;
+      onEntry(signal);
+    }
+    count += 1;
+  };
   const types = typeof PerformanceObserver === 'undefined' ? [] : PerformanceObserver.supportedEntryTypes;
   for (const type of ['longtask', 'event', 'paint', 'largest-contentful-paint', 'layout-shift']) {
     if (!types.includes(type)) continue;
@@ -16,41 +57,8 @@ export function capturePerformance(
       const observer = new PerformanceObserver((list) => {
         if (!active) return;
         for (const entry of list.getEntries()) {
-          if (count >= 500 || entry.startTime < 0) break;
-          if (type === 'layout-shift') {
-            const shift = entry as PerformanceEntry & { value?: number; hadRecentInput?: boolean };
-            if (typeof shift.value !== 'number' || !Number.isFinite(shift.value) || shift.value < 0) continue;
-            const shifts = (track.layoutShifts ??= []);
-            const sample = {
-              at: performance.timeOrigin + entry.startTime,
-              value: shift.value,
-              hadRecentInput: shift.hadRecentInput === true,
-            };
-            shifts.push(sample);
-            grow(JSON.stringify(sample).length);
-            count += 1;
-            continue;
-          }
-          const kind =
-            type === 'longtask'
-              ? 'long-task'
-              : type === 'event'
-                ? 'slow-interaction'
-                : type === 'paint'
-                  ? 'first-contentful-paint'
-                  : 'largest-contentful-paint';
-          if (type === 'paint' && entry.name !== 'first-contentful-paint') continue;
-          if (type === 'event' && entry.duration < 104) continue;
-          const signal: ReplayPerformanceEntry = {
-            at: performance.timeOrigin + entry.startTime,
-            kind,
-            value: type === 'paint' || type === 'largest-contentful-paint' ? entry.startTime : entry.duration,
-            ...(type === 'event' && /^(click|keydown|keyup|input|beforeinput|pointerdown|pointerup|compositionend)$/.test(entry.name)
-              ? { eventType: entry.name }
-              : {}),
-          };
-          count += 1;
-          onEntry(signal);
+          if (count >= 500) break;
+          retain(type, entry);
         }
       });
       observer.observe({ type, buffered: false });
