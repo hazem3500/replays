@@ -780,6 +780,8 @@ svg.lucide.lucide { stroke-width: 2; }
 .run-picker-label { min-width: 0; flex: 1 1 auto; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; line-height: 1.35; text-align: left; }
 .run-picker-expired { flex: 0 0 auto; align-self: center; color: var(--text-tertiary); }
 .run-picker-item .status-dot { align-self: center; }
+/* Absolute check defaults to the top of a flex-start row; keep it beside the centered status dot. */
+.run-picker-item [data-slot="dropdown-menu-radio-item-indicator"] { top: 50%; translate: 0 -50%; }
 .run-copy { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1px 8px; }
 .sk-run .run-copy { grid-template-columns: minmax(0, 1fr); }
 .run-label { min-width: 0; overflow: hidden; font-weight: 500; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
