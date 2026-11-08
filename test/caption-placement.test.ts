@@ -17,7 +17,7 @@ describe('caption placement', () => {
     );
   });
 
-  it('moves a caption to the top while the pointer works only where a bottom caption sits', () => {
+  it('places an authored caption above an action in the lower page', () => {
     expect(captionEdge({ input: pointer([1_000, 700], [1_500, 820]), first: FIRST, height: HEIGHT }, { from: 1_000, to: 2_000 })).toBe(
       'top',
     );
@@ -29,7 +29,7 @@ describe('caption placement', () => {
     );
   });
 
-  it('reads where the pointer rests from before the caption shows', () => {
+  it('keeps an authored caption clear of a resting pointer', () => {
     expect(captionEdge({ input: pointer([100, 840]), first: FIRST, height: HEIGHT }, { from: 3_000, to: 5_000 })).toBe('top');
   });
 

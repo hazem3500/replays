@@ -1,4 +1,4 @@
-import { ArrowDownIcon, ArrowUpIcon, DotIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
@@ -31,12 +31,15 @@ const STEP_ICONS: Record<string, { icon: AnimatedIconName; label: string }> = {
   navigate: { icon: 'globe', label: STEP_KIND_NAMES.navigate },
   scroll: { icon: 'arrow-down-up', label: STEP_KIND_NAMES.scroll },
   wait: { icon: 'hourglass', label: STEP_KIND_NAMES.wait },
+  submit: { icon: 'corner-down-left', label: 'Form request' },
+  start: { icon: 'play', label: 'Recording started' },
+  stop: { icon: 'pause', label: 'Recording stopped' },
+  action: { icon: 'mouse-pointer-click', label: 'App action' },
 };
 
 /** The step's kind glyph; it plays its gesture once when its row becomes the current step (never on hover). */
 export function StepIcon({ kind, active = false, index }: { kind: string; active?: boolean; index?: number }) {
-  const entry = STEP_ICONS[kind];
-  if (!entry) return <DotIcon className="step-kind" aria-hidden="true" />;
+  const entry = STEP_ICONS[kind] ?? { icon: 'mouse-pointer-click' as const, label: kind };
   return <AnimatedIcon name={entry.icon} className="step-kind" trigger="state" play={active ? (index ?? 0) : false} />;
 }
 

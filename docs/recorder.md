@@ -10,6 +10,16 @@ The host app owns prompts such as “Record the problem?”. `@hazem3500/replays
 | `/recorder/react` | Optional React 18+ provider and hooks; core never imports React |
 | `/recorder/testing` | DOM contract suite, fake rrweb/transport, shadow-DOM query helper; Node test runner only |
 
+## Host context and confirmed actions
+
+`RecorderOptions.context` accepts `RecorderHostContext` or a synchronous getter returning it. It is copied once at recording start, not at stop or upload. It permits `app` facts compatible with `ReplayContext.app` and up to 40 allowlisted scalar `fields`, with a 16 KiB total limit. Strings are bounded and redacted. Invalid context or a throwing getter omits context with a generic warning and keeps the recording. Masked recordings omit host context without calling the getter. The bundle carries `context`, so transports that send only the bundle retain it; ingest still decides what is allowed.
+
+`recorder.annotateStep({ label: 'Created task' })` returns whether a confirmed host action was added. It does not load or start recording, refuses inactive or masked capture, redacts and caps the label, and shares the 500-step cap. Call only after the application confirms success. Automatic form submission labels describe a request, not a successful mutation.
+
+## Diagnostic capture
+
+`capture.performance` and `capture.debugging` are independent opt-in booleans. `choices.diagnostics: true` offers combinable Performance and Debugging toggles capped by those capture options. Performance retains supported observer timings and bounded foreground frame-pacing estimates; these are not CPU profiles. Debugging permits bounded redacted Error stacks only in visible recordings. Privacy settings remain authoritative.
+
 ## Built-in flow
 
 ```ts

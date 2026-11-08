@@ -67,7 +67,8 @@ export function ContextPanel({
     return (
       <div className="table-scroll" data-testid="context-empty">
         <Empty title="No context was captured">
-          Pass --context-file to the capture CLI to attach the build, test and sources behind a run.
+          The recording app can attach approved build and runtime details. CLI captures can attach context with --context-file. Missing
+          context cannot be recovered from this recording.
         </Empty>
         {sections ? <div className="ctx-inner ctx-plugin-sections">{sections}</div> : null}
       </div>
@@ -302,6 +303,7 @@ function Group({ title, rows }: { title: string; rows: Row[] }) {
 
 function Fields({ title, rows, testId }: { title: string; rows: FieldRow[]; testId: string }) {
   const heading = useId();
+  if (!rows.length) return null;
   return (
     <section className="ctx-section ctx-group ctx-fields" aria-labelledby={heading} data-testid={testId}>
       <h2 id={heading} className="ctx-heading">

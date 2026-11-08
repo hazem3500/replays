@@ -16,6 +16,7 @@ import {
   stepAt,
 } from '../src/client/viewer/network/model.ts';
 import { must } from './must.ts';
+import { sortNetworkRows } from '../src/client/viewer/network/sort.ts';
 import { request, waterfallEdits, waterfallFixture } from './waterfall-fixture.ts';
 
 function busy() {
@@ -39,6 +40,15 @@ function busy() {
 }
 
 describe('network rows', () => {
+  it('sorts elapsed durations numerically without mutating captured request order', () => {
+    const rows = buildNetworkRows(busy());
+    const before = rows.map((row) => row.id);
+    const sorted = sortNetworkRows(rows, { key: 'duration', direction: 'ascending' }, []);
+    expect(sorted.map((row) => row.id)).toEqual(['img', 'doc', 'coupon', 'slow', 'blocked', 'hop']);
+    expect(rows.map((row) => row.id)).toEqual(before);
+    expect(sorted.find((row) => row.id === 'coupon')).toBe(rows.find((row) => row.id === 'coupon'));
+  });
+
   it('types a request by its MIME type before its extension', () => {
     expect(requestType({ url: 'https://x.test/data.json', mimeType: 'text/html' })).toBe('document');
     expect(requestType({ url: 'https://x.test/app.js?v=2' })).toBe('script');

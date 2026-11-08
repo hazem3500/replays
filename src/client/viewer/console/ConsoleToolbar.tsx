@@ -1,4 +1,5 @@
-import { SearchIcon, XIcon } from 'lucide-react';
+import { usePanelSearchMotion } from '../../hooks/use-panel-search-motion.ts';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { type KeyboardEvent as ReactKeyboardEvent, useRef, useState } from 'react';
 
 import type { LevelFilter } from './model.ts';
@@ -53,36 +54,34 @@ export function ConsoleToolbar({
   };
   return (
     <div className="np-toolbar" data-searching={searching || undefined}>
-      {searching ? (
-        <SearchField text={text} onText={onText} onClose={closeSearch} />
-      ) : (
-        <div className="np-chips" role="group" aria-label={STRINGS.levels}>
-          {LEVEL_CHIPS.filter((chip) => chip.id === 'all' || counts[chip.id] > 0 || chip.id === level).map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              className="np-chip"
-              data-level={chip.id}
-              data-testid={`console-level-${chip.id}`}
-              aria-pressed={level === chip.id}
-              title={chip.id === 'info' ? STRINGS.infoHint : undefined}
-              onClick={() => onLevel(level === chip.id ? 'all' : chip.id)}
-              onKeyDown={keepKeys}
-            >
-              {chip.id === 'all' ? null : <span className="cp-dot" data-level={chip.id} aria-hidden="true" />}
-              {chip.label}
-              <span className="np-chip-count">{counts[chip.id]}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="np-chips" role="group" aria-label={STRINGS.levels}>
+        {LEVEL_CHIPS.filter((chip) => chip.id === 'all' || counts[chip.id] > 0 || chip.id === level).map((chip) => (
+          <button
+            key={chip.id}
+            type="button"
+            className="np-chip"
+            data-level={chip.id}
+            data-testid={`console-level-${chip.id}`}
+            aria-pressed={level === chip.id}
+            title={chip.id === 'info' ? STRINGS.infoHint : undefined}
+            onClick={() => onLevel(level === chip.id ? 'all' : chip.id)}
+            onKeyDown={keepKeys}
+          >
+            {chip.id === 'all' ? null : <span className="cp-dot" data-level={chip.id} aria-hidden="true" />}
+            {chip.label}
+            <span className="np-chip-count">{counts[chip.id]}</span>
+          </button>
+        ))}
+      </div>
       <span className="np-spacer" />
       {shown === counts.all ? null : (
         <span className="np-shown" aria-live="polite">
           {STRINGS.shown(shown)}
         </span>
       )}
-      {searching ? null : (
+      {searching ? (
+        <SearchField text={text} onText={onText} onClose={closeSearch} />
+      ) : (
         <button
           ref={trigger}
           type="button"
@@ -93,7 +92,7 @@ export function ConsoleToolbar({
           onClick={() => setSearching(true)}
           onKeyDown={keepKeys}
         >
-          <SearchIcon aria-hidden="true" />
+          <AnimatedIcon name="search" />
         </button>
       )}
     </div>
@@ -101,9 +100,10 @@ export function ConsoleToolbar({
 }
 
 function SearchField({ text, onText, onClose }: { text: string; onText: (text: string) => void; onClose: () => void }) {
+  const ref = usePanelSearchMotion();
   return (
-    <label className="np-search">
-      <SearchIcon aria-hidden="true" />
+    <label ref={ref} className="np-search">
+      <AnimatedIcon name="search" />
       <span className="visually-hidden">{STRINGS.search}</span>
       <input
         type="search"
@@ -118,7 +118,7 @@ function SearchField({ text, onText, onClose }: { text: string; onText: (text: s
         }}
       />
       <button type="button" className="np-icon" aria-label={STRINGS.closeSearch} onClick={onClose} onKeyDown={keepKeys}>
-        <XIcon aria-hidden="true" />
+        <AnimatedIcon name="x" />
       </button>
     </label>
   );

@@ -7,7 +7,7 @@ import type { FloatingSurface } from './surface-motion.ts';
 import type { RecorderPrivacyMode, RecorderUi, RecordingChoice, RecordingChoiceOffer } from './types.ts';
 
 type ChooseContext = Parameters<NonNullable<RecorderUi['chooseOptions']>>[0];
-type Group = 'privacy' | 'profile' | 'network';
+type Group = 'privacy' | 'profile' | 'network' | 'diagnostics';
 type Item = { group: Group; value: string; label: string; detail?: string; disabled?: boolean };
 
 /** What the options step borrows from the default UI's floating surface. */
@@ -43,7 +43,7 @@ function itemNode(item: Item): HTMLElement {
     icon('check', 'options-check'),
     element('span', { className: 'options-text' }, [element('span', { className: 'options-label' }, [item.label]), ...detail]),
   ]);
-  node.setAttribute('role', item.group === 'network' ? 'menuitemcheckbox' : 'menuitemradio');
+  node.setAttribute('role', item.group === 'network' || item.group === 'diagnostics' ? 'menuitemcheckbox' : 'menuitemradio');
   if (item.detail) node.setAttribute('aria-describedby', `${id}-detail`);
   if (item.disabled) node.setAttribute('aria-disabled', 'true');
   node.dataset.group = item.group;
@@ -97,6 +97,16 @@ function networkItems(offer: RecordingChoiceOffer, messages: RecorderMessages) {
 function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {
   const privacy = privacyItems(offer, messages);
   const network = networkItems(offer, messages);
+  const diagnostics = offer.diagnostics
+    ? (['performance', 'debugging'] as const).map((key) =>
+        itemNode({
+          group: 'diagnostics',
+          value: key,
+          label: key === 'performance' ? messages.performanceLabel : messages.debuggingLabel,
+          disabled: !offer.diagnostics?.[key],
+        }),
+      )
+    : [];
   const profiles = offer.profiles.map(({ id, label, description }) =>
     itemNode({ group: 'profile', value: id, label, ...(description ? { detail: description } : {}) }),
   );
@@ -104,11 +114,12 @@ function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {
     ...(profiles.length ? [groupNode('profile', messages.profileLabel, profiles)] : []),
     ...(privacy.length ? [groupNode('privacy', messages.privacyLabel, privacy)] : []),
     ...(network.length ? [groupNode('network', messages.networkLabel, network)] : []),
+    ...(diagnostics.length ? [groupNode('diagnostics', messages.diagnosticsLabel, diagnostics)] : []),
   ];
   const node = element('div', { className: 'options-menu', id: MENU_ID, hidden: true }, groups);
   node.setAttribute('role', 'menu');
   node.setAttribute('aria-label', messages.optionsTitle);
-  return { node, items: [...profiles, ...privacy, ...network] };
+  return { node, items: [...profiles, ...privacy, ...network, ...diagnostics] };
 }
 
 function iconButton(className: string, label: string, name: 'sliders-horizontal' | 'x') {
@@ -147,6 +158,8 @@ type Parts = {
 };
 
 function checked(item: HTMLElement, choice: RecordingChoice): boolean {
+  if (item.dataset.group === 'diagnostics')
+    return item.dataset.value === 'performance' ? choice.performance === true : choice.debugging === true;
   if (item.dataset.group === 'network') return choice.networkBodies === true;
   return item.dataset.value === (item.dataset.group === 'privacy' ? choice.privacy : choice.profile);
 }
@@ -154,6 +167,8 @@ function checked(item: HTMLElement, choice: RecordingChoice): boolean {
 /** `choice` with `item`'s value, or the body option toggled; a value outside the offer changes nothing. */
 function picked(choice: RecordingChoice, item: HTMLElement): RecordingChoice {
   const value = item.dataset.value;
+  if (item.dataset.group === 'diagnostics')
+    return value === 'performance' ? { ...choice, performance: !choice.performance } : { ...choice, debugging: !choice.debugging };
   if (item.dataset.group === 'network') return { ...choice, networkBodies: choice.networkBodies !== true };
   if (item.dataset.group !== 'privacy') return value ? { ...choice, profile: value } : choice;
   const mode = MODES.find((candidate) => candidate === value);
@@ -176,7 +191,9 @@ function render({ offer, messages, menu, controls }: Parts, choice: RecordingCho
     'data-changed',
     choice.privacy !== offer.defaults.privacy ||
       choice.profile !== offer.defaults.profile ||
-      (choice.networkBodies === true) !== (offer.defaults.networkBodies === true),
+      (choice.networkBodies === true) !== (offer.defaults.networkBodies === true) ||
+      (choice.performance === true) !== (offer.defaults.performance === true) ||
+      (choice.debugging === true) !== (offer.defaults.debugging === true),
   );
 }
 

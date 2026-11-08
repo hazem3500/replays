@@ -29,6 +29,7 @@ const WHY: Record<CaptureTrack, string> = {
 };
 
 const RECORDER: Partial<Record<CaptureTrack, string>> = {
+  performance: 'capture: { performance: true }',
   bodies: "capture: { network: 'bodies' }",
   console: "capture: { console: ['log', 'warn', 'error'] }",
   network: "capture: { network: 'headers' }",

@@ -154,7 +154,37 @@
       "type": "object",
       "required": ["supported", "entries"],
       "properties": {
-        "supported": { "type": "array", "items": { "enum": ["paint", "largest-contentful-paint", "longtask", "event"] } },
+        "layoutShifts": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "required": ["at", "value", "hadRecentInput"],
+            "properties": {
+              "at": { "type": "number", "minimum": 0 },
+              "value": { "type": "number", "minimum": 0 },
+              "hadRecentInput": { "type": "boolean" }
+            }
+          }
+        },
+        "frames": {
+          "type": "array",
+          "maxItems": 600,
+          "items": {
+            "type": "object",
+            "required": ["at", "elapsed", "frames", "dropped"],
+            "properties": {
+              "at": { "type": "number", "minimum": 0 },
+              "elapsed": { "type": "number", "exclusiveMinimum": 0 },
+              "frames": { "type": "integer", "minimum": 0 },
+              "dropped": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "supported": {
+          "type": "array",
+          "items": { "enum": ["paint", "largest-contentful-paint", "longtask", "event", "layout-shift", "animation-frame"] }
+        },
         "entries": {
           "type": "array",
           "maxItems": 500,

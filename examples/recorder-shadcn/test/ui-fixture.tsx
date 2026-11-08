@@ -28,6 +28,7 @@ function referenceController(deferred: ReturnType<typeof createDeferredUi>, dism
     });
   const recorder: Recorder = {
     getState: () => state,
+    annotateStep: () => false,
     subscribe(fn) {
       listeners.add(fn);
       return () => {

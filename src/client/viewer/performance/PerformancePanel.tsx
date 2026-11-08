@@ -8,6 +8,7 @@ import { NotCaptured } from '../NotCaptured.tsx';
 import type { NetworkRow } from '../network/model.ts';
 import type { PerformanceModel } from '../performance.ts';
 import { type RibbonMark, type RibbonRange, type RibbonTone, TimeRibbon } from '../TimeRibbon.tsx';
+import { CadenceSummary } from './CadenceSummary.tsx';
 import { MomentDetail } from './MomentDetail.tsx';
 import { MomentList } from './MomentList.tsx';
 import {
@@ -42,8 +43,8 @@ const STRINGS = {
   order: 'Order',
   worst: 'Worst first',
   time: 'In order',
-  calmTitle: 'Nothing was slow',
-  calm: 'No long tasks or slow interactions were captured.',
+  calmTitle: 'No slow activity captured',
+  calm: 'No long tasks or slow interactions were recorded. Available observations depend on browser support.',
   outsideTitle: 'Nothing slow in this stretch',
   outside: 'Clear the time range to see every moment.',
 };
@@ -134,7 +135,7 @@ export function PerformancePanel({
     deltas: vitalDeltas(vitals, peer.vitals),
   }));
   // why: when no observer reported anything, five "Not captured" cells and "Nothing was slow" would claim a result.
-  if (!recorded(vitals, moments.length))
+  if (!model.track?.supported.length && !recorded(vitals, moments.length))
     return (
       <NotCaptured
         track="performance"
@@ -158,6 +159,7 @@ export function PerformancePanel({
         {moments.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
       </VitalsBar>
       {extra}
+      {model.track ? <CadenceSummary track={model.track} /> : null}
       {marks.length ? (
         <TimeRibbon
           testId="performance-ribbon"

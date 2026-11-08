@@ -1,4 +1,6 @@
 import { useRef } from 'react';
+import { formatClock } from '../../shared/replay.ts';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 
 import { useRibbonHighlightMotion } from '../hooks/use-ribbon-highlight-motion.ts';
 import { usePlayheadProgress } from '../hooks/use-playhead-progress.ts';
@@ -20,6 +22,7 @@ export interface RibbonMark {
   end: number;
   tone: RibbonTone;
   lane: RibbonLane;
+  label?: string;
 }
 
 export interface RibbonRange {
@@ -42,6 +45,7 @@ export function TimeRibbon({
   onRange,
   highlight,
   testId,
+  onHighlight,
 }: {
   duration: number;
   density?: readonly number[] | undefined;
@@ -51,6 +55,7 @@ export function TimeRibbon({
   /** The mark of the row under the pointer or selected: raised and outlined, and its span bracketed. */
   highlight?: string | undefined;
   testId: string;
+  onHighlight?: (id?: string) => void;
 }) {
   const player = usePlayer();
   const span = Math.max(1, duration);
@@ -61,41 +66,99 @@ export function TimeRibbon({
   const highlightRef = useRibbonHighlightMotion(lit?.id, lit?.at ?? 0, lit?.end ?? 0, span);
   const shown = brush ?? range;
   return (
-    <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} aria-hidden="true" {...handlers}>
-      {density ? <Density counts={density} /> : null}
-      {marks.map((mark) => (
-        <span
-          key={mark.id}
-          className="ribbon-mark"
-          data-tone={mark.tone}
-          data-lane={mark.lane}
-          data-lit={mark.id === highlight || undefined}
-          style={{
-            left: `${(mark.at / span) * 100}%`,
-            width: `max(var(--ribbon-mark-min), ${(Math.max(0, mark.end - mark.at) / span) * 100}%)`,
-          }}
-        />
-      ))}
-      {shown ? (
-        <span
-          className="ribbon-range"
-          data-live={brush ? '' : undefined}
-          style={{ left: `${(shown.from / span) * 100}%`, width: `${((shown.to - shown.from) / span) * 100}%` }}
-        />
-      ) : null}
-      {lit ? (
-        <span
-          ref={highlightRef}
-          className="ribbon-lit"
-          style={{
-            left: `${(lit.at / span) * 100}%`,
-            width: `max(var(--ribbon-mark-min), ${(Math.max(0, lit.end - lit.at) / span) * 100}%)`,
-          }}
-        />
-      ) : null}
-      <span className="ribbon-future" />
-      <span className="ribbon-now" />
+    <div className="ribbon-overview">
+      <div className="ribbon-ticks">
+        <span>{formatClock(0)}</span>
+        <span>{formatClock(duration / 2)}</span>
+        <span>{formatClock(duration)}</span>
+      </div>
+      <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} {...handlers}>
+        {density ? <Density counts={density} /> : null}
+        {marks.map((mark) => (
+          <RibbonMarkTarget key={mark.id} mark={mark} span={span} highlighted={mark.id === highlight} onHighlight={onHighlight} />
+        ))}
+        {shown ? (
+          <span
+            className="ribbon-range"
+            data-live={brush ? '' : undefined}
+            style={{ left: `${(shown.from / span) * 100}%`, width: `${((shown.to - shown.from) / span) * 100}%` }}
+          />
+        ) : null}
+        {lit ? (
+          <span
+            ref={highlightRef}
+            className="ribbon-lit"
+            style={{
+              left: `${(lit.at / span) * 100}%`,
+              width: `max(var(--ribbon-mark-min), ${(Math.max(0, lit.end - lit.at) / span) * 100}%)`,
+            }}
+          />
+        ) : null}
+        <span className="ribbon-future" />
+        <span className="ribbon-now" />
+      </div>
+      <div className="ribbon-key">
+        {testId === 'network-ribbon' ? (
+          <>
+            <span>
+              <i data-tone="danger" />
+              Failed
+            </span>
+            <span>
+              <i data-tone="warning" />
+              Slow
+            </span>
+          </>
+        ) : null}
+        <span>Click to seek · Drag to filter</span>
+      </div>
     </div>
+  );
+}
+
+function RibbonMarkTarget({
+  mark,
+  span,
+  highlighted,
+  onHighlight,
+}: {
+  mark: RibbonMark;
+  span: number;
+  highlighted: boolean;
+  onHighlight: ((id?: string) => void) | undefined;
+}) {
+  const player = usePlayer();
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={`${formatClock(mark.at)} ${mark.label ?? mark.tone}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onFocus={() => onHighlight?.(mark.id)}
+            onBlur={() => onHighlight?.()}
+            onPointerEnter={() => onHighlight?.(mark.id)}
+            onPointerLeave={() => onHighlight?.()}
+            onClick={(event) => {
+              event.stopPropagation();
+              player.seek(mark.at);
+            }}
+          />
+        }
+        className="ribbon-mark"
+        data-tone={mark.tone}
+        data-lane={mark.lane}
+        data-lit={highlighted || undefined}
+        style={{
+          left: `${(mark.at / span) * 100}%`,
+          width: `max(var(--ribbon-mark-min), ${(Math.max(0, mark.end - mark.at) / span) * 100}%)`,
+        }}
+      />
+      <TooltipContent>
+        {formatClock(mark.at)} {mark.label ?? mark.tone}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

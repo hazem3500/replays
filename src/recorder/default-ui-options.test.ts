@@ -209,7 +209,7 @@ describe('default UI options for a customer', () => {
   it('offers network content unchecked and resolves Record with it once picked', async () => {
     const { choice } = await openCustomer();
     const bodies = node('[role=menuitemcheckbox][data-group=network]');
-    expect(bodies.textContent).toBe('Include network request and response content');
+    expect(bodies.textContent).toBe('Include request/response content');
     expect(bodies.getAttribute('aria-checked')).toBe('false');
     trigger().click();
     bodies.click();

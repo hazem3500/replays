@@ -12,6 +12,7 @@ import type { Recorder, RecorderOptions, RecorderState, RecordingChoice, Recordi
 import type { IssueReport, IssueReportReceipt } from './upload.ts';
 import { createUploadProgress } from './upload-progress.ts';
 import { toUpload } from './http-upload.ts';
+import { annotateSession, finishSessionExtras, snapshotContext } from './session-extras.ts';
 
 export {
   DEFAULT_MAX_BYTES,
@@ -99,6 +100,10 @@ export function createRecorder(options: RecorderOptions): Recorder {
 
   const recorder: Recorder = {
     getState: () => state,
+    annotateStep(step) {
+      if (destroyed || state.status !== 'recording' || active.privacy.sanitize) return false;
+      return annotateSession(session, step?.label, maxBytes);
+    },
 
     subscribe(listener) {
       listeners.add(listener);
@@ -156,6 +161,10 @@ export function createRecorder(options: RecorderOptions): Recorder {
         capturedRecord(capture, Boolean(bodies), !privacy.sanitize, chosen.by === 'customer' ? chosen.mode : undefined),
         startedAt,
       );
+      if (!privacy.sanitize) {
+        const context = snapshotContext(options.context, startedAt, warn);
+        if (context) current.context = context;
+      }
       session = current;
       try {
         wireSession(current, {
@@ -221,15 +230,18 @@ export function createRecorder(options: RecorderOptions): Recorder {
       }
 
       try {
-        const bundle = buildReplayBundle({
-          title,
-          events: current.events,
-          console: current.console,
-          network: current.network,
-          steps: current.steps,
-          captured: current.captured,
-          ...(active.profile ? { profile: active.profile } : {}),
-        });
+        const bundle = finishSessionExtras(
+          buildReplayBundle({
+            title,
+            events: current.events,
+            console: current.console,
+            network: current.network,
+            steps: current.steps,
+            captured: current.captured,
+            ...(active.profile ? { profile: active.profile } : {}),
+          }),
+          current,
+        );
         const summary = recordingSummary(bundle, current.bytes, reason);
         recording = { bundle, summary };
         setState({ status: 'review', summary });

@@ -51,7 +51,7 @@ describe('browser interaction privacy', () => {
     history.pushState(null, '', '/projects?search=private-name#access_token=secret');
     expect(steps.map(({ kind, label }) => ({ kind, label }))).toEqual([
       { kind: 'click', label: 'Clicked link' },
-      { kind: 'navigate', label: 'Navigated to another page' },
+      { kind: 'navigate', label: 'Navigated' },
     ]);
     expect(JSON.stringify(steps)).not.toMatch(/private|Secret|access_token|selector|url/);
   });
@@ -80,7 +80,7 @@ describe('browser interaction privacy', () => {
     document.body.append(form);
     must(form.querySelector('input')).click();
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    expect(steps.map((step) => step.label)).toEqual(['Clicked field', 'Submitted form']);
+    expect(steps.map((step) => step.label)).toEqual(['Clicked field', 'Requested form submission']);
     expect(JSON.stringify(steps)).not.toMatch(/private-email|Secret customer|password|secret/);
   });
 

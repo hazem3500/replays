@@ -87,12 +87,14 @@ export function captureInteractionSteps(privacy: RecorderPrivacy, onStep: (step:
   const submit = (event: Event) => {
     const target = eventElement(event);
     if (!target || event.composedPath().some((node) => node instanceof Element && node.closest(blocked))) return;
-    add(target, 'submit', 'Submitted form');
+    const submitter = event instanceof SubmitEvent ? event.submitter : null;
+    const name = submitter ? controlName(submitter, privacy, blocked) : controlName(target, privacy, blocked);
+    add(target, 'submit', name ? `Requested “${name}”` : 'Requested form submission');
   };
   const navigate = () => {
     if (!active || location.href === route) return;
     route = location.href;
-    add(document.documentElement, 'navigate', 'Navigated to another page');
+    add(document.documentElement, 'navigate', 'Navigated');
   };
   const stopNavigation = subscribeInteractionNavigation(navigate);
   document.addEventListener('click', click, true);

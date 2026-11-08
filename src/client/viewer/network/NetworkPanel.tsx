@@ -1,4 +1,7 @@
 import { useRef, useState } from 'react';
+import { Splitter } from '@/components/ui/splitter.tsx';
+import { useElementWidth } from '../../hooks/use-element-width.ts';
+import { cssVars } from '../../lib/css-vars.ts';
 
 import type { ReplayCaptured, ReplayStep } from '../../../shared/replay.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
@@ -16,6 +19,7 @@ import {
   typeCounts,
 } from './model.ts';
 import { NetworkList } from './NetworkList.tsx';
+import { sortNetworkRows, type NetworkSort } from './sort.ts';
 import { NetworkToolbar } from './NetworkToolbar.tsx';
 import { type NetworkPeer, RequestDetail } from './RequestDetail.tsx';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the panel's styles load with the lazy inspector chunk, not with every page.
@@ -48,10 +52,12 @@ function emptyCopy(total: number, human: boolean) {
 
 function ribbonMarks(rows: readonly NetworkRow[], ticks: boolean): RibbonMark[] {
   return rows.flatMap((row): RibbonMark[] => {
-    if (row.failed) return [{ id: row.id, at: row.at, end: row.at, tone: 'danger', lane: 'full' }];
-    if (row.pending) return [{ id: row.id, at: row.at, end: row.at, tone: 'neutral', lane: 'full' }];
-    if (row.slow) return [{ id: row.id, at: row.at, end: row.end, tone: 'warning', lane: 'cap' }];
-    return ticks ? [{ id: row.id, at: row.at, end: row.end, tone: 'neutral', lane: 'tick' }] : [];
+    const label = `${row.entry.method} ${row.entry.url}`;
+    const base = { id: row.id, at: row.at, label };
+    if (row.failed) return [{ ...base, end: row.at, tone: 'danger', lane: 'full' }];
+    if (row.pending) return [{ ...base, end: row.at, tone: 'neutral', lane: 'full' }];
+    if (row.slow) return [{ ...base, end: row.end, tone: 'warning', lane: 'cap' }];
+    return ticks ? [{ ...base, end: row.end, tone: 'neutral', lane: 'tick' }] : [];
   });
 }
 
@@ -82,8 +88,11 @@ export function NetworkPanel({
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
+  const panelWidth = useElementWidth(panel, SIDE_DETAIL_MIN_WIDTH);
+  const [detailWidth, setDetailWidth] = useState(400);
   const [filter, setFilter] = useState<NetworkFilter>(NO_FILTER);
   const [hovered, setHovered] = useState<string>();
+  const [sort, setSort] = useState<NetworkSort>({ key: 'time', direction: 'ascending' });
   const dense = rows.length > DENSE_ROWS;
   const unranged = filterRows(rows, { ...filter, range: undefined });
   const shown = filter.range ? filterRows(unranged, { ...NO_FILTER, range: filter.range }) : unranged;
@@ -104,7 +113,13 @@ export function NetworkPanel({
     </Empty>
   );
   return (
-    <div ref={panel} className="np" data-stacked={stacked || undefined} data-open={open ? '' : undefined}>
+    <div
+      ref={panel}
+      className="np"
+      style={cssVars({ '--np-detail-width': `${Math.min(detailWidth, Math.max(280, panelWidth - 320))}px` })}
+      data-stacked={stacked || undefined}
+      data-open={open ? '' : undefined}
+    >
       <NetworkToolbar counts={statusCounts(rows)} types={typeCounts(rows)} filter={filter} shown={shown.length} onFilter={setFilter} />
       {rows.length ? (
         <TimeRibbon
@@ -112,6 +127,7 @@ export function NetworkPanel({
           duration={duration}
           density={dense ? startDensity(unranged, duration, DENSITY_BINS) : undefined}
           marks={ribbonMarks(unranged, !dense)}
+          onHighlight={setHovered}
           range={filter.range}
           onRange={(range) => setFilter({ ...filter, range })}
           highlight={hovered ?? selected}
@@ -120,15 +136,30 @@ export function NetworkPanel({
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
           <NetworkList
-            rows={shown}
+            rows={sortNetworkRows(shown, sort, steps)}
+            sort={sort}
+            onSort={setSort}
             steps={steps}
             ceiling={slowestMeasured(rows)}
             selected={selected}
             onSelect={onSelect}
             onHover={setHovered}
+            highlight={hovered}
             empty={empty}
           />
         </div>
+        {open && !stacked ? (
+          <Splitter
+            orientation="vertical"
+            side="end"
+            value={detailWidth}
+            min={280}
+            max={Math.max(280, panelWidth - 320)}
+            defaultValue={400}
+            onChange={setDetailWidth}
+            label="Request details width"
+          />
+        ) : null}
         {open ? (
           <RequestDetail
             row={open}

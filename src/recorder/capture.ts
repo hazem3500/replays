@@ -32,6 +32,7 @@ export type RawNetworkEntry = {
 };
 
 export type ConsoleCaptureOptions = {
+  debugging?: boolean;
   levels: readonly ReplayConsoleLevel[];
   maxEntries: number;
   onEntry: (entry: RawConsoleEntry) => void;
@@ -85,7 +86,14 @@ export function captureConsole(options: ConsoleCaptureOptions): () => void {
     const original = console[level];
     originals.set(level, original);
     const wrapper = (...args: unknown[]) => {
-      push(level, args.map(stringify).join(' '));
+      push(
+        level,
+        args
+          .slice(0, 20)
+          .map((value) => (options.debugging && value instanceof Error ? (value.stack ?? value.message).slice(0, 4000) : stringify(value)))
+          .join(' ')
+          .slice(0, 8000),
+      );
       original.apply(console, args);
     };
     wrappers.set(level, wrapper);
@@ -93,10 +101,19 @@ export function captureConsole(options: ConsoleCaptureOptions): () => void {
   }
 
   const onError = (event: ErrorEvent) => {
-    push('error', stringify(event.error ?? event.message ?? 'Uncaught error'));
+    push(
+      'error',
+      options.debugging && event.error instanceof Error
+        ? (event.error.stack ?? event.error.message).slice(0, 4000)
+        : stringify(event.error ?? event.message ?? 'Uncaught error'),
+    );
   };
   const onRejection = (event: PromiseRejectionEvent) => {
-    push('error', `Unhandled rejection: ${stringify(event.reason)}`);
+    const reason: unknown = event.reason;
+    push(
+      'error',
+      `Unhandled rejection: ${options.debugging && reason instanceof Error ? (reason.stack ?? reason.message).slice(0, 4000) : stringify(reason)}`,
+    );
   };
   addEventListener('error', onError);
   addEventListener('unhandledrejection', onRejection);

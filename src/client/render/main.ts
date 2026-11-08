@@ -24,15 +24,7 @@ import { captionEdge } from '../caption-placement.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
-import {
-  CAPTION_IN_MS,
-  captionAt,
-  captionDisplayText,
-  captionKey,
-  captionSpan,
-  exportCaptionScale,
-  type CaptionFrame,
-} from '../step-caption.ts';
+import { CAPTION_IN_MS, captionAt, captionDisplayText, captionKey, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
 import { jpegThumbHash } from './thumbhash-capture.ts';
 import { dirtyAt, exportMap, exportTimes, type PlaybackMap, posterMoment, poseKey, type PreviewPlan, previewPlan } from './frames.ts';
 
@@ -165,7 +157,7 @@ async function start() {
       root.className = 'step-caption';
       root.setAttribute('aria-hidden', 'true');
       // why: the edge the viewer and the editor give this caption (caption-placement.ts), so the video matches them.
-      const span = editCaptions ? effects.captions[frame.index] : captionSpan(bundle.steps, frame.index, controller.duration);
+      const span = editCaptions ? effects.captions[frame.index] : undefined;
       root.dataset['edge'] = span ? captionEdge({ input: pointer, first, height }, span) : 'bottom';
       const text = document.createElement('span');
       text.className = 'step-caption-text';

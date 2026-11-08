@@ -1,12 +1,15 @@
 /**
  * Recorder-limited version 1 replay output schema. Keep browser types independent
- * of server-owned tracks and metadata: this recorder writes no performance,
- * context, suiteRun, retention or people fields, and `profile` only from the
+ * of server-owned metadata: optional context and numeric performance tracks use
+ * shared type-only contracts. It writes no suiteRun, retention or people fields, and `profile` only from the
  * host's options step. The ingest endpoint
  * validates and enriches recordings for its audience. Compatibility is checked
  * against src/shared/replay.ts assertReplayBundle by the recorder bundle tests;
  * that runtime validator is never imported by the browser entry.
  */
+
+import type { ReplayContext } from '../shared/context.ts';
+import type { ReplayPerformanceTrack } from '../shared/replay.ts';
 
 export type ReplayConsoleLevel = 'debug' | 'info' | 'log' | 'warn' | 'error';
 
@@ -111,6 +114,8 @@ export type ReplayBundle = {
   console: ReplayConsoleEntry[];
   network: ReplayNetworkEntry[];
   steps: ReplayStep[];
+  context?: ReplayContext;
+  performance?: ReplayPerformanceTrack;
 };
 
 /** The rrweb event types the recorder relies on (`@rrweb/types` EventType). */

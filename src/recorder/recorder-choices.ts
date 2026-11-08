@@ -136,6 +136,8 @@ function remembered(): Partial<Record<keyof RecordingChoice, unknown>> {
           privacy: Reflect.get(value, 'privacy'),
           profile: Reflect.get(value, 'profile'),
           networkBodies: Reflect.get(value, 'networkBodies'),
+          performance: Reflect.get(value, 'performance'),
+          debugging: Reflect.get(value, 'debugging'),
         }
       : {};
   } catch {
@@ -175,6 +177,12 @@ function assertCustomerUnmask(host: Host): void {
   throw new Error(`choices.by "customer" allows only privacy.unmaskTextSelector "${PUBLIC_SELECTOR}"; mark product text with it`);
 }
 
+function settledDiagnostic(host: Host, key: 'performance' | 'debugging', choice: LooseChoice, explicit: boolean): boolean {
+  if (host.capture?.[key] !== true) return false;
+  if (host.choices?.by === 'customer') return explicit && choice[key] === true;
+  return (choice[key] ?? host.choices?.defaults?.[key]) === true;
+}
+
 /** Whether the host offers anything at all: a cap above fully masked, allowed bodies, or the interface mode. */
 function offersAnything(host: Host, cap: Cap, bodiesAllowed: boolean): boolean {
   const interfaceListed = host.choices?.by === 'customer' || (host.choices?.privacy ?? []).includes('interface-visible');
@@ -197,7 +205,8 @@ export function recorderChoices(host: Host, build: SettingsBuilder) {
   const modes = open ? offeredModes(host, cap) : [];
   const profiles = open ? offeredProfiles(host) : [];
   const profileIds = profiles.map((profile) => profile.id);
-  const active = modes.length > 1 || profiles.length > 1 || bodiesAllowed;
+  const diagnostics = host.choices?.diagnostics === true;
+  const active = modes.length > 1 || profiles.length > 1 || bodiesAllowed || diagnostics;
   const defaults = host.choices?.defaults;
   const rules: Rules = { modes, customer, ...(defaults ? { defaults } : {}), bodiesAllowed };
   // invariant: only `accept` adds to it, so a customer's looser choice must come from the options step.
@@ -208,7 +217,17 @@ export function recorderChoices(host: Host, build: SettingsBuilder) {
     const privacy = settledMode(rules, choice, explicit);
     const profile = firstOffered(profileIds, [choice.profile, defaults?.profile, profileIds[0]]);
     const bodies = settledBodies(rules, choice, explicit);
-    return { ...(privacy ? { privacy } : {}), ...(profile ? { profile } : {}), ...(bodiesOffered ? { networkBodies: bodies } : {}) };
+    return {
+      ...(privacy ? { privacy } : {}),
+      ...(profile ? { profile } : {}),
+      ...(bodiesOffered ? { networkBodies: bodies } : {}),
+      ...(diagnostics
+        ? {
+            performance: settledDiagnostic(host, 'performance', choice, explicit),
+            debugging: settledDiagnostic(host, 'debugging', choice, explicit),
+          }
+        : {}),
+    };
   };
 
   const settled = (choice: RecordingChoice): RecordingSettings => {
@@ -219,6 +238,9 @@ export function recorderChoices(host: Host, build: SettingsBuilder) {
     const built = build(privacy, !(bodiesOffered || customer) || choice.networkBodies === true);
     return {
       ...built,
+      ...(diagnostics
+        ? { capture: { ...built.capture, performance: choice.performance === true, debugging: choice.debugging === true } }
+        : {}),
       ...(choice.profile ? { profile: choice.profile } : {}),
       ...(customer && mode ? { by: 'customer' as const, mode } : {}),
     };
@@ -229,6 +251,9 @@ export function recorderChoices(host: Host, build: SettingsBuilder) {
     offer(facts: (privacy: RecorderPrivacy) => PrivacyFacts): RecordingChoiceOffer | undefined {
       if (!active) return;
       return {
+        ...(diagnostics
+          ? { diagnostics: { performance: host.capture?.performance === true, debugging: host.capture?.debugging === true } }
+          : {}),
         by: customer ? 'customer' : 'staff',
         privacy: modes.map((mode) => ({ mode, facts: facts(settled({ privacy: mode }).privacy) })),
         profiles,

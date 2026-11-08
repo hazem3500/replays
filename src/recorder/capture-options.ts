@@ -10,9 +10,14 @@ export type ResolvedCapture = {
   consoleLevels: readonly ReplayConsoleLevel[];
   maskAllText: boolean;
   blockMedia: boolean;
+  performance: boolean;
+  debugging: boolean;
 };
 
 function assertCapture(capture: RecorderCapture) {
+  for (const key of ['performance', 'debugging'] as const) {
+    if (capture[key] !== undefined && typeof capture[key] !== 'boolean') throw new Error(`capture.${key} must be a boolean`);
+  }
   if (capture.network !== undefined && !NETWORK.includes(capture.network))
     throw new Error(`capture.network must be one of ${NETWORK.join(', ')}`);
   if (capture.bodies === undefined) return;
@@ -37,6 +42,8 @@ export function resolveCapture(options: Pick<RecorderOptions, 'capture' | 'priva
   assertCapture(capture);
   const sanitize = privacy.sanitize !== false;
   return {
+    performance: capture.performance === true,
+    debugging: capture.debugging === true,
     network: privacy.captureNetwork === false ? 'off' : (capture.network ?? 'headers'),
     bodies: capture.bodies ?? {},
     consoleLevels: privacy.consoleLevels ?? capture.console ?? ['warn', 'error'],
@@ -48,7 +55,7 @@ export function resolveCapture(options: Pick<RecorderOptions, 'capture' | 'priva
 const shown = (visible: boolean) => (visible ? ('visible' as const) : ('masked' as const));
 
 /**
- * `meta.captured`: the recorder never records performance entries or video. `customerMode` adds the customer's pick,
+ * `meta.captured` records enabled capture, not browser API support; video remains disabled. `customerMode` adds the customer's pick,
  * read from what this recording actually captures so the claim never says more than the bundle holds.
  */
 export function capturedRecord(
@@ -61,7 +68,7 @@ export function capturedRecord(
   return {
     console: capture.consoleLevels.length > 0,
     network,
-    performance: false,
+    performance: capture.performance,
     video: false,
     ...(inputsVisible ? { inputs: 'visible' as const } : {}),
     ...(customerMode

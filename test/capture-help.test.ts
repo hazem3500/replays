@@ -9,10 +9,10 @@ describe('capture help', () => {
     expect(help.cli).toBe('replays capture https://shop.example/cart --network bodies');
   });
 
-  it('sends a recorder replay to the command line for performance, which the recorder never records', () => {
+  it('offers recorder performance capture with the command line as an alternative', () => {
     const help = captureHelp('performance', 'human', 'https://shop.example/cart');
-    expect(help.snippet).toBe('replays capture https://shop.example/cart');
-    expect(help.cli).toBeUndefined();
+    expect(help.snippet).toBe('capture: { performance: true }');
+    expect(help.cli).toBe('replays capture https://shop.example/cart');
   });
 
   it('tells an agent capture to run again without --no-performance, for the page it recorded', () => {

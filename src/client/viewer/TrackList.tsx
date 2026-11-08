@@ -32,6 +32,7 @@ const USER_SCROLL_GRACE_MS = 1500;
  */
 export function TrackList({
   testId,
+  chronological = true,
   scrollClassName,
   reached,
   total,
@@ -43,6 +44,7 @@ export function TrackList({
   children,
 }: {
   testId: string;
+  chronological?: boolean;
   scrollClassName?: string;
   reached: number;
   total: number;
@@ -210,7 +212,7 @@ export function TrackList({
     >
       <div ref={scroller} data-testid={testId} className={`table-scroll track-scroll ${scrollClassName ?? ''}`}>
         {children}
-        {total > 0 ? (
+        {total > 0 && chronological ? (
           <NowDivider
             top={dividerTop}
             reached={reached}

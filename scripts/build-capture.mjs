@@ -40,26 +40,42 @@ for (const specifier of imports) {
   dependencies[name] = pkg.dependencies[name];
 }
 const inputs = Object.keys(result.metafile.inputs).sort();
-const forbidden = inputs.filter((input) => /src\/(client|mcp|first-party)\//.test(input) || /src\/server\/(main|start|app|migrate-cli|static)\.ts$/.test(input));
+const forbidden = inputs.filter(
+  (input) => /src\/(client|mcp|first-party)\//.test(input) || /src\/server\/(main|start|app|migrate-cli|static)\.ts$/.test(input),
+);
 if (forbidden.length) throw new Error(`capture artifact includes full-distribution entry points: ${forbidden.join(', ')}`);
 await copyFile(resolve(root, 'LICENSE'), resolve(out, 'LICENSE'));
-await writeFile(resolve(out, 'package.json'), `${JSON.stringify({
-  name: pkg.name,
-  version: pkg.version,
-  private: true,
-  type: 'module',
-  description: 'Capture-only staging artifact; not the full Replays distribution.',
-  license: pkg.license,
-  engines: pkg.engines,
-  bin: { replays: './cli.mjs' },
-  files: ['cli.mjs', 'recorder.iife.js', 'capabilities.json', 'LICENSE'],
-  dependencies,
-}, null, 2)}\n`);
-await writeFile(resolve(out, 'capabilities.json'), `${JSON.stringify({
-  distribution: 'capture-only',
-  commands: ['capture', 'import', 'upload', 'connect', 'login', 'status', 'logout', 'config', 'doctor'],
-  omittedCommands: ['serve', 'migrate', 'build-static', 'plugin', 'mcp'],
-  programmaticExports: false,
-}, null, 2)}\n`);
+await writeFile(
+  resolve(out, 'package.json'),
+  `${JSON.stringify(
+    {
+      name: pkg.name,
+      version: pkg.version,
+      private: true,
+      type: 'module',
+      description: 'Capture-only staging artifact; not the full Replays distribution.',
+      license: pkg.license,
+      engines: pkg.engines,
+      bin: { replays: './cli.mjs' },
+      files: ['cli.mjs', 'recorder.iife.js', 'capabilities.json', 'LICENSE'],
+      dependencies,
+    },
+    null,
+    2,
+  )}\n`,
+);
+await writeFile(
+  resolve(out, 'capabilities.json'),
+  `${JSON.stringify(
+    {
+      distribution: 'capture-only',
+      commands: ['capture', 'import', 'upload', 'connect', 'login', 'status', 'logout', 'config', 'doctor'],
+      omittedCommands: ['serve', 'migrate', 'build-static', 'plugin', 'mcp'],
+      programmaticExports: false,
+    },
+    null,
+    2,
+  )}\n`,
+);
 await writeFile(resolve(out, 'build-evidence.json'), `${JSON.stringify({ inputs, imports, dependencies }, null, 2)}\n`);
 console.log(`Built private capture-only staging artifact: ${out}`);
