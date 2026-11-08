@@ -94,9 +94,7 @@ export function captureInteractionSteps(privacy: RecorderPrivacy, onStep: (step:
   const navigate = () => {
     if (!active || location.href === route) return;
     route = location.href;
-    const title = document.querySelector('title');
-    const name = title && readable(title, privacy, blocked) ? controlName(title, privacy, blocked) : '';
-    add(document.documentElement, 'navigate', name ? `Opened “${name}”` : 'Navigated');
+    add(document.documentElement, 'navigate', 'Navigated');
   };
   const stopNavigation = subscribeInteractionNavigation(navigate);
   document.addEventListener('click', click, true);
