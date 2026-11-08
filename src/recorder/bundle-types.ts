@@ -1,7 +1,7 @@
 /**
  * Recorder-limited version 1 replay output schema. Keep browser types independent
- * of server-owned tracks and metadata: this recorder writes no performance,
- * context, suiteRun, retention or people fields, and `profile` only from the
+ * of server-owned metadata: optional context and numeric performance tracks use
+ * shared type-only contracts. It writes no suiteRun, retention or people fields, and `profile` only from the
  * host's options step. The ingest endpoint
  * validates and enriches recordings for its audience. Compatibility is checked
  * against src/shared/replay.ts assertReplayBundle by the recorder bundle tests;

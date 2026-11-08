@@ -217,8 +217,14 @@ export function recorderChoices(host: Host, build: SettingsBuilder) {
       ...(bodiesOffered ? { networkBodies: bodies } : {}),
       ...(diagnostics
         ? {
-            performance: host.capture?.performance === true && (!customer || explicit) && choice.performance === true,
-            debugging: host.capture?.debugging === true && (!customer || explicit) && choice.debugging === true,
+            performance:
+              host.capture?.performance === true &&
+              (!customer || explicit) &&
+              (choice.performance ?? (customer ? false : defaults?.performance)) === true,
+            debugging:
+              host.capture?.debugging === true &&
+              (!customer || explicit) &&
+              (choice.debugging ?? (customer ? false : defaults?.debugging)) === true,
           }
         : {}),
     };
