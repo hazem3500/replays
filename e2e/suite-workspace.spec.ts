@@ -84,6 +84,14 @@ test('at 390 px the sidebar becomes a run switcher in the topbar title', async (
   await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(/Desktop: run 1/);
   await expect(page.getByTestId('phone-switch')).toHaveCount(0);
   await page.getByTestId('title-menu').click();
+  const selected = page.getByRole('menuitemradio', { checked: true });
+  await expect(selected).toContainText(/Desktop: run 1/);
+  // Selected check stays vertically centered with the status dot on multi-line rows.
+  await expect
+    .poll(async () =>
+      selected.locator('[data-slot="dropdown-menu-radio-item-indicator"]').evaluate((el) => getComputedStyle(el).top),
+    )
+    .toBe('50%');
   await page.getByRole('menuitemradio', { name: /Desktop: run 2/ }).click();
   await expect(page).toHaveURL(new RegExp(`/r/${two}$`));
   await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(/Desktop: run 2/);
