@@ -29,7 +29,6 @@ import {
   captionAt,
   captionDisplayText,
   captionKey,
-  captionSpan,
   exportCaptionScale,
   type CaptionFrame,
 } from '../step-caption.ts';
@@ -165,7 +164,7 @@ async function start() {
       root.className = 'step-caption';
       root.setAttribute('aria-hidden', 'true');
       // why: the edge the viewer and the editor give this caption (caption-placement.ts), so the video matches them.
-      const span = editCaptions ? effects.captions[frame.index] : captionSpan(bundle.steps, frame.index, controller.duration);
+      const span = editCaptions ? effects.captions[frame.index] : undefined;
       root.dataset['edge'] = span ? captionEdge({ input: pointer, first, height }, span) : 'bottom';
       const text = document.createElement('span');
       text.className = 'step-caption-text';
