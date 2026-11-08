@@ -55,7 +55,7 @@ export function resolveCapture(options: Pick<RecorderOptions, 'capture' | 'priva
 const shown = (visible: boolean) => (visible ? ('visible' as const) : ('masked' as const));
 
 /**
- * `meta.captured`: the recorder never records performance entries or video. `customerMode` adds the customer's pick,
+ * `meta.captured` records enabled capture, not browser API support; video remains disabled. `customerMode` adds the customer's pick,
  * read from what this recording actually captures so the claim never says more than the bundle holds.
  */
 export function capturedRecord(

@@ -8,7 +8,7 @@ const replay = () => `${server().origin}/r/demo-shop`;
 test.use({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
 
 async function openNumbers(page: Page) {
-  await page.getByRole('button', { name: 'Caption settings', exact: true }).click();
+  await page.getByTestId('captions-switch').click({ button: 'right' });
   return page.getByRole('switch', { name: 'Show step numbers' });
 }
 
@@ -27,11 +27,12 @@ for (const width of [1280, 390]) {
     await page.keyboard.press('Escape');
     const numbers = await openNumbers(page);
     await expect(numbers).toBeEnabled();
+    await test.info().attach(`caption-options-${width}`, { body: await page.screenshot(), contentType: 'image/png' });
     await expect(page.getByRole('slider', { name: 'Playback speed' })).toHaveCount(0);
     await numbers.click();
     await expect(numbers).toHaveAttribute('aria-checked', 'true');
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: 'Caption settings', exact: true })).toBeFocused();
+    await expect(page.getByTestId('captions-switch')).toBeFocused();
     await page.getByTestId('captions-switch').click();
     await openNumbers(page);
     await expect(numbers).toBeDisabled();
@@ -73,7 +74,7 @@ test('captions default to unnumbered; numbering toggles, persists, and survives 
   // Base UI restores focus after its closing transition. A body press cannot
   // focus the non-focusable body while the outgoing popup still owns focus.
   await expect(page.getByRole('dialog', { name: 'Caption settings', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Caption settings', exact: true })).toBeFocused();
+  await expect(page.getByTestId('captions-switch')).toBeFocused();
 
   await page.keyboard.press('Shift+C');
   await expect(page.getByTestId('captions-switch')).toHaveAttribute('aria-label', 'Show step captions');

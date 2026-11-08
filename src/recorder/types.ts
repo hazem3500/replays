@@ -246,7 +246,7 @@ export type RecorderCaptureNetwork = 'off' | 'headers' | 'bodies';
 /**
  * What a recording keeps beyond the page, shaped like a profile's `capture`
  * block so `profile.capture` from `GET /api/config` can be passed as is. Keys
- * only the capture CLI applies (`performance`, `sampling`, `video`,
+ * only the capture CLI applies (`sampling`, `video`,
  * `stepPauseMs`, `viewport`, `runs`) are ignored. invariant: it only tightens
  * `privacy`; an invalid value throws from `createRecorder`.
  */
