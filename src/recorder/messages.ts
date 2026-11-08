@@ -79,6 +79,9 @@ export type RecorderMessages = {
   privacyHint: (params: { mode: RecorderPrivacyMode; privacy: PrivacyFacts }) => string;
   /** Options step: heading of the network group in the options menu. */
   networkLabel: string;
+  diagnosticsLabel: string;
+  performanceLabel: string;
+  debuggingLabel: string;
   /** Options step: the option that adds request and response content to the recording. */
   networkBodies: string;
   /** Options step: the button that starts the recording. */
@@ -188,6 +191,9 @@ export const defaultRecorderMessages: RecorderMessages = {
   privacyMode: ({ mode }) => MODE_NAMES[mode],
   privacyHint: ({ privacy }) => modeHint(privacy),
   networkLabel: 'Network',
+  diagnosticsLabel: 'Diagnostics',
+  performanceLabel: 'Performance',
+  debuggingLabel: 'Debugging',
   networkBodies: 'Include request/response content',
   record: 'Record',
 };

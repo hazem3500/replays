@@ -102,7 +102,7 @@ function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {
         itemNode({
           group: 'diagnostics',
           value: key,
-          label: key === 'performance' ? 'Performance' : 'Debugging',
+          label: key === 'performance' ? messages.performanceLabel : messages.debuggingLabel,
           disabled: !offer.diagnostics?.[key],
         }),
       )
@@ -114,7 +114,7 @@ function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {
     ...(profiles.length ? [groupNode('profile', messages.profileLabel, profiles)] : []),
     ...(privacy.length ? [groupNode('privacy', messages.privacyLabel, privacy)] : []),
     ...(network.length ? [groupNode('network', messages.networkLabel, network)] : []),
-    ...(diagnostics.length ? [groupNode('diagnostics', 'Diagnostics', diagnostics)] : []),
+    ...(diagnostics.length ? [groupNode('diagnostics', messages.diagnosticsLabel, diagnostics)] : []),
   ];
   const node = element('div', { className: 'options-menu', id: MENU_ID, hidden: true }, groups);
   node.setAttribute('role', 'menu');

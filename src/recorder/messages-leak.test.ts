@@ -49,6 +49,9 @@ const sentinels: RecorderMessages = {
   privacyMode: () => mark('privacyMode'),
   privacyHint: () => mark('privacyHint'),
   networkLabel: mark('networkLabel'),
+  diagnosticsLabel: mark('diagnosticsLabel'),
+  performanceLabel: mark('performanceLabel'),
+  debuggingLabel: mark('debuggingLabel'),
   networkBodies: mark('networkBodies'),
   record: mark('record'),
 };
