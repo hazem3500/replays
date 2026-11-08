@@ -52,6 +52,12 @@
   width: 18px;
   height: 18px;
 }
+/* Run picker rows: room for a two-line title and the status dot clear of the radio check. */
+.menu-sheet .run-picker-item.run-picker-item {
+  align-items: flex-start;
+  min-height: 48px;
+  padding: 10px 40px 10px 12px;
+}
 .menu-sheet [data-slot="dropdown-menu-label"] {
   padding: 8px 12px 4px;
   font-size: var(--text-xs);
