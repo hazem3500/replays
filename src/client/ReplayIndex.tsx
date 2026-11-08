@@ -765,7 +765,7 @@ export function ReplayIndex({
             ? {
                 phoneMenu: (
                   <IndexPhoneMenu
-                    signedIn={Boolean(account?.session?.signOutUrl)}
+                    {...(account ? { account } : {})}
                     items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })}
                   />
                 ),

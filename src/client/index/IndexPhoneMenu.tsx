@@ -93,11 +93,12 @@ function PhoneMenuRowContent({ item }: { item: IndexPhoneMenuItem }) {
  * only when the account can sign out (the sheet then holds that action); otherwise the More ellipsis the viewer uses —
  * IAP is signed in but has no sign-out, so a person glyph would be a label with no action.
  */
-export function IndexPhoneMenu({ items, signedIn = false }: { items: IndexPhoneMenuItem[]; signedIn?: boolean }) {
+export function IndexPhoneMenu({ items, account }: { items: IndexPhoneMenuItem[]; account?: Account }) {
+  const canSignOut = Boolean(account?.session?.signOutUrl);
   return (
     <Drawer>
       <DrawerTrigger className="phone-menu-trigger" aria-label={strings.trigger}>
-        {signedIn ? <UserRoundIcon aria-hidden="true" /> : <AnimatedIcon name="ellipsis" />}
+        {canSignOut ? <UserRoundIcon aria-hidden="true" /> : <AnimatedIcon name="ellipsis" />}
       </DrawerTrigger>
       <DrawerContent className="phone-menu-sheet">
         <DrawerTitle className="phone-menu-title">{productName()}</DrawerTitle>
