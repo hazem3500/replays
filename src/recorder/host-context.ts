@@ -16,15 +16,16 @@ const APP_PATTERNS = {
 function appValue(key: keyof typeof APP_LIMITS, value: string): string {
   const limit = APP_LIMITS[key];
   if (typeof value !== 'string' || !value.trim() || value.length > limit) throw new Error('Invalid recorder context app value');
+  if (key === 'origin') {
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol) || url.origin !== value || url.username || url.password) {
+      throw new Error('Invalid recorder context origin');
+    }
+    return url.origin;
+  }
   const sanitized = redactText(value, limit);
   if (key in APP_PATTERNS && !APP_PATTERNS[key as keyof typeof APP_PATTERNS].test(sanitized)) {
     throw new Error('Invalid recorder context app value');
-  }
-  if (key === 'origin') {
-    const url = new URL(sanitized);
-    if (!['http:', 'https:'].includes(url.protocol) || url.origin !== sanitized || url.username || url.password) {
-      throw new Error('Invalid recorder context origin');
-    }
   }
   return sanitized;
 }
