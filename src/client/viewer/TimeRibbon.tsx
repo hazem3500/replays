@@ -75,36 +75,7 @@ export function TimeRibbon({
       <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} {...handlers}>
         {density ? <Density counts={density} /> : null}
         {marks.map((mark) => (
-          <Tooltip key={mark.id}>
-            <TooltipTrigger
-              render={
-                <button
-                  type="button"
-                  aria-label={`${formatClock(mark.at)} ${mark.label ?? mark.tone}`}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onFocus={() => onHighlight?.(mark.id)}
-                  onBlur={() => onHighlight?.()}
-                  onPointerEnter={() => onHighlight?.(mark.id)}
-                  onPointerLeave={() => onHighlight?.()}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    player.seek(mark.at);
-                  }}
-                />
-              }
-              className="ribbon-mark"
-              data-tone={mark.tone}
-              data-lane={mark.lane}
-              data-lit={mark.id === highlight || undefined}
-              style={{
-                left: `${(mark.at / span) * 100}%`,
-                width: `max(var(--ribbon-mark-min), ${(Math.max(0, mark.end - mark.at) / span) * 100}%)`,
-              }}
-            />
-            <TooltipContent>
-              {formatClock(mark.at)} {mark.label ?? mark.tone}
-            </TooltipContent>
-          </Tooltip>
+          <RibbonMarkTarget key={mark.id} mark={mark} span={span} highlighted={mark.id === highlight} onHighlight={onHighlight} />
         ))}
         {shown ? (
           <span
@@ -142,6 +113,52 @@ export function TimeRibbon({
         <span>Click to seek · Drag to filter</span>
       </div>
     </div>
+  );
+}
+
+function RibbonMarkTarget({
+  mark,
+  span,
+  highlighted,
+  onHighlight,
+}: {
+  mark: RibbonMark;
+  span: number;
+  highlighted: boolean;
+  onHighlight: ((id?: string) => void) | undefined;
+}) {
+  const player = usePlayer();
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={`${formatClock(mark.at)} ${mark.label ?? mark.tone}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onFocus={() => onHighlight?.(mark.id)}
+            onBlur={() => onHighlight?.()}
+            onPointerEnter={() => onHighlight?.(mark.id)}
+            onPointerLeave={() => onHighlight?.()}
+            onClick={(event) => {
+              event.stopPropagation();
+              player.seek(mark.at);
+            }}
+          />
+        }
+        className="ribbon-mark"
+        data-tone={mark.tone}
+        data-lane={mark.lane}
+        data-lit={highlighted || undefined}
+        style={{
+          left: `${(mark.at / span) * 100}%`,
+          width: `max(var(--ribbon-mark-min), ${(Math.max(0, mark.end - mark.at) / span) * 100}%)`,
+        }}
+      />
+      <TooltipContent>
+        {formatClock(mark.at)} {mark.label ?? mark.tone}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
