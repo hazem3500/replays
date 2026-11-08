@@ -86,4 +86,18 @@ describe('the account menu', () => {
     renderBar({ id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } });
     expect(host.querySelector('[data-testid="account-menu"]')).toBeNull();
   });
+
+  it('keeps the index phone trigger as More when the auth mode has no way to sign out', () => {
+    act(() => {
+      root.render(
+        createElement(IndexPhoneMenu, {
+          signedIn: false,
+          items: phoneMenuItems({ account: { id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } } }),
+        }),
+      );
+    });
+    const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Menu"]');
+    expect(trigger?.querySelector('svg.lucide-user-round')).toBeNull();
+    expect(trigger?.querySelector('[data-icon="ellipsis"]')).not.toBeNull();
+  });
 });
