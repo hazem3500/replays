@@ -179,7 +179,13 @@ export type RecorderProfileOption = {
 };
 
 /** What the user picked for one recording. `networkBodies`: include request and response content. */
-export type RecordingChoice = { privacy?: RecorderPrivacyMode; profile?: string; networkBodies?: boolean };
+export type RecordingChoice = {
+  privacy?: RecorderPrivacyMode;
+  profile?: string;
+  networkBodies?: boolean;
+  performance?: boolean;
+  debugging?: boolean;
+};
 
 /**
  * Opt-in options step: staff, or customers with `by: 'customer'`, choose masking, profile and network content right
@@ -188,6 +194,8 @@ export type RecordingChoice = { privacy?: RecorderPrivacyMode; profile?: string;
  * reads no body (the defaults) never offers a choice.
  */
 export type RecorderChoices = {
+  /** Offer independent diagnostic toggles, capped by capture.performance/debugging. */
+  diagnostics?: boolean;
   /**
    * Who picks. `'customer'`: every recording starts in `interface-visible` without bodies, with `masked` (Fully masked)
    * always offered; `defaults` cannot loosen that, nothing is remembered, a looser mode or bodies need a pick in that
@@ -215,6 +223,7 @@ export type RecorderChoices = {
 
 /** What `chooseOptions` may offer, already capped by the host's `privacy`. */
 export type RecordingChoiceOffer = {
+  diagnostics?: { performance: boolean; debugging: boolean };
   /** Who picks (`choices.by`). A customer offer lists only allowed modes, in display order. */
   by: 'staff' | 'customer';
   /**
@@ -242,6 +251,10 @@ export type RecorderCaptureNetwork = 'off' | 'headers' | 'bodies';
  * `privacy`; an invalid value throws from `createRecorder`.
  */
 export type RecorderCapture = {
+  /** Numeric browser timing diagnostics, independent of text masking. Default false. */
+  performance?: boolean;
+  /** Bounded redacted diagnostic error context. Default false. */
+  debugging?: boolean;
   /**
    * Default `'headers'`. `'bodies'` also keeps JSON, text and form bodies of
    * fetch and XHR calls, cut at 64 KiB and redacted before they leave the
@@ -283,6 +296,8 @@ export type RecorderOptions = {
   /** Optional UI. Use createGuidedRecorder from /recorder/ui for the built-in flow. */
   ui?: RecorderUi;
   app?: RecorderApp;
+  /** Allowlisted host facts, resolved and copied once at recording start. Getter/validation failure omits context without discarding capture. Masked recordings do not call the getter. */
+  context?: import('./host-context.ts').RecorderHostContext | (() => import('./host-context.ts').RecorderHostContext);
   /** Replay title support sees. Default `Issue report from <app name>`. */
   title?: string;
   /** Default 3 minutes; clamped to 5 s … 10 minutes. */
@@ -317,6 +332,8 @@ export type RrwebModule = {
 
 export type Recorder = {
   getState(): RecorderState;
+  /** Adds a confirmed host action only while recording; masked recordings refuse the label. Never starts or loads capture. */
+  annotateStep(step: { label: string }): boolean;
   subscribe(listener: (state: RecorderState) => void): () => void;
   /**
    * The guided flow: consent prompt → recording with indicator → review →

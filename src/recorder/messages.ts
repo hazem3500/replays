@@ -188,7 +188,7 @@ export const defaultRecorderMessages: RecorderMessages = {
   privacyMode: ({ mode }) => MODE_NAMES[mode],
   privacyHint: ({ privacy }) => modeHint(privacy),
   networkLabel: 'Network',
-  networkBodies: 'Include network request and response content',
+  networkBodies: 'Include request/response content',
   record: 'Record',
 };
 

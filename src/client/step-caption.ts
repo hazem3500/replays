@@ -76,7 +76,8 @@ export function captionAt(
 ): CaptionFrame | undefined {
   const index = captionIndex(steps, time, duration);
   const step = steps[index];
-  if (!step) return undefined;
+  if (!step || step.kind === 'start' || step.kind === 'stop') return undefined;
+  if (!step.kind && /^(?:Recording started|Recording stopped(?: \([a-z-]+\))?)$/.test(step.label)) return undefined;
   // The first caption is up from the start; a later one enters at its step, or is already settled at the very end.
   const shownSince = index === 0 ? 0 : step.at <= time ? step.at : Number.NEGATIVE_INFINITY;
   const enteredMs = Number.isFinite(shownSince) ? Math.max(0, outputAt(time) - outputAt(shownSince)) : Number.POSITIVE_INFINITY;

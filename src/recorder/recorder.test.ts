@@ -77,6 +77,62 @@ function deferred<T>() {
 }
 
 describe('createRecorder', () => {
+  it('refuses inactive semantic annotations without loading capture', () => {
+    const { recorder, rrweb } = setup();
+    expect(recorder.annotateStep({ label: 'Created task' })).toBe(false);
+    expect(rrweb.load).not.toHaveBeenCalled();
+  });
+
+  it('refuses semantic labels during masked recording', async () => {
+    const { recorder } = setup();
+    await recorder.start({ consent: true });
+    expect(recorder.annotateStep({ label: 'Private customer task' })).toBe(false);
+    recorder.discard();
+  });
+
+  it('keeps bounded host context in the portable bundle rather than only the upload wrapper', async () => {
+    const { recorder, upload } = setup({
+      privacy: { sanitize: false },
+      context: { app: { name: 'Example', environment: 'staging' }, fields: { route: '/tasks', featureEnabled: true } },
+    });
+    await recorder.start({ consent: true });
+    expect(recorder.annotateStep({ label: 'Created task' })).toBe(true);
+    recorder.stop();
+    await recorder.upload({ confirmed: true });
+    expect(upload.mock.calls[0]?.[0].bundle.context).toMatchObject({
+      version: 1,
+      app: { name: 'Example', environment: 'staging' },
+      fields: { route: '/tasks', featureEnabled: true },
+    });
+    expect(upload.mock.calls[0]?.[0].bundle.steps).toContainEqual(expect.objectContaining({ kind: 'action', label: 'Created task' }));
+  });
+
+  it('snapshots host context once at recording start instead of reading the stop route', async () => {
+    let route = '/tasks';
+    const context = vi.fn<() => { fields: { route: string } }>(() => ({ fields: { route } }));
+    const { recorder, upload } = setup({ privacy: { sanitize: false }, context });
+    await recorder.start({ consent: true });
+    route = '/different-workspace';
+    recorder.stop();
+    await recorder.upload({ confirmed: true });
+    expect(context).toHaveBeenCalledOnce();
+    expect(upload.mock.calls[0]?.[0].bundle.context?.fields).toEqual({ route: '/tasks' });
+  });
+
+  it('keeps a good recording when the context getter fails', async () => {
+    const { recorder, upload } = setup({
+      privacy: { sanitize: false },
+      context: () => {
+        throw new Error('Unavailable');
+      },
+    });
+    await recorder.start({ consent: true });
+    recorder.stop();
+    await recorder.upload({ confirmed: true });
+    expect(upload.mock.calls[0]?.[0].bundle.context).toBeUndefined();
+    expect(upload.mock.calls[0]?.[0].bundle.events.length).toBeGreaterThan(1);
+  });
+
   it('loads nothing and records nothing until consent', async () => {
     const { recorder, rrweb, upload } = setup({
       ui: fakeUi({ requestConsent: vi.fn<RecorderUi['requestConsent']>(() => Promise.resolve(false)) }).ui,

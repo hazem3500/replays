@@ -1,7 +1,15 @@
 /* The time ribbon: one strip on the seek bar's domain. Density in quiet ink, failures full height in danger,
    slow spans as a warning cap, the future veiled; the playhead is the scrubber's accent. */
+.ribbon-overview { flex: none; border-bottom: 1px solid var(--line); }
+.ribbon-ticks, .ribbon-key { display: flex; justify-content: space-between; gap: 12px; padding: 4px 10px; color: var(--text-secondary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
+.ribbon-key { justify-content: flex-start; }
+.ribbon-key > span { display: inline-flex; align-items: center; gap: 4px; }
+.ribbon-key i { width: 7px; height: 7px; background: var(--warning); }
+.ribbon-key i[data-tone="danger"] { background: var(--danger); }
+button.ribbon-mark { padding: 0; border: 0; cursor: pointer; }
+button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; z-index: 5; }
 .time-ribbon {
-  --ribbon-height: 28px;
+  --ribbon-height: 36px;
   --ribbon-mark-min: 2px;
   --ribbon-glide: 180ms;
   position: relative;

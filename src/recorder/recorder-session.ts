@@ -1,3 +1,6 @@
+import { captureFramePacing } from './frame-pacing.ts';
+import { capturePerformance } from './diagnostics.ts';
+import type { ReplayPerformanceTrack } from '../shared/replay.ts';
 import { captureInteractionSteps } from './interaction-steps.ts';
 import type * as BodyCapture from './body-capture.ts';
 import type { RawStep } from './bundle.ts';
@@ -20,6 +23,8 @@ export type Session = {
   bytes: number;
   startedAt: number;
   captured: ReplayCaptured;
+  performance?: ReplayPerformanceTrack;
+  context?: import('../shared/context.ts').ReplayContext;
   cleanups: Array<() => void>;
 };
 
@@ -156,9 +161,19 @@ export function wireSession(current: Session, wiring: SessionWiring): void {
       if (wiring.isCurrent()) wiring.stop('max-size');
     });
   };
+  if (wiring.capture.performance) {
+    const diagnostic = capturePerformance((entry) => {
+      if (!wiring.isCurrent()) return;
+      diagnostic.track.entries.push(entry);
+      grow(JSON.stringify(entry).length);
+    }, grow);
+    current.performance = diagnostic.track;
+    current.cleanups.push(diagnostic.stop, captureFramePacing(diagnostic.track, grow));
+  }
   if (wiring.capture.consoleLevels.length) {
     current.cleanups.push(
       captureConsole({
+        debugging: wiring.capture.debugging && !wiring.privacy.sanitize,
         levels: wiring.capture.consoleLevels,
         maxEntries: MAX_CONSOLE_ENTRIES,
         onEntry: (entry) => current.console.push(entry),

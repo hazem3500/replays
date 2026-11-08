@@ -1,4 +1,4 @@
-import { SearchIcon, XIcon } from 'lucide-react';
+import { usePanelSearchMotion } from '../../hooks/use-panel-search-motion.ts';
 import { type KeyboardEvent as ReactKeyboardEvent, useRef, useState } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
@@ -78,11 +78,7 @@ export function NetworkToolbar({
   };
   return (
     <div className="np-toolbar" data-testid="network-toolbar" data-searching={searching || undefined}>
-      {searching ? (
-        <SearchField text={filter.text} onText={(text) => onFilter({ ...filter, text })} onClose={closeSearch} />
-      ) : (
-        <StatusChips counts={counts} value={filter.status} onChange={(status) => onFilter({ ...filter, status })} />
-      )}
+      <StatusChips counts={counts} value={filter.status} onChange={(status) => onFilter({ ...filter, status })} />
       {filter.range ? (
         <button
           type="button"
@@ -92,7 +88,7 @@ export function NetworkToolbar({
           onKeyDown={keepKeys}
         >
           {STRINGS.range(filter.range.from, filter.range.to)}
-          <XIcon aria-hidden="true" />
+          <AnimatedIcon name="x" />
         </button>
       ) : null}
       <span className="np-spacer" />
@@ -102,7 +98,9 @@ export function NetworkToolbar({
         </span>
       )}
       <TypeMenu types={types} value={filter.type} onChange={(type) => onFilter({ ...filter, type })} />
-      {searching ? null : (
+      {searching ? (
+        <SearchField text={filter.text} onText={(text) => onFilter({ ...filter, text })} onClose={closeSearch} />
+      ) : (
         <button
           ref={trigger}
           type="button"
@@ -113,7 +111,7 @@ export function NetworkToolbar({
           onClick={() => setSearching(true)}
           onKeyDown={keepKeys}
         >
-          <SearchIcon aria-hidden="true" />
+          <AnimatedIcon name="search" />
         </button>
       )}
     </div>
@@ -121,9 +119,10 @@ export function NetworkToolbar({
 }
 
 function SearchField({ text, onText, onClose }: { text: string; onText: (text: string) => void; onClose: () => void }) {
+  const ref = usePanelSearchMotion();
   return (
-    <label className="np-search">
-      <SearchIcon aria-hidden="true" />
+    <label ref={ref} className="np-search">
+      <AnimatedIcon name="search" />
       <span className="visually-hidden">{STRINGS.search}</span>
       <input
         type="search"
@@ -138,7 +137,7 @@ function SearchField({ text, onText, onClose }: { text: string; onText: (text: s
         }}
       />
       <button type="button" className="np-icon" aria-label={STRINGS.closeSearch} onClick={onClose} onKeyDown={keepKeys}>
-        <XIcon aria-hidden="true" />
+        <AnimatedIcon name="x" />
       </button>
     </label>
   );

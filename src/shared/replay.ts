@@ -56,6 +56,10 @@ export interface ReplayPerformanceTrack {
   /** PerformanceObserver entry types this browser supported during capture. */
   supported: string[];
   entries: ReplayPerformanceEntry[];
+  /** Numeric layout changes without DOM attribution. */
+  layoutShifts?: { at: number; value: number; hadRecentInput: boolean }[];
+  /** Foreground frame pacing estimates, not CPU or GPU profiling. */
+  frames?: { at: number; elapsed: number; frames: number; dropped: number }[];
 }
 
 export type { ReplayContext, ReplaySourceInput, ReplaySourceRef } from './context.ts';
@@ -116,7 +120,7 @@ export interface ReplayBundle {
 
 export const MAX_PERFORMANCE_ENTRIES = 500;
 const ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
-const PERFORMANCE_TYPES = new Set(['paint', 'largest-contentful-paint', 'longtask', 'event']);
+const PERFORMANCE_TYPES = new Set(['paint', 'largest-contentful-paint', 'longtask', 'event', 'layout-shift', 'animation-frame']);
 const PERFORMANCE_KINDS = new Set<ReplayPerformanceKind>([
   'first-contentful-paint',
   'largest-contentful-paint',
@@ -180,6 +184,39 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
     if (!Array.isArray(track.entries) || track.entries.length > MAX_PERFORMANCE_ENTRIES) {
       throw new Error(`replay.performance.entries must contain at most ${MAX_PERFORMANCE_ENTRIES} entries`);
     }
+    if (
+      track.layoutShifts !== undefined &&
+      (!Array.isArray(track.layoutShifts) ||
+        track.layoutShifts.length > 500 ||
+        track.layoutShifts.some(
+          (entry) =>
+            !entry ||
+            !Number.isFinite(entry.at) ||
+            entry.at < 0 ||
+            !Number.isFinite(entry.value) ||
+            entry.value < 0 ||
+            typeof entry.hadRecentInput !== 'boolean',
+        ))
+    )
+      throw new Error('Invalid layout shift track');
+    if (
+      track.frames !== undefined &&
+      (!Array.isArray(track.frames) ||
+        track.frames.length > 600 ||
+        track.frames.some(
+          (entry) =>
+            !entry ||
+            !Number.isFinite(entry.at) ||
+            entry.at < 0 ||
+            !Number.isFinite(entry.elapsed) ||
+            entry.elapsed <= 0 ||
+            !Number.isInteger(entry.frames) ||
+            entry.frames < 0 ||
+            !Number.isInteger(entry.dropped) ||
+            entry.dropped < 0,
+        ))
+    )
+      throw new Error('Invalid frame pacing track');
     for (const entry of track.entries) {
       if (
         !entry ||

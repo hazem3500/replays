@@ -1,8 +1,9 @@
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import { IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
-import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { SwitchIconButton } from '@/components/icon-button.tsx';
+import { Popover, PopoverContent, PopoverTitle } from '@/components/ui/popover.tsx';
+import { useCaptionOptions } from '../hooks/use-caption-options.ts';
 import { Switch } from '@/components/ui/switch.tsx';
 import { useFullscreenPopover } from '../hooks/use-fullscreen-popover.ts';
 import { shortcutLabel } from '../shortcuts.ts';
@@ -16,9 +17,16 @@ export function CaptionControls({ edited = false }: { edited?: boolean }) {
   const { captions, switchCaptions, captionNumbers, setCaptionNumbers } = useViewer();
   const { open, setOpen, portalContainer } = useFullscreenPopover();
   const numbersId = useId();
+  const anchor = useRef<HTMLDivElement>(null);
+  const options = useCaptionOptions(() => {
+    if (setCaptionNumbers && !edited) setOpen(true);
+  });
   return (
-    <div className="flex items-center [grid-area:captions]">
+    <div ref={anchor} className="flex items-center [grid-area:captions]">
       <SwitchIconButton
+        {...options}
+        aria-haspopup={setCaptionNumbers && !edited ? 'dialog' : undefined}
+        aria-expanded={open}
         className="captions-switch h-7 min-w-7 px-0 aria-pressed:ring-0 aria-pressed:bg-transparent aria-pressed:text-[var(--accent)]"
         label={`${captions ? 'Hide' : 'Show'} ${edited ? 'captions' : 'step captions'}`}
         shortcut={shortcutLabel('switch-captions')}
@@ -32,14 +40,8 @@ export function CaptionControls({ edited = false }: { edited?: boolean }) {
       </SwitchIconButton>
       {setCaptionNumbers && !edited ? (
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            render={
-              <IconButton label="Caption settings" className="h-7 min-w-6 px-0">
-                <AnimatedIcon name="chevron-down" />
-              </IconButton>
-            }
-          />
           <PopoverContent
+            anchor={anchor}
             side="top"
             align="end"
             portalContainer={portalContainer}

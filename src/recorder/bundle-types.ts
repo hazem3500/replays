@@ -111,6 +111,8 @@ export type ReplayBundle = {
   console: ReplayConsoleEntry[];
   network: ReplayNetworkEntry[];
   steps: ReplayStep[];
+  context?: import('../shared/context.ts').ReplayContext;
+  performance?: import('../shared/replay.ts').ReplayPerformanceTrack;
 };
 
 /** The rrweb event types the recorder relies on (`@rrweb/types` EventType). */

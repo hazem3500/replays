@@ -134,7 +134,7 @@ export function PerformancePanel({
     deltas: vitalDeltas(vitals, peer.vitals),
   }));
   // why: when no observer reported anything, five "Not captured" cells and "Nothing was slow" would claim a result.
-  if (!recorded(vitals, moments.length))
+  if (!model.track && !recorded(vitals, moments.length))
     return (
       <NotCaptured
         track="performance"
@@ -158,6 +158,23 @@ export function PerformancePanel({
         {moments.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
       </VitalsBar>
       {extra}
+      {model.track ? (
+        <div className="pp-cadence" role="status">
+          {model.track.frames?.length
+            ? (() => {
+                const elapsed = model.track.frames.reduce((sum, sample) => sum + sample.elapsed, 0);
+                const frames = model.track.frames.reduce((sum, sample) => sum + sample.frames, 0);
+                const dropped = model.track.frames.reduce((sum, sample) => sum + sample.dropped, 0);
+                return `Foreground cadence: ${((frames * 1000) / elapsed).toFixed(1)} FPS. Estimated missed frames at a 60 Hz reference: ${dropped}.`;
+              })()
+            : model.track.supported.includes('animation-frame')
+              ? 'No foreground frame samples captured.'
+              : 'Frame timing is unavailable in this browser.'}{' '}
+          {model.track.supported.includes('layout-shift')
+            ? `${model.track.layoutShifts?.length ?? 0} layout shifts captured.`
+            : 'Layout shift observation is unavailable in this browser.'}
+        </div>
+      ) : null}
       {marks.length ? (
         <TimeRibbon
           testId="performance-ribbon"

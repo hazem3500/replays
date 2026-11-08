@@ -1,3 +1,6 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import type { NetworkSort } from './sort.ts';
 import { useViewerPresenceMotion } from '../../hooks/use-viewer-presence-motion.ts';
 import { use, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useRef } from 'react';
 
@@ -87,15 +90,20 @@ function requestKey(
  * one line on a panel wide enough, two lines on a phone (CSS container query); the request's step is the "why".
  */
 export function NetworkList({
+  sort = { key: 'time', direction: 'ascending' },
+  onSort = () => {},
   rows,
   steps,
   ceiling,
   selected,
   onSelect,
   onHover,
+  highlight,
   empty,
 }: {
   rows: readonly NetworkRow[];
+  sort?: NetworkSort;
+  onSort?: (sort: NetworkSort) => void;
   steps: readonly ReplayStep[];
   /** The slowest measured request: the top of every duration bar's log scale. */
   ceiling: number;
@@ -103,6 +111,7 @@ export function NetworkList({
   onSelect: (id?: string) => void;
   /** The request under the pointer or focus, so the time ribbon can light its mark; undefined when it leaves. */
   onHover?: ((id?: string) => void) | undefined;
+  highlight?: string | undefined;
   empty: ReactNode;
 }) {
   const { context, columns, custom, columnStyle } = useNetworkSurface();
@@ -110,8 +119,12 @@ export function NetworkList({
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   useViewerPresenceMotion(body, 'rows', rows.length > 0);
-  const ats = rows.map((row) => row.at);
-  const reached = usePlayhead((time) => countAtOrBefore(ats, playheadHorizon(time, player.duration)));
+  const chronological = sort.key === 'time' && sort.direction === 'ascending';
+  const horizon = usePlayhead((time) => playheadHorizon(time, player.duration));
+  const ats = rows.map((row) => row.at).sort((a, b) => a - b);
+  const reached = countAtOrBefore(ats, horizon);
+  const latestAt = reached > 0 ? ats[reached - 1] : undefined;
+  const followIndex = latestAt === undefined ? 0 : rows.findIndex((row) => row.at === latestAt) + 1;
   const rowHeight = useRowHeight(body, ROW_SELECTOR, rows.length > 0, FALLBACK_ROW_HEIGHT);
   const { start, end, padTop, padBottom } = useWindowedRows(scroller, { count: rows.length, rowHeight, headerHeight: HEADER_HEIGHT });
   const selectedIndex = selected ? rows.findIndex((row) => row.id === selected) : -1;
@@ -120,7 +133,8 @@ export function NetworkList({
   return (
     <TrackList
       testId="network-list"
-      reached={reached}
+      reached={chronological ? reached : followIndex}
+      chronological={chronological}
       total={rows.length}
       rowHeight={rowHeight}
       extraIndex={selectedIndex}
@@ -138,7 +152,7 @@ export function NetworkList({
           data-custom-columns={custom || undefined}
           style={columnStyle}
         >
-          <ListHead columns={columns} />
+          <ListHead columns={columns} sort={sort} onSort={onSort} />
           {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: delegated hover and focus only light the row's mark on the time ribbon; every row keeps its own button. */}
           <div
             ref={body}
@@ -153,7 +167,8 @@ export function NetworkList({
               <RequestRow
                 key={row.id}
                 row={row}
-                position={{ rowIndex: start + offset + 2, future: start + offset >= reached, selected: row.id === selected }}
+                highlighted={row.id === highlight}
+                position={{ rowIndex: start + offset + 2, future: row.at > horizon, selected: row.id === selected }}
                 step={stepAt(steps, row.at)}
                 ceiling={ceiling}
                 onSelect={onSelect}
@@ -169,18 +184,44 @@ export function NetworkList({
   );
 }
 
-function ListHead({ columns }: { columns: readonly NetworkColumn[] }) {
+function ListHead({
+  columns,
+  sort,
+  onSort,
+}: {
+  columns: readonly NetworkColumn[];
+  sort: NetworkSort;
+  onSort: (sort: NetworkSort) => void;
+}) {
   return (
     <div className="np-row np-head" role="row" aria-rowindex={1}>
       {columns.map((column) => (
         <span
           role="columnheader"
+          aria-sort={column.key === sort.key ? sort.direction : undefined}
           key={column.id}
           data-slot-item={column.id}
           className={column.key === 'during' ? 'np-step' : `np-${column.key ?? 'extension'}`}
           title={column.key === 'duration' ? STRINGS.durationHint : undefined}
         >
-          {column.label}
+          {column.key ? (
+            <button
+              type="button"
+              className="np-sort"
+              onClick={() => {
+                if (!column.key) return;
+                onSort({
+                  key: column.key,
+                  direction: column.key === sort.key && sort.direction === 'ascending' ? 'descending' : 'ascending',
+                });
+              }}
+            >
+              {column.label}
+              {column.key === sort.key ? <AnimatedIcon name={sort.direction === 'ascending' ? 'chevron-up' : 'chevron-down'} /> : null}
+            </button>
+          ) : (
+            column.label
+          )}
         </span>
       ))}
     </div>
@@ -189,6 +230,7 @@ function ListHead({ columns }: { columns: readonly NetworkColumn[] }) {
 
 function RequestRow({
   row,
+  highlighted,
   position,
   step,
   ceiling,
@@ -197,6 +239,7 @@ function RequestRow({
   surface,
 }: {
   row: NetworkRow;
+  highlighted: boolean;
   position: { rowIndex: number; future: boolean; selected: boolean };
   step: ReplayStep | undefined;
   ceiling: number;
@@ -213,22 +256,29 @@ function RequestRow({
     duration: <DurationBar row={row} ceiling={ceiling} />,
     during: step?.label,
     request: (
-      <button
-        type="button"
-        id={`request-switch-${row.id}`}
-        data-request-id={row.id}
-        aria-expanded={selected}
-        aria-controls={selected ? REQUEST_DETAIL_ID : undefined}
-        onClick={() => onSelect(selected ? undefined : row.id)}
-        onKeyDown={onKeyDown}
-      >
-        <span className="method">{row.entry.method}</span>
-        <span className="np-name" title={row.entry.url}>
-          <span className="np-path">{row.name.path}</span>
-          {row.name.query ? <span className="np-query">{row.name.query}</span> : null}
-          {row.name.host ? <span className="np-host">{row.name.host}</span> : null}
-        </span>
-      </button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              id={`request-switch-${row.id}`}
+              data-request-id={row.id}
+              aria-expanded={selected}
+              aria-controls={selected ? REQUEST_DETAIL_ID : undefined}
+              onClick={() => onSelect(selected ? undefined : row.id)}
+              onKeyDown={onKeyDown}
+            />
+          }
+        >
+          <span className="method">{row.entry.method}</span>
+          <span className="np-name" title={row.entry.url}>
+            <span className="np-path">{row.name.path}</span>
+            {row.name.query ? <span className="np-query">{row.name.query}</span> : null}
+            {row.name.host ? <span className="np-host">{row.name.host}</span> : null}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-96 break-all">{row.entry.url}</TooltipContent>
+      </Tooltip>
     ),
   };
   return (
@@ -238,6 +288,7 @@ function RequestRow({
       role="row"
       aria-rowindex={rowIndex}
       data-selected={selected || undefined}
+      data-highlighted={highlighted || undefined}
       data-failed={row.failed || undefined}
       data-pending={row.pending || undefined}
       data-future={future || undefined}

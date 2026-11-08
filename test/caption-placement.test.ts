@@ -17,9 +17,9 @@ describe('caption placement', () => {
     );
   });
 
-  it('moves a caption to the top while the pointer works only where a bottom caption sits', () => {
+  it('keeps automatic captions at the bottom even when the pointer works there', () => {
     expect(captionEdge({ input: pointer([1_000, 700], [1_500, 820]), first: FIRST, height: HEIGHT }, { from: 1_000, to: 2_000 })).toBe(
-      'top',
+      'bottom',
     );
   });
 
@@ -29,8 +29,8 @@ describe('caption placement', () => {
     );
   });
 
-  it('reads where the pointer rests from before the caption shows', () => {
-    expect(captionEdge({ input: pointer([100, 840]), first: FIRST, height: HEIGHT }, { from: 3_000, to: 5_000 })).toBe('top');
+  it('does not relocate a caption for a resting pointer', () => {
+    expect(captionEdge({ input: pointer([100, 840]), first: FIRST, height: HEIGHT }, { from: 3_000, to: 5_000 })).toBe('bottom');
   });
 
   it('ignores the pointer after the caption has gone', () => {
