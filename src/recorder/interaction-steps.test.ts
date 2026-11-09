@@ -49,9 +49,7 @@ describe('browser interaction privacy', () => {
     document.body.append(link);
     link.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
     history.pushState(null, '', '/projects?search=private-name#access_token=secret');
-    expect(steps.map(({ kind, label }) => ({ kind, label }))).toEqual([
-      { kind: 'click', label: 'Opened Projects' },
-    ]);
+    expect(steps.map(({ kind, label }) => ({ kind, label }))).toEqual([{ kind: 'click', label: 'Opened Projects' }]);
     expect(JSON.stringify(steps)).not.toMatch(/private|Secret|access_token|selector|url/);
   });
 

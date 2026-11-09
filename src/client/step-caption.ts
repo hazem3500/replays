@@ -29,8 +29,9 @@ export function captionIndex(steps: ReadonlyArray<CaptionStep>, time: number, du
   let index = activeStepIndex(steps, time, duration);
   while (index > 0 && isPacing(steps[index]!)) index--;
   for (let previous = index - 1; previous >= 0; previous--) {
-    if (isPacing(steps[previous]!) || steps[previous]!.folded) continue;
-    if (steps[previous]!.label !== steps[index]!.label) break;
+    const before = steps[previous]!;
+    if (isPacing(before) || before.folded) continue;
+    if (before.label !== steps[index]!.label) break;
     index = previous;
   }
   return index;

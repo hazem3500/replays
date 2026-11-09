@@ -41,18 +41,24 @@ function labelledBy(control: Element, privacy: RecorderPrivacy, blocked: string)
 }
 
 function humanized(value: string | null): string {
-  const words = (value ?? '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_]+/g, ' ').trim();
+  const words = (value ?? '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[-_]+/g, ' ')
+    .trim();
   return /^[A-Za-z][A-Za-z ]{0,40}$/.test(words) ? words.charAt(0).toUpperCase() + words.slice(1).toLowerCase() : '';
 }
 
 /** The text of the `<label for>` or wrapping `<label>` of a field, or of its fieldset's legend. */
 function fieldLabel(control: Element, privacy: RecorderPrivacy, blocked: string): string {
-  const root = control.getRootNode() as Partial<Pick<Document, 'querySelectorAll'>>;
+  const root = control.getRootNode();
   const id = control.getAttribute('id');
-  const forLabel = id ? Array.from(root.querySelectorAll?.('label[for]') ?? []).find((label) => label.getAttribute('for') === id) : undefined;
-  const label = forLabel ?? control.closest('label');
+  const labels = id && (root instanceof Document || root instanceof ShadowRoot) ? Array.from(root.querySelectorAll('label[for]')) : [];
+  const label = labels.find((candidate) => candidate.getAttribute('for') === id) ?? control.closest('label');
   const legend = control.closest('fieldset')?.querySelector('legend');
-  return [label, legend].map((element) => (element && readable(element, privacy, blocked) ? firstText(element, privacy, blocked) : '')).find(Boolean) ?? '';
+  const names = [label, legend].map((element) =>
+    element && readable(element, privacy, blocked) ? firstText(element, privacy, blocked) : '',
+  );
+  return names.find(Boolean) ?? '';
 }
 
 function innerName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
@@ -90,7 +96,8 @@ function controlType(control: Element): string {
   return 'button';
 }
 
-const TYPING_FIELD = 'textarea, select, input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="reset"], [type="file"])';
+const TYPING_FIELD =
+  'textarea, select, input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="reset"], [type="file"])';
 
 function clickLabel(control: Element, name: string): string {
   if (!name) return `Clicked ${controlType(control)}`;

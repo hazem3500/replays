@@ -4,7 +4,8 @@ import { normalizeSteps } from '../src/shared/step-names.ts';
 
 type Row = readonly [at: number, kind: string, label: string];
 const shown = (list: ReadonlyArray<{ folded?: true; label: string }>) => list.filter((step) => !step.folded).map((step) => step.label);
-const steps = (rows: readonly Row[]) => rows.map(([at, kind, label]) => ({ at, kind, label }));
+const steps = (rows: readonly Row[]): Array<{ at: number; kind: string; label: string; folded?: true }> =>
+  rows.map(([at, kind, label]) => ({ at, kind, label }));
 
 const RECORDED = steps([
   [0, 'start', 'Recording started'],
@@ -29,7 +30,11 @@ const RECORDED = steps([
 
 describe('normalizeSteps', () => {
   it('turns a recorded Toggl Focus session into compact steps, keeping their times', () => {
-    expect(normalizeSteps(RECORDED).filter((step) => !step.folded).map(({ at, label }) => [at, label])).toEqual([
+    expect(
+      normalizeSteps(RECORDED)
+        .filter((step) => !step.folded)
+        .map(({ at, label }) => [at, label]),
+    ).toEqual([
       [0, 'Recording started'],
       [1200, 'Clicked “Plan time • 4h”'],
       [3000, 'Opened “Projects”'],
@@ -51,14 +56,66 @@ describe('normalizeSteps', () => {
     ['trims a trailing colon', [[0, 'click', 'Clicked “Profile:”']], ['Clicked “Profile”']],
     ['collapses whitespace', [[0, 'click', 'Clicked “Plan   time ”']], ['Clicked “Plan time”']],
     ['reads straight quotes', [[0, 'click', 'Clicked "Tasks"']], ['Clicked “Tasks”']],
-    ['folds a navigation within a second', [[0, 'click', 'Clicked “Tasks”'], [1000, 'navigate', 'Navigated']], ['Opened “Tasks”']],
-    ['keeps a navigation after a second', [[0, 'click', 'Clicked “Tasks”'], [1001, 'navigate', 'Navigated']], ['Clicked “Tasks”', 'Navigated']],
-    ['drops the navigation after an unnamed click', [[0, 'click', 'Clicked link'], [10, 'navigate', 'Navigated']], ['Clicked link']],
-    ['drops a form submission after its click', [[0, 'click', 'Clicked “Save”'], [0, 'submit', 'Requested “Save”']], ['Clicked “Save”']],
+    [
+      'folds a navigation within a second',
+      [
+        [0, 'click', 'Clicked “Tasks”'],
+        [1000, 'navigate', 'Navigated'],
+      ],
+      ['Opened “Tasks”'],
+    ],
+    [
+      'keeps a navigation after a second',
+      [
+        [0, 'click', 'Clicked “Tasks”'],
+        [1001, 'navigate', 'Navigated'],
+      ],
+      ['Clicked “Tasks”', 'Navigated'],
+    ],
+    [
+      'drops the navigation after an unnamed click',
+      [
+        [0, 'click', 'Clicked link'],
+        [10, 'navigate', 'Navigated'],
+      ],
+      ['Clicked link'],
+    ],
+    [
+      'drops a form submission after its click',
+      [
+        [0, 'click', 'Clicked “Save”'],
+        [0, 'submit', 'Requested “Save”'],
+      ],
+      ['Clicked “Save”'],
+    ],
     ['keeps a form submission without a click', [[0, 'submit', 'Submitted form']], ['Submitted form']],
-    ['keeps the navigation that follows a submission', [[0, 'click', 'Clicked “Save”'], [0, 'submit', 'Submitted form'], [100, 'navigate', 'Navigated']], ['Clicked “Save”', 'Navigated']],
-    ['folds only the first navigation', [[0, 'click', 'Clicked “A”'], [10, 'navigate', 'Navigated'], [20, 'navigate', 'Navigated']], ['Opened “A”', 'Navigated']],
-    ['keeps a click that does not match', [[0, 'click', 'Clicked “A”'], [10, 'action', 'Checked A'], [20, 'navigate', 'Navigated']], ['Clicked “A”', 'Checked A', 'Navigated']],
+    [
+      'keeps the navigation that follows a submission',
+      [
+        [0, 'click', 'Clicked “Save”'],
+        [0, 'submit', 'Submitted form'],
+        [100, 'navigate', 'Navigated'],
+      ],
+      ['Clicked “Save”', 'Navigated'],
+    ],
+    [
+      'folds only the first navigation',
+      [
+        [0, 'click', 'Clicked “A”'],
+        [10, 'navigate', 'Navigated'],
+        [20, 'navigate', 'Navigated'],
+      ],
+      ['Opened “A”', 'Navigated'],
+    ],
+    [
+      'keeps a click that does not match',
+      [
+        [0, 'click', 'Clicked “A”'],
+        [10, 'action', 'Checked A'],
+        [20, 'navigate', 'Navigated'],
+      ],
+      ['Clicked “A”', 'Checked A', 'Navigated'],
+    ],
   ] as const)('%s', (_name, rows, expected) => {
     expect(shown(normalizeSteps(steps(rows)))).toEqual(expected);
   });

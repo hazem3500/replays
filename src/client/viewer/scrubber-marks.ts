@@ -56,7 +56,13 @@ export function scrubberMarks(
           : runLabel(indices.map((index) => entries[index]!.label));
       return { kind, x: px(at), at, label };
     });
-  return [...build('step', steps.filter((step) => !step.folded)), ...build('error', errors)];
+  return [
+    ...build(
+      'step',
+      steps.filter((step) => !step.folded),
+    ),
+    ...build('error', errors),
+  ];
 }
 
 /** Index of the mark nearest `x` within `tolerance` pixels, or -1. */
