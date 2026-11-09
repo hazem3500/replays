@@ -775,8 +775,8 @@
         "raw": 39109,
         "gzip": 10612
       },
-      "reason": "Cancellable host recovery with duplicate suppression and safe rejection guidance; CI measured main 37501/10142/8892; the recorder-only build after extracting completion controls measured head 39109/10612/9245 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/258"
+      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
+      "pr": "https://github.com/hazem3500/replays/pull/268"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
@@ -1073,8 +1073,8 @@
       "cap": {
         "raw": 477416
       },
-      "reason": "The additive theme token contract extends shared branding code and changes its library chunk identity and import fingerprints.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
+      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
+      "pr": "https://github.com/hazem3500/replays/pull/268"
     },
     {
       "file": "dist/client/assets/step-caption-HASH.css",
@@ -1440,8 +1440,8 @@
         "raw": 409,
         "gzip": 273
       },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 397, gzip new to 265, brotli new to 236 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
+      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
+      "pr": "https://github.com/hazem3500/replays/pull/268"
     },
     {
       "file": "dist/client/assets/progress-HASH.js",
@@ -1744,8 +1744,8 @@
         "gzip": 13583,
         "brotli": 12224
       },
-      "reason": "Shared edit logic for lanes that take turns: zooms, speed-ups and captions stop at their neighbours, and saved overlapping captions are separated by the normalizer. Reviewed and approved by Hazem. CI same-runner main/head: raw 35747 to 36839, gzip 12793 to 13187, brotli 11508 to 11867 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/209"
+      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
+      "pr": "https://github.com/hazem3500/replays/pull/268"
     },
     {
       "file": "dist/lib/chunks/edit-list.ts-a6938d76f655.mjs",
@@ -1925,8 +1925,8 @@
         "gzip": 179928,
         "brotli": 142340
       },
-      "reason": "Exported video renders human recordings along their exact recorded pointer path (cursor-recorded-path in the shared cursor chunk). CI same-runner main to head: raw 556966 to 558082 (+1116), gzip 175472 to 175842, brotli 138855 to 139185; gzip and brotli stay under their existing caps, which carry over from the earlier allowance.",
-      "pr": "https://github.com/hazem3500/replays/pull/247"
+      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
+      "pr": "https://github.com/hazem3500/replays/pull/268"
     },
     {
       "file": "dist/lib/chunks/capture-profile.ts-d4348e7cd2c7.mjs",
@@ -2020,8 +2020,8 @@
         "raw": 66,
         "gzip": 81
       },
-      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 64 (+0), gzip 78 (+0), brotli 65 to 67 (+2). CI main to head: brotli 65 to 68, raw and gzip unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/252"
+      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
+      "pr": "https://github.com/hazem3500/replays/pull/268"
     },
     {
       "file": "dist/client/assets/open-hint-HASH.css",
