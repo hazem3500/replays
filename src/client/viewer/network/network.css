@@ -25,9 +25,13 @@
 .np-type:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 .np-type svg { width: 14px; height: 14px; color: var(--text-tertiary); }
 .np-type-count { margin-left: auto; padding-left: 16px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
-.np-search { width: min(280px, 48%); min-width: 100px; flex: 0 1 280px; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 2px 0 8px; border-radius: var(--radius); background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-tertiary); }
-.np-search:focus-within { box-shadow: inset 0 0 0 1px var(--ring); }
+.np-search { width: min(280px, 48%); min-width: 100px; flex: 0 1 280px; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 3px 0 8px; border-radius: var(--radius); background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-tertiary); }
+.np-search:focus-within { box-shadow: inset 0 0 0 1px var(--ring), 0 0 0 var(--focus-ring-width) var(--page), 0 0 0 calc(var(--focus-ring-width) * 2) var(--ring); }
 .np-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: var(--text-xs); }
+.np-search input:focus, .np-search input:focus-visible { outline: 0; box-shadow: none; }
+.np-search .np-icon { width: 22px; height: 22px; border-radius: 50%; }
+.np-search .np-icon svg { width: 12px; height: 12px; }
+.np-search .np-icon:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
 .np-search input::-webkit-search-cancel-button { display: none; }
 
 .np-body { min-height: 0; flex: 1; display: flex; }
