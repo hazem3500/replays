@@ -38,6 +38,10 @@ export interface ReplayStep {
   at: number;
   kind: string;
   label: string;
+  /** Set by the recorder when the label was generated, not written by a person; src/shared/step-names.ts. */
+  auto?: true;
+  /** Derived on load, never stored: the step is part of the one before it (a click and the navigation it caused) and is not shown. */
+  folded?: true;
   selector?: string;
   url?: string;
 }
