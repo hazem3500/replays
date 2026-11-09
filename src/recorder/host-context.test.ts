@@ -15,9 +15,7 @@ describe('recorderContext', () => {
   });
 
   it.each(['authorization', 'apiToken', 'password', 'constructor', 'prototype'])('rejects unsafe host field %s', (key) => {
-    expect(() => recorderContext({ fields: { [key]: 'secret' } }, '2026-11-08T00:00:00.000Z')).toThrow(
-      'Unsafe recorder context field',
-    );
+    expect(() => recorderContext({ fields: { [key]: 'secret' } }, '2026-11-08T00:00:00.000Z')).toThrow('Unsafe recorder context field');
   });
 
   it('rejects origins that carry credentials or a route', () => {
