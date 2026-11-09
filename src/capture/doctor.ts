@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+
 import { findFfmpeg, findSystemBrowser, hasPlaywrightBrowser } from './drivers/system-tools.ts';
 
 export type CheckStatus = 'ok' | 'warn' | 'fail';
@@ -19,8 +21,17 @@ export function checkNode(version: string = process.versions.node): DoctorCheck 
   return { id: 'node', status: 'fail', detail: `Node ${version}`, fix: 'Install Node 22.12 or newer (24.11+ recommended).' };
 }
 
-export function checkChrome(env: NodeJS.ProcessEnv): DoctorCheck {
+const staleCheck = (id: 'chrome' | 'ffmpeg', variable: string, path: string): DoctorCheck => ({
+  id,
+  status: 'warn',
+  detail: `${path} does not exist`,
+  fix: `Fix ${variable} or unset it so the tool is found automatically.`,
+});
+
+export function checkChrome(env: NodeJS.ProcessEnv, exists: (path: string) => boolean = existsSync): DoctorCheck {
   const explicit = env.CHROME_PATH || env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
+  if (explicit && !exists(explicit))
+    return staleCheck('chrome', env.CHROME_PATH ? 'CHROME_PATH' : 'PLAYWRIGHT_CHROMIUM_EXECUTABLE', explicit);
   const found = explicit || findSystemBrowser(env);
   if (found) return { id: 'chrome', status: 'ok', detail: found };
   if (hasPlaywrightBrowser(env)) return { id: 'chrome', status: 'ok', detail: "Playwright's Chromium" };
@@ -32,7 +43,8 @@ export function checkChrome(env: NodeJS.ProcessEnv): DoctorCheck {
   };
 }
 
-export function checkFfmpeg(env: NodeJS.ProcessEnv): DoctorCheck {
+export function checkFfmpeg(env: NodeJS.ProcessEnv, exists: (path: string) => boolean = existsSync): DoctorCheck {
+  if (env.FFMPEG_PATH && !exists(env.FFMPEG_PATH)) return staleCheck('ffmpeg', 'FFMPEG_PATH', env.FFMPEG_PATH);
   const found = env.FFMPEG_PATH || findFfmpeg(env);
   if (found) return { id: 'ffmpeg', status: 'ok', detail: found };
   return {

@@ -123,4 +123,22 @@ describe('update checks', () => {
       expect(read()).toEqual({ current: '0.1.0', latest: '9.9.9' });
     });
   });
+
+  it('keeps the cached answer when the lookup is cancelled by the finished command', async () => {
+    await writeFile(cachePath, JSON.stringify({ checkedAt: 0, latest: '0.9.0' }));
+    const controller = new AbortController();
+    const result = await checkForUpdate({
+      current: '0.1.0',
+      latestUrl: 'u',
+      cachePath,
+      now: 2 * DAY,
+      signal: controller.signal,
+      fetchLatest: async () => {
+        controller.abort();
+        return;
+      },
+    });
+    expect(result).toEqual({ current: '0.1.0', latest: '0.9.0' });
+    expect(JSON.parse(await readFile(cachePath, 'utf8'))).toEqual({ checkedAt: 0, latest: '0.9.0' });
+  });
 });

@@ -25,11 +25,12 @@ export interface Spinner {
   stop(): void;
 }
 
+export const isCi = (env: NodeJS.ProcessEnv) => env.CI !== undefined && env.CI !== '' && env.CI !== '0' && env.CI !== 'false';
+
 /** Colour, spinners and links only for a person at a terminal; never for pipes, CI, NO_COLOR, TERM=dumb or `--json`. */
 export function isFancy({ env, stream, json = false }: TerminalOptions) {
-  const ci = env.CI !== undefined && env.CI !== '' && env.CI !== '0' && env.CI !== 'false';
   const noColor = env.NO_COLOR !== undefined && env.NO_COLOR !== '';
-  return Boolean(stream.isTTY) && !json && !ci && !noColor && env.TERM !== 'dumb';
+  return Boolean(stream.isTTY) && !json && !isCi(env) && !noColor && env.TERM !== 'dumb';
 }
 
 export function supportsHyperlinks(env: NodeJS.ProcessEnv) {

@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { configPath } from './server-config.ts';
+import { isCi } from './terminal.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 1500;
@@ -47,9 +48,8 @@ export function isNewer(latest: string, current: string) {
 
 /** Update notices are for a person at a terminal: stderr is a TTY, and not in CI, JSON mode or when opted out. */
 export function shouldCheckForUpdates(env: NodeJS.ProcessEnv, stderrIsTty: boolean, json: boolean) {
-  const ci = env.CI !== undefined && env.CI !== '' && env.CI !== '0' && env.CI !== 'false';
   const optedOut = Boolean(env.REPLAYS_NO_UPDATE_CHECK || env.NO_UPDATE_NOTIFIER);
-  return stderrIsTty && !json && !ci && !optedOut;
+  return stderrIsTty && !json && !isCi(env) && !optedOut;
 }
 
 async function readCache(path: string): Promise<UpdateCache | undefined> {
@@ -102,8 +102,12 @@ export async function checkForUpdate(options: UpdateCheckOptions): Promise<Updat
   const cached = await readCache(path);
   let latest = cached?.latest;
   if (!cached || now - cached.checkedAt >= (options.intervalMs ?? DAY_MS) || now < cached.checkedAt) {
-    latest = await lookUp(options);
-    await writeCache(path, { checkedAt: now, ...(latest ? { latest } : {}) });
+    const fetched = await lookUp(options);
+    /* why: a lookup cancelled because the command finished says nothing about the registry, so it must not replace the cached answer. */
+    if (!options.signal?.aborted) {
+      latest = fetched;
+      await writeCache(path, { checkedAt: now, ...(latest ? { latest } : {}) });
+    }
   }
   if (latest && isNewer(latest, options.current)) return { current: options.current, latest };
   return;

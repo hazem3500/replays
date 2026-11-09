@@ -54,8 +54,10 @@ describe('doctor checks', () => {
   });
 
   it('finds Chrome and ffmpeg from the environment, and warns rather than fails when missing', () => {
-    expect(checkChrome({ CHROME_PATH: '/opt/chrome' })).toMatchObject({ status: 'ok', detail: '/opt/chrome' });
-    expect(checkFfmpeg({ FFMPEG_PATH: '/opt/ffmpeg' })).toMatchObject({ status: 'ok', detail: '/opt/ffmpeg' });
+    expect(checkChrome({ CHROME_PATH: '/opt/chrome' }, () => true)).toMatchObject({ status: 'ok', detail: '/opt/chrome' });
+    expect(checkFfmpeg({ FFMPEG_PATH: '/opt/ffmpeg' }, () => true)).toMatchObject({ status: 'ok', detail: '/opt/ffmpeg' });
+    expect(checkChrome({ CHROME_PATH: '/gone' }, () => false).status).toBe('warn');
+    expect(checkFfmpeg({ FFMPEG_PATH: '/gone' }, () => false).status).toBe('warn');
   });
 
   it('fails only when a check fails', () => {
