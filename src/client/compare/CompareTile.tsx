@@ -121,7 +121,7 @@ export function CompareTileView({
           bundle={tile.bundle}
           fidelity={fidelity}
           caption={focused}
-          ended={ended}
+          ended={ended && !single}
           size={placement}
         />
       ) : (

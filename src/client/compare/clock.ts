@@ -82,6 +82,7 @@ export class SharedClock {
   private resumeAfterScrub = false;
   private scrubbing = false;
   private pendingTime: number | undefined;
+  private scope: string | undefined;
   private snapshot: ClockSnapshot = { status: 'paused', speed: 1, duration: 0, ended: new Set() };
 
   constructor(clock: FrameClock = browserClock) {
@@ -133,6 +134,13 @@ export class SharedClock {
     tile.syncedAt = -Infinity;
     if (fidelity !== 'live') tile.player.pause();
     this.syncTile(id, true);
+  };
+
+  /** One recording alone sets the timeline (Single layout); undefined puts every recording on it (grid, spotlight). */
+  readonly setScope = (id: string | undefined) => {
+    if (this.scope === id) return;
+    this.scope = id;
+    this.publish(true);
   };
 
   readonly getFidelity = (id: string): Fidelity => this.fidelity.get(id) ?? 'off';
@@ -217,6 +225,8 @@ export class SharedClock {
   }
 
   private longest() {
+    const alone = this.scope === undefined ? undefined : this.tiles.get(this.scope);
+    if (alone) return alone.player.duration;
     let duration = 0;
     for (const tile of this.tiles.values()) duration = Math.max(duration, tile.player.duration);
     return duration;

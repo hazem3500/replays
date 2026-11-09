@@ -184,4 +184,20 @@ describe('SharedClock tiles', () => {
     expect(clock.getTime()).toBe(0);
     expect(clock.getSnapshot().status).toBe('playing');
   });
+
+  it('puts one recording alone on the timeline, and every recording again when the scope lifts', () => {
+    const frames = fakeFrames();
+    const { clock } = liveClock(frames, [4000, 8000]);
+    clock.setScope('t0');
+    expect(clock.getSnapshot().duration).toBe(4000);
+    clock.play();
+    frames.advance(5000);
+    expect(clock.getTime()).toBe(4000);
+    expect(clock.getSnapshot().status).toBe('ended');
+    expect(clock.getSnapshot().ended.has('t0')).toBe(true);
+    clock.setScope(undefined);
+    expect(clock.getSnapshot().duration).toBe(8000);
+    expect(clock.getSnapshot().ended.has('t0')).toBe(true);
+    expect(clock.getSnapshot().status).toBe('paused');
+  });
 });
