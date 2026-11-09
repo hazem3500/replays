@@ -4,7 +4,7 @@ import { createDefaultUi } from './default-ui.ts';
 import { must } from './testing.ts';
 import type { PrivacyFacts, RecorderPrivacyMode, RecordingChoiceOffer } from './types.ts';
 
-const MODES: RecorderPrivacyMode[] = ['visible', 'text-masked', 'masked'];
+const MODES: RecorderPrivacyMode[] = ['visible', 'inputs-masked', 'interface-visible', 'masked'];
 
 const masked: PrivacyFacts = {
   mode: 'masked',
@@ -12,7 +12,7 @@ const masked: PrivacyFacts = {
   reviewRequired: true,
   captures: { pageText: false, inputs: false, media: false, console: true, network: true },
 };
-/** A host that keeps media blocked: Text masked collapses into Masked, so it is not offered. */
+/** A host that keeps media blocked: Inputs hidden collapses into Masked, so it is not offered. */
 const offer: RecordingChoiceOffer = {
   by: 'staff',
   privacy: [
@@ -89,15 +89,16 @@ describe('default UI options menu content', () => {
     expect(MODES.map((mode) => describedBy(item('privacy', mode)))).toEqual([
       'Records text and inputs',
       'Not allowed here',
+      'Not allowed here',
       'Hides everything',
     ]);
   });
 
   it('disables a mode the host does not allow', async () => {
     await open();
-    expect(item('privacy', 'text-masked').getAttribute('aria-disabled')).toBe('true');
+    expect(item('privacy', 'inputs-masked').getAttribute('aria-disabled')).toBe('true');
     trigger().click();
-    item('privacy', 'text-masked').click();
+    item('privacy', 'inputs-masked').click();
     expect(trigger().getAttribute('aria-expanded')).toBe('true');
   });
 
