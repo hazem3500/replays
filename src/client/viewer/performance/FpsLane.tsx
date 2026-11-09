@@ -14,7 +14,7 @@ const SMOOTH_REFERENCE_FPS = 60;
  */
 export function FpsLane({ bands, duration }: { bands: readonly FrameBand[]; duration: number }) {
   const player = usePlayer();
-  const strip = useRef<HTMLDivElement>(null);
+  const strip = useRef<HTMLButtonElement>(null);
   const span = Math.max(1, duration);
   usePlayheadProgress(strip, span);
   const seek = (event: MouseEvent<HTMLButtonElement>) => {
