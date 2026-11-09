@@ -1,5 +1,5 @@
 import { animate } from 'motion/mini';
-import { useEffectEvent, useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 import type { CaptionPresence } from './use-caption-presence.ts';
 import { CAPTION_MOVE_MS } from './use-caption-presence.ts';
@@ -10,27 +10,25 @@ function captionDuration(active: boolean, reduced: boolean) {
   return active ? 0.2 : CAPTION_MOVE_MS / 1000;
 }
 
-function captionDrop(element: HTMLElement, edge: CaptionPresence['edge']) {
+function captionDrop(element: HTMLElement) {
   const pill = element.querySelector('.step-caption-text');
   const scale = pill ? (Number.parseFloat(getComputedStyle(pill).fontSize) || 15) / 15 : 1;
-  return (edge === 'top' ? -4 : 4) * scale;
+  return 4 * scale;
 }
 
 /** Only the browser caption's appearance uses wall-clock motion; its content still follows replay time. */
-export function useCaptionMotion(caption: CaptionPresence, completeMove: () => void) {
+export function useCaptionMotion(caption: CaptionPresence) {
   const ref = useRef<HTMLDivElement>(null);
-  const complete = useEffectEvent(completeMove);
   const appearance = useRef<number | undefined>(undefined);
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const { active, edge, moving, appearance: currentAppearance } = caption;
+  const { active, appearance: currentAppearance } = caption;
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const drop = captionDrop(element, edge);
+    const drop = captionDrop(element);
     if (typeof element.animate !== 'function') {
       element.style.opacity = active ? '1' : '0';
       element.style.transform = 'none';
-      if (moving) complete();
       return;
     }
     if (active && appearance.current !== currentAppearance) {
@@ -46,15 +44,8 @@ export function useCaptionMotion(caption: CaptionPresence, completeMove: () => v
       },
       { duration: captionDuration(active, reduced), ease: [0.23, 1, 0.32, 1] },
     );
-    let live = true;
-    void animation.then(() => {
-      if (live && moving) complete();
-    });
-    return () => {
-      live = false;
-      animation.stop();
-    };
-  }, [active, edge, moving, currentAppearance, reduced]);
+    return () => animation.stop();
+  }, [active, currentAppearance, reduced]);
   return ref;
 }
 
