@@ -4,6 +4,7 @@ import { authorizeBudget, budgetDiff, ratchetBudget, significantGrowth } from '.
 
 const file = 'dist/client/assets/Inspector-HASH.css';
 const pr = 'https://github.com/hazem3500/replays/pull/62';
+const at = (gzip) => ({ [file]: { raw: gzip * 3, gzip, brotli: gzip } });
 const base = () => ({ headroomPercent: 3, files: { [file]: { raw: 100, gzip: 50, brotli: 40 } } });
 const allowance = () => ({ file, cap: { raw: 130 }, reason: 'Reviewed CSS growth for mobile network search controls.', pr });
 
@@ -80,7 +81,6 @@ describe('reviewed bundle allowances', () => {
 });
 
 describe('size awareness', () => {
-  const at = (gzip) => ({ [file]: { raw: gzip * 3, gzip, brotli: gzip } });
   it('ignores small growth and shrinkage', () => {
     assert.deepEqual(significantGrowth(at(30000), at(29000), base()), []);
     assert.deepEqual(significantGrowth(at(100), at(200), base()), []);

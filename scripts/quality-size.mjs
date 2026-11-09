@@ -73,7 +73,8 @@ for (let index = 0; index < checks.length; index++) {
   const match = checks[index].name.match(/^(.*) \((raw|gzip|brotli)\)$/);
   (files[match[1]] ??= {})[match[2]] = measured[index].size;
 }
-const significant = significantGrowth(files, values.baseline ? JSON.parse(await readFile(resolve(values.baseline), 'utf8')).files : undefined, budgets);
+const mainFiles = values.baseline ? JSON.parse(await readFile(resolve(values.baseline), 'utf8')).files : undefined;
+const significant = significantGrowth(files, mainFiles, budgets);
 const violations = [];
 for (const [name, sizes] of Object.entries(files)) {
   for (const [metric, size] of Object.entries(sizes)) {

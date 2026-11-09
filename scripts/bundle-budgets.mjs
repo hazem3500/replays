@@ -137,12 +137,12 @@ export function significantGrowth(measured, mainMeasured, budget) {
     const before = mainMeasured?.[name]?.gzip;
     if (before === undefined) {
       if (!budget.files[name] && sizes.gzip > significance.newArtifactGzipBytes)
-        failures.push(`${name}: new artifact is ${sizes.gzip} B gzip (limit ${significance.newArtifactGzipBytes} B before it needs a look)`);
+        failures.push(`${name}: new artifact is ${sizes.gzip} B gzip (over ${significance.newArtifactGzipBytes} B)`);
       continue;
     }
     const grew = sizes.gzip - before;
     if (grew > significance.growthGzipBytes && grew > before * significance.growthRatio)
-      failures.push(`${name}: gzip grew ${before} -> ${sizes.gzip} B (+${grew}), over ${significance.growthRatio * 100}% and ${significance.growthGzipBytes} B`);
+      failures.push(`${name}: gzip grew ${before} -> ${sizes.gzip} B (+${grew}), a significant jump`);
   }
   return failures;
 }
