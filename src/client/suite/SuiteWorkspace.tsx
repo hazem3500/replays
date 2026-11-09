@@ -3,8 +3,7 @@ import { SignInError, SignInLink } from '../sign-in.tsx';
 import { readSplitterSize, Splitter } from '../components/ui/splitter.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
-import { sourceLook } from '../source-looks.ts';
-import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { displayTitle } from '../display-title.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon } from 'lucide-react';
 import { type KeyboardEvent, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -77,20 +76,11 @@ function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
   return orderedRuns(rows);
 }
 
-/** "GitHub · Faster checkout": the provider as it names itself (an id until a look names it), then the label. */
-function subjectText(subject: NonNullable<SuiteDetails['subject']>) {
-  const provider = sourceLook(subject.provider)?.label ?? subject.provider;
-  return subject.label ? `${provider} · ${subject.label}` : provider;
-}
-
 /** The suite's subject as a link (provider, address, label), when it names one. */
 function subjectLink(suite: Pick<ReviewSuite, 'subject'>): SuiteDetails['subject'] {
   const { subject } = suite;
   return subject ? { provider: subject.provider, url: subject.url, label: subject.label ?? subject.ref ?? '' } : undefined;
 }
-
-/** Only https addresses become links: a subject's URL comes from whoever registered the suite. */
-const isHttps = (url: string) => /^https:\/\//i.test(url);
 
 function runErrors(run: ReviewSuiteIndexRun) {
   return (run.replay?.consoleErrors ?? 0) + (run.replay?.failedRequests ?? 0);
@@ -436,7 +426,6 @@ function SuiteSidebar({
   const list = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const subject = subjectLink(suite);
-  const subjectLabel = subject && subjectText(subject);
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
   const colours = new Map(recorded.map((run) => [run.replayId, run.colour]));
   const names = shortNames(runs.map((run) => run.label));
@@ -468,7 +457,7 @@ function SuiteSidebar({
       <div className="suite-sidebar-head">
         {collapsed ? null : (
           <div className="suite-sidebar-title">
-            <h2 title={suite.title}>{suite.title}</h2>
+            <h2 title={suite.title}>{displayTitle({ title: suite.title, sources: subject && [subject] })}</h2>
           </div>
         )}
         <IconButton
@@ -496,19 +485,6 @@ function SuiteSidebar({
               <p className="suite-sidebar-meta suite-kept" data-testid="suite-kept">
                 <PinIcon aria-hidden="true" />
                 Kept by {keep.retention?.kept?.by ?? 'someone'}
-              </p>
-            ) : null}
-            {subject ? (
-              <p className="suite-sidebar-meta suite-sidebar-subject" title={subjectLabel}>
-                {isHttps(subject.url) ? (
-                  <a href={subject.url} target="_blank" rel="noopener noreferrer">
-                    {subjectLabel}
-                    <span className="visually-hidden"> (opens in a new tab)</span>
-                    <AnimatedIcon name="arrow-up-right" className="suite-subject-arrow" />
-                  </a>
-                ) : (
-                  <span>{subjectLabel}</span>
-                )}
               </p>
             ) : null}
           </>
