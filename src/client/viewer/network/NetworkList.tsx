@@ -246,7 +246,9 @@ function ListHead({
           ) : (
             column.label
           )}
-          {onResize && column.key && column.key !== 'request' ? <ColumnGrip column={column.key} widths={widths} onResize={onResize} /> : null}
+          {onResize && column.key && column.key !== 'request' ? (
+            <ColumnGrip column={column.key} widths={widths} onResize={onResize} />
+          ) : null}
         </span>
       ))}
     </div>
