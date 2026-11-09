@@ -8,8 +8,7 @@ import { useViewer } from './context.ts';
 /**
  * Step captions: the current step's label as a calm caption on the player while it plays, and while you scrub or
  * seek (pointer drag, touch drag, keys, a step click) and stay paused there; a pause without a seek, or the end,
- * clears it. The stable caption host swaps the whole line between step labels, and sits at the edge the video
- * export puts it (caption-placement.ts), clear of the action.
+ * clears it. The stable caption host swaps the whole line between step labels.
  */
 export function StepCaption() {
   const player = usePlayer();
@@ -22,8 +21,5 @@ export function StepCaption() {
   const step = steps[captionIndex];
   const active = Boolean(step && (status === 'playing' || (seeked && status !== 'ended')));
   const number = active && captionNumbers ? activeIndex + 1 : undefined;
-  const edge = 'bottom';
-  return (
-    <LiveCaption text={active ? captionDisplayText(step?.label ?? '') : undefined} number={number} edge={edge} testId="step-caption" />
-  );
+  return <LiveCaption text={active ? captionDisplayText(step?.label ?? '') : undefined} number={number} testId="step-caption" />;
 }

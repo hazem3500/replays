@@ -7,8 +7,6 @@ import { settleAnimations } from './settle-animations.ts';
 import { withDottedMasks } from '../../shared/mask-display.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import { NO_EFFECTS, type PlaybackEffects } from '../../shared/effects.ts';
-import { captionEdge, type CaptionEdge } from '../caption-placement.ts';
-import { cursorInput, type CursorInput } from '../cursor-motion.ts';
 import { EffectsLayer } from '../effects-layer.ts';
 import { ReplayCursor } from '../replay-cursor.ts';
 import { renderOffset, type SnapshotGroup, snapshotGroups } from '../snapshots.ts';
@@ -59,9 +57,7 @@ export class ReplayController {
   private readonly seekListeners = new Set<Listener>();
   private readonly stateListeners = new Set<Listener>();
   private readonly viewportListeners = new Set<Listener>();
-  private pointer: CursorInput | undefined;
   /** The recorded viewport's height, the page the export places captions against (render/main.ts). */
-  private readonly pageHeight: number;
 
   constructor(bundle: ReplayBundle, options: { effects?: PlaybackEffects } = {}) {
     this.effects = options.effects ?? NO_EFFECTS;
@@ -77,7 +73,6 @@ export class ReplayController {
       })),
     );
     this.viewport = { ...bundle.meta.viewport };
-    this.pageHeight = bundle.meta.viewport.height;
   }
 
   /** Mounts an rrweb Replayer into `root`; returns the cleanup. */
@@ -277,12 +272,6 @@ export class ReplayController {
   readonly getTime = () => this.time;
   readonly getState = () => this.state;
   readonly getViewport = () => this.viewport;
-
-  /** The edge of the frame a caption up from `from` to `to` (replay ms) sits on, as the video export places it. */
-  readonly captionEdge = (from: number, to: number): CaptionEdge => {
-    this.pointer ??= cursorInput(this.events);
-    return captionEdge({ input: this.pointer, first: this.events[0]?.timestamp ?? 0, height: this.pageHeight }, { from, to });
-  };
 
   readonly subscribeTime = (listener: Listener) => subscribe(this.timeListeners, listener);
   /** Explicit jumps (keys, steps, errors, scrubbing), not the playback clock. */

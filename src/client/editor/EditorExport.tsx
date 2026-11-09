@@ -1,4 +1,4 @@
-import { DownloadIcon } from 'lucide-react';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 import { Hint } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
@@ -52,7 +52,7 @@ export function EditorExport({
               onClick={() => void render.start()}
               data-testid="editor-export"
             >
-              <DownloadIcon aria-hidden="true" /> {active ? 'Exporting…' : 'Export'}
+              <AnimatedIcon name="download" /> {active ? 'Exporting…' : 'Export'}
             </Button>
           </span>
         </Hint>
