@@ -136,9 +136,9 @@ const recorder = createGuidedRecorder({
   // The most any recording may show. Every mode is capped by this.
   privacy: { sanitize: false, blockMedia: false },
   choices: {
-    privacy: ['visible', 'text-masked', 'masked'],
+    privacy: ['visible', 'inputs-masked', 'interface-visible', 'masked'],
     profiles: ['triage', { id: 'design-review', label: 'Design review' }, 'walkthrough'],
-    defaults: { privacy: 'text-masked', profile: 'triage' },
+    defaults: { privacy: 'inputs-masked', profile: 'triage' },
   },
 });
 await recorder.request(); // From the host's Record click.
@@ -147,7 +147,7 @@ await recorder.request(); // From the host's Record click.
 `request()` then shows the pill where the recording pill sits, before the consent dialog (or instead of it with `prompts.consent: false`). It has the recording pill's controls and nothing else: **Record**, a quiet options button and close. The options and close icons are the viewer's own animated icons (the sliders' knobs slide, the cross turns once) and stay still under reduced motion. The options button's tooltip names the current choice ("Fully masked · Triage"), and a small dot marks a choice that differs from `defaults`. It opens one small menu above the pill (a full-width sheet on phones) that scrolls when long:
 
 - **Profile**: the profiles the host passes, each with its optional description as a quiet line under it.
-- **Privacy**: Visible, Text masked and Fully masked (plus Your data hidden when `choices.privacy` lists `interface-visible`), each with one quiet line from what that mode actually records once the host's cap applies ("Records text and inputs", "Hides text and inputs", "Shows only the app's menus and labels", "Hides everything"). A mode the host's privacy does not allow is disabled, its line saying "Not allowed here".
+- **Privacy**: Visible, Inputs hidden, Your data hidden and Fully masked, least to most strict (plus Text masked when `choices.privacy` still lists `text-masked`), each with one quiet line from what that mode actually records once the host's cap applies ("Records text and inputs", "Records page text, hides what you type", "Hides text and inputs", "Shows only the app's menus and labels", "Hides everything"). A mode the host's privacy does not allow is disabled, its line saying "Not allowed here".
 - **Network**: with `choices.networkBodies: true`, one checkbox, "Include network request and response content", off until picked. It is disabled ("Not allowed here") unless the host's `capture.network` is `'bodies'`; on, the recording keeps bodies under the usual limits and redaction, off, it keeps headers only.
 
 Each line is tied to its item with `aria-describedby`. Check marks show the current choices. It is a menu button with radio items: arrow keys, Home and End move across both groups and skip disabled modes, Enter, Space or a click chooses and closes, Escape and Tab close it, and a press outside closes it. Escape with the menu closed, or close, records nothing. The consent prompt describes the chosen mode.
@@ -161,7 +161,7 @@ const recorder = createGuidedRecorder({
   upload,
   privacy: { sanitize: false, blockMedia: false },
   choices: {
-    privacy: ['visible', 'text-masked', 'masked'],
+    privacy: ['visible', 'inputs-masked', 'interface-visible', 'masked'],
     profiles: profiles.map(({ id, label }) => ({ id, label, description: hints[id] })),
   },
 });
@@ -170,20 +170,21 @@ const recorder = createGuidedRecorder({
 | Mode | Page text | Typed values | Media | Core settings before the cap |
 | --- | --- | --- | --- | --- |
 | `visible` | Recorded | Recorded, passwords and hidden inputs masked | Recorded | `sanitize: false`, `maskAllText: false`, `blockMedia: false` |
-| `text-masked` | Masked | Masked | Recorded | `sanitize: true`, `maskAllText: true`, `blockMedia: false` |
+| `inputs-masked` (Inputs hidden) | Recorded | Masked | Recorded | `sanitize: true`, `maskAllText: false`, `blockMedia: false` |
+| `text-masked` (older; still accepted) | Masked | Masked | Recorded | `sanitize: true`, `maskAllText: true`, `blockMedia: false` |
 | `interface-visible` (Your data hidden) | Masked, except [public product text](#public-product-text) | Masked | Blocked | `sanitize: true`, `maskAllText: true`, `blockMedia: true`, `unmaskTextSelector: '[data-replay-public]'` |
 | `masked` (Fully masked) | Masked, public text too | Masked | Blocked | `sanitize: true`, `maskAllText: true`, `blockMedia: true` |
 
 The core enforces the cap, not the UI:
 
-- Each setting is the stricter of the mode and the host's own `privacy` (and `capture.privacy`). A mode never shows more than the host allows; modes the cap makes identical are offered once, under the stricter name. With `privacy: { sanitize: false }` (media blocked), `visible` records text and typed values but no media, and `text-masked` becomes `masked`.
+- Each setting is the stricter of the mode and the host's own `privacy` (and `capture.privacy`). A mode never shows more than the host allows; modes the cap makes identical are offered once, under the stricter name. With `privacy: { sanitize: false }` (media blocked), `visible` records text and typed values but no media, `inputs-masked` records text but no media, and `text-masked` becomes `masked`. Inputs hidden needs the host to allow page text (`maskAllText: false`, or `sanitize: false`); with the default privacy it becomes `masked`. A stored or passed `text-masked` choice stays valid when the host lists it and is otherwise reduced to the strictest offered mode, never to a looser one.
 - A staff host whose `privacy` hides text, inputs and media and whose `capture` reads no body (the defaults) never shows the step unless it lists `interface-visible`, and any choice it receives changes nothing.
 - Passwords, hidden inputs, credential URLs, sensitive query parameters and headers outside `allowedHeaders` stay protected in every mode, `visible` included. `maskTextSelector`, `unmaskTextSelector`, `blockSelector`, console and network settings stay as the host set them.
 - A choice applies to that recording only. The chosen profile becomes the bundle's `meta.profile`, which the ingest endpoint checks against the deployment's profiles. Profile ids are lower-case letters, digits and `-`; an invalid one fails the start of a recording.
 
 | `choices` key | Default | Effect |
 | --- | --- | --- |
-| `privacy` | none | Modes to offer, from `visible`, `text-masked` and `masked`. Without it the recording uses `privacy` as is |
+| `privacy` | none | Modes to offer, from `visible`, `inputs-masked`, `interface-visible`, `masked` and the older `text-masked`. Without it the recording uses `privacy` as is |
 | `profiles` | none | Profile ids, or `{ id, label?, description? }` (the shape of `GET /api/config`'s `profiles`); the label defaults to the id in words |
 | `defaults` | most masked mode, first profile | The first choice until the user makes one |
 | `remember` | `true` | Keep the last choice for this origin in `localStorage`. Blocked or unreadable storage falls back to `defaults`. Always off for customers |
@@ -209,7 +210,7 @@ const recorder = createGuidedRecorder({
 
 - The menu lists **Your data hidden** (`interface-visible`) first, then **Fully masked** (`masked`), then each looser mode the host lists and allows, in that order. Customers see only modes they can pick; nothing is shown disabled. Your data hidden and Fully masked are always offered, even with the default `privacy`.
 - **Your data hidden** is pre-selected on every recording. Nothing is remembered: no `localStorage`, no per-origin memory, and `defaults` cannot change the mode or turn bodies on.
-- A looser mode (Text masked, Visible) or network content needs the customer's own pick in that recording's options step. `start({ consent: true, choice })` reduces a looser choice to the default, and keeps `masked` when asked.
+- A looser mode (Text masked, Inputs hidden, Visible) or network content needs the customer's own pick in that recording's options step. `start({ consent: true, choice })` reduces a looser choice to the default, and keeps `masked` when asked.
 - The body option is off on every recording and capped by `capture` like a staff option.
 - Passwords and hidden fields are masked in every mode, and credential URLs and auth headers are always redacted.
 - The only text selector a customer recorder accepts is the public marker: `privacy.unmaskTextSelector` must be absent or `'[data-replay-public]'`, and any other value fails the start of a recording.
@@ -280,7 +281,7 @@ Static keys are strings. Data-bearing keys are functions of typed params, so you
 | `privacyLabel` | | Privacy group heading in the options menu | Privacy |
 | `profileLabel` | | Profile group heading in the options menu | Profile |
 | `privacyUnavailable` | | Beside a mode the host's privacy does not allow | Not allowed here |
-| `privacyMode` | `mode: RecorderPrivacyMode` | A mode's name | Visible, Text masked, Your data hidden, Fully masked |
+| `privacyMode` | `mode: RecorderPrivacyMode` | A mode's name | Visible, Inputs hidden, Text masked, Your data hidden, Fully masked |
 | `privacyHint` | `mode: RecorderPrivacyMode`, `privacy: PrivacyFacts` | One quiet line under a mode, from what it records | Records text and inputs; Hides text and inputs; Shows only the app's menus and labels; Hides everything |
 | `networkLabel` | | Network group heading in the options menu | Network |
 | `networkBodies` | | The body option in the options menu | Include network request and response content |

@@ -40,12 +40,13 @@ export type SettingsBuilder = (privacy: RecorderPrivacyOptions, bodies?: boolean
 const MODE_EXPOSURE: Readonly<Record<RecorderPrivacyMode, Exposure>> = {
   visible: { text: true, inputs: true, media: true, interface: false },
   'text-masked': { text: false, inputs: false, media: true, interface: false },
+  'inputs-masked': { text: true, inputs: false, media: true, interface: false },
   'interface-visible': { text: false, inputs: false, media: false, interface: true },
   masked: { text: false, inputs: false, media: false, interface: false },
 };
-const STRICTEST_FIRST: readonly RecorderPrivacyMode[] = ['masked', 'interface-visible', 'text-masked', 'visible'];
+const STRICTEST_FIRST: readonly RecorderPrivacyMode[] = ['masked', 'interface-visible', 'text-masked', 'inputs-masked', 'visible'];
 /** The customer default first, then the stricter Fully masked, then looser modes that need a pick. */
-const CUSTOMER_ORDER: readonly RecorderPrivacyMode[] = ['interface-visible', 'masked', 'text-masked', 'visible'];
+const CUSTOMER_ORDER: readonly RecorderPrivacyMode[] = ['interface-visible', 'masked', 'text-masked', 'inputs-masked', 'visible'];
 const CUSTOMER_DEFAULT: RecorderPrivacyMode = 'interface-visible';
 const PROFILE_ID = /^[a-z][a-z0-9-]{0,39}$/;
 const STORAGE_PREFIX = 'replays-recorder-choice:';

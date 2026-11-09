@@ -51,7 +51,7 @@ export type ReplayCaptured = {
   choice?: {
     by: 'customer';
     /** The picked mode, so the server knows which text rules applied. */
-    mode: 'masked' | 'interface-visible' | 'text-masked' | 'visible';
+    mode: 'masked' | 'interface-visible' | 'text-masked' | 'inputs-masked' | 'visible';
     inputs: 'masked' | 'visible';
     text: 'masked' | 'visible';
     bodies: boolean;

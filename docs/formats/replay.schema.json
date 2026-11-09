@@ -62,7 +62,7 @@
               "additionalProperties": false,
               "properties": {
                 "by": { "const": "customer" },
-                "mode": { "enum": ["masked", "interface-visible", "text-masked", "visible"] },
+                "mode": { "enum": ["masked", "interface-visible", "text-masked", "inputs-masked", "visible"] },
                 "inputs": { "enum": ["masked", "visible"] },
                 "text": { "enum": ["masked", "visible"] },
                 "bodies": { "type": "boolean" }
