@@ -60,7 +60,7 @@ export function scrubberMarks(
 }
 
 /** Index of the mark nearest `x` within `tolerance` pixels, or -1. */
-export function nearestMark(marks: readonly ScrubberMark[], x: number, tolerance: number) {
+export function nearestMark(marks: ReadonlyArray<{ x: number }>, x: number, tolerance: number) {
   let nearest = -1;
   let distance = Number.POSITIVE_INFINITY;
   for (const [index, mark] of marks.entries()) {
@@ -72,6 +72,35 @@ export function nearestMark(marks: readonly ScrubberMark[], x: number, tolerance
     }
   }
   return nearest;
+}
+
+/** A highlight marker's visible centre on the track (after any de-overlap shift), in track pixels. */
+export interface HighlightSpot {
+  x: number;
+  at: number;
+  label: string;
+}
+
+/** A highlight marker's hit area is about 12 px wide. */
+export const HIGHLIGHT_HIT_RADIUS = 6;
+
+/**
+ * What a hover at `x` names: a highlight marker within `radius` (`h2`), else an error dot within `tolerance`
+ * (`e1`), else the labelled bar under it (`s0`), or ''. A highlight wins over the step beneath it.
+ */
+export function resolveHover(
+  highlights: readonly HighlightSpot[],
+  errors: readonly ScrubberMark[],
+  x: number,
+  bar: number,
+  tolerance: number,
+  radius = HIGHLIGHT_HIT_RADIUS,
+) {
+  const highlight = nearestMark(highlights, x, radius);
+  if (highlight >= 0) return `h${highlight}`;
+  const error = nearestMark(errors, x, tolerance);
+  if (error >= 0) return `e${error}`;
+  return bar >= 0 ? `s${bar}` : '';
 }
 
 /** Keeps a bubble `size` wide centred on `x` inside [0, bound]. */

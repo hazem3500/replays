@@ -263,6 +263,13 @@
     height: 5px;
     background: var(--danger);
   }
+  .scrubber-bubble[data-kind="highlight"] .scrubber-bubble-label::before {
+    width: 6px;
+    height: 6px;
+    border-radius: 1.5px;
+    background: var(--accent);
+    rotate: 45deg;
+  }
 
   /* ---- States ---- */
   /* In use (dragging, the keyboard): grown bars and the knob. */
@@ -355,6 +362,7 @@
       outline: 2px solid Highlight;
     }
     .error-notch,
+    .scrubber-bubble[data-kind="highlight"] .scrubber-bubble-label::before,
     .scrubber-bubble[data-kind="error"] .scrubber-bubble-label::before {
       forced-color-adjust: none;
       background: CanvasText;

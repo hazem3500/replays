@@ -13,6 +13,7 @@ import {
   clampCentre,
   easeOut,
   nearestMark,
+  resolveHover,
   notchX,
   runLabel,
   scrubberMarks,
@@ -204,5 +205,30 @@ describe('preview time', () => {
     expect(previewStepIndex(times, 5699)).toBe(3);
     expect(previewStepIndex(times, 20_000)).toBe(4);
     expect(previewStepIndex([500, 900], 100)).toBe(0);
+  });
+});
+
+describe('resolveHover', () => {
+  const highlights = [
+    { x: 100, at: 14_900, label: 'Checkout opens' },
+    { x: 300, at: 30_000, label: 'Payment' },
+  ];
+  const errors = [{ kind: 'error' as const, x: 200, at: 20_000, label: 'TypeError' }];
+
+  it('names a highlight within its hit radius, ahead of the step under it', () => {
+    expect(resolveHover(highlights, errors, 100, 2, 5)).toBe('h0');
+    expect(resolveHover(highlights, errors, 106, 2, 5)).toBe('h0');
+    expect(resolveHover(highlights, errors, 294, 2, 5)).toBe('h1');
+  });
+
+  it('prefers a highlight over an error dot at the same spot', () => {
+    expect(resolveHover([{ x: 200, at: 20_000, label: 'Boom' }], errors, 200, 0, 5)).toBe('h0');
+  });
+
+  it('falls back to the error dot, then the step, outside the radius', () => {
+    expect(resolveHover(highlights, errors, 107, 2, 5)).toBe('s2');
+    expect(resolveHover(highlights, errors, 203, 2, 5)).toBe('e0');
+    expect(resolveHover([], [], 50, 1, 5)).toBe('s1');
+    expect(resolveHover(highlights, errors, 50, -1, 5)).toBe('');
   });
 });
