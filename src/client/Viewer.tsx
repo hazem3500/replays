@@ -16,6 +16,7 @@ import {
   isEmptyEdits,
   type ReplayHighlight,
   type StoredReplayEdits,
+  withoutStepNames,
 } from '../shared/edits.ts';
 import { projectHighlights } from '../shared/highlights.ts';
 import type { PlaybackEffects } from '../shared/effects.ts';
@@ -25,6 +26,8 @@ import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import { StepCaption } from './viewer/StepCaption.tsx';
 import type { LoadedEdits } from './edits.ts';
+import { useStepRenamer } from './hooks/use-step-renamer.ts';
+import { labelledSteps, StepRenamingContext, useStepRenaming } from './viewer/step-rename-context.ts';
 import { editHref } from './routing/links.ts';
 import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
@@ -329,6 +332,8 @@ export function Viewer({
     [setCollapsed, setTab],
   );
 
+  const renamed = useStepRenaming();
+  const steps = labelledSteps(bundle.steps, renamed);
   const actions = useMemo<ViewerActions>(() => {
     // Shortcuts and jumps that land in the panel unfold it first, transiently. Playback, seeks and steps never do.
     const showPanel = () => {
@@ -353,7 +358,7 @@ export function Viewer({
     };
     const currentStep = () => (stepCursor.current?.time === player.getTime() ? stepCursor.current.index : undefined);
     return {
-      steps: bundle.steps,
+      steps,
       errors,
       setTab,
       setExpandedRequest,
@@ -404,6 +409,7 @@ export function Viewer({
     defaults.tabs,
     defaults.tracks,
     bundle.steps,
+    steps,
     captionNumbers,
     captions,
     editedCaptionsHidden,
@@ -1026,11 +1032,23 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
   const { bundle } = props;
   const [original, setOriginalState] = useState(readOriginal);
   const stored = edits?.stored;
-  const hasEdits = Boolean(stored && !isEmptyEdits(stored));
+  // why: a rename only relabels steps, so it never remounts the player or rebuilds the bundle: playback goes on under it.
+  const structural = stored ? withoutStepNames(editListOf(stored)) : undefined;
+  const contentKey = editsVersion(structural);
+  const hasEdits = Boolean(structural && !isEmptyEdits(structural));
   const shown = useMemo(
-    () => (stored && hasEdits && !original ? applyEdits(bundle, editListOf(stored)) : undefined),
-    [bundle, hasEdits, original, stored],
+    () => (structural && hasEdits && !original ? applyEdits(bundle, structural) : undefined),
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- why: `contentKey` is the content of `structural`
+    [bundle, hasEdits, original, contentKey],
   );
+  const renaming = useStepRenamer({
+    replayId: bundle.meta.id,
+    steps: bundle.steps,
+    stepIndices: shown?.stepIndices ?? bundle.steps.map((_, index) => index),
+    people: bundle.meta.people,
+    edits,
+    original,
+  });
   const setOriginal = useCallback((next: boolean) => {
     const url = new URL(location.href);
     url.searchParams.delete('t');
@@ -1045,14 +1063,16 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
     [hasEdits, original, setOriginal, stored],
   );
   return (
-    <Viewer
-      key={`${bundle.meta.id}:${original ? 'original' : (stored?.revision ?? 0)}`}
-      {...props}
-      bundle={shown?.bundle ?? bundle}
-      sourceBundle={bundle}
-      {...(shown ? { effects: shown.effects, timeline: shown.timeline } : {})}
-      {...(stored?.highlights ? { highlights: stored.highlights } : {})}
-      {...(edited ? { edited } : {})}
-    />
+    <StepRenamingContext value={renaming}>
+      <Viewer
+        key={`${bundle.meta.id}:${original ? 'original' : contentKey}`}
+        {...props}
+        bundle={shown?.bundle ?? bundle}
+        sourceBundle={bundle}
+        {...(shown ? { effects: shown.effects, timeline: shown.timeline } : {})}
+        {...(stored?.highlights ? { highlights: stored.highlights } : {})}
+        {...(edited ? { edited } : {})}
+      />
+    </StepRenamingContext>
   );
 }

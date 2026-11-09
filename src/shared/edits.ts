@@ -2,6 +2,7 @@ import { normalizeCursor } from './cursor.ts';
 import { type EditTimeline, editTimeline } from './edit-timeline.ts';
 import { NO_EFFECTS, type PlaybackEffects, playbackEffects } from './effects.ts';
 import { separateSpans } from './effect-room.ts';
+import { renameSteps } from './step-names.ts';
 import type { ReplayBundle, ReplayConsoleEntry, ReplayNetworkEntry, ReplayPerformanceEntry, ReplayStep } from './replay.ts';
 import {
   changesTime,
@@ -31,6 +32,7 @@ export {
   type ReplayPointHighlight,
   type StoredReplayEdits,
 } from './edit-list.ts';
+export { MAX_STEP_NAMES, renameSteps, stepNameKeys, withoutStepNames, withStepName } from './step-names.ts';
 export { type EditTimeline, editTimeline, mergeRanges } from './edit-timeline.ts';
 export { assertReplayEdits, assertStoredReplayEdits } from './edit-validation.ts';
 
@@ -75,7 +77,15 @@ export function normalizeEdits(edits: ReplayEdits): ReplayEdits {
         }
       : {}),
     ...(cursor ? { cursor } : {}),
+    ...stepNamesOf(edits),
   };
+}
+
+function stepNamesOf(edits: ReplayEdits): Pick<ReplayEdits, 'stepNames'> {
+  const entries = Object.entries(edits.stepNames ?? {})
+    .flatMap(([key, name]) => (name.trim() ? [[key, name.trim()] as const] : []))
+    .sort(([a], [b]) => a.localeCompare(b, 'en', { numeric: true }));
+  return entries.length ? { stepNames: Object.fromEntries(entries) } : {};
 }
 
 const byTime = <T extends { from: number; to: number; id: string }>(a: T, b: T) =>
@@ -240,7 +250,9 @@ export interface EditedBundle {
  * original's) and rows inside removed stretches dropped. Pure; the input bundle is not changed. Viewer, editor
  * preview and the video export all use it, so they agree to the millisecond.
  */
-export function applyEdits(bundle: ReplayBundle, edits: ReplayEdits | undefined): EditedBundle {
+export function applyEdits(source: ReplayBundle, edits: ReplayEdits | undefined): EditedBundle {
+  const named = renameSteps(source.steps, edits?.stepNames);
+  const bundle = named === source.steps ? source : { ...source, steps: [...named] };
   const span = bundleSpan(bundle);
   const timeline = editTimeline(edits, span);
   if (!changesTime(edits)) {

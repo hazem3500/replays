@@ -316,7 +316,7 @@ export function createApp(options: AppOptions) {
       (await handleRenderApi(request, response, path, raw.searchParams, { ...options, beforeRender, identity: user })) ||
       (await handlePosterApi(request, response, path, { store, posters: options.render?.posters })) ||
       (await handleKeepApi(request, response, path, { store, user: user.id })) ||
-      (Boolean(options.beta?.editor) && (await handleEditsApi(request, response, path, { store, user: user.id, editing }))) ||
+      (Boolean(options.beta?.editor) && (await handleEditsApi(request, response, path, { store, user: user.id, identity: user, editing }))) ||
       (await handleReplayFiles(request, response, path, { store, inferable }))
     );
   }

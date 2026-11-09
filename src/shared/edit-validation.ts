@@ -9,6 +9,7 @@ import {
   isCursorMotionStyle,
 } from './cursor.ts';
 import { EDITS_VERSION, MAX_CUTS, MAX_HIGHLIGHTS, MAX_LABEL, MIN_EDIT_MS, type ReplayEdits, type StoredReplayEdits } from './edit-list.ts';
+import { MAX_STEP_NAMES } from './step-names.ts';
 import { editTimeline } from './edit-timeline.ts';
 import { BLUR_STYLES, MAX_CAPTION, MAX_EFFECTS, MAX_ZOOM_SCALE, MIN_BLUR_SIZE, MIN_ZOOM_SCALE, SPEED_RATES } from './effects.ts';
 
@@ -16,7 +17,7 @@ type Fields = Record<string, unknown>;
 type Range = { from: number; to: number };
 
 const EDIT_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
-const EDIT_FIELDS = ['version', 'trim', 'cuts', 'zooms', 'speeds', 'blurs', 'captions', 'highlights', 'cursor'];
+const EDIT_FIELDS = ['version', 'trim', 'cuts', 'zooms', 'speeds', 'blurs', 'captions', 'highlights', 'cursor', 'stepNames'];
 const STORED_FIELDS = [...EDIT_FIELDS, 'revision', 'updatedBy', 'updatedAt'];
 /** The cursor's enumerated settings, in the order they are checked: the setting, its guard and its allowed values. */
 const CURSOR_CHOICES = [
@@ -168,6 +169,18 @@ function assertCuts(value: unknown, name: string, duration: number | undefined):
   });
 }
 
+function assertStepNames(value: unknown, name: string): void {
+  if (value === undefined) return;
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error(`${name} must be an object`);
+  const entries = Object.entries(value);
+  if (entries.length > MAX_STEP_NAMES) throw new Error(`${name} must name at most ${MAX_STEP_NAMES} steps`);
+  for (const [key, text] of entries) {
+    if (!/^\d{1,12}(?:#\d{1,4})?$/.test(key)) throw new Error(`${name}.${key} is not a step key`);
+    label(text, `${name}.${key}`);
+    if (typeof text === 'string' && !text.trim()) throw new Error(`${name}.${key} must not be empty`);
+  }
+}
+
 function assertCursor(value: unknown, name: string): void {
   if (value === undefined) return;
   const cursor = object(value, `${name}.cursor`, CURSOR_FIELDS);
@@ -194,6 +207,7 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
   assertCursor(edits.cursor, name);
   const speeds = assertEffects(edits, name, duration);
   assertHighlights(edits.highlights, duration, `${name}.highlights`);
+  assertStepNames(edits.stepNames, `${name}.stepNames`);
   if (duration !== undefined && editTimeline({ trim, cuts, speeds }, duration).duration < MIN_EDIT_MS) {
     throw new Error(`${name} remove the whole replay`);
   }

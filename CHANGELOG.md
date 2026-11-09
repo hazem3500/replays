@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Viewer: people on a replay (any role, matched by signed-in email) and admins can rename a step by double-clicking it in the Steps list (or F2 on a focused row) or the caption on the player. Names are stored in the edits sidecar as `stepNames` (see [edits.schema.json](docs/formats/edits.schema.json)) and show in the list, seek bar, captions and exports; "Reset" restores the automatic name. `PUT /api/replays/<id>/edits` answers 403 when `stepNames` change and the caller is not related to the replay.
+
 - Recorder: optional per-recording host context snapshots, active-only semantic action labels and independently selectable performance/debugging diagnostics. Numeric timing capture includes bounded foreground frame samples and layout shifts; error context remains bounded and redacted. Generated lifecycle captions are hidden, and the viewer adds sortable network columns, resizable request details, full-URL tooltips and accessible caption options.
 
 - Packaging: add an independent private capture-only staging build with an explicit CLI capability manifest, graph-derived runtime dependencies and isolated CI pack checks. The full distribution, commands and public exports are unchanged; no new package is published.
