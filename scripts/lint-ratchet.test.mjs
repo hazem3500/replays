@@ -9,6 +9,9 @@ describe('lint debt ratchet', () => {
   it('allows decreases and removed rules', () => {
     assert.deepEqual(increases({ existing: 1 }, { existing: 2, removed: 1 }), []);
   });
+  it('tolerates a rise up to the given tolerance', () => {
+    assert.equal(increases({ a: 5, b: 20 }, { a: 2, b: 5 }, () => 10).length, 1);
+  });
   it('keeps comment allowances attached to their original file', () => {
     const report = {
       diagnostics: [
