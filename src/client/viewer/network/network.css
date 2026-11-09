@@ -12,7 +12,7 @@
 .np-chip[data-status="failed"] .np-chip-count { color: var(--danger); }
 .np-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--text-tertiary); }
 .np-dot[data-status="failed"] { background: var(--danger); }
-.np-dot[data-status="slow"] { background: var(--warning); }
+.np-dot[data-status="slow"] { background: var(--warning-fill); }
 .np-dot[data-status="pending"] { border: 1.5px solid var(--text-tertiary); background: transparent; }
 .np-range { gap: 4px; border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: var(--accent-soft); color: var(--text); font-variant-numeric: tabular-nums; }
 .np-range svg, .np-icon svg, .np-search > svg { width: 14px; height: 14px; }
@@ -65,7 +65,7 @@
 .np-ms[data-tone="bad"] { color: var(--text-secondary); }
 .np-bar { position: relative; width: var(--np-duration-bar-width); height: 4px; flex: none; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, var(--line-strong) 45%, transparent); }
 .np-bar > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px; background: var(--text-tertiary); }
-.np-bar > span[data-tone="slow"] { background: var(--warning); }
+.np-bar > span[data-tone="slow"] { background: var(--warning-fill); }
 .np-bar > span[data-tone="bad"] { background: var(--danger); }
 .np-step { overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
 .np-row[data-future] .np-path, .np-row[data-future] .np-code, .np-row[data-future] .method { color: var(--text-tertiary); }
