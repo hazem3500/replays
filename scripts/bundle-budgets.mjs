@@ -85,7 +85,10 @@ export function ratchetBudget(budget, measured, mainMeasured) {
     for (const metric of metrics) {
       const mainSize = mainMeasured?.[file]?.[metric];
       if (mainSize !== undefined && sizes[metric] >= mainSize) continue;
-      if (caps[metric] !== undefined) caps[metric] = Math.min(caps[metric], Math.ceil(sizes[metric] * 1.03));
+      if (caps[metric] === undefined) continue;
+      const target = Math.ceil(sizes[metric] * 1.03);
+      // why: a cap within 1% of the 3% headroom target is intended headroom, not slack worth a commit.
+      if (caps[metric] - target > Math.ceil(sizes[metric] * 0.01)) caps[metric] = target;
     }
   }
   for (const file of Object.keys(next.files)) if (!measured[file]) delete next.files[file];
@@ -123,4 +126,23 @@ export function budgetDiff(baseline, next, allowances) {
     }
   }
   return `${rows.join('\n')}\n`;
+}
+
+export const significance = { growthRatio: 0.1, growthGzipBytes: 5 * 1024, newArtifactGzipBytes: 20 * 1024 };
+
+// Awareness first: sizes are reported, and only a jump that is both large relative to main and large in bytes fails.
+export function significantGrowth(measured, mainMeasured, budget) {
+  const failures = [];
+  for (const [name, sizes] of Object.entries(measured)) {
+    const before = mainMeasured?.[name]?.gzip;
+    if (before === undefined) {
+      if (!budget.files[name] && sizes.gzip > significance.newArtifactGzipBytes)
+        failures.push(`${name}: new artifact is ${sizes.gzip} B gzip (over ${significance.newArtifactGzipBytes} B)`);
+      continue;
+    }
+    const grew = sizes.gzip - before;
+    if (grew > significance.growthGzipBytes && grew > before * significance.growthRatio)
+      failures.push(`${name}: gzip grew ${before} -> ${sizes.gzip} B (+${grew}), a significant jump`);
+  }
+  return failures;
 }

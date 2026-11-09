@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Recorder: new **Inputs hidden** privacy mode (`inputs-masked`) records page text and media but masks typed values, and replaces Text masked in the default options menu, which now lists Visible, Inputs hidden, Your data hidden and Fully masked for staff. `text-masked` is still accepted in `choices`, stored choices, bundles and the schema; customer choices are unchanged.
+
 - Recorder: optional per-recording host context snapshots, active-only semantic action labels and independently selectable performance/debugging diagnostics. Numeric timing capture includes bounded foreground frame samples and layout shifts; error context remains bounded and redacted. Generated lifecycle captions are hidden, and the viewer adds sortable network columns, resizable request details, full-URL tooltips and accessible caption options.
 
 - Packaging: add an independent private capture-only staging build with an explicit CLI capability manifest, graph-derived runtime dependencies and isolated CI pack checks. The full distribution, commands and public exports are unchanged; no new package is published.
