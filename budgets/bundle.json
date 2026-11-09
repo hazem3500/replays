@@ -930,7 +930,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1134,7 +1134,7 @@
       "cap": {
         "gzip": 4113
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1144,7 +1144,7 @@
         "gzip": 1328,
         "brotli": 1128
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1818,16 +1818,6 @@
         "brotli": 2710
       },
       "reason": "Run colour frames on compare tiles: frame, focus and keyboard rings, issue dot, corner name tag and its sidebar-aware hiding replace the name pill. Small justified growth under Hazem's standing approval. Boat measurement, head: raw 12460, gzip 3016, brotli 2631 bytes against main caps 12166, 2951, 2568; cap is head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/239"
-    },
-    {
-      "file": "dist/client/assets/expired-query-HASH.js",
-      "cap": {
-        "raw": 2377,
-        "gzip": 1138,
-        "brotli": 1011
-      },
-      "reason": "recordedRuns and tileColour in suite/runs.ts: one source for a run's colour shared by the runs sidebar and the Compare stage. Small justified growth under Hazem's standing approval. Boat measurement, head: raw 2307, gzip 1104, brotli 981 bytes against main caps 2195, 1058, 936; cap is head times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/239"
     },
     {
