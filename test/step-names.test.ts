@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { normalizeSteps } from '../src/shared/step-names.ts';
 
 type Row = readonly [at: number, kind: string, label: string];
+const shown = (list: ReadonlyArray<{ folded?: true; label: string }>) => list.filter((step) => !step.folded).map((step) => step.label);
 const steps = (rows: readonly Row[]) => rows.map(([at, kind, label]) => ({ at, kind, label }));
 
 const RECORDED = steps([
@@ -28,7 +29,7 @@ const RECORDED = steps([
 
 describe('normalizeSteps', () => {
   it('turns a recorded Toggl Focus session into compact steps, keeping their times', () => {
-    expect(normalizeSteps(RECORDED).map(({ at, label }) => [at, label])).toEqual([
+    expect(normalizeSteps(RECORDED).filter((step) => !step.folded).map(({ at, label }) => [at, label])).toEqual([
       [0, 'Recording started'],
       [1200, 'Clicked “Plan time • 4h”'],
       [3000, 'Opened “Projects”'],
@@ -59,7 +60,15 @@ describe('normalizeSteps', () => {
     ['folds only the first navigation', [[0, 'click', 'Clicked “A”'], [10, 'navigate', 'Navigated'], [20, 'navigate', 'Navigated']], ['Opened “A”', 'Navigated']],
     ['keeps a click that does not match', [[0, 'click', 'Clicked “A”'], [10, 'action', 'Checked A'], [20, 'navigate', 'Navigated']], ['Clicked “A”', 'Checked A', 'Navigated']],
   ] as const)('%s', (_name, rows, expected) => {
-    expect(normalizeSteps(steps(rows)).map((step) => step.label)).toEqual(expected);
+    expect(shown(normalizeSteps(steps(rows)))).toEqual(expected);
+  });
+
+  it('keeps every step at its index and time, marking the absorbed ones folded', () => {
+    const out = normalizeSteps(RECORDED);
+    expect(out.map((step) => step.at)).toEqual(RECORDED.map((step) => step.at));
+    expect(out.map((step) => step.kind)).toEqual(RECORDED.map((step) => step.kind));
+    expect(out.flatMap((step, index) => (step.folded ? [index] : []))).toEqual([2, 4, 6, 11]);
+    expect(out[3]?.label).toBe('Opened “Projects”');
   });
 
   it('leaves steps a person labelled, or the capture CLI labelled, as they are', () => {

@@ -228,7 +228,7 @@ async function start() {
           ...bundle.console.filter((entry) => entry.level === 'error').map((entry) => entry.at),
           ...bundle.network.filter(isFailedRequest).map((entry) => entry.at),
         ],
-        stepTimes: bundle.steps.map((step) => step.at),
+        stepTimes: bundle.steps.filter((step) => !step.folded).map((step) => step.at),
         snapshotTimes,
         duration: controller.duration,
       });

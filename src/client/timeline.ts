@@ -58,15 +58,19 @@ const STEP_EPSILON = 50;
  * playhead is still on it: agents log several steps within a few milliseconds (or the same one), so
  * stepping by time alone would skip them.
  */
-export function nextStepIndex(steps: ReadonlyArray<{ at: number }>, time: number, current?: number) {
-  if (current !== undefined && current >= 0 && current < steps.length) return current + 1 < steps.length ? current + 1 : -1;
-  return steps.findIndex((step) => step.at > time);
+export function nextStepIndex(steps: ReadonlyArray<{ at: number; folded?: true }>, time: number, current?: number) {
+  if (current !== undefined && current >= 0 && current < steps.length) {
+    const next = steps.findIndex((step, index) => index > current && !step.folded);
+    return next;
+  }
+  return steps.findIndex((step) => step.at > time && !step.folded);
 }
 
 /** Index of the last step before `time` (the current step's start counts), or -1. `current` as in nextStepIndex. */
-export function previousStepIndex(steps: ReadonlyArray<{ at: number }>, time: number, current?: number) {
-  if (current !== undefined && current >= 0 && current < steps.length) return current - 1;
-  return steps.findLastIndex((step) => step.at < time - STEP_EPSILON);
+export function previousStepIndex(steps: ReadonlyArray<{ at: number; folded?: true }>, time: number, current?: number) {
+  if (current !== undefined && current >= 0 && current < steps.length)
+    return steps.findLastIndex((step, index) => index < current && !step.folded);
+  return steps.findLastIndex((step) => step.at < time - STEP_EPSILON && !step.folded);
 }
 
 export interface MarkerCluster {
@@ -95,12 +99,12 @@ export function clusterMarkers(ats: readonly number[], duration: number, width: 
  * The step on screen at `time`. Pass the replay `duration`: at the end every step counts as reached,
  * because an agent's last step can be logged a few milliseconds after the last DOM event.
  */
-export function activeStepIndex(steps: ReadonlyArray<{ at: number }>, time: number, duration = Number.POSITIVE_INFINITY) {
+export function activeStepIndex(steps: ReadonlyArray<{ at: number; folded?: true }>, time: number, duration = Number.POSITIVE_INFINITY) {
   const horizon = time >= duration ? Number.POSITIVE_INFINITY : time;
   return steps.length === 0
     ? -1
     : Math.max(
         0,
-        steps.findLastIndex((step) => step.at <= horizon),
+        steps.findLastIndex((step) => step.at <= horizon && !step.folded),
       );
 }
