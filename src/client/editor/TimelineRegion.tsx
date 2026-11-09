@@ -33,6 +33,8 @@ export interface RegionActions {
 
 /** A region block's inline padding (editor.css .tl-region-body), which its label's words fit inside. */
 const REGION_PAD_PX = 8;
+/** A caption narrower than this shows no text, only its clip. */
+const CAPTION_LABEL_MIN_PX = 48;
 
 /** A focused block's keys: Delete or Backspace removes it, and the time keys move it. */
 function regionKeys(
@@ -65,15 +67,16 @@ function RegionBody({
   const scale = useTimelineScale();
   const player = usePlayer();
   const { from, to, title, label } = region;
-  const text = label ? blockText(label, width, { pad: REGION_PAD_PX }) : '';
-  return (
+  const caption = region.kind === 'caption';
+  const text = !label ? '' : caption ? (width >= CAPTION_LABEL_MIN_PX ? label : '') : blockText(label, width, { pad: REGION_PAD_PX });
+  const body = (
     <button
       type="button"
       className="tl-region-body"
-      data-short={label && !text ? '' : undefined}
+      data-short={!caption && label && !text ? '' : undefined}
       aria-label={title}
       aria-pressed={selected}
-      title={title}
+      title={caption ? undefined : title}
       onPointerDown={(event) => {
         const offset = scale.timeAt(event.clientX) - from;
         startDrag(event, scale, {
@@ -96,6 +99,7 @@ function RegionBody({
       ) : null}
     </button>
   );
+  return caption ? <Hint label={title}>{body}</Hint> : body;
 }
 
 /** One resize handle: drag it to move that edge; it selects the region and seeks as it goes. */
@@ -131,8 +135,8 @@ export function RegionBlock({ region, selected, actions }: { region: RegionSpec;
   const { id, kind, title } = region;
   const left = scale.x(region.from);
   const naturalWidth = scale.x(region.to) - left;
-  // why: captions share a dense lane: preserve timing and a visible gap rather than growing over neighbours.
-  const width = kind === 'caption' ? Math.max(1, naturalWidth - 2) : Math.max(6, naturalWidth);
+  // why: captions share a dense lane: keep a 2 px gap to the next one, and a width that is still grabbable.
+  const width = Math.max(6, kind === 'caption' ? naturalWidth - 2 : naturalWidth);
   useBubblePlacement(feedback, selected, left, width);
   return (
     <div

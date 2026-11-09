@@ -1,17 +1,15 @@
 import { FilmIcon, ScissorsIcon } from 'lucide-react';
 import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react';
 
-import { editTimeline } from '../../shared/edit-timeline.ts';
 import { type ReplayCut, type ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
-import { TimelineStepDots } from './TimelineStepDots.tsx';
 import { ClipStepLabel } from './BlockLabel.tsx';
 import { stepKindName } from '../viewer/step-kinds.ts';
 import { wordsThatFit } from './block-label.ts';
 import { measureLabel } from './label-measure.ts';
-import { clipRuns, keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
+import { clipBox, clipRuns, keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
 import { type EditorAction, moveCut, moveHighlight, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
 import { ScaleContext, startDrag, timeKeys, type TimelineScale } from './timeline-drag.ts';
@@ -50,8 +48,6 @@ function TrimmedOutside({ trim, duration, scale }: { trim: { start: number; end:
   );
 }
 
-/** why: the trim edges sit over the clip's ends, so the first and last step's words keep this much room on each side. */
-const CLIP_STEP_PAD_PX = 12;
 /** A step's inline padding inside the clip (editor.css .tl-clip-step). */
 const CLIP_STEP_INNER_PAD_PX = 8;
 
@@ -69,10 +65,12 @@ function ClipSteps({
 }) {
   const px = scale.duration > 0 ? scale.width / scale.duration : 0;
   const segments = stepSegments(steps, trim);
+  const boxes = segments.map((segment, index) =>
+    clipBox(segment.offset * px, (segment.offset + segment.length) * px, { first: index === 0, last: index === segments.length - 1 }),
+  );
   const labels = segments.map((segment, index) => {
-    // why: only the side under a trim tab needs its wider pad, so an end step fits words as wide as the blocks below it.
-    const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
-    const roomPx = labelRoom(segment, trim.start, cuts).length * px - edges * (CLIP_STEP_PAD_PX - CLIP_STEP_INNER_PAD_PX);
+    const inset = segment.length * px - (boxes[index]?.width ?? 0);
+    const roomPx = labelRoom(segment, trim.start, cuts).length * px - inset;
     return segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, {
       pad: CLIP_STEP_INNER_PAD_PX,
       measure: measureLabel,
@@ -83,6 +81,7 @@ function ClipSteps({
     segments,
     labels.map((label) => !label.text),
   );
+  const inRun = new Set(runs.flatMap((run) => run.members));
   return (
     <>
       {segments.map((segment, index) => {
@@ -94,10 +93,9 @@ function ClipSteps({
             className="tl-clip-step"
             data-testid="clip-step"
             data-wait={segment.wait || undefined}
-            data-blank={!segment.wait && !label.text ? '' : undefined}
-            data-last={index === segments.length - 1 ? '' : undefined}
+            data-blank={inRun.has(index) ? '' : undefined}
             aria-hidden="true"
-            style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
+            style={{ left: `${boxes[index]?.left ?? 0}px`, width: `${boxes[index]?.width ?? 0}px` }}
           >
             <span className="tl-clip-step-label" style={{ marginLeft: `${room.skip * px}px` }}>
               <ClipStepLabel {...label} />
@@ -105,16 +103,17 @@ function ClipSteps({
           </span>
         );
       })}
-      {runs.map((run) => (
-        <span
-          key={run.from}
-          className="tl-clip-run"
-          aria-hidden="true"
-          style={{ left: `${run.from * px}px`, width: `${(run.to - run.from) * px}px` }}
-        >
-          {wordsThatFit(`${run.steps} steps`, (run.to - run.from) * px, { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel })}
-        </span>
-      ))}
+      {runs.map((run) => {
+        const box = clipBox(run.from * px, run.to * px, {
+          first: run.members.includes(0),
+          last: run.members.includes(segments.length - 1),
+        });
+        return (
+          <span key={run.from} className="tl-clip-run" aria-hidden="true" style={{ left: `${box.left}px`, width: `${box.width}px` }}>
+            {wordsThatFit(`${run.steps} steps`, box.width, { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel })}
+          </span>
+        );
+      })}
     </>
   );
 }
@@ -213,7 +212,6 @@ export function Timeline({
   };
 
   const trim = trimOf(edits, duration);
-  const edited = editTimeline(edits, duration);
   const range = selection?.kind === 'range' ? selection : undefined;
   const { tick, ticks } = rulerTicks(scale.width, duration);
   const trimEdge = (edge: 'start' | 'end') => (
@@ -268,7 +266,6 @@ export function Timeline({
                 <span className="tl-tick-label">{tickLabel(at, tick)}</span>
               </span>
             ))}
-            <TimelineStepDots steps={steps} isRemoved={(time) => edited.isRemoved(time)} />
           </div>
         </div>
 
