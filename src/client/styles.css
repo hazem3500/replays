@@ -1091,8 +1091,6 @@ a.menu-link, a.menu-link:hover { color: inherit; text-decoration: none; }
 .edited-chip:hover .edited-label, .edited-chip[data-popup-open] .edited-label { color: var(--text-secondary); }
 .edited-chip:focus-visible { border-radius: var(--radius-sm); box-shadow: 0 0 0 2px var(--ring); }
 /* The Edit button carries the "has edits" mark as a small accent dot. */
-.edit-entry[data-has-edits] { position: relative; }
-.edit-entry[data-has-edits]::after { content: ""; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface); }
 
 /* StatusLabel (components/ui/status-label.tsx): dot + word in the verdict colour, no border, no fill. */
 :root { --status-dot-size: 7px; }
