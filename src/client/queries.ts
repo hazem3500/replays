@@ -2,6 +2,7 @@ import { fetchPage } from './sign-in.tsx';
 import { QueryClient, type QueryCache, queryOptions } from '@tanstack/react-query';
 
 import { assertReplayId } from '../shared/replay.ts';
+import { normalizeSteps } from '../shared/step-names.ts';
 import { bulkTrashResultSchema, dataStorageSchema } from '../shared/data-storage.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
 import type { ClientConfig } from './config.ts';
@@ -56,7 +57,10 @@ export async function fetchReplay(id: string, signal?: AbortSignal, priority: Pr
     // A proxy or an old server can answer with an HTML page; say so instead of a JSON parser error.
     throw new LoadError('Replay failed to load (unexpected response)');
   }
-  if (bundle && typeof bundle === 'object') decodedBytes.set(bundle, text.length);
+  if (bundle && typeof bundle === 'object') {
+    decodedBytes.set(bundle, text.length);
+    if (Array.isArray(bundle.steps)) bundle.steps = normalizeSteps(bundle.steps);
+  }
   rememberServedProfile(id, response.headers.get('x-replay-profile') ?? response.headers.get('x-replay-purpose'));
   return bundle;
 }

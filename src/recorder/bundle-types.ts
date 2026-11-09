@@ -81,6 +81,8 @@ export type ReplayStep = {
   at: number;
   kind: string;
   label: string;
+  /** Set when the label was generated, not written by a person. */
+  auto?: true;
   selector?: string;
   url?: string;
 };
