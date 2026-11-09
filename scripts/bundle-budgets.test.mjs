@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { authorizeBudget, budgetDiff, ratchetBudget } from './bundle-budgets.mjs';
+import { authorizeBudget, budgetDiff, ratchetBudget, significantGrowth } from './bundle-budgets.mjs';
 
 const file = 'dist/client/assets/Inspector-HASH.css';
 const pr = 'https://github.com/hazem3500/replays/pull/62';
+const at = (gzip) => ({ [file]: { raw: gzip * 3, gzip, brotli: gzip } });
 const base = () => ({ headroomPercent: 3, files: { [file]: { raw: 100, gzip: 50, brotli: 40 } } });
 const allowance = () => ({ file, cap: { raw: 130 }, reason: 'Reviewed CSS growth for mobile network search controls.', pr });
 
@@ -76,5 +77,21 @@ describe('reviewed bundle allowances', () => {
     const next = ratchetBudget({ ...base(), allowances: [allowance()] }, {});
     assert.deepEqual(next.files, {});
     assert.deepEqual(next.allowances, []);
+  });
+});
+
+describe('size awareness', () => {
+  it('ignores small growth and shrinkage', () => {
+    assert.deepEqual(significantGrowth(at(30000), at(29000), base()), []);
+    assert.deepEqual(significantGrowth(at(100), at(200), base()), []);
+  });
+  it('needs both a large ratio and large bytes to fail', () => {
+    assert.deepEqual(significantGrowth(at(3000), at(1000), base()), []);
+    assert.deepEqual(significantGrowth(at(110000), at(100000), base()), []);
+    assert.equal(significantGrowth(at(120000), at(100000), base()).length, 1);
+  });
+  it('flags only large unbudgeted artifacts', () => {
+    assert.deepEqual(significantGrowth({ 'new.js': { raw: 1, gzip: 5000, brotli: 1 } }, at(1), base()), []);
+    assert.equal(significantGrowth({ 'new.js': { raw: 1, gzip: 30000, brotli: 1 } }, at(1), base()).length, 1);
   });
 });

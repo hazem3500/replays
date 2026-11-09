@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ProviderIcon, providerMark } from '@/components/provider-icon.tsx';
 
 import { useMediaQuery } from '../media.ts';
+import { sourceShortLabel } from '../display-title.ts';
 import { sourceLook } from '../source-looks.ts';
 
 /*
@@ -44,6 +45,10 @@ function providerName(provider: string) {
 
 /** What a source shows beside its icon: the label alone when the icon already says the provider. */
 function shownText(link: ReplaySourceLink, short: boolean) {
+  return sourceShortLabel(link) ?? providerText(link, short);
+}
+
+function providerText(link: ReplaySourceLink, short: boolean) {
   if (short || !link.label) return providerName(link.provider);
   const distinct = Boolean(sourceLook(link.provider)?.icon) || providerMark(link.provider) !== 'link';
   return distinct ? link.label : sourceText(link);
