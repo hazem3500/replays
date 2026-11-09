@@ -76,6 +76,19 @@
   .np-table { --np-cols: 60px minmax(0, 1fr) 52px 116px; }
   .np-step { display: none; }
 }
+@container network (min-width: 880px) {
+  .np-table[data-resized] { --np-cols: var(--np-user-cols); }
+  .np-head > [role="columnheader"] { position: relative; }
+  .np-grip { position: absolute; top: 0; bottom: 0; width: 10px; cursor: col-resize; touch-action: none; }
+  .np-grip[data-side="start"] { inset-inline-start: -10px; }
+  .np-grip[data-side="end"] { inset-inline-end: -10px; }
+  .np-grip::after { content: ""; position: absolute; top: 6px; bottom: 6px; inset-inline-start: 4px; width: 1px; background: var(--line); }
+  .np-grip:is(:hover, :focus-visible)::after { background: var(--accent); width: 2px; }
+  .np-grip:focus-visible { outline: none; }
+}
+@container network (max-width: 879px) {
+  .np-grip { display: none; }
+}
 /* Phones and narrow panels: two lines. Request and status on top; time, step and duration below. */
 @container network (max-width: 559px) {
   .np { --np-row: 48px; }
