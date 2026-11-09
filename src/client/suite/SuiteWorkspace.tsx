@@ -333,8 +333,10 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         {comparing && selected ? (
           <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? playable.length : 0} />}>
             <SuiteCompare
-              // why: on wider screens the runs sidebar, open or folded to its rail, already lists and switches the runs.
-              hideCompareSummary={!narrow}
+              // why: the runs sidebar (desktop) and the title run menu (phone) already switch runs; colour frames mark
+              // the focused tile. The CompareSummary strip belongs on standalone Compare — on a phone with many runs
+              // it wraps into an unreadable pile of clocks and deltas above the player.
+              hideCompareSummary
               runs={playable}
               fallback={defaults.layout}
               focus={selected}
@@ -652,10 +654,11 @@ function RunMenuItems({
             value={playableReplayId(run, detailed) ?? `missing-${run.id}`}
             disabled={!playableReplayId(run, detailed)}
             closeOnClick
+            className="run-picker-item"
           >
             <span className="run-seq">{sequenceLabel(run)}</span>
-            <span className="min-w-0 flex-1 truncate">{run.label}</span>
-            {isExpired(run, detailed) ? <span className="text-muted-foreground">Expired</span> : null}
+            <span className="run-picker-label">{run.label}</span>
+            {isExpired(run, detailed) ? <span className="run-picker-expired">Expired</span> : null}
             <span className={`status-dot tone-${statusTone(run, detailed)}`} aria-hidden="true" />
           </DropdownMenuRadioItem>
         ))}

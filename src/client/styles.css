@@ -782,6 +782,14 @@ svg.lucide.lucide { stroke-width: 2; }
 .run-seq { color: color-mix(in srgb, var(--run-colour, var(--text-tertiary)) 65%, var(--text-tertiary)); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
 .suite-run-item[aria-current="page"] .run-seq { color: var(--run-colour, var(--text-secondary)); }
 .suite-run-item[aria-current="page"] .run-label { font-weight: 600; }
+/* Phone title-menu run list: two-line titles; status stays beside the radio check (absolute right-2). */
+.run-picker-item.run-picker-item { align-items: flex-start; min-height: 48px; padding-block: 10px; padding-right: 40px; }
+.run-picker-item .run-seq { margin-top: 0.4em; }
+.run-picker-label { min-width: 0; flex: 1 1 auto; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; line-height: 1.35; text-align: left; }
+.run-picker-expired { flex: 0 0 auto; align-self: center; color: var(--text-tertiary); }
+.run-picker-item .status-dot { align-self: center; }
+/* Absolute check defaults to the top of a flex-start row; keep it beside the centered status dot. */
+.run-picker-item [data-slot="dropdown-menu-radio-item-indicator"] { top: 50%; translate: 0 -50%; }
 .run-copy { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1px 8px; }
 .sk-run .run-copy { grid-template-columns: minmax(0, 1fr); }
 .run-label { min-width: 0; display: -webkit-box; overflow: hidden; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
