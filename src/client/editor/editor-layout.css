@@ -23,6 +23,9 @@
   .editor-dock { min-width: 0; min-height: 0; max-height: 65dvh; display: flex; flex-direction: column; padding: 0 20px 10px; background: var(--surface); }
   .editor-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; min-height: 44px; }
   .editor-operation-status { flex: none; margin: 8px 0 0; padding-left: 40px; font-size: var(--text-2xs); color: var(--text-secondary); line-height: 1.5; }
+  /* why: a transient note must not resize the dock and push the timeline up. */
+  .editor-shell:not([data-mobile]) > .editor-dock { position: relative; }
+  .editor-shell:not([data-mobile]) .editor-operation-status { position: absolute; left: 20px; bottom: calc(100% + 8px); z-index: 2; margin: 0; padding: 4px 10px; border-radius: 6px; background: var(--surface-raised); box-shadow: 0 0 0 1px var(--line); pointer-events: none; white-space: nowrap; }
   .editor-history { display: flex; align-items: center; gap: 2px; margin-right: 6px; }
   .editor-export.editor-export { gap: 6px; padding: 0 10px; }
   .editor-export svg { width: 14px; height: 14px; }

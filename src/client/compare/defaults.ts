@@ -7,6 +7,11 @@ export function suiteViewLayout({ view, source }: Pick<ResolvedView, 'view' | 's
   return view.layout ?? 'single';
 }
 
+/** A comparison suite is one whose requested, profile or replay view lays recordings out together. */
+export function isComparisonView({ view, source }: Pick<ResolvedView, 'view' | 'source'>): boolean {
+  return source !== 'recordings' && (view.layout ?? 'single') !== 'single';
+}
+
 /** Entry intent and the recordings available to the layout switcher. */
 export interface CompareEntry {
   page: 'replay' | 'suite';

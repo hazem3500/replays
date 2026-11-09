@@ -2,7 +2,7 @@ import { subscribeInteractionNavigation } from './interaction-navigation.ts';
 import type { RawStep } from './bundle.ts';
 import type { RecorderPrivacy } from './recorder-privacy.ts';
 import { redactText } from './redact.ts';
-import { capAtWord } from './step-label.ts';
+import { tidyStepName } from './step-label.ts';
 
 const MAX_STEPS = 500;
 const REPEAT_MS = 350;
@@ -40,18 +40,53 @@ function labelledBy(control: Element, privacy: RecorderPrivacy, blocked: string)
     .join(' ');
 }
 
+function humanized(value: string | null): string {
+  const words = (value ?? '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[-_]+/g, ' ')
+    .trim();
+  return /^[A-Za-z][A-Za-z ]{0,40}$/.test(words) ? words.charAt(0).toUpperCase() + words.slice(1).toLowerCase() : '';
+}
+
+/** The text of the `<label for>` or wrapping `<label>` of a field, or of its fieldset's legend. */
+function fieldLabel(control: Element, privacy: RecorderPrivacy, blocked: string): string {
+  const id = control.getAttribute('id');
+  const labels = id ? Array.from(control.ownerDocument.querySelectorAll('label[for]')) : [];
+  const label = labels.find((candidate) => candidate.getAttribute('for') === id) ?? control.closest('label');
+  const legend = control.closest('fieldset')?.querySelector('legend');
+  const names = [label, legend].map((element) =>
+    element && readable(element, privacy, blocked) ? firstText(element, privacy, blocked) : '',
+  );
+  return names.find(Boolean) ?? '';
+}
+
+function innerName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
+  const inner = control.querySelector('[aria-label], img[alt]');
+  if (!inner || inner.closest(blocked) || privacy.textMasked(inner)) return '';
+  return inner.getAttribute('aria-label') ?? inner.getAttribute('alt') ?? '';
+}
+
 /**
- * invariant: a masked, blocked or field control names nothing, whichever source it would come from; the accessible name
- * (aria-label, aria-labelledby, title) comes before the first line of text.
+ * invariant: a masked or blocked control names nothing, whichever source it would come from. A field is named by its
+ * labels, never its value. The accessible name (aria-label, aria-labelledby, label, title) comes before visible text.
  */
 function controlName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
-  if (control.matches(FIELD) || privacy.textMasked(control)) return '';
-  const accessible = [control.getAttribute('aria-label'), labelledBy(control, privacy, blocked), control.getAttribute('title')]
-    .map((name) => name?.trim() ?? '')
-    .find(Boolean);
-  const label = accessible ?? firstText(control, privacy, blocked);
+  const field = control.matches(FIELD);
+  // why: rrweb never unmasks a field's own text, so a field is named by what surrounds it, under the same policy.
+  if (privacy.textMasked(field ? (control.parentElement ?? undefined) : control) || control.closest(blocked)) return '';
+  const sources = [
+    () => control.getAttribute('aria-label'),
+    () => labelledBy(control, privacy, blocked),
+    () => (field ? fieldLabel(control, privacy, blocked) : ''),
+    () => (field ? control.getAttribute('placeholder') : ''),
+    () => control.getAttribute('title'),
+    () => (field ? '' : firstText(control, privacy, blocked)),
+    () => (field ? '' : innerName(control, privacy, blocked)),
+    () => humanized(control.getAttribute('name')),
+  ];
+  const label = sources.map((source) => source()?.trim() ?? '').find(Boolean) ?? '';
   const withoutQueries = label.replace(/(?:https?:\/\/|\/)[^\s]*[?#][^\s]*/g, (url) => url.split(/[?#]/)[0] ?? '');
-  return capAtWord(redactText(withoutQueries, Number.MAX_SAFE_INTEGER));
+  return tidyStepName(redactText(withoutQueries, Number.MAX_SAFE_INTEGER));
 }
 
 function controlType(control: Element): string {
@@ -61,47 +96,94 @@ function controlType(control: Element): string {
   return 'button';
 }
 
+const TYPING_FIELD =
+  'textarea, select, input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="reset"], [type="file"])';
+
+function clickLabel(control: Element, name: string): string {
+  if (!name) return `Clicked ${controlType(control)}`;
+  return `${control.matches(TYPING_FIELD) ? 'Focused' : 'Clicked'} “${name}”`;
+}
+
+function decoded(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return '';
+  }
+}
+
+/** The last meaningful path segment of the page the route changed to, humanized: `/projects/` → Projects. */
+function routeName(): string {
+  const path = location.hash.startsWith('#/') ? location.hash.slice(1) : location.pathname;
+  const segments = path.split(/[?#]/)[0]?.split('/').filter(Boolean) ?? [];
+  if (!segments.length) return 'home';
+  const words = humanized(decoded(segments.at(-1) ?? '').replace(/\.[a-z0-9]+$/i, ''));
+  return words ? redactText(words, Number.MAX_SAFE_INTEGER) : '';
+}
+
+const FOLD_MS = 1000;
+
+type Click = { step: RawStep; control: Element; at: number; consumed: boolean };
+
 /** Adds bounded, privacy-aware action markers without retaining selectors, input values or navigation URLs. */
 export function captureInteractionSteps(privacy: RecorderPrivacy, onStep: (step: RawStep) => void): () => void {
   const blocked = String(privacy.rrwebOptions().blockSelector);
   let active = true;
   let count = 0;
   let last: { target: Element; kind: string; at: number } | undefined;
+  let click: Click | undefined;
   let route = location.href;
-  const add = (target: Element, kind: string, label: string) => {
+  const add = (target: Element, kind: string, label: string): RawStep | undefined => {
     if (!active || count >= MAX_STEPS) return;
     const at = Date.now();
     if (last?.target === target && last.kind === kind && at - last.at < REPEAT_MS) return;
     last = { target, kind, at };
     count++;
-    onStep({ at, kind, label });
+    const step: RawStep = { at, kind, label, auto: true };
+    onStep(step);
+    return step;
   };
-  const click = (event: Event) => {
+  const recent = () => (click && !click.consumed && Date.now() - click.at <= FOLD_MS ? click : undefined);
+  const onClick = (event: Event) => {
     const target = eventElement(event);
     if (!target || event.composedPath().some((node) => node instanceof Element && node.closest(blocked))) return;
     const control = target.closest(CONTROL);
     if (!control || control.closest(blocked)) return;
-    const name = controlName(control, privacy, blocked);
-    add(control, 'click', name ? `Clicked “${name}”` : `Clicked ${controlType(control)}`);
+    const step = add(control, 'click', clickLabel(control, controlName(control, privacy, blocked)));
+    click = step ? { step, control, at: step.at, consumed: false } : undefined;
   };
   const submit = (event: Event) => {
     const target = eventElement(event);
     if (!target || event.composedPath().some((node) => node instanceof Element && node.closest(blocked))) return;
     const submitter = event instanceof SubmitEvent ? event.submitter : null;
+    const pending = recent();
+    if (pending && submitter && pending.control === submitter) {
+      pending.consumed = true;
+      return;
+    }
     const name = submitter ? controlName(submitter, privacy, blocked) : controlName(target, privacy, blocked);
     add(target, 'submit', name ? `Requested “${name}”` : 'Requested form submission');
   };
   const navigate = () => {
     if (!active || location.href === route) return;
     route = location.href;
-    add(document.documentElement, 'navigate', 'Navigated');
+    const page = routeName();
+    const pending = recent();
+    if (pending) {
+      pending.consumed = true;
+      const clicked = /^Clicked “(.+)”$/su.exec(pending.step.label)?.[1];
+      if (clicked) pending.step.label = `Opened “${clicked}”`;
+      else if (page) pending.step.label = `Opened ${page}`;
+      return;
+    }
+    add(document.documentElement, 'navigate', page ? `Opened ${page}` : 'Navigated');
   };
   const stopNavigation = subscribeInteractionNavigation(navigate);
-  document.addEventListener('click', click, true);
+  document.addEventListener('click', onClick, true);
   document.addEventListener('submit', submit, true);
   return () => {
     active = false;
-    document.removeEventListener('click', click, true);
+    document.removeEventListener('click', onClick, true);
     document.removeEventListener('submit', submit, true);
     stopNavigation();
   };

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { compareDefaults, suiteViewLayout } from '../src/client/compare/defaults.ts';
+import { compareDefaults, isComparisonView, suiteViewLayout } from '../src/client/compare/defaults.ts';
 import { parseCompareSearch, writeCompareSearch } from '../src/client/compare/compare-search.ts';
+
+const view = (layout?: 'single' | 'grid') => ({ id: 'v', label: 'V', order: 0, ...(layout ? { layout } : {}) });
 
 describe('compare defaults', () => {
   it('opens a multi-run suite in single while retaining its layout controls', () => {
@@ -47,6 +49,14 @@ describe('compare defaults', () => {
     expect(parseCompareSearch(grid, '', 'grid').layout).toBe('grid');
     expect(new URLSearchParams(grid).get('view')).toBe('compare');
     expect(new URLSearchParams(grid).get('t')).toBe('3');
+  });
+
+  it('treats only an explicitly chosen multi-recording layout as a comparison suite', () => {
+    expect(isComparisonView({ source: 'suite', view: view('grid') })).toBe(true);
+    expect(isComparisonView({ source: 'url', view: view('grid') })).toBe(true);
+    expect(isComparisonView({ source: 'suite', view: view() })).toBe(false);
+    expect(isComparisonView({ source: 'suite', view: view('single') })).toBe(false);
+    expect(isComparisonView({ source: 'recordings', view: view('grid') })).toBe(false);
   });
 
   it('keeps a one-recording suite in the plain viewer', () => {

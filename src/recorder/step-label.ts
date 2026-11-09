@@ -15,3 +15,9 @@ export function capAtWord(text: string, max: number = STEP_LABEL_MAX): string {
   const cut = space > 0 ? flat.slice(0, space) : flat.slice(0, max).replace(LONE_HIGH_SURROGATE, '');
   return cut.replace(TRAILING_SEPARATORS, '');
 }
+
+const TRAILING_PUNCTUATION = /[\s:;,–—-]+$/u;
+
+export function tidyStepName(text: string, max: number = STEP_LABEL_MAX): string {
+  return capAtWord(text, max).replace(TRAILING_PUNCTUATION, '');
+}
