@@ -287,6 +287,7 @@ test.describe('Add a recording', () => {
 
     await openReplay(page, `${server().origin}/r/demo-shop`);
     await more.click();
+    await page.getByTestId('view-submenu-trigger').click();
     await expect(page.getByTestId('compare-with')).toHaveText('Compare with…');
     await page.keyboard.press('Escape');
 

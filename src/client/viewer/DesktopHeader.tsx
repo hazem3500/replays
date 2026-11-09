@@ -34,9 +34,8 @@ export function DesktopHeader({ bundle, suite, menuItems, leadingActions, plugin
         appearanceInMenu
         menuAnchor={menuAnchor}
         menuItems={[
-          ...menuItems.filter((item) => item.testId === 'compare-with'),
           ...actionMenuItems({ 'core:info': [detailsItem] }),
-          ...menuItems.filter((item) => item.testId !== 'compare-with'),
+          ...menuItems,
         ]}
         alwaysMenu
         actions={
