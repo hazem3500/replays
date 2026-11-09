@@ -72,6 +72,35 @@ describe('per-view settings', () => {
     expect(latest.tab).toBe('comments');
   });
 
+  it('keeps the captions choice across views, over each view’s default', () => {
+    render('standard');
+    const initial = latest.captions;
+    act(() => latest.switchCaptions());
+    render('debug');
+    expect(latest.captions).toBe(!initial);
+    act(() => latest.switchCaptions());
+    render('standard');
+    expect(latest.captions).toBe(initial);
+  });
+
+  it('falls back to the view default until a captions choice is stored, ignoring old per-view flags', () => {
+    localStorage.setItem('replays-view:standard:captions', '1');
+    render('standard');
+    const preset = viewDefaults({ view: view('standard') }).captions;
+    expect(latest.captions).toBe(preset);
+    localStorage.setItem('replays-captions', preset ? '0' : '1');
+    render('review');
+    expect(latest.captions).toBe(!preset);
+  });
+
+  it('keeps the captions choice when a view is reset', () => {
+    render('standard');
+    act(() => latest.switchCaptions());
+    const chosen = latest.captions;
+    act(() => latest.reset());
+    expect(latest.captions).toBe(chosen);
+  });
+
   it('shows a hidden inspector once the person opens it', () => {
     render('walkthrough');
     expect(latest.hidden).toBe(true);
