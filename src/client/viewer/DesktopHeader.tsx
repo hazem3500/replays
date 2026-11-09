@@ -33,10 +33,7 @@ export function DesktopHeader({ bundle, suite, menuItems, leadingActions, plugin
         {...props}
         appearanceInMenu
         menuAnchor={menuAnchor}
-        menuItems={[
-          ...actionMenuItems({ 'core:info': [detailsItem] }),
-          ...menuItems,
-        ]}
+        menuItems={[...actionMenuItems({ 'core:info': [detailsItem] }), ...menuItems]}
         alwaysMenu
         actions={
           <ActionsBar

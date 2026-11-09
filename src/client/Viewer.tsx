@@ -622,7 +622,15 @@ export function Viewer({
           pluginActions={pluginMenu.bar}
           menuFooter={pluginMenu.settings}
           menu={menu}
-          menuSettings={comparisonContext ? null : <ViewMenuItems {...viewChoice} showReset={false} {...(inSuite || sharedPlayer ? {} : { onCompare: () => setPickerOpen(true) })} />}
+          menuSettings={
+            comparisonContext ? null : (
+              <ViewMenuItems
+                {...viewChoice}
+                showReset={false}
+                {...(inSuite || sharedPlayer ? {} : { onCompare: () => setPickerOpen(true) })}
+              />
+            )
+          }
           menuTail={<ResetViewItem onReset={layout.reset} />}
           {...(titleMenu ? { titleMenu } : {})}
           {...(titleFrom ? { titleFrom } : {})}
