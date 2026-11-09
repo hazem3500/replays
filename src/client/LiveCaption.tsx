@@ -7,15 +7,7 @@ import { useCaptionMotion } from './hooks/use-caption-motion.ts';
  * the bottom edge: a new caption swaps the whole line in place; a hide fades the last caption out whole
  * (step-caption.css, imported by its callers); a caption that shows again after a hide starts fresh.
  */
-export function LiveCaption({
-  text,
-  number,
-  testId,
-}: {
-  text: string | undefined;
-  number?: number | undefined;
-  testId: string;
-}) {
+export function LiveCaption({ text, number, testId }: { text: string | undefined; number?: number | undefined; testId: string }) {
   const caption = useCaptionPresence(text, number);
   const ref = useCaptionMotion(caption);
   return (

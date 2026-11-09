@@ -21,7 +21,5 @@ export function StepCaption() {
   const step = steps[captionIndex];
   const active = Boolean(step && (status === 'playing' || (seeked && status !== 'ended')));
   const number = active && captionNumbers ? activeIndex + 1 : undefined;
-  return (
-    <LiveCaption text={active ? captionDisplayText(step?.label ?? '') : undefined} number={number} testId="step-caption" />
-  );
+  return <LiveCaption text={active ? captionDisplayText(step?.label ?? '') : undefined} number={number} testId="step-caption" />;
 }
