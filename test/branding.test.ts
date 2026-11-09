@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { withBase } from '../src/server/base-path.ts';
@@ -189,6 +191,39 @@ describe('withBase with branding', () => {
 
   it('leaves the logo meta tag empty without a logo', () => {
     expect(withBase(INDEX, '', pageBranding({ name: 'Plain' }))).toContain('<meta name="app-logo" content="" />');
+  });
+
+  const FAVICON_INDEX = INDEX.replace(
+    '<title>',
+    '<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" /><title>',
+  );
+  const iconOf = (html: string) => decodeURIComponent(/<link rel="icon" href="data:image\/svg\+xml,([^"]*)"/.exec(html)?.[1] ?? '');
+
+  it('draws the tab icon in the theme accent, for either scheme', () => {
+    const html = withBase(
+      FAVICON_INDEX,
+      '',
+      pageBranding(validateBranding({ theme: { dark: { accent: '#ff5fa2' }, light: { accent: '#c2185b' } } })),
+    );
+    const svg = iconOf(html);
+    expect(svg).toContain('svg{color:#c2185b}@media (prefers-color-scheme:dark){svg{color:#ff5fa2}}');
+    const shipped = readFileSync(new URL('../public/assets/brand/favicon.svg', import.meta.url), 'utf8');
+    expect(svg).toContain(shipped.split('\n')[2]!);
+  });
+
+  it('uses one accent for both schemes when the theme sets one', () => {
+    const svg = iconOf(withBase(FAVICON_INDEX, '', pageBranding(validateBranding({ theme: { dark: { accent: '#ff5fa2' } } }))));
+    expect(svg).toContain('svg{color:#ff5fa2}@media (prefers-color-scheme:dark){svg{color:#ff5fa2}}');
+  });
+
+  it('keeps the built-in tab icon without an accent or with a custom logo', () => {
+    expect(withBase(FAVICON_INDEX, '', pageBranding(validateBranding({ name: 'Plain' })))).toContain('href="/assets/brand/favicon.svg"');
+    const logo = withBase(
+      FAVICON_INDEX,
+      '',
+      pageBranding(validateBranding({ logoUrl: 'https://example.com/l.svg', theme: { dark: { accent: '#ff5fa2' } } })),
+    );
+    expect(logo).toContain('href="/assets/brand/favicon.svg"');
   });
 
   it('adds the brand tokens as a style element at the end of the head, and only when there are some', () => {
