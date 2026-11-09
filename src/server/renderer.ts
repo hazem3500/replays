@@ -57,9 +57,10 @@ export interface RenderStats {
   captureMs: number;
 }
 
+const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
+
 /** The one log line per finished render: size of the job and where its wall time went (seeking, screenshots, the rest). */
 export function describeRender(stats: RenderStats) {
-  const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
   const other = Math.max(0, stats.durationMs - stats.seekMs - stats.captureMs);
   return (
     `render ${stats.id}: ${stats.frames} frames (${stats.captured} captured) for ${seconds(stats.replayMs)} of replay in ` +
