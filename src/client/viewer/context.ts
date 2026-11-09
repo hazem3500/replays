@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 
+import type { FrameBand } from './performance/frames.ts';
 import type { ReplayStep } from '../../shared/replay.ts';
 import type { ReplayError } from '../issues.ts';
 import type { ProjectedHighlight } from '../../shared/highlights.ts';
@@ -57,6 +58,10 @@ export interface ViewerActions {
   tracks?: readonly string[] | undefined;
   /** The open view's inspector tab order (views/resolve.ts `orderTabs`): listed tabs lead. */
   tabOrder?: readonly string[] | undefined;
+  /** The replay or suite is about performance (shared/performance-focus.ts): frame rate shows on the player and in the Performance tab. */
+  performanceFocused?: boolean;
+  /** Frame rate per second of recording on the player's clock; empty when frame timing was not recorded. */
+  frames?: readonly FrameBand[];
 }
 
 export const ViewerContext = createContext<ViewerActions | null>(null);

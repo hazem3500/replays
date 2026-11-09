@@ -73,3 +73,12 @@ button.lt-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2
 @container local-timeline (max-width: 480px) {
   .lt-ruler span:not(:first-child, :last-child) { color: transparent; }
 }
+
+/* The frame-rate lane under the ribbon: bars per recorded second in the good, needs-work and poor colours. */
+.ribbon-key i[data-tone="success"] { background: var(--success); }
+.fps-lane-wrap { flex: none; border-bottom: 1px solid var(--line); }
+.fps-lane { display: block; width: 100%; padding: 0; border-inline: 0; border-top: 0; position: relative; height: 24px; overflow: hidden; border-bottom: 1px solid var(--line); background: var(--surface); cursor: crosshair; }
+.fps-lane > span[data-verdict] { position: absolute; bottom: 0; background: var(--text-tertiary); }
+.fps-lane > span[data-verdict="good"] { background: var(--success); }
+.fps-lane > span[data-verdict="needs-work"] { background: var(--warning); }
+.fps-lane > span[data-verdict="poor"] { background: var(--danger); }
