@@ -6,7 +6,6 @@ import { useRibbonHighlightMotion } from '../hooks/use-ribbon-highlight-motion.t
 import { usePlayheadProgress } from '../hooks/use-playhead-progress.ts';
 import { useRibbonBrush } from '../hooks/use-ribbon-brush.ts';
 import { usePlayer } from '../player.ts';
-import type { FrameBand } from './performance/frames.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the ribbon's styles load with the lazy inspector chunk, not with every page.
 import './time-ribbon.css';
 
@@ -41,7 +40,6 @@ const STRINGS = { hint: 'Click to seek, drag to show only that stretch' };
 export function TimeRibbon({
   duration,
   density,
-  fps,
   marks,
   range,
   onRange,
@@ -51,8 +49,6 @@ export function TimeRibbon({
 }: {
   duration: number;
   density?: readonly number[] | undefined;
-  /** A frame-rate lane along the bottom: one bar per recorded second, tall for smooth, coloured by verdict. */
-  fps?: readonly FrameBand[] | undefined;
   marks: readonly RibbonMark[];
   range: RibbonRange | undefined;
   onRange: (range: RibbonRange | undefined) => void;
@@ -76,16 +72,8 @@ export function TimeRibbon({
         <span>{formatClock(duration / 2)}</span>
         <span>{formatClock(duration)}</span>
       </div>
-      <div
-        ref={strip}
-        className="time-ribbon"
-        data-testid={testId}
-        title={STRINGS.hint}
-        data-fps={fps?.length ? '' : undefined}
-        {...handlers}
-      >
+      <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} {...handlers}>
         {density ? <Density counts={density} /> : null}
-        {fps?.length ? <FpsLane bands={fps} span={span} /> : null}
         {marks.map((mark) => (
           <RibbonMarkTarget key={mark.id} mark={mark} span={span} highlighted={mark.id === highlight} onHighlight={onHighlight} />
         ))}
@@ -110,22 +98,6 @@ export function TimeRibbon({
         <span className="ribbon-now" />
       </div>
       <div className="ribbon-key">
-        {fps?.length ? (
-          <>
-            <span>
-              <i data-tone="success" />
-              Smooth
-            </span>
-            <span>
-              <i data-tone="warning" />
-              Choppy
-            </span>
-            <span>
-              <i data-tone="danger" />
-              Janky
-            </span>
-          </>
-        ) : null}
         {testId === 'network-ribbon' ? (
           <>
             <span>
@@ -187,26 +159,6 @@ function RibbonMarkTarget({
         {formatClock(mark.at)} {mark.label ?? mark.tone}
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-const SMOOTH_REFERENCE_FPS = 60;
-
-function FpsLane({ bands, span }: { bands: readonly FrameBand[]; span: number }) {
-  return (
-    <div className="ribbon-fps" aria-hidden="true">
-      {bands.map((band) => (
-        <span
-          key={band.at}
-          data-verdict={band.verdict}
-          style={{
-            left: `${(band.at / span) * 100}%`,
-            width: `${((band.end - band.at) / span) * 100}%`,
-            height: `${Math.min(100, Math.max(20, (band.fps / SMOOTH_REFERENCE_FPS) * 100))}%`,
-          }}
-        />
-      ))}
-    </div>
   );
 }
 

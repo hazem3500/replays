@@ -255,7 +255,7 @@ function FpsReadout() {
     <Hint label={fpsHint(recorded, band)} align="start">
       <span className="transport-fps" data-testid="fps-readout" data-verdict={band?.verdict} data-recorded={recorded || undefined}>
         <i aria-hidden="true" />
-        {band ? <strong>{Math.round(band.fps)}</strong> : '–'} FPS
+        {band ? <strong>{Math.round(band.fps)}</strong> : 'n/a'} FPS
       </span>
     </Hint>
   );
