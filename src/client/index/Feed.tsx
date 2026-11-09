@@ -21,6 +21,7 @@ import { useHydrated } from '../hooks/use-hydrated.ts';
 import { useReplayDeletion } from '../hooks/use-replay-deletion.tsx';
 import { useRowMenu } from '../hooks/use-row-menu.ts';
 import { PeopleStack } from './People.tsx';
+import { displayTitle } from '../display-title.ts';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
 import { Poster } from './Poster.tsx';
@@ -111,7 +112,8 @@ export function suitePosterRun(runs: readonly ReviewSuiteIndexRun[]) {
 function titleIfClamped(event: PointerEvent<HTMLElement>) {
   const element = event.currentTarget;
   const cut = element.scrollHeight > element.clientHeight + 1 || element.scrollWidth > element.clientWidth + 1;
-  if (cut) element.title = element.textContent ?? '';
+  const full = element.dataset.fullTitle;
+  if (full || cut) element.title = full ?? element.textContent ?? '';
   else element.removeAttribute('title');
 }
 
@@ -231,8 +233,8 @@ function SessionItem({
       />
       <div className="feed-body">
         <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
-          <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
-            {summary.title}
+          <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped} data-full-title={summary.title}>
+            {displayTitle(summary)}
           </a>
           <RowMenu title={summary.title} actions={replayRowActions(summary.id)} menu={menu} onDelete={deletion.requestDelete} />
           {deletion.dialog}
@@ -473,8 +475,8 @@ function SuiteItem({
         )}
         <div className="feed-body">
           <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
-            <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
-              {suite.title}
+            <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped} data-full-title={suite.title}>
+              {displayTitle({ title: suite.title, sources })}
             </a>
             <RowMenu title={suite.title} actions={suiteRowActions(href, suite.id, recordings)} menu={menu} />
           </div>
