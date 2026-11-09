@@ -78,3 +78,7 @@ Use the issue templates. For security issues, follow [SECURITY.md](SECURITY.md) 
 
 By contributing you agree that your contribution is licensed under the MIT license of this project, and to follow
 the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Bundle size
+
+Bundle size is reported, not policed. CI prints each artifact's size and its change from main in the job summary. Gate fails only for a significant jump: one artifact growing by more than 10% and more than 5 KB gzip against main, or a new unbudgeted artifact over 20 KB gzip. Small growth passes; if it can be trimmed easily (for example with a lazy import), do. `pnpm quality:size:ratchet` lowers `budgets/bundle.json` to measured sizes plus 3% and is optional. The thresholds live in `scripts/bundle-budgets.mjs`.
