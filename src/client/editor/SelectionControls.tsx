@@ -22,7 +22,7 @@ export function EffectControls({ edits, selection, change }: { edits: ReplayEdit
   const update = (patch: Record<string, unknown>, merge = false) => change(updateEffect(edits, kind, id, patch), selection, merge);
   if ('text' in region) return <CaptionField key={id} text={region.text} onChange={(text) => update({ text })} />;
   if ('scale' in region) return <ZoomLevel value={region.scale} onChange={(scale, merge) => update({ scale }, merge)} />;
-  if ('rate' in region) return <SpeedChoice value={region.rate} length={region.to - region.from} onChange={(rate) => update({ rate })} />;
+  if ('rate' in region) return <SpeedChoice value={region.rate} length={region.to - region.from} onChange={(rate, merge) => update({ rate }, merge)} />;
   const style = 'style' in region && region.style === 'redact' ? 'redact' : 'blur';
   return <BlurStyleChoice current={style} onPick={(next) => update({ style: next })} />;
 }

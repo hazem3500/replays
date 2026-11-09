@@ -79,7 +79,7 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await page.mouse.move(lane.x + lane.width * 0.75, y, { steps: 5 });
   await page.mouse.up();
   await expect(page.getByTestId('region-speed')).toHaveCount(1);
-  await inspector.getByRole('radio', { name: '8× faster' }).click();
+  await inspector.getByRole('button', { name: 'Set rate to 8×' }).click();
   await expect(page.getByTestId('region-speed')).toContainText('8×');
 
   // A blur box at the playhead (0:00), dragged on the preview.

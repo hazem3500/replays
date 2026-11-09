@@ -12,12 +12,11 @@
 
 import { normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
 
-/**
- * Speed-up rates a range can play at. invariant: each is also a player speed (render-variant.ts PLAYBACK_SPEEDS),
- * because the editor previews a range by playing it at its rate. 1.5 joined later; older lists hold only 2, 4 and 8.
- */
+/** The speed-up rates a range may play at: any number from MIN_SPEED_RATE to MAX_SPEED_RATE (src/shared/rate-scale.ts). */
+export const MIN_SPEED_RATE = 1;
+export const MAX_SPEED_RATE = 16;
+/** The familiar rates, which the editor's rate slider marks and snaps to. Older lists hold only these. */
 export const SPEED_RATES = [1.5, 2, 4, 8] as const;
-export type SpeedRate = (typeof SPEED_RATES)[number];
 
 /** A stretch of the original replay played faster. */
 export interface ReplaySpeedRange {
@@ -25,7 +24,7 @@ export interface ReplaySpeedRange {
   /** Original ms; `from < to`. */
   from: number;
   to: number;
-  rate: SpeedRate;
+  rate: number;
 }
 
 /** How a hidden box is drawn: `blur`, a strong blur with soft edges, or `redact`, a solid block that hides even shapes. */

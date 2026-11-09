@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 
-import { RadioCard, RadioGroup } from '@/components/ui/radio-group.tsx';
 import { Slider, SliderControl, SliderIndicator, SliderThumb, SliderTrack } from '@/components/ui/slider.tsx';
 import { MAX_ZOOM_SCALE, MIN_ZOOM_SCALE, SPEED_RATES, ZOOM_SCALES } from '../../shared/effects.ts';
+import { jumpRate, RATE_LAST_INDEX, rateAt, rateIndex } from '../../shared/rate-scale.ts';
 import { InspectorSection } from './InspectorParts.tsx';
 
 export const ZOOM_STEP = 0.1;
@@ -77,25 +77,69 @@ function speedHint(length: number | undefined, rate: number) {
 }
 
 /**
- * A speed-up's rate. The rates are a fixed set (each must also be a player speed for the live preview), so every
- * choice stays visible, with what the current one does to this stretch spelled out under it.
+ * A speed-up's rate: a slider from 1× to 16× whose axis is the list of offered rates (src/shared/rate-scale.ts), so
+ * the low rates get the room, with the presets marked under it. Arrows step, Page Up and Page Down jump between the
+ * presets, and the hint says what the rate does to this stretch as it moves. One drag is one undo step.
  */
-export function SpeedChoice({ value, length, onChange }: { value: number; length: number | undefined; onChange: (rate: number) => void }) {
+export function SpeedChoice({
+  value,
+  length,
+  onChange,
+}: {
+  value: number;
+  length: number | undefined;
+  onChange: (rate: number, merge: boolean) => void;
+}) {
+  const gesture = useRef(false);
+  const index = rateIndex(value);
   return (
-    <InspectorSection label="Rate" labelId="inspector-speed-label" value={`${value}×`} hint={speedHint(length, value)}>
-      <RadioGroup
-        className="ui-segmented"
-        value={value}
-        aria-labelledby="inspector-speed-label"
+    <InspectorSection label="Rate" labelId="inspector-speed-label" value={`${tidy(value)}×`} hint={speedHint(length, value)}>
+      <Slider
+        className="inspector-slider"
+        value={index}
+        min={0}
+        max={RATE_LAST_INDEX}
+        step={1}
         data-testid="speed-setting"
-        onValueChange={(next) => onChange(Number(next))}
+        onPointerDownCapture={() => {
+          gesture.current = false;
+        }}
+        onKeyDownCapture={(event) => {
+          gesture.current = false;
+          if (event.key !== 'PageUp' && event.key !== 'PageDown') return;
+          event.preventDefault();
+          event.stopPropagation();
+          onChange(jumpRate(value, event.key === 'PageUp' ? 1 : -1), false);
+        }}
+        onValueChange={(next) => {
+          if (typeof next !== 'number') return;
+          const merge = gesture.current;
+          gesture.current = true;
+          onChange(rateAt(next), merge);
+        }}
       >
-        {SPEED_RATES.map((rate) => (
-          <RadioCard key={rate} value={rate} className="ui-segment" aria-label={`${rate}× faster`}>
-            {rate}×
-          </RadioCard>
+        <SliderControl>
+          <SliderTrack>
+            <SliderIndicator />
+            <SliderThumb aria-labelledby="inspector-speed-label" getAriaValueText={(next) => `${tidy(rateAt(Number(next)))} times faster`} />
+          </SliderTrack>
+        </SliderControl>
+      </Slider>
+      <div className="inspector-marks">
+        {SPEED_RATES.map((mark) => (
+          <button
+            key={mark}
+            type="button"
+            className="inspector-mark"
+            style={{ left: `${(rateIndex(mark) / RATE_LAST_INDEX) * 100}%` }}
+            aria-label={`Set rate to ${mark}×`}
+            aria-pressed={tidy(value) === mark}
+            onClick={() => onChange(mark, false)}
+          >
+            {mark}×
+          </button>
         ))}
-      </RadioGroup>
+      </div>
     </InspectorSection>
   );
 }
