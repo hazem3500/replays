@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Review suites: an optional plain-text `summary` on a suite and on each run. The suite's shows (collapsible) in the sidebar header and the run's in its Context tab. Not part of a registration's identity, so a later registration can replace it; at most 4000 characters, no HTML.
+
 - Recorder: new **Inputs hidden** privacy mode (`inputs-masked`) records page text and media but masks typed values, and replaces Text masked in the default options menu, which now lists Visible, Inputs hidden, Your data hidden and Fully masked for staff. `text-masked` is still accepted in `choices`, stored choices, bundles and the schema; customer choices are unchanged.
 
 - Recorder: optional per-recording host context snapshots, active-only semantic action labels and independently selectable performance/debugging diagnostics. Numeric timing capture includes bounded foreground frame samples and layout shifts; error context remains bounded and redacted. Generated lifecycle captions are hidden, and the viewer adds sortable network columns, resizable request details, full-URL tooltips and accessible caption options.

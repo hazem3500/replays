@@ -153,8 +153,11 @@ export const Inspector = memo(function Inspector({
   mobile,
   collapse,
   compare,
+  runSummary,
 }: {
   bundle: ReplayBundle;
+  /** The suite run's summary, shown in the Context tab. */
+  runSummary?: string | undefined;
   /** Original captured data: measured spans must be mapped, including starts inside cuts. */
   sourceBundle?: ReplayBundle;
   timeline?: EditTimeline | undefined;
@@ -274,7 +277,7 @@ export const Inspector = memo(function Inspector({
         />
       </DockPanel>
       <DockPanel value="context">
-        <ContextPanel bundle={bundle} schema={contextSchema} sections={contextSections} />
+        <ContextPanel bundle={bundle} schema={contextSchema} sections={contextSections} summary={runSummary} />
       </DockPanel>
       {features.map(({ id, featureTab }) => (
         <DockPanel key={id} value={id}>

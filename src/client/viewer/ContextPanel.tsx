@@ -29,6 +29,7 @@ import { CopyButton } from '@/components/copy-button.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 
+import { SummaryText } from './SummaryText.tsx';
 import './context-panel.css';
 
 /*
@@ -54,9 +55,12 @@ export function ContextPanel({
   bundle,
   schema,
   sections,
+  summary,
 }: {
   bundle: ContextBundle;
   schema?: FieldSchema | undefined;
+  /** The suite run's own summary of what it checked and found, shown above the captured context. */
+  summary?: string | undefined;
   /** Blocks client plugins add to the tab (registerContextSection), drawn after the built-in groups. */
   sections?: ReactNode;
 }) {
@@ -66,6 +70,7 @@ export function ContextPanel({
   if (!context) {
     return (
       <div className="table-scroll" data-testid="context-empty">
+        {summary ? <RunSummary summary={summary} /> : null}
         <Empty title="No context was captured">
           The recording app can attach approved build and runtime details. CLI captures can attach context with --context-file. Missing
           context cannot be recovered from this recording.
@@ -77,9 +82,22 @@ export function ContextPanel({
   return (
     <div ref={scope} data-testid="context-panel" className="table-scroll ctx">
       <div className="ctx-inner" data-slot={CONTEXT_SECTIONS_SLOT}>
+        {summary ? <RunSummary summary={summary} /> : null}
         {contextSections(CORE_SECTIONS, { context, schema }, sections)}
       </div>
     </div>
+  );
+}
+
+function RunSummary({ summary }: { summary: string }) {
+  const heading = useId();
+  return (
+    <section className="ctx-section ctx-run-summary" aria-labelledby={heading} data-testid="context-run-summary">
+      <h2 id={heading} className="ctx-heading">
+        This run
+      </h2>
+      <SummaryText summary={summary} />
+    </section>
   );
 }
 

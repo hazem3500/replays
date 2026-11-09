@@ -114,7 +114,7 @@ export class Listing {
     };
     const runs = suite.runs.toSorted((a, b) => a.sequence - b.sequence);
     const runDetails = await Promise.all(
-      runs.map(async ({ id, sequence, label, status, startedAt, finishedAt, replayId }) => {
+      runs.map(async ({ id, sequence, label, status, startedAt, finishedAt, replayId, summary }) => {
         const replay = replayId ? await replayOf(replayId) : undefined;
         return {
           id,
@@ -123,6 +123,7 @@ export class Listing {
           status,
           startedAt,
           ...(finishedAt ? { finishedAt } : {}),
+          ...(summary ? { summary } : {}),
           ...(replayId ? { replayId } : {}),
           ...(replay ? { replay } : {}),
         };
