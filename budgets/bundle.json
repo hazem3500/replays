@@ -9,8 +9,8 @@
     },
     "dist/cli/cli.mjs": {
       "raw": 477416,
-      "gzip": 122888,
-      "brotli": 100052
+      "gzip": 126695,
+      "brotli": 103217
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190449,
@@ -153,7 +153,7 @@
       "brotli": 41134
     },
     "dist/client/assets/edits-HASH.js": {
-      "raw": 37945,
+      "raw": 39237,
       "gzip": 13583,
       "brotli": 12224
     },
@@ -213,14 +213,14 @@
       "brotli": 2509
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 49680,
-      "gzip": 9272,
-      "brotli": 8308
+      "raw": 54205,
+      "gzip": 10168,
+      "brotli": 9079
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 291541,
-      "gzip": 98647,
-      "brotli": 82315
+      "raw": 308550,
+      "gzip": 105472,
+      "brotli": 86989
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -270,7 +270,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 67
+      "brotli": 71
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -310,7 +310,7 @@
     "dist/client/assets/plus-HASH.js": {
       "raw": 409,
       "gzip": 273,
-      "brotli": 244
+      "brotli": 266
     },
     "dist/client/assets/progress-HASH.js": {
       "raw": 27680,
@@ -578,9 +578,9 @@
       "brotli": 609
     },
     "dist/lib/chunks/replay.ts-525b9ad69e40.mjs": {
-      "raw": 10242,
-      "gzip": 3249,
-      "brotli": 2862
+      "raw": 11085,
+      "gzip": 3429,
+      "brotli": 3026
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -610,7 +610,7 @@
     "dist/lib/config.mjs": {
       "raw": 465,
       "gzip": 197,
-      "brotli": 166
+      "brotli": 176
     },
     "dist/lib/index.mjs": {
       "raw": 1761,
@@ -637,10 +637,10 @@
       "gzip": 1704,
       "brotli": 1457
     },
-    "dist/lib/recorder-chunks/attribute-classes.ts-e5b119bffc36.mjs": {
-      "raw": 68574,
-      "gzip": 18616,
-      "brotli": 16386
+    "dist/lib/recorder-chunks/attribute-classes.ts-8c1791dec11f.mjs": {
+      "raw": 79264,
+      "gzip": 21659,
+      "brotli": 18862
     },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
@@ -653,9 +653,9 @@
       "brotli": 334
     },
     "dist/lib/recorder-chunks/default-ui-gesture-icon.ts-610fd4f3974e.mjs": {
-      "raw": 18736,
-      "gzip": 5556,
-      "brotli": 4840
+      "raw": 19705,
+      "gzip": 5748,
+      "brotli": 5021
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
@@ -663,9 +663,9 @@
       "brotli": 1759
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
-      "raw": 6047,
-      "gzip": 2214,
-      "brotli": 1879
+      "raw": 6305,
+      "gzip": 2291,
+      "brotli": 1956
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -678,9 +678,9 @@
       "brotli": 721
     },
     "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs": {
-      "raw": 7507,
-      "gzip": 2443,
-      "brotli": 2138
+      "raw": 8470,
+      "gzip": 2628,
+      "brotli": 2309
     },
     "dist/lib/recorder-kit.mjs": {
       "raw": 525,
@@ -700,7 +700,7 @@
     "dist/lib/recorder-ui.mjs": {
       "raw": 39109,
       "gzip": 10612,
-      "brotli": 9245
+      "brotli": 9531
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190449,
@@ -931,7 +931,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1137,7 +1137,7 @@
       "cap": {
         "gzip": 4113
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1147,7 +1147,7 @@
         "gzip": 1328,
         "brotli": 1128
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
