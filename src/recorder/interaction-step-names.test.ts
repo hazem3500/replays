@@ -8,6 +8,8 @@ import { recorderPrivacy } from './recorder-privacy.ts';
 import { STEP_LABEL_MAX } from './step-label.ts';
 import type { RecorderPrivacyOptions } from './types.ts';
 
+const originalUrl = location.href;
+
 function capture(options: RecorderPrivacyOptions = { maskAllText: false }) {
   const steps: RawStep[] = [];
   const privacy = recorderPrivacy(options, resolveCapture({ privacy: options }));
@@ -118,5 +120,68 @@ describe('click labels never read masked or private text', () => {
     const steps = capture(masked);
     control('<span data-private>Secret customer</span><span>Open</span>').click();
     expect(steps[0]?.label).toBe('Clicked “Open”');
+  });
+});
+
+describe('semantic step names', () => {
+  it('names a field by its label, placeholder or legend and says it was focused', () => {
+    const steps = capture();
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      `<label for="task">Task name</label><input id="task" value="private">
+       <label>Notes <textarea>typed text</textarea></label>
+       <input placeholder="Search tasks:">
+       <fieldset><legend>Due date</legend><input type="text"></fieldset>
+       <input type="checkbox" aria-label="Billable">`,
+    );
+    onTestFinished(() => document.body.replaceChildren());
+    for (const field of document.querySelectorAll<HTMLElement>('input, textarea')) field.click();
+    expect(steps.map((step) => step.label)).toEqual([
+      'Focused “Task name”',
+      'Focused “Notes”',
+      'Focused “Search tasks”',
+      'Focused “Due date”',
+      'Clicked “Billable”',
+    ]);
+    expect(JSON.stringify(steps)).not.toMatch(/private|typed text/);
+  });
+
+  it('names an icon-only button from an inner icon and trims a trailing colon', () => {
+    const steps = capture();
+    control('<svg aria-label="Close"></svg>').click();
+    control('Profile:').click();
+    expect(steps.map((step) => step.label)).toEqual(['Clicked “Close”', 'Clicked “Profile”']);
+  });
+
+  it('marks its labels as generated', () => {
+    const steps = capture();
+    control('Save').click();
+    expect(steps[0]).toMatchObject({ kind: 'click', auto: true });
+  });
+
+  it('folds a click and the navigation it causes into one step', () => {
+    const steps = capture();
+    control('Projects').click();
+    history.pushState(null, '', '/projects');
+    onTestFinished(() => history.replaceState(null, '', originalUrl));
+    expect(steps.map((step) => step.label)).toEqual(['Opened “Projects”']);
+  });
+
+  it('names a navigation alone by its page', () => {
+    const steps = capture();
+    history.pushState(null, '', '/workspace/tasks');
+    onTestFinished(() => history.replaceState(null, '', originalUrl));
+    expect(steps.map((step) => step.label)).toEqual(['Opened Tasks']);
+  });
+
+  it('drops the form submission that a submit button click already shows', () => {
+    const steps = capture();
+    const form = document.createElement('form');
+    form.addEventListener('submit', (event) => event.preventDefault());
+    form.innerHTML = '<button type="submit">Create task</button>';
+    document.body.append(form);
+    onTestFinished(() => form.remove());
+    form.querySelector('button')?.click();
+    expect(steps.map((step) => step.label)).toEqual(['Clicked “Create task”']);
   });
 });

@@ -9,8 +9,8 @@ import { settle } from './settle.ts';
 let host: HTMLDivElement;
 let root: Root;
 
-const render = (text?: string, number?: number, edge: 'top' | 'bottom' = 'bottom') =>
-  settle(() => root.render(createElement(LiveCaption, { text, number, edge, testId: 'step-caption' })));
+const render = (text?: string, number?: number) =>
+  settle(() => root.render(createElement(LiveCaption, { text, number, testId: 'step-caption' })));
 
 function caption() {
   const element = host.querySelector<HTMLElement>('[data-testid="step-caption"]');
@@ -53,15 +53,6 @@ describe('live caption presence', () => {
     await render('Place the order');
     expect(caption().querySelector('[data-caption-morph]')).not.toBe(morph);
     expect(caption().dataset.active).toBe('true');
-    expect(caption().querySelector('[data-caption-text]')?.textContent).toBe('Place the order');
-  });
-
-  it('lands immediately at the new edge when the host has no browser animation API', async () => {
-    await render('Open the cart');
-    expect(caption().dataset.edge).toBe('bottom');
-    await render('Place the order', undefined, 'top');
-    expect(caption().dataset.active).toBe('true');
-    expect(caption().dataset.edge).toBe('top');
     expect(caption().querySelector('[data-caption-text]')?.textContent).toBe('Place the order');
   });
 });

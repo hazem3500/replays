@@ -1,5 +1,6 @@
-import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
-import { SignInError, SignInLink } from '../sign-in.tsx';
+import { StateView } from '@/components/ui/state-view.tsx';
+import { FailureShell, failureCopy, TRY_AGAIN } from '../routing/states.tsx';
+import { SignInError, useSignInRedirect } from '../sign-in.tsx';
 import { readSplitterSize, Splitter } from '../components/ui/splitter.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
@@ -31,7 +32,7 @@ import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns } from './runs.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
-import { compareDefaults, suiteViewLayout } from '../compare/defaults.ts';
+import { compareDefaults, isComparisonView, suiteViewLayout } from '../compare/defaults.ts';
 import { monograms, shortNames } from '../compare/tiles.ts';
 import { usePanelMotion } from '../hooks/use-panel-motion.ts';
 import { usePageView } from '../hooks/use-page-view.ts';
@@ -41,6 +42,14 @@ import { suiteComparePage } from '../routing/pages.ts';
 const SuiteCompare = suiteComparePage.Component;
 
 type WorkspaceRun = ReviewSuiteIndexRun & { duration?: number };
+
+/** A run whose recording did not load: gone for good (expired or removed), or worth another try. */
+function RunUnavailable({ message }: { message: string }) {
+  if (message === 'Replay not found')
+    return <StateView kind="not-found" title="This run’s recording is gone" cause="It has expired or was removed." />;
+  const { kind, title, cause, details } = failureCopy('run', message);
+  return <StateView kind={kind} title={title} cause={cause} details={details} actions={{ primary: TRY_AGAIN }} />;
+}
 
 /** Run rows from `runDetails` when present, else from the plain runs (no per-run error counts then). */
 function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
@@ -109,6 +118,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const editsSettled = edits.data !== undefined || edits.isError;
   // An observed auth failure must win over cached suite, bundle or edit data.
   const authFailure = [suiteFailure, bundleFailure, edits.error].find((candidate) => candidate instanceof SignInError);
+  const signingIn = useSignInRedirect(authFailure);
   const [tab, setTab] = useState<InspectorTab>('console');
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
   const [collapsed, setRailPreference] = useState(false);
@@ -136,7 +146,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     recordings: playable.length,
     viewLayout: suiteViewLayout(view),
   });
-  const comparing = defaults.compare;
+  const comparing = defaults.compare && isComparisonView(view);
 
   // The run being switched to: the sidebar's selection moves at once, the viewer once its data is in (or after a
   // short wait), as one calm in-place transition (transitions/swap.ts).
@@ -251,13 +261,10 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const tone = run ? statusTone(run, detailed) : undefined;
   const runStatus = tone ? <RunStatusChip tone={tone} /> : undefined;
 
+  if (signingIn) return <ViewerSkeleton suite label="Signing in" />;
   if (authFailure || (error && !suite)) {
     const message = authFailure?.message ?? error;
-    return (
-      <StateShell {...failureCopy('review suite', message)} details={`${message} · ${id}`} secondary={TRY_AGAIN}>
-        <SignInLink error={authFailure ?? suiteFailure} />
-      </StateShell>
-    );
+    return <FailureShell thing="review suite" failure={authFailure ?? message} details={`${message} · ${id}`} />;
   }
 
   // Until the suite itself has loaded, the whole workspace is a skeleton (sidebar included), so the sidebar never
@@ -354,11 +361,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
               compact={narrow}
               {...(runMenu ? { titleMenu: runMenu } : {})}
             />
-            <div className="empty" role="alert">
-              <strong>Could not open this run</strong>
-              <span>{bundleError === 'Replay not found' ? 'Its recording has expired or was removed.' : bundleError}</span>
-              <SignInLink error={bundleFailure} />
-            </div>
+            <RunUnavailable message={bundleError} />
           </main>
         ) : !selected && playable.length === 0 ? (
           <main className="app-shell">
@@ -366,10 +369,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             {runs.some((item) => isExpired(item, detailed)) ? (
               <SuiteExpired replayIds={runs.flatMap((item) => (item.replayId ? [item.replayId] : []))} />
             ) : (
-              <div className="empty">
-                <strong>No recordings yet</strong>
-                <span>Runs appear here as the review uploads them.</span>
-              </div>
+              <StateView kind="empty" title="No recordings yet" cause="Runs appear here as the review uploads them." />
             )}
           </main>
         ) : (

@@ -113,10 +113,10 @@ test('the index nests a suite’s runs, and a run whose replay expired is skippe
   await expect(menu.getByRole('menuitem', { name: /Desktop: run 2, Expired/ })).toHaveAttribute('aria-disabled', 'true');
 });
 
-test('a suite opens single and retains grid switching and layout history', async ({ page }) => {
+test('a comparison suite opens single and retains grid switching and layout history', async ({ page }) => {
   const { suite, one } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/s/${suite}`);
+  await openReplay(page, `${server().origin}/s/${suite}?view=compare&layout=single`);
   const tiles = page.getByTestId('compare-stage').locator('.ct-tile');
   await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'single');
   await expect(tiles.locator('.ct-label')).toHaveCount(0);
@@ -129,10 +129,10 @@ test('a suite opens single and retains grid switching and layout history', async
     for (const frame of frames) frame.setAttribute('data-marked', '');
   });
   await page.getByRole('complementary', { name: 'Review suite' }).locator(`[data-replay-id="${one}"]`).click();
-  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?layout=grid$`));
+  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?view=compare$`));
   await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
   await page.getByTestId('layout-switch').getByRole('radio', { name: 'Single' }).click();
-  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?view=compare&layout=single$`));
   await expect(tiles.locator('.ct-label')).toHaveCount(0);
   await page.goBack();
   await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'grid');
@@ -146,7 +146,7 @@ test('a suite opens single and retains grid switching and layout history', async
 test('each grid tile retains its sidebar colour and hover identity', async ({ page }) => {
   const { suite, one, two } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/s/${suite}?layout=grid`);
+  await openReplay(page, `${server().origin}/s/${suite}?view=compare`);
   const sidebar = page.getByRole('complementary', { name: 'Review suite' });
   const stage = page.getByTestId('compare-stage');
   for (const id of [one, two]) {
@@ -166,18 +166,19 @@ test('each grid tile retains its sidebar colour and hover identity', async ({ pa
   await expect(label).toBeHidden();
 });
 
-test('a named suite run opens single and keeps its accessible identity', async ({ page }) => {
-  const { suite, two } = await threeRuns(page.request);
+test('a suite that is not a comparison has no layout switcher and swaps runs in place', async ({ page }) => {
+  const { suite, one, two } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/s/${suite}/r/${two}`);
-  const tile = page.locator('.ct-tile[data-role="single"]');
-  await expect(tile).toHaveAttribute('data-tile-id', two);
-  await expect(tile).toHaveAccessibleName(/Desktop: run 2/);
-  await expect(page.locator('.ct-label')).toHaveCount(0);
-  await expect(page.getByTestId('layout-switch').getByRole('radio', { checked: true })).toHaveAttribute('data-layout', 'single');
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 2' })).toBeVisible();
+  await expect(page.getByTestId('layout-switch')).toHaveCount(0);
+  await expect(page.getByTestId('compare-stage')).toHaveCount(0);
+  await page.getByRole('complementary', { name: 'Review suite' }).locator(`[data-replay-id="${one}"]`).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
+  await expect(page.getByTestId('layout-switch')).toHaveCount(0);
 });
 
-for (const search of ['?layout=grid', '?layout=spotlight', '?view=compare', '?view=compare&layout=single']) {
+for (const search of ['?view=compare&layout=grid', '?view=compare&layout=spotlight', '?view=compare', '?view=compare&layout=single']) {
   test(`a suite honors explicit layout intent ${search}`, async ({ page }) => {
     const { suite, two } = await threeRuns(page.request);
     await openReplay(page, `${server().origin}/s/${suite}/r/${two}${search}`);

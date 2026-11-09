@@ -26,6 +26,6 @@ export function suiteRowActions(href: string, suiteId: string, recordings: numbe
     open(href),
     openInNewTab(href),
     copyLink(href),
-    { id: 'compare-runs', label: 'Compare runs', icon: 'columns-2', href: suiteHref(suiteId), disabled: recordings < 2 },
+    { id: 'compare-runs', label: 'Compare runs', icon: 'columns-2', href: `${suiteHref(suiteId)}?view=compare`, disabled: recordings < 2 },
   ];
 }

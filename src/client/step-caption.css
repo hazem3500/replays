@@ -6,8 +6,7 @@
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
 @layer app {
-  /* Centred on the recorded frame, at its bottom edge, or its top edge (data-edge, caption-placement.ts) when the
-     action it describes happens low on the page, 18 px in (scaled). Every size below is in --s or em of the caption's
+  /* Centred on the recorded frame, at its bottom edge, 18 px in (scaled). Every size below is in --s or em of the caption's
      own text, so the viewer and the editor (which set --s to the export's scale times the player's) draw the
      exported caption, only smaller. Wide frames cap it at 76% of the width; narrow ones let it run to the sides. */
   .step-caption {
@@ -26,7 +25,6 @@
     line-height: 1.35;
     pointer-events: none;
   }
-  .step-caption[data-edge="top"] { top: var(--caption-inset); bottom: auto; }
   /* A near-black pill (86%) in both themes: it sits on the recorded page, whatever that page's colours. An inset
      white ring keeps its edge on dark pages and a soft shadow lifts it off light ones; white 550 text clears 12:1
      over white and black alike. No blur. Enters with a 4 px move away from its edge and a 0.98 → 1 settle.
@@ -51,14 +49,13 @@
     text-wrap: balance;
     animation: caption-in 200ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
   }
-  .step-caption[data-edge="top"] .step-caption-text { --caption-from: -0.27em; }
   /* The number's circle sits as far in from the pill's curve as it is from its top and bottom (nested radius). */
   .step-caption-text:has(.step-caption-number) { padding-left: 0.47em; }
   @media (forced-colors: active) { .step-caption-text { border: 1px solid CanvasText; } }
   .step-caption-label { min-width: 0; max-height: 2.7em; overflow: hidden; }
   /* Live browser captions have a stable host for line swaps. Exported video captions keep their deterministic
      frame-render animation and markup unchanged. */
-  /* Show: fade and move in over 200 ms. Hide (or leave for the other edge): the same caption fades and moves 4 px
+  /* Show: fade and move in over 200 ms. Hide: the same caption fades and moves 4 px
      back toward its edge, a little faster (140 ms), whole: useCaptionPresence keeps its text and number so the box
      never collapses before it is gone. */
   .step-caption-live { opacity: 0; }

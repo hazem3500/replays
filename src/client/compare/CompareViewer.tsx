@@ -9,7 +9,7 @@ import { formatSeconds, parsePermalink } from '../permalink.ts';
 import { replayQuery } from '../queries.ts';
 import { shortcutFor } from '../shortcuts.ts';
 import { Viewer } from '../Viewer.tsx';
-import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
+import { FailureShell } from '../routing/states.tsx';
 import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
 import { useCompareSession } from '../hooks/use-compare-session.ts';
 import { useWindowKeydown } from '../hooks/use-window-keydown.ts';
@@ -91,7 +91,7 @@ function failureOf(tiles: readonly CompareTile[]) {
 }
 
 function CompareFailed({ tiles }: { tiles: readonly CompareTile[] }) {
-  return <StateShell {...failureCopy('comparison', failureOf(tiles))} secondary={TRY_AGAIN} />;
+  return <FailureShell thing="comparison" failure={failureOf(tiles)} />;
 }
 
 /** Phones: the recording on show, on its own at this moment (desktop has it on the tile). */
