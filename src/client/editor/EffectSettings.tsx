@@ -121,7 +121,10 @@ export function SpeedChoice({
         <SliderControl>
           <SliderTrack>
             <SliderIndicator />
-            <SliderThumb aria-labelledby="inspector-speed-label" getAriaValueText={(next) => `${tidy(rateAt(Number(next)))} times faster`} />
+            <SliderThumb
+              aria-labelledby="inspector-speed-label"
+              getAriaValueText={(next) => `${tidy(rateAt(Number(next)))} times faster`}
+            />
           </SliderTrack>
         </SliderControl>
       </Slider>

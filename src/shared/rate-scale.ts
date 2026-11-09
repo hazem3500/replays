@@ -8,7 +8,7 @@ import { PLAYBACK_SPEEDS } from './render-variant.ts';
  */
 function buildRates() {
   const rates: number[] = [];
-  for (let rate = MIN_SPEED_RATE; rate <= MAX_SPEED_RATE; ) {
+  for (let rate = MIN_SPEED_RATE; rate <= MAX_SPEED_RATE;) {
     rates.push(rate);
     rate += rate < 4 ? 0.25 : rate < 8 ? 0.5 : 1;
   }
@@ -23,7 +23,8 @@ export const RATE_JUMPS: readonly number[] = [MIN_SPEED_RATE, ...SPEED_RATES, MA
 /** The step nearest `rate`, as an index on the slider's axis (the lower one on a tie). */
 export function rateIndex(rate: number) {
   let nearest = 0;
-  for (const [index, step] of RATE_STEPS.entries()) if (Math.abs(step - rate) < Math.abs((RATE_STEPS[nearest] ?? 0) - rate)) nearest = index;
+  for (const [index, step] of RATE_STEPS.entries())
+    if (Math.abs(step - rate) < Math.abs((RATE_STEPS[nearest] ?? 0) - rate)) nearest = index;
   return nearest;
 }
 

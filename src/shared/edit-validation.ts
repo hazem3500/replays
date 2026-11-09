@@ -10,7 +10,16 @@ import {
 } from './cursor.ts';
 import { EDITS_VERSION, MAX_CUTS, MAX_HIGHLIGHTS, MAX_LABEL, MIN_EDIT_MS, type ReplayEdits, type StoredReplayEdits } from './edit-list.ts';
 import { editTimeline } from './edit-timeline.ts';
-import { BLUR_STYLES, MAX_CAPTION, MAX_EFFECTS, MAX_SPEED_RATE, MAX_ZOOM_SCALE, MIN_BLUR_SIZE, MIN_SPEED_RATE, MIN_ZOOM_SCALE } from './effects.ts';
+import {
+  BLUR_STYLES,
+  MAX_CAPTION,
+  MAX_EFFECTS,
+  MAX_SPEED_RATE,
+  MAX_ZOOM_SCALE,
+  MIN_BLUR_SIZE,
+  MIN_SPEED_RATE,
+  MIN_ZOOM_SCALE,
+} from './effects.ts';
 
 type Fields = Record<string, unknown>;
 type Range = { from: number; to: number };
