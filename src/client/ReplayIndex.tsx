@@ -1,5 +1,5 @@
 import { useIndexPluginEvents } from './hooks/use-index-plugin-events.ts';
-import { SignInError, SignInLink, fetchPage } from './sign-in.tsx';
+import { SignInError, fetchPage, signInHref, useSignInRedirect } from './sign-in.tsx';
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedText } from '@/components/animated-text.tsx';
@@ -639,6 +639,8 @@ export function ReplayIndex({
   const unreachable = error.startsWith('Could not reach ') || /\((?:502|503|504)\)$/.test(error);
   // why: a list already on screen beats a blank page, so a failed refresh keeps it under a banner and keeps trying.
   const stale = Boolean(items && error) && !authFailure;
+  const signingIn = useSignInRedirect(authFailure);
+  const signInTarget = authFailure ? signInHref() : undefined;
   const autoRetry = useAutoRetry({
     failing: Boolean(error) && !authFailure,
     pending: settledFilters !== filters,
@@ -795,9 +797,12 @@ export function ReplayIndex({
       <section className="index-body" aria-label="Replays" aria-busy={pending}>
         {/* Plugins' blocks above the list (registerIndexSection), given what the list shows. */}
         {items && !error ? <IndexSections summaries={items} /> : null}
-        {authFailure ? <SignInLink error={authFailure} /> : null}
         {stale ? <IndexEmpty input={{ kind: 'offline', connection: unreachable, retry: autoRetry }} /> : null}
-        {error && !stale ? (
+        {signInTarget ? (
+          signingIn ? null : (
+            <IndexEmpty input={{ kind: 'sign-in', href: signInTarget }} />
+          )
+        ) : error && !stale ? (
           <IndexEmpty input={{ kind: 'error', product: productName(), connection: unreachable, reason: error, retry: autoRetry }} />
         ) : empty ? (
           <IndexEmpty input={empty} onUpload={() => upload.current?.open()} />

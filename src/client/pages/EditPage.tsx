@@ -8,8 +8,8 @@ import { usePageCode } from '../hooks/use-page-code.ts';
 import { replayQuery } from '../queries.ts';
 import { replayHref } from '../routing/links.ts';
 import { editorPage } from '../routing/pages.ts';
-import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
-import { SignInError, SignInLink, useSignInRedirect } from '../sign-in.tsx';
+import { FailureShell } from '../routing/states.tsx';
+import { SignInError, useSignInRedirect } from '../sign-in.tsx';
 import { EditorSkeleton, LoadingSwap } from '../ViewerSkeleton.tsx';
 
 /** The failure edit mode shows, a sign-in failure first (it needs the person, not a retry). */
@@ -19,15 +19,7 @@ function failureOf(...candidates: readonly unknown[]): Error | undefined {
 }
 
 function EditFailure({ id, error }: { id: string; error: Error }) {
-  return (
-    <StateShell
-      {...failureCopy('edit view', error.message)}
-      back={{ label: 'Back to the replay', href: replayHref(id) }}
-      secondary={TRY_AGAIN}
-    >
-      <SignInLink error={error} />
-    </StateShell>
-  );
+  return <FailureShell thing="replay" verb="edit" failure={error} back={{ label: 'Back to the replay', href: replayHref(id) }} />;
 }
 
 /** Edit mode: the original bundle and the freshest saved edits (always refetched, so a save is never made blind). */

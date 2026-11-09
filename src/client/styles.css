@@ -648,7 +648,11 @@ svg.lucide.lucide { stroke-width: 2; }
    third (components/ui/state-view.css). */
 .state-shell { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr; justify-items: center; padding: 20px 20px 0; box-sizing: border-box; }
 .state-shell > .state-view { min-height: 0; padding-top: max(32px, 12dvh); }
-.state-brand { justify-content: center; }
+.state-brand { justify-self: start; }
+.state-brand .product-mark { overflow: visible; color: var(--text); }
+.state-brand .product-mark .mark-seg { fill: currentColor; fill-opacity: 0.35; stroke: none; }
+.state-brand .product-mark .mark-seg[data-on], .state-brand .product-mark .mark-playhead { fill: var(--accent); fill-opacity: 1; stroke: none; }
+.state-brand .product-logo { width: 24px; height: 24px; object-fit: contain; }
 .button { min-height: 32px; display: inline-flex; align-items: center; margin-top: 18px; padding: 0 12px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent); color: var(--accent-contrast); font-size: var(--text-sm); font-weight: 600; text-decoration: none; cursor: pointer; }
 .button.secondary { border-color: var(--line-strong); background: transparent; color: var(--text); }
 

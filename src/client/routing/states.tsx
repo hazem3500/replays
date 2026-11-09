@@ -1,45 +1,59 @@
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
-import { type StateAction, type StateKind, StateView } from '@/components/ui/state-view.tsx';
+import { ProductMark } from '@/components/brand-mark.tsx';
+import { type StateAction, type StateActions, type StateKind, StateView } from '@/components/ui/state-view.tsx';
 
-import { productName } from '../config.ts';
-import { SignInLink } from '../sign-in.tsx';
+import { productLogo, productName } from '../config.ts';
+import { signInHref, SignInError, useSignInRedirect } from '../sign-in.tsx';
 import { indexHref } from './links.ts';
 
+/** The product's identity, top left, as on the index: its mark and name, linking home. */
+function StateBrand() {
+  const logo = productLogo();
+  return (
+    <a className="state-brand" href={indexHref()}>
+      {logo ? <img className="product-logo" src={logo} alt="" width={24} height={24} /> : <ProductMark size={24} />}
+      {productName()}
+    </a>
+  );
+}
+
 /**
- * A page that could not be shown: a StateView under the product's mark. The way back (to all replays, or `back`) is its
- * one primary action; `secondary` is a quiet second (usually "Try again"), and `children` carry sign-in when that is
- * the cause.
+ * A page that could not be shown: a StateView under the product's mark. `actions` carry at most one primary; without a
+ * `primary` the way back to all replays takes that place.
  */
 export function StateShell({
   kind,
   title,
   cause,
   details,
-  back,
-  secondary,
+  actions,
   children,
 }: {
   kind: StateKind;
   title: string;
   cause?: ReactNode;
   details?: string | undefined;
-  back?: StateAction;
-  secondary?: StateAction | undefined;
+  actions?: StateActions;
   children?: ReactNode;
 }) {
   return (
     <main className="state-shell">
-      <a className="state-brand" href={indexHref()}>
-        {productName()}
-      </a>
+      <StateBrand />
       <StateView
         kind={kind}
         title={title}
         cause={cause}
         details={details}
-        actions={{ primary: back ?? { label: STRINGS.back, href: indexHref() }, secondary }}
+        actions={
+          actions?.primary
+            ? actions
+            : {
+                ...actions,
+                primary: { label: STRINGS.back, href: indexHref() },
+              }
+        }
       >
         {children}
       </StateView>
@@ -47,47 +61,135 @@ export function StateShell({
   );
 }
 
-const STRINGS = {
+/** The shell with no state in it: shown while the browser is being sent to sign in. */
+export function StateShellPending() {
+  return (
+    <main className="state-shell" aria-busy="true">
+      <StateBrand />
+    </main>
+  );
+}
+
+export const STRINGS = {
   back: 'Back to all replays',
   tryAgain: 'Try again',
+  signIn: 'Sign in',
+  signInTitle: (verb: string, thing: string) => `Sign in to ${verb} this ${thing}`,
+  signInCause: 'Use your @toggl.com Google account.',
+  noAccessTitle: (thing: string) => `You don’t have access to this ${thing}`,
+  noAccessCause: 'Ask the person who shared it to give you access, or sign in with a different account.',
   notFound: (thing: string) => `This ${thing} isn’t here`,
-  notFoundCause: 'It may have expired, or the link may be incomplete.',
+  notFoundCause: 'The link may be incomplete or mistyped.',
+  expired: (thing: string) => `This ${thing} has expired`,
+  expiredCause: 'Recordings are removed once their retention window passes. Ask for a new one if you still need it.',
   offline: 'You’re offline',
   offlineCause: (thing: string) => `Reconnect, then try again to open this ${thing}.`,
   failed: (thing: string) => `This ${thing} couldn’t open`,
-  failedCause: 'Something went wrong while loading it. Try again, or open the details below.',
+  failedCause: 'Something went wrong while loading it. Try again in a moment, or open the details below.',
+  noPage: 'There’s no page at this address',
+  noPageCause: 'Check the link, or go back to all replays.',
 };
 
-/** Reloads the page: the quiet second action of a page that failed. */
-export const TRY_AGAIN: StateAction = { label: STRINGS.tryAgain, onSelect: () => location.reload(), testId: 'try-again' };
+/** Reloads the page. */
+export const TRY_AGAIN: StateAction = {
+  label: STRINGS.tryAgain,
+  onSelect: () => location.reload(),
+  testId: 'try-again',
+};
+
+export type FailureKind = 'sign-in' | 'no-access' | 'expired' | 'not-found' | 'offline' | 'error';
+
+function failureKind(failure: unknown, message: string): FailureKind {
+  if (failure instanceof SignInError) return 'sign-in';
+  if (!(globalThis.navigator?.onLine ?? true)) return 'offline';
+  if (/forbidden|403|not allowed|no access/i.test(message)) return 'no-access';
+  if (/expired/i.test(message)) return 'expired';
+  if (/not found|404/i.test(message)) return 'not-found';
+  return 'error';
+}
 
 /**
- * The plain copy for a page that failed to load `thing` ("replay", "review suite"): not found when the message says so,
- * offline when the browser is, else an error; the raw message goes to the details.
+ * The plain copy for a page that failed to load `thing` ("replay", "review suite"): sign-in when the person is signed
+ * out (it needs them, not a retry, so it has no details), then no access, expired, not found, offline, else an error.
+ * `verb` is what the person was doing ("view", "edit"). The raw message goes to the details.
  */
-export function failureCopy(thing: string, message: string) {
-  let kind: 'offline' | 'not-found' | 'error' = 'error';
-  if (/not found|expired|404/i.test(message)) kind = 'not-found';
-  if (!(globalThis.navigator?.onLine ?? true)) kind = 'offline';
+export function failureCopy(thing: string, failure: unknown, verb = 'view') {
+  const message = typeof failure === 'string' ? failure : failure instanceof Error ? failure.message : '';
+  const kind = failureKind(failure, message);
   const copy = {
-    'not-found': { title: STRINGS.notFound(thing), cause: STRINGS.notFoundCause },
+    'sign-in': {
+      title: STRINGS.signInTitle(verb, thing),
+      cause: STRINGS.signInCause,
+    },
+    'no-access': {
+      title: STRINGS.noAccessTitle(thing),
+      cause: STRINGS.noAccessCause,
+    },
+    expired: { title: STRINGS.expired(thing), cause: STRINGS.expiredCause },
+    'not-found': {
+      title: STRINGS.notFound(thing),
+      cause: STRINGS.notFoundCause,
+    },
     offline: { title: STRINGS.offline, cause: STRINGS.offlineCause(thing) },
     error: { title: STRINGS.failed(thing), cause: STRINGS.failedCause },
   }[kind];
-  return { kind, ...copy, details: message || undefined };
+  const stateKind: StateKind = kind === 'expired' ? 'not-found' : kind;
+  return {
+    failure: kind,
+    kind: stateKind,
+    ...copy,
+    details: kind === 'sign-in' ? undefined : message || undefined,
+  };
+}
+
+/**
+ * The actions for a failure: one primary, always. Sign-in leads with "Sign in" (alone: going back would not help);
+ * a missing or forbidden page leads with the way back; a transient failure leads with "Try again" and offers the way
+ * back as an outline secondary.
+ */
+export function failureActions(kind: FailureKind, signIn: string | undefined, back?: StateAction): StateActions {
+  const home = back ?? { label: STRINGS.back, href: indexHref() };
+  if (kind === 'sign-in' && signIn)
+    return {
+      primary: { label: STRINGS.signIn, href: signIn, testId: 'sign-in' },
+    };
+  if (kind === 'offline' || kind === 'error') return { primary: TRY_AGAIN, secondary: home };
+  return { primary: home };
+}
+
+/** A page that failed to load `thing`: the failure's copy and actions, and the browser sent to sign in when that is the cause. */
+export function FailureShell({
+  thing,
+  failure,
+  verb,
+  back,
+  details,
+}: {
+  thing: string;
+  failure: unknown;
+  verb?: string;
+  back?: StateAction;
+  details?: string | undefined;
+}) {
+  const copy = failureCopy(thing, failure, verb);
+  const redirecting = useSignInRedirect(failure);
+  if (redirecting) return <StateShellPending />;
+  const { failure: kind, details: raw, ...view } = copy;
+  return (
+    <StateShell
+      {...view}
+      details={kind === 'sign-in' ? undefined : (details ?? raw)}
+      actions={failureActions(kind, failure instanceof SignInError ? signInHref() : undefined, back)}
+    />
+  );
 }
 
 /** An address that is not a page of this app. */
 export function NotFoundPage() {
-  return <StateShell kind="not-found" title="There’s no page at this address" cause="Check the link, or go back to all replays." />;
+  return <StateShell kind="not-found" title={STRINGS.noPage} cause={STRINGS.noPageCause} />;
 }
 
 /** A page whose render failed: what failed, sign-in when that is the cause, and a retry. */
 export function RouteErrorPage({ error }: ErrorComponentProps) {
-  const copy = failureCopy('page', error instanceof Error ? error.message : '');
-  return (
-    <StateShell {...copy} secondary={TRY_AGAIN}>
-      <SignInLink error={error} />
-    </StateShell>
-  );
+  return <FailureShell thing="page" failure={error} />;
 }

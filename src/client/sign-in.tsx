@@ -88,17 +88,3 @@ export function redirectToSignIn(now = Date.now()) {
   location.assign(href);
   return true;
 }
-
-/** Auto-recovery only when an observed page load needs it; a prefetch cannot navigate the tab. */
-export function SignInLink({ error }: { error: unknown }) {
-  const needed = error instanceof SignInError;
-  useEffect(() => {
-    if (needed) redirectToSignIn();
-  }, [needed]);
-  const href = needed ? signInHref() : undefined;
-  return href ? (
-    <a className="button" href={href}>
-      Sign in
-    </a>
-  ) : null;
-}
