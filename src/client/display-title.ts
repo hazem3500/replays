@@ -12,11 +12,14 @@ export function sourceShortLabel(link: Pick<ReplaySourceLink, 'provider' | 'labe
   return match ? `${match[1]?.replace(/^toggl_/, '')}#${match[2]}` : undefined;
 }
 
+/** The title's text after its kind and matching source reference, when it has both. */
+function afterKindAndRef(title: string, labels: Set<string>) {
+  const [kind = '', ref = '', ...rest] = title.split(' · ');
+  return KINDS.includes(kind) && labels.has(ref) ? rest.join(' · ') : '';
+}
+
 /** A row's title without the kind and `owner/repo#N` its chips and source link already say, and without a commit prefix. */
 export function displayTitle(meta: { title: string; sources?: Pick<ReplaySourceLink, 'label'>[] | undefined }) {
-  const parts = meta.title.split(' · ');
-  const [kind, ref, ...rest] = parts;
-  if (!kind || !ref || !rest.length || !KINDS.includes(kind) || !meta.sources?.some((source) => source.label === ref)) return meta.title;
-  const text = rest.join(' · ').replace(COMMIT_PREFIX, '');
+  const text = afterKindAndRef(meta.title, new Set(meta.sources?.map((source) => source.label))).replace(COMMIT_PREFIX, '');
   return text ? capitalize(text) : meta.title;
 }
