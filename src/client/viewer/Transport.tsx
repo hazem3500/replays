@@ -239,19 +239,20 @@ function TimeReadout() {
   );
 }
 
+function fpsHint(recorded: boolean, band: FrameBand | undefined) {
+  if (!recorded) return 'Frame timing not recorded';
+  if (!band) return 'No frame sample at this moment';
+  return `About ${Math.round(band.fps)} frames per second this second; about ${band.dropped} missed against 60 Hz`;
+}
+
 /** Frame rate at the playhead, for performance-focused replays: from the recorded one-second samples, never made up. */
 function FpsReadout() {
   const { performanceFocused, frames = NO_FRAMES } = useViewer();
   const band = usePlayhead((time) => bandAt(frames, time));
   if (!performanceFocused) return null;
   const recorded = frames.length > 0;
-  const label = !recorded
-    ? 'Frame timing not recorded'
-    : band
-      ? `About ${Math.round(band.fps)} frames per second this second; about ${band.dropped} missed against 60 Hz`
-      : 'No frame sample at this moment';
   return (
-    <Hint label={label} align="start">
+    <Hint label={fpsHint(recorded, band)} align="start">
       <span className="transport-fps" data-testid="fps-readout" data-verdict={band?.verdict} data-recorded={recorded || undefined}>
         <i aria-hidden="true" />
         {band ? <strong>{Math.round(band.fps)}</strong> : '–'} FPS

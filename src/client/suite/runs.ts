@@ -74,6 +74,13 @@ export interface RunMetric {
 
 const millis = (ms: number) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`);
 
+const fpsMetric = (id: RunMetric['id'], label: string, fps: number): RunMetric => ({
+  id,
+  label,
+  value: String(Math.round(fps)),
+  verdict: fpsVerdict(fps),
+});
+
 /**
  * The compact comparison row of a performance-focused suite: frame rate (median and slowest second), longest task and
  * blocking time. A metric that was not recorded is left out; an empty list means the run recorded none of them.
@@ -81,9 +88,14 @@ const millis = (ms: number) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 10
 export function runMetrics(perf: ReplayPerfSummary | undefined): RunMetric[] {
   if (!perf) return [];
   const metrics: RunMetric[] = [];
-  if (perf.fpsP50 !== undefined) metrics.push({ id: 'fps', label: 'FPS', value: String(Math.round(perf.fpsP50)), verdict: fpsVerdict(perf.fpsP50) });
-  if (perf.fpsMin !== undefined) metrics.push({ id: 'min', label: 'min', value: String(Math.round(perf.fpsMin)), verdict: fpsVerdict(perf.fpsMin) });
+  if (perf.fpsP50 !== undefined) metrics.push(fpsMetric('fps', 'FPS', perf.fpsP50));
+  if (perf.fpsMin !== undefined) metrics.push(fpsMetric('min', 'min', perf.fpsMin));
   if (perf.longestTask !== undefined) metrics.push({ id: 'task', label: 'task', value: millis(perf.longestTask) });
   if (perf.blocking !== undefined) metrics.push({ id: 'tbt', label: 'TBT', value: millis(perf.blocking) });
   return metrics;
+}
+
+/** A run's metrics when its suite is performance-focused; undefined leaves the row as it was. */
+export function runRowMetrics(run: { replay?: { perf?: ReplayPerfSummary | undefined } | undefined }, performanceFocused: boolean) {
+  return performanceFocused ? runMetrics(run.replay?.perf) : undefined;
 }

@@ -76,7 +76,14 @@ export function TimeRibbon({
         <span>{formatClock(duration / 2)}</span>
         <span>{formatClock(duration)}</span>
       </div>
-      <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} data-fps={fps?.length ? '' : undefined} {...handlers}>
+      <div
+        ref={strip}
+        className="time-ribbon"
+        data-testid={testId}
+        title={STRINGS.hint}
+        data-fps={fps?.length ? '' : undefined}
+        {...handlers}
+      >
         {density ? <Density counts={density} /> : null}
         {fps?.length ? <FpsLane bands={fps} span={span} /> : null}
         {marks.map((mark) => (

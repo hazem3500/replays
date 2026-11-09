@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { fpsVerdict, type FrameSample, sampleFps, summarizeFrames, summarizePerformanceTrack } from '../src/shared/frame-timing.ts';
 import { bandAt, frameBands } from '../src/client/viewer/performance/frames.ts';
 import { editTimeline } from '../src/shared/edit-timeline.ts';
-import { runMetrics } from '../src/client/suite/runs.ts';
+import { runMetrics, runRowMetrics } from '../src/client/suite/runs.ts';
 
+const nothing: { value?: undefined } = {};
+const absent = nothing.value;
 const sample = (at: number, frames: number, dropped = 0, elapsed = 1000): FrameSample => ({ at, elapsed, frames, dropped });
 
 describe('frame rate from samples', () => {
@@ -19,9 +21,14 @@ describe('frame rate from samples', () => {
   });
 
   it('summarises median, slowest second and missed frames', () => {
-    expect(summarizeFrames(undefined)).toBeUndefined();
+    expect(summarizeFrames(absent)).toBeUndefined();
     expect(summarizeFrames([])).toBeUndefined();
-    expect(summarizeFrames([sample(0, 60, 0), sample(1000, 20, 80), sample(2000, 58, 3)])).toEqual({ p50: 58, min: 20, dropped: 83, seconds: 3 });
+    expect(summarizeFrames([sample(0, 60, 0), sample(1000, 20, 80), sample(2000, 58, 3)])).toEqual({
+      p50: 58,
+      min: 20,
+      dropped: 83,
+      seconds: 3,
+    });
     expect(summarizeFrames([sample(0, 60), sample(1000, 40)])?.p50).toBe(50);
   });
 });
@@ -41,7 +48,7 @@ describe('frame bands on the player clock', () => {
   });
 
   it('drops a sample inside a cut and shifts later ones', () => {
-    const timeline = editTimeline({ cuts: [{ id: 'c1', from: 1000, to: 2000 }] }, 3000);
+    const timeline = editTimeline({ cuts: [{ from: 1000, to: 2000 }] }, 3000);
     const bands = frameBands(samples, timeline);
     expect(bands.map((band) => [band.at, band.fps])).toEqual([
       [0, 60],
@@ -50,13 +57,13 @@ describe('frame bands on the player clock', () => {
   });
 
   it('has no bands when frame timing was not recorded', () => {
-    expect(frameBands(undefined)).toEqual([]);
+    expect(frameBands(absent)).toEqual([]);
   });
 });
 
 describe('run metrics', () => {
   it('summarises the track without inventing what was not captured', () => {
-    expect(summarizePerformanceTrack(undefined)).toBeUndefined();
+    expect(summarizePerformanceTrack(absent)).toBeUndefined();
     expect(summarizePerformanceTrack({ supported: ['paint'], entries: [] })).toBeUndefined();
     expect(
       summarizePerformanceTrack({
@@ -72,13 +79,20 @@ describe('run metrics', () => {
   });
 
   it('lists the recorded metrics for a run row', () => {
-    expect(runMetrics(undefined)).toEqual([]);
-    expect(runMetrics({ fpsP50: 58.4, fpsMin: 22, longestTask: 180, blocking: 1450 })).toEqual([
+    expect(runMetrics(absent)).toEqual([]);
+    expect(runMetrics({ fpsP50: 58.4, fpsMin: 22, longestTask: 180, blocking: 1480 })).toEqual([
       { id: 'fps', label: 'FPS', value: '58', verdict: 'good' },
       { id: 'min', label: 'min', value: '22', verdict: 'poor' },
       { id: 'task', label: 'task', value: '180 ms' },
       { id: 'tbt', label: 'TBT', value: '1.5 s' },
     ]);
     expect(runMetrics({ longestTask: 90 }).map((metric) => metric.id)).toEqual(['task']);
+  });
+
+  it('leaves the row alone unless the suite is performance-focused', () => {
+    const run = { replay: { perf: { fpsP50: 60 } } };
+    expect(runRowMetrics(run, false)).toBeUndefined();
+    expect(runRowMetrics(run, true)?.map((metric) => metric.id)).toEqual(['fps']);
+    expect(runRowMetrics({}, true)).toEqual([]);
   });
 });

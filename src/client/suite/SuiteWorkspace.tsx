@@ -30,7 +30,17 @@ import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
 import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
-import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns, type RunMetric, runMetrics } from './runs.ts';
+import {
+  initialRunReplayId,
+  isExpired,
+  neighbourReplayId,
+  orderedRuns,
+  playableReplayId,
+  type RecordedRun,
+  recordedRuns,
+  type RunMetric,
+  runRowMetrics,
+} from './runs.ts';
 import { isPerformanceFocused } from '../../shared/performance-focus.ts';
 import { pageProfiles } from '../profiles.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
@@ -525,8 +535,7 @@ function SuiteSidebar({
               name={names[index] ?? run.label}
               status={playable ? tone : expired ? 'Expired' : 'No recording'}
               tone={tone}
-              errors={errors}
-              metrics={performanceFocused ? runMetrics(run.replay?.perf) : undefined}
+              metrics={runRowMetrics(run, performanceFocused)}
             />
           );
           const label = `Run ${sequenceLabel(run)}: ${run.label}, ${tone}${errors ? `, ${plural(errors, 'error')}` : ''}${playable ? '' : expired ? ', recording expired' : ', no recording'}`;
@@ -579,16 +588,15 @@ function RunCopy({
   name,
   status,
   tone,
-  errors,
   metrics,
 }: {
   run: WorkspaceRun;
   name: string;
   status: string;
   tone: string;
-  errors: number;
   metrics: RunMetric[] | undefined;
 }) {
+  const errors = runErrors(run);
   return (
     <>
       <span className="run-swatch" aria-hidden="true" />
@@ -601,22 +609,25 @@ function RunCopy({
           <span className={`run-status tone-${tone}`}>{status}</span>
           {errors > 0 ? <span className="run-errors">{plural(errors, 'error')}</span> : null}
         </span>
-        {metrics ? (
-          <span className="run-perf" data-testid="run-perf">
-            {metrics.length ? (
-              metrics.map((metric) => (
-                <span key={metric.id} data-verdict={metric.verdict}>
-                  {metric.label} <strong>{metric.value}</strong>
-                </span>
-              ))
-            ) : (
-              <span>No performance data</span>
-            )}
-            {metrics.length && !metrics.some((metric) => metric.id === 'fps') ? <span>FPS not recorded</span> : null}
-          </span>
-        ) : null}
+        {metrics ? <RunPerf metrics={metrics} /> : null}
       </span>
     </>
+  );
+}
+
+/** A performance-focused suite's comparison row: what the run recorded, and a plain note for what it did not. */
+function RunPerf({ metrics }: { metrics: RunMetric[] }) {
+  const noFps = metrics.length > 0 && !metrics.some((metric) => metric.id === 'fps');
+  return (
+    <span className="run-perf" data-testid="run-perf">
+      {metrics.map((metric) => (
+        <span key={metric.id} data-verdict={metric.verdict}>
+          {metric.label} <strong>{metric.value}</strong>
+        </span>
+      ))}
+      {metrics.length === 0 ? <span>No performance data</span> : null}
+      {noFps ? <span>FPS not recorded</span> : null}
+    </span>
   );
 }
 

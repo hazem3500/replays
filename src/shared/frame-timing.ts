@@ -32,10 +32,10 @@ export function summarizeFrames(samples: readonly FrameSample[] | undefined): Fr
   if (!samples?.length) return undefined;
   const rates = samples.map(sampleFps).toSorted((a, b) => a - b);
   const middle = Math.floor(rates.length / 2);
-  const p50 = rates.length % 2 ? rates[middle]! : (rates[middle - 1]! + rates[middle]!) / 2;
+  const p50 = rates.length % 2 ? (rates[middle] ?? 0) : ((rates[middle - 1] ?? 0) + (rates[middle] ?? 0)) / 2;
   return {
     p50,
-    min: rates[0]!,
+    min: rates[0] ?? 0,
     dropped: samples.reduce((sum, sample) => sum + sample.dropped, 0),
     seconds: samples.length,
   };
@@ -60,9 +60,10 @@ export function summarizePerformanceTrack(track: ReplayPerformanceTrack | undefi
   const tasks = track.entries.filter((entry) => entry.kind === 'long-task' && Number.isFinite(entry.value) && entry.value >= 0);
   const longest = tasks.reduce((most, entry) => Math.max(most, entry.value), 0);
   const watched = track.supported.includes('longtask') || tasks.length > 0;
+  const blocking = tasks.reduce((sum, entry) => sum + Math.max(0, entry.value - 50), 0);
   const summary: ReplayPerfSummary = {
     ...(frames ? { fpsP50: round(frames.p50), fpsMin: round(frames.min) } : {}),
-    ...(watched ? { longestTask: round(longest), blocking: round(tasks.reduce((sum, entry) => sum + Math.max(0, entry.value - 50), 0)) } : {}),
+    ...(watched ? { longestTask: round(longest), blocking: round(blocking) } : {}),
   };
   return Object.keys(summary).length ? summary : undefined;
 }
