@@ -193,10 +193,7 @@ describe('withBase with branding', () => {
     expect(withBase(INDEX, '', pageBranding({ name: 'Plain' }))).toContain('<meta name="app-logo" content="" />');
   });
 
-  const FAVICON_INDEX = INDEX.replace(
-    '<title>',
-    '<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" /><title>',
-  );
+  const FAVICON_INDEX = INDEX.replace('<title>', '<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" /><title>');
   const iconOf = (html: string) => decodeURIComponent(/<link rel="icon" href="data:image\/svg\+xml,([^"]*)"/.exec(html)?.[1] ?? '');
 
   it('draws the tab icon in the theme accent, for either scheme', () => {
