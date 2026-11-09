@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { formatClock } from '../../shared/replay.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 
 import { useRibbonHighlightMotion } from '../hooks/use-ribbon-highlight-motion.ts';
 import { usePlayheadProgress } from '../hooks/use-playhead-progress.ts';
+import { useRibbonScrub } from '../hooks/use-ribbon-scrub.ts';
 import { useRibbonBrush } from '../hooks/use-ribbon-brush.ts';
 import { usePlayer } from '../player.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the ribbon's styles load with the lazy inspector chunk, not with every page.
@@ -30,7 +31,7 @@ export interface RibbonRange {
   to: number;
 }
 
-const STRINGS = { hint: 'Click to seek, drag to show only that stretch' };
+const STRINGS = { hint: 'Click to seek, drag the playhead to scrub, drag to show only that stretch', key: 'Click to seek · Drag the playhead to scrub · Drag to filter' };
 
 /**
  * One strip on the scrubber's own domain (0 to the replay's duration), so a mark at 40 % here sits at 40 % of the seek
@@ -61,7 +62,14 @@ export function TimeRibbon({
   const span = Math.max(1, duration);
   const { brush, handlers } = useRibbonBrush(span, (time) => player.seek(time), onRange);
   const strip = useRef<HTMLDivElement>(null);
+  const handle = useRef<HTMLSpanElement>(null);
+  const scrub = useRibbonScrub(player, span, strip);
   usePlayheadProgress(strip, span);
+  useLayoutEffect(() => {
+    const write = () => handle.current?.setAttribute('aria-valuenow', String(Math.round(player.getTime())));
+    write();
+    return player.subscribeTime(write);
+  }, [player]);
   const lit = highlight ? marks.find((mark) => mark.id === highlight) : undefined;
   const highlightRef = useRibbonHighlightMotion(lit?.id, lit?.at ?? 0, lit?.end ?? 0, span);
   const shown = brush ?? range;
@@ -95,7 +103,21 @@ export function TimeRibbon({
           />
         ) : null}
         <span className="ribbon-future" />
-        <span className="ribbon-now" />
+        <span className="ribbon-now">
+          <span
+            ref={handle}
+            className="ribbon-handle"
+            data-ribbon-handle=""
+            role="slider"
+            tabIndex={0}
+            aria-label="Playhead"
+            aria-orientation="horizontal"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(span)}
+            aria-valuenow={0}
+            {...scrub}
+          />
+        </span>
       </div>
       <div className="ribbon-key">
         {testId === 'network-ribbon' ? (
@@ -110,7 +132,7 @@ export function TimeRibbon({
             </span>
           </>
         ) : null}
-        <span>Click to seek · Drag to filter</span>
+        <span>{STRINGS.key}</span>
       </div>
     </div>
   );
