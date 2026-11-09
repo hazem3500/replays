@@ -112,8 +112,7 @@ export function suitePosterRun(runs: readonly ReviewSuiteIndexRun[]) {
 function titleIfClamped(event: PointerEvent<HTMLElement>) {
   const element = event.currentTarget;
   const cut = element.scrollHeight > element.clientHeight + 1 || element.scrollWidth > element.clientWidth + 1;
-  const full = element.dataset.fullTitle;
-  if (full || cut) element.title = full ?? element.textContent ?? '';
+  if (cut) element.title = element.textContent ?? '';
   else element.removeAttribute('title');
 }
 
@@ -233,13 +232,7 @@ function SessionItem({
       />
       <div className="feed-body">
         <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
-          <a
-            className="row-target feed-title"
-            href={href}
-            aria-label={name}
-            onPointerEnter={titleIfClamped}
-            data-full-title={summary.title}
-          >
+          <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
             {displayTitle(summary)}
           </a>
           <RowMenu title={summary.title} actions={replayRowActions(summary.id)} menu={menu} onDelete={deletion.requestDelete} />
@@ -481,13 +474,7 @@ function SuiteItem({
         )}
         <div className="feed-body">
           <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
-            <a
-              className="row-target feed-title"
-              href={href}
-              aria-label={name}
-              onPointerEnter={titleIfClamped}
-              data-full-title={suite.title}
-            >
+            <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
               {displayTitle({ title: suite.title, sources })}
             </a>
             <RowMenu title={suite.title} actions={suiteRowActions(href, suite.id, recordings)} menu={menu} />
