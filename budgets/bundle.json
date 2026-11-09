@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 477416,
-      "gzip": 123004,
-      "brotli": 100210
+      "raw": 491739,
+      "gzip": 126695,
+      "brotli": 103217
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190449,
@@ -153,9 +153,9 @@
       "brotli": 41134
     },
     "dist/client/assets/edits-HASH.js": {
-      "raw": 38094,
-      "gzip": 13583,
-      "brotli": 12224
+      "raw": 39237,
+      "gzip": 13991,
+      "brotli": 12591
     },
     "dist/client/assets/elements-HASH.js": {
       "raw": 17251,
@@ -213,14 +213,14 @@
       "brotli": 2509
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 52626,
-      "gzip": 9871,
-      "brotli": 8814
+      "raw": 54205,
+      "gzip": 10168,
+      "brotli": 9079
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 299563,
-      "gzip": 102400,
-      "brotli": 84455
+      "raw": 308550,
+      "gzip": 105472,
+      "brotli": 86989
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -268,9 +268,9 @@
       "brotli": 2300
     },
     "dist/client/assets/motion-features-HASH.js": {
-      "raw": 66,
-      "gzip": 81,
-      "brotli": 68
+      "raw": 68,
+      "gzip": 84,
+      "brotli": 71
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -308,9 +308,9 @@
       "brotli": 77
     },
     "dist/client/assets/plus-HASH.js": {
-      "raw": 409,
-      "gzip": 273,
-      "brotli": 258
+      "raw": 422,
+      "gzip": 282,
+      "brotli": 266
     },
     "dist/client/assets/progress-HASH.js": {
       "raw": 27680,
@@ -578,9 +578,9 @@
       "brotli": 609
     },
     "dist/lib/chunks/replay.ts-525b9ad69e40.mjs": {
-      "raw": 10762,
-      "gzip": 3329,
-      "brotli": 2937
+      "raw": 11085,
+      "gzip": 3429,
+      "brotli": 3026
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -610,7 +610,7 @@
     "dist/lib/config.mjs": {
       "raw": 465,
       "gzip": 197,
-      "brotli": 170
+      "brotli": 176
     },
     "dist/lib/index.mjs": {
       "raw": 1761,
@@ -638,9 +638,9 @@
       "brotli": 1457
     },
     "dist/lib/recorder-chunks/attribute-classes.ts-8c1791dec11f.mjs": {
-      "raw": 76955,
-      "gzip": 21028,
-      "brotli": 18312
+      "raw": 79264,
+      "gzip": 21659,
+      "brotli": 18862
     },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
@@ -653,9 +653,9 @@
       "brotli": 334
     },
     "dist/lib/recorder-chunks/default-ui-gesture-icon.ts-610fd4f3974e.mjs": {
-      "raw": 19131,
-      "gzip": 5580,
-      "brotli": 4874
+      "raw": 19705,
+      "gzip": 5748,
+      "brotli": 5021
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
@@ -663,9 +663,9 @@
       "brotli": 1759
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
-      "raw": 6121,
-      "gzip": 2224,
-      "brotli": 1899
+      "raw": 6305,
+      "gzip": 2291,
+      "brotli": 1956
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -678,9 +678,9 @@
       "brotli": 721
     },
     "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs": {
-      "raw": 8223,
-      "gzip": 2551,
-      "brotli": 2241
+      "raw": 8470,
+      "gzip": 2628,
+      "brotli": 2309
     },
     "dist/lib/recorder-kit.mjs": {
       "raw": 525,
@@ -698,9 +698,9 @@
       "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
-      "raw": 39109,
-      "gzip": 10612,
-      "brotli": 9253
+      "raw": 40283,
+      "gzip": 10931,
+      "brotli": 9531
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190449,
@@ -768,20 +768,20 @@
       "brotli": 2322
     },
     "initial/render.html/js": {
-      "raw": 559146,
-      "gzip": 179928,
-      "brotli": 142340
+      "raw": 575921,
+      "gzip": 185326,
+      "brotli": 146611
     }
   },
   "allowances": [
     {
       "file": "dist/lib/recorder-ui.mjs",
       "cap": {
-        "raw": 39109,
-        "gzip": 10612
+        "raw": 40283,
+        "gzip": 10931
       },
-      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
@@ -1076,10 +1076,10 @@
     {
       "file": "dist/cli/cli.mjs",
       "cap": {
-        "raw": 477416
+        "raw": 491739
       },
-      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/step-caption-HASH.css",
@@ -1442,11 +1442,11 @@
     {
       "file": "dist/client/assets/plus-HASH.js",
       "cap": {
-        "raw": 409,
-        "gzip": 273
+        "raw": 422,
+        "gzip": 282
       },
-      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/progress-HASH.js",
@@ -1746,11 +1746,11 @@
     {
       "file": "dist/client/assets/edits-HASH.js",
       "cap": {
-        "gzip": 13583,
-        "brotli": 12224
+        "gzip": 13991,
+        "brotli": 12591
       },
-      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/chunks/edit-list.ts-a6938d76f655.mjs",
@@ -1917,11 +1917,11 @@
     {
       "file": "initial/render.html/js",
       "cap": {
-        "gzip": 179928,
-        "brotli": 142340
+        "gzip": 185326,
+        "brotli": 146611
       },
-      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/chunks/capture-profile.ts-d4348e7cd2c7.mjs",
@@ -2012,11 +2012,11 @@
     {
       "file": "dist/client/assets/motion-features-HASH.js",
       "cap": {
-        "raw": 66,
-        "gzip": 81
+        "raw": 68,
+        "gzip": 84
       },
-      "reason": "Baseline refresh: remaining caps kept at their measured bytes on main d471c22; superseded metrics moved to the entry for this PR.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/open-hint-HASH.css",
@@ -2069,129 +2069,129 @@
     {
       "file": "dist/cli/cli.mjs",
       "cap": {
-        "gzip": 123004,
-        "brotli": 100210
+        "gzip": 126695,
+        "brotli": 103217
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/edits-HASH.js",
       "cap": {
-        "raw": 38094
+        "raw": 39237
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
-        "raw": 52626,
-        "gzip": 9871,
-        "brotli": 8814
+        "raw": 54205,
+        "gzip": 10168,
+        "brotli": 9079
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
-        "raw": 299563,
-        "gzip": 102400,
-        "brotli": 84455
+        "raw": 308550,
+        "gzip": 105472,
+        "brotli": 86989
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/motion-features-HASH.js",
       "cap": {
-        "brotli": 68
+        "brotli": 71
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/client/assets/plus-HASH.js",
       "cap": {
-        "brotli": 258
+        "brotli": 266
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/chunks/replay.ts-525b9ad69e40.mjs",
       "cap": {
-        "raw": 10762,
-        "gzip": 3329,
-        "brotli": 2937
+        "raw": 11085,
+        "gzip": 3429,
+        "brotli": 3026
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/config.mjs",
       "cap": {
-        "brotli": 170
+        "brotli": 176
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/recorder-chunks/default-ui-gesture-icon.ts-610fd4f3974e.mjs",
       "cap": {
-        "raw": 19131,
-        "gzip": 5580,
-        "brotli": 4874
+        "raw": 19705,
+        "gzip": 5748,
+        "brotli": 5021
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
       "cap": {
-        "raw": 6121,
-        "gzip": 2224,
-        "brotli": 1899
+        "raw": 6305,
+        "gzip": 2291,
+        "brotli": 1956
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs",
       "cap": {
-        "raw": 8223,
-        "gzip": 2551,
-        "brotli": 2241
+        "raw": 8470,
+        "gzip": 2628,
+        "brotli": 2309
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/recorder-ui.mjs",
       "cap": {
-        "brotli": 9253
+        "brotli": 9531
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "initial/render.html/js",
       "cap": {
-        "raw": 559146
+        "raw": 575921
       },
-      "reason": "Baseline refresh: main d471c22 already measures above this cap from earlier merged features; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     },
     {
       "file": "dist/lib/recorder-chunks/attribute-classes.ts-8c1791dec11f.mjs",
       "cap": {
-        "raw": 76955,
-        "gzip": 21028,
-        "brotli": 18312
+        "raw": 79264,
+        "gzip": 21659,
+        "brotli": 18862
       },
-      "reason": "Baseline refresh: chunk renamed by a source-membership change on main d471c22; caps set to the measured bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/268"
+      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
+      "pr": "https://github.com/hazem3500/replays/pull/284"
     }
   ]
 }
