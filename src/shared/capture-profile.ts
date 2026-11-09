@@ -15,10 +15,11 @@ export const CAPTURED_INPUTS: readonly CapturedInputs[] = ['masked', 'visible'];
 
 /**
  * A recorder masking mode. `interface-visible` masks every text but the product interface marked `data-replay-public`
- * (never form fields); `text-masked` masks text and inputs but shows media; `masked` hides all three.
+ * (never form fields); `text-masked` masks text and inputs but shows media; `inputs-masked` shows text and media but
+ * masks typed values; `masked` hides all three.
  */
-export type CapturedMode = 'masked' | 'interface-visible' | 'text-masked' | 'visible';
-export const CAPTURED_MODES: readonly CapturedMode[] = ['masked', 'interface-visible', 'text-masked', 'visible'];
+export type CapturedMode = 'masked' | 'interface-visible' | 'text-masked' | 'inputs-masked' | 'visible';
+export const CAPTURED_MODES: readonly CapturedMode[] = ['masked', 'interface-visible', 'text-masked', 'inputs-masked', 'visible'];
 
 /**
  * What a customer picked in a recording's options step (`meta.captured.choice`): the `mode`, so the server knows which

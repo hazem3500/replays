@@ -10,7 +10,7 @@ import type { PrivacyFacts, RecorderOptions, RecorderPrivacyMode, RecorderUi, Re
 
 type Host = Pick<RecorderOptions, 'choices' | 'privacy' | 'capture'>;
 const recorderChoices = (host: Host) => choicesWith(host, settingsBuilder(host));
-const MODES: RecorderPrivacyMode[] = ['visible', 'text-masked', 'masked'];
+const MODES: RecorderPrivacyMode[] = ['visible', 'inputs-masked', 'text-masked', 'masked'];
 const MEDIA = 'img, picture, video, audio, canvas, iframe, object, embed';
 /** An internal host that allows everything a mode can ask for. */
 const OPEN_HOST: Host = {
@@ -37,6 +37,7 @@ describe('recording choices', () => {
 
   it.each([
     ['visible', { maskAllInputs: false, maskTextSelector: undefined, media: false }],
+    ['inputs-masked', { maskAllInputs: true, maskTextSelector: undefined, media: false }],
     ['text-masked', { maskAllInputs: true, maskTextSelector: '*', media: false }],
     ['masked', { maskAllInputs: true, maskTextSelector: '*', media: true }],
   ] as const)('maps %s to its capture settings', (mode, expected) => {
@@ -46,6 +47,29 @@ describe('recording choices', () => {
     expect(options.maskTextSelector).toBe(expected.maskTextSelector);
     expect(String(options.blockSelector).includes(MEDIA)).toBe(expected.media);
     expect(settings.capture).toMatchObject({ maskAllText: expected.maskTextSelector === '*', blockMedia: expected.media });
+  });
+
+  it('records page text and media but masks typed values in inputs-masked mode', () => {
+    expect(facts(OPEN_HOST, 'inputs-masked').captures).toMatchObject({ pageText: true, inputs: false, media: true });
+    expect(rrwebOf(OPEN_HOST, 'inputs-masked').maskInputOptions).toMatchObject({ password: true, hidden: true });
+  });
+
+  it('keeps a text-masked choice valid for a host that still lists it', () => {
+    const host: Host = { ...OPEN_HOST, choices: { privacy: ['text-masked', 'inputs-masked', 'masked'] } };
+    expect(recorderChoices(host).accept({ privacy: 'text-masked' })).toEqual({ privacy: 'text-masked' });
+    expect(facts(host, 'text-masked').captures).toMatchObject({ pageText: false, inputs: false, media: true });
+  });
+
+  it('reduces a stored text-masked choice to the strictest mode when the host no longer lists it', () => {
+    const host: Host = { ...OPEN_HOST, choices: { privacy: ['visible', 'inputs-masked', 'interface-visible', 'masked'] } };
+    expect(recorderChoices(host).accept({ privacy: 'text-masked' })).toEqual({ privacy: 'masked' });
+  });
+
+  it('offers a staff host the interface mode, with the public marker as the only readable text', () => {
+    const host: Host = { ...OPEN_HOST, choices: { privacy: ['visible', 'inputs-masked', 'interface-visible', 'masked'] } };
+    const offer = must(recorderChoices(host).offer((privacy) => privacy.facts(1, true)));
+    expect(offer.privacy.map((entry) => entry.mode)).toEqual(['visible', 'inputs-masked', 'interface-visible', 'masked']);
+    expect(facts(host, 'interface-visible').captures).toMatchObject({ pageText: false, interfaceText: true, inputs: false });
   });
 
   it('keeps passwords and hidden inputs masked in visible mode', () => {
@@ -73,7 +97,7 @@ describe('recording choices', () => {
   it('offers modes the host cap makes identical once, under the stricter name', () => {
     const host: Host = { privacy: { sanitize: false }, choices: { privacy: MODES } };
     const offer = must(recorderChoices(host).offer((privacy) => privacy.facts(1, true)));
-    expect(offer.privacy.map((entry) => entry.mode)).toEqual(['visible', 'masked']);
+    expect(offer.privacy.map((entry) => entry.mode)).toEqual(['visible', 'inputs-masked', 'masked']);
     expect(offer.privacy[0]?.facts.captures).toMatchObject({ pageText: true, inputs: true, media: false });
   });
 });
