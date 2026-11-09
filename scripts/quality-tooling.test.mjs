@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -113,13 +114,9 @@ test('bundle budgets cover lazy files, static entry closures, growth and new art
     await put('main-budgets.json', original);
 
     await put('dist/client/assets/lazy-ABCDEFGH.js', `export const lazy = ${JSON.stringify('bigger'.repeat(100))};`);
-    assert.equal(run().status, 1, 'growth must block');
-    assert.equal(
-      run('--baseline', resolve(root, 'main-sizes.json'), '--check-ratchet').status,
-      1,
-      'growth still blocks against fresh main',
-    );
-    assert.equal(run('--ratchet').status, 1, 'ratchet must retain the blocking size gate');
+    assert.equal(run().status, 0, 'small growth is reported, not blocked');
+    assert.equal(run('--baseline', resolve(root, 'main-sizes.json'), '--check-ratchet').status, 0);
+    assert.equal(run('--ratchet').status, 0);
     const after = JSON.parse(await readFile(budgets, 'utf8'));
     assert.deepEqual(
       after.files['dist/client/assets/lazy-HASH.js'],
@@ -130,10 +127,18 @@ test('bundle budgets cover lazy files, static entry closures, growth and new art
     assert.equal(run('--ratchet').status, 0);
     const optimized = JSON.parse(await readFile(budgets, 'utf8'));
     assert.ok(optimized.files['dist/client/assets/lazy-HASH.js'].raw < original.files['dist/client/assets/lazy-HASH.js'].raw);
+    const noise = randomBytes(30000).toString('base64');
+    await put('dist/client/assets/lazy-ABCDEFGH.js', `export const lazy = ${JSON.stringify(noise)};`);
+    assert.equal(
+      run('--baseline', resolve(root, 'main-sizes.json'), '--check-ratchet').status,
+      1,
+      'a significant jump against fresh main blocks',
+    );
+    await put('dist/client/assets/lazy-ABCDEFGH.js', '');
     await put('dist/client/assets/new-ABCDEFGH.js', 'export const added = 1;');
-    assert.equal(run().status, 1, 'new chunks must require an explicit budget');
+    assert.equal(run().status, 0, 'a small new chunk is reported, not blocked');
     await put('dist/client/assets/.hidden.js', 'export const hidden = 1;');
-    assert.equal(run().status, 1);
+    assert.equal(run().status, 0);
     const hidden = JSON.parse(await readFile(resolve(root, 'sizes.json'), 'utf8'));
     assert.ok(hidden.unknown.includes('dist/client/assets/.hidden.js'));
   } finally {
