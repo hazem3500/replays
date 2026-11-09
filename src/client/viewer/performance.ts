@@ -1,5 +1,6 @@
 import type { EditTimeline } from '../../shared/edits.ts';
 import type { ReplayBundle, ReplayPerformanceKind } from '../../shared/replay.ts';
+import { type FrameBand, frameBands } from './performance/frames.ts';
 import { buildWaterfall, performanceHasDuration, validDuration, type WaterfallRow } from './waterfall.ts';
 
 export type PerformanceSignal = Extract<WaterfallRow, { kind: 'performance' }>;
@@ -14,6 +15,8 @@ export interface PerformanceModel {
   slowestInteraction: PerformanceSignal | undefined;
   largestPaint: PerformanceSignal | undefined;
   track: ReplayBundle['performance'];
+  /** Foreground frame rate per second of recording, on the player's clock; empty when frame timing was not recorded. */
+  frames: FrameBand[];
 }
 
 /** Reuse the source → edited span mapping; metric values always retain their captured meaning. */
@@ -29,7 +32,7 @@ export function buildPerformance(bundle: ReplayBundle, timeline?: EditTimeline):
   const largestPaint = signals
     .filter((row) => row.entry.kind === 'largest-contentful-paint' && validDuration(row.entry.value))
     .reduce<PerformanceSignal | undefined>((latest, row) => (!latest || row.sourceAt >= latest.sourceAt ? row : latest), undefined);
-  return { ...model, signals, moments, longestTask, slowestInteraction, largestPaint, track: bundle.performance };
+  return { ...model, signals, moments, longestTask, slowestInteraction, largestPaint, track: bundle.performance, frames: frameBands(bundle.performance?.frames, timeline) };
 }
 
 export function missingPerformanceLabel(model: PerformanceModel, api: string, kind: ReplayPerformanceKind) {

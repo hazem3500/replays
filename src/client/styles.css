@@ -327,7 +327,7 @@ kbd:not([data-slot]) { min-width: 22px; padding: 1px 6px; border: 1px solid var(
  */
 .transport { container: transport / inline-size; min-height: 40px; display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "play time scrub captions options"; align-items: center; column-gap: 4px; padding: 4px 8px; border-top: 1px solid var(--line); background: var(--surface-raised); }
 .play-button { grid-area: play; }
-.transport-time { grid-area: time; margin-left: 4px; }
+.transport-readouts { grid-area: time; display: flex; align-items: center; gap: 8px; margin-left: 4px; }
 .scrubber { grid-area: scrub; }
 .playback-options { grid-area: options; }
 .captions-switch { grid-area: captions; }
@@ -337,6 +337,12 @@ svg.lucide.lucide { stroke-width: 2; }
 .transport svg.filled-icon { fill: currentColor; }
 .transport-time { flex: 0 0 auto; font-size: var(--text-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .transport-time strong { color: var(--text); font-weight: 600; }
+.transport-fps { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.transport-fps strong { color: var(--text-secondary); font-weight: 600; }
+.transport-fps i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
+.transport-fps[data-verdict="good"] i { background: var(--success); }
+.transport-fps[data-verdict="needs-work"] i { background: var(--warning); }
+.transport-fps[data-verdict="poor"] i { background: var(--danger); }
 /* Rest state: secondary controls step back; the whole row comes up while you are using it. */
 .captions-chip { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--radius); transition: background-color var(--motion-fast) var(--ease-out); }
 .captions-chip svg { width: 16px; height: 16px; }
@@ -385,7 +391,7 @@ svg.lucide.lucide { stroke-width: 2; }
   .fullscreen-button.fullscreen-button { opacity: 1; transform: scale(1); pointer-events: auto; }
   .transport .playback-options.playback-options { color: var(--text-secondary); }
   /* Desktop's rhythm on the touch row: 40 px targets, but no extra air around the readouts. */
-  .transport-time { margin-left: 0; }
+  .transport-readouts { margin-left: 0; }
   /* A long press on "Copy link" opens its menu: no text selection or system callout on the way. */
   .copy-link { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 }
@@ -778,6 +784,10 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-run .run-copy { grid-template-columns: minmax(0, 1fr); }
 .run-label { min-width: 0; overflow: hidden; font-weight: 500; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .run-meta { min-width: 0; grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; color: var(--text-tertiary); font-size: var(--text-2xs); white-space: nowrap; }
+.run-perf { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0 8px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.run-perf strong { color: var(--text-secondary); font-weight: 600; }
+.run-perf [data-verdict="needs-work"] strong { color: var(--warning); }
+.run-perf [data-verdict="poor"] strong { color: var(--danger); }
 .run-meta > span + span::before { content: "·"; margin-right: 5px; color: var(--text-tertiary); }
 .run-status::first-letter { text-transform: uppercase; }
 .run-duration { grid-column: 2; grid-row: 1; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; white-space: nowrap; }

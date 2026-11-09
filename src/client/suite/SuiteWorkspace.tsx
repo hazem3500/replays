@@ -30,7 +30,9 @@ import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
 import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
-import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns } from './runs.ts';
+import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns, type RunMetric, runMetrics } from './runs.ts';
+import { isPerformanceFocused } from '../../shared/performance-focus.ts';
+import { pageProfiles } from '../profiles.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
 import { compareDefaults, suiteViewLayout } from '../compare/defaults.ts';
 import { monograms, shortNames } from '../compare/tiles.ts';
@@ -141,6 +143,10 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // why: retain every playable run for layout switching even when entry shows only the selected run.
   const playable = recordedRuns(runs, detailed);
   const view = usePageView({ replay: bundle, suiteProfile: suite?.profile, recordings: 1 });
+  const performanceFocused = isPerformanceFocused({
+    view: view.view.id,
+    profiles: [pageProfiles().find((profile) => profile.id === suite?.profile)],
+  });
   const defaults = compareDefaults({
     page: 'suite',
     recordings: playable.length,
@@ -297,6 +303,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           onSelect={select}
           onSwitch={switchRail}
           keep={keep}
+          performanceFocused={performanceFocused}
         />
       ) : null}
       {!narrow && !collapsed ? (
@@ -400,6 +407,7 @@ function SuiteSidebar({
   onSelect,
   onSwitch,
   keep,
+  performanceFocused,
 }: {
   suite: SuiteWithRuns;
   runs: WorkspaceRun[];
@@ -410,6 +418,7 @@ function SuiteSidebar({
   onSelect: (replayId: string | undefined) => void;
   onSwitch: () => void;
   keep: ReturnType<typeof useKeepSuite>;
+  performanceFocused: boolean;
 }) {
   const RailIcon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon;
   const overall = suiteOverallStatus(runs);
@@ -517,6 +526,7 @@ function SuiteSidebar({
               status={playable ? tone : expired ? 'Expired' : 'No recording'}
               tone={tone}
               errors={errors}
+              metrics={performanceFocused ? runMetrics(run.replay?.perf) : undefined}
             />
           );
           const label = `Run ${sequenceLabel(run)}: ${run.label}, ${tone}${errors ? `, ${plural(errors, 'error')}` : ''}${playable ? '' : expired ? ', recording expired' : ', no recording'}`;
@@ -564,7 +574,21 @@ function SuiteSidebar({
 }
 
 /** One expanded sidebar row: the run's colour swatch, name, duration, status and error count. */
-function RunCopy({ run, name, status, tone, errors }: { run: WorkspaceRun; name: string; status: string; tone: string; errors: number }) {
+function RunCopy({
+  run,
+  name,
+  status,
+  tone,
+  errors,
+  metrics,
+}: {
+  run: WorkspaceRun;
+  name: string;
+  status: string;
+  tone: string;
+  errors: number;
+  metrics: RunMetric[] | undefined;
+}) {
   return (
     <>
       <span className="run-swatch" aria-hidden="true" />
@@ -577,6 +601,20 @@ function RunCopy({ run, name, status, tone, errors }: { run: WorkspaceRun; name:
           <span className={`run-status tone-${tone}`}>{status}</span>
           {errors > 0 ? <span className="run-errors">{plural(errors, 'error')}</span> : null}
         </span>
+        {metrics ? (
+          <span className="run-perf" data-testid="run-perf">
+            {metrics.length ? (
+              metrics.map((metric) => (
+                <span key={metric.id} data-verdict={metric.verdict}>
+                  {metric.label} <strong>{metric.value}</strong>
+                </span>
+              ))
+            ) : (
+              <span>No performance data</span>
+            )}
+            {metrics.length && !metrics.some((metric) => metric.id === 'fps') ? <span>FPS not recorded</span> : null}
+          </span>
+        ) : null}
       </span>
     </>
   );

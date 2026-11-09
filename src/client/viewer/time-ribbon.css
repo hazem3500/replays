@@ -6,6 +6,14 @@
 .ribbon-key > span { display: inline-flex; align-items: center; gap: 4px; }
 .ribbon-key i { width: 7px; height: 7px; background: var(--warning); }
 .ribbon-key i[data-tone="danger"] { background: var(--danger); }
+.ribbon-key i[data-tone="success"] { background: var(--success); }
+.time-ribbon[data-fps] { --ribbon-height: 48px; }
+.ribbon-fps { position: absolute; inset: auto 0 0; height: 10px; pointer-events: none; }
+.ribbon-fps span { position: absolute; bottom: 0; background: var(--text-tertiary); opacity: 0.9; }
+.ribbon-fps span[data-verdict="good"] { background: var(--success); }
+.ribbon-fps span[data-verdict="needs-work"] { background: var(--warning); }
+.ribbon-fps span[data-verdict="poor"] { background: var(--danger); }
+.time-ribbon[data-fps] .ribbon-mark[data-lane="bottom"] { bottom: 14px; }
 button.ribbon-mark { padding: 0; border: 0; cursor: pointer; }
 button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; z-index: 5; }
 .time-ribbon {
@@ -45,6 +53,7 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
 .ribbon-lit { position: absolute; top: 0; bottom: 0; border-inline: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; }
 @media (pointer: coarse) {
   .time-ribbon { --ribbon-height: 32px; --ribbon-mark-min: 3px; }
+  .time-ribbon[data-fps] { --ribbon-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .time-ribbon { --ribbon-glide: 0ms; }

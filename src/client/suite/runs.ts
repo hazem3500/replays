@@ -1,3 +1,4 @@
+import { type FrameVerdict, fpsVerdict, type ReplayPerfSummary } from '../../shared/frame-timing.ts';
 import type { ReviewSuiteIndexRun } from '../../shared/review-suite.ts';
 import { tileColour } from '../compare/tiles.ts';
 
@@ -62,4 +63,27 @@ export function recordedRuns(
     return replayId ? [{ replayId, label: run.label }] : [];
   });
   return recorded.map((run, index) => ({ ...run, colour: tileColour(index) }));
+}
+
+export interface RunMetric {
+  id: 'fps' | 'min' | 'task' | 'tbt';
+  label: string;
+  value: string;
+  verdict?: FrameVerdict;
+}
+
+const millis = (ms: number) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`);
+
+/**
+ * The compact comparison row of a performance-focused suite: frame rate (median and slowest second), longest task and
+ * blocking time. A metric that was not recorded is left out; an empty list means the run recorded none of them.
+ */
+export function runMetrics(perf: ReplayPerfSummary | undefined): RunMetric[] {
+  if (!perf) return [];
+  const metrics: RunMetric[] = [];
+  if (perf.fpsP50 !== undefined) metrics.push({ id: 'fps', label: 'FPS', value: String(Math.round(perf.fpsP50)), verdict: fpsVerdict(perf.fpsP50) });
+  if (perf.fpsMin !== undefined) metrics.push({ id: 'min', label: 'min', value: String(Math.round(perf.fpsMin)), verdict: fpsVerdict(perf.fpsMin) });
+  if (perf.longestTask !== undefined) metrics.push({ id: 'task', label: 'task', value: millis(perf.longestTask) });
+  if (perf.blocking !== undefined) metrics.push({ id: 'tbt', label: 'TBT', value: millis(perf.blocking) });
+  return metrics;
 }

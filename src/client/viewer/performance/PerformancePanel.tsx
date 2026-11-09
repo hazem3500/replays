@@ -160,11 +160,12 @@ export function PerformancePanel({
       </VitalsBar>
       {extra}
       {model.track ? <CadenceSummary track={model.track} /> : null}
-      {marks.length ? (
+      {marks.length || model.frames.length ? (
         <TimeRibbon
           testId="performance-ribbon"
           duration={duration}
           marks={marks}
+          fps={model.frames}
           range={range}
           onRange={setRange}
           highlight={hovered ?? selected}

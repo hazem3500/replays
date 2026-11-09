@@ -1,5 +1,6 @@
 import { assertReplayContext, type ReplayContext, type SourceAttrs, sourceAttrs } from './context.ts';
 import { assertCaptured } from './capture-profile.ts';
+import { type ReplayPerfSummary, summarizePerformanceTrack } from './frame-timing.ts';
 import type { ReplayCaptured, ReplayNetworkBody } from './network-bodies.ts';
 import { type AliasedProfile, isProfileId, profileOf, readAliased } from './profiles.ts';
 import { assertReplayPeople, minimalPeople, type ReplayPerson, type ReplayPersonSummary } from './people.ts';
@@ -270,8 +271,9 @@ export interface ReplaySourceLink {
 }
 
 // why: bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily.
+// why: version 10 adds `perf`, the performance numbers a suite compares runs by.
 // why: version 9 renames purpose to profile (8 combined purposes, people, source attributes and plugin summary fields).
-export const SUMMARY_VERSION = 9;
+export const SUMMARY_VERSION = 10;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
 const SUMMARY_SOURCE_ATTRS = 4;
@@ -297,6 +299,8 @@ export interface ReplaySummary {
   /** Recorded viewport, for poster aspect ratios. */
   viewport?: { width: number; height: number };
   timeline?: ReplayTimelineSummary;
+  /** Frame rate, longest task and blocking time, when the recording captured them. */
+  perf?: ReplayPerfSummary;
   /** `meta.tags`, as given. */
   tags?: string[];
   /** Up to three context sources, in bundle order. */
@@ -394,6 +398,7 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
   const { meta } = bundle;
   const consoleErrors = bundle.console.filter((entry) => entry.level === 'error').length;
   const failedRequests = bundle.network.filter(isFailedRequest).length;
+  const perf = summarizePerformanceTrack(bundle.performance);
   const sources = (bundle.context?.sources ?? []).slice(0, MAX_SOURCE_LINKS).map((source) => {
     const attrs = sourceAttrs(source.attrs, SUMMARY_SOURCE_ATTRS, SUMMARY_ATTR_TEXT);
     return { provider: source.provider, label: source.label ?? source.ref ?? '', url: source.url, ...(attrs ? { attrs } : {}) };
@@ -414,6 +419,7 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
       ? { viewport: { width: meta.viewport.width, height: meta.viewport.height } }
       : {}),
     timeline: summarizeTimeline(bundle),
+    ...(perf ? { perf } : {}),
     ...(meta.tags?.length ? { tags: meta.tags } : {}),
     ...(sources.length ? { sources } : {}),
     ...(bundle.suiteRun ? { suiteRun: { suiteId: bundle.suiteRun.suiteId, runId: bundle.suiteRun.runId } } : {}),

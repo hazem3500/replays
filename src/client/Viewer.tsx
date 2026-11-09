@@ -32,7 +32,9 @@ import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
 import { compareWith } from './compare/open.ts';
 import { betaMalleable } from './malleable/flag.ts';
-import { replayProfile } from './profiles.ts';
+import { pageProfiles, replayProfile } from './profiles.ts';
+import { isPerformanceFocused } from '../shared/performance-focus.ts';
+import { frameBands } from './viewer/performance/frames.ts';
 import { openWorkshop } from './malleable/ui-state.ts';
 import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
@@ -177,7 +179,15 @@ export function Viewer({
   // why: the page's view (`?view=`, the suite's or replay's profile, the number of recordings) sets how it opens and lays out.
   const comparisonContext = Boolean(stage && (comparing?.length ?? 0) > 1);
   const page = usePageView({ replay: bundle, suiteProfile, recordings: comparing?.length ?? 1, comparison: comparisonContext });
-  const defaults = viewDefaults(page);
+  const viewerDefaults = viewDefaults(page);
+  const performanceFocused = isPerformanceFocused({
+    view: page.view.id,
+    profiles: [profile, suiteProfile ? pageProfiles().find((candidate) => candidate.id === suiteProfile) : undefined],
+    tags: bundle.meta.tags,
+  });
+  // why: a performance-focused replay opens on Performance unless the person named a view (`?view=`) or has a stored tab (useViewState).
+  const defaults = performanceFocused && page.source !== 'url' ? { ...viewerDefaults, tab: 'performance' } : viewerDefaults;
+  const frames = useMemo(() => frameBands(sourceBundle.performance?.frames, timeline), [sourceBundle, timeline]);
   const opened = useMemo(() => {
     if (sharedPlayer) return { controller: sharedPlayer, step: undefined, resume: false, tab: undefined };
     const controller = new ReplayController(bundle, effects ? { effects } : {});
@@ -399,8 +409,12 @@ export function Viewer({
       highlights: projectHighlights(highlights, timeline ?? editTimeline(undefined, player.duration)),
       tracks: defaults.tracks,
       tabOrder: defaults.tabs,
+      performanceFocused,
+      frames,
     };
   }, [
+    performanceFocused,
+    frames,
     defaults.tabs,
     defaults.tracks,
     bundle.steps,
