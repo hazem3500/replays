@@ -11,6 +11,9 @@ export const indexEmptyStrings = {
   failedBody: (reason: string) => `${reason}. This is usually temporary.`,
   deniedTitle: 'You don’t have access to these replays',
   deniedBody: 'Sign in to this server, or ask its owner for access.',
+  signInTitle: 'Sign in to see these replays',
+  signInBody: 'Use your @toggl.com Google account.',
+  signIn: 'Sign in',
   offlineTitle: 'Offline',
   offlineBody: 'Showing saved results from your last visit.',
   staleTitle: 'Couldn’t refresh',
@@ -76,7 +79,13 @@ interface FilteredInput {
   onClearFilters: () => void;
 }
 
-export type IndexEmptyInput = ErrorInput | OfflineInput | ProfileInput | SearchInput | FilteredInput;
+/** The list needs a signed-in person; `href` is where signing in happens. */
+interface SignInInput {
+  kind: 'sign-in';
+  href: string;
+}
+
+export type IndexEmptyInput = SignInInput | ErrorInput | OfflineInput | ProfileInput | SearchInput | FilteredInput;
 
 function retryStatus(retry: AutoRetry) {
   return { status: retry.secondsLeft === undefined ? S.retrying : S.retryIn(retry.secondsLeft) };
@@ -105,6 +114,16 @@ function errorState(input: ErrorInput): EmptyStateProps {
     details: retryStatus(input.retry),
     actions: [retry],
     testId: 'index-error',
+  };
+}
+
+function signInState(input: SignInInput): EmptyStateProps {
+  return {
+    icon: 'sign-in',
+    title: S.signInTitle,
+    body: S.signInBody,
+    actions: [{ id: 'sign-in', label: S.signIn, primary: true, href: input.href }],
+    testId: 'index-sign-in',
   };
 }
 
@@ -164,6 +183,8 @@ function filteredState(input: FilteredInput): EmptyStateProps {
  */
 export function indexEmptyState(input: IndexEmptyInput, onUpload?: () => void): EmptyStateProps {
   switch (input.kind) {
+    case 'sign-in':
+      return signInState(input);
     case 'error':
       return errorState(input);
     case 'offline':
@@ -178,6 +199,7 @@ export function indexEmptyState(input: IndexEmptyInput, onUpload?: () => void): 
 }
 
 /** The index's empty/error state. `onUpload` opens the upload dialog (offered on an empty profile tab). */
-export function IndexEmpty({ input, onUpload }: { input: IndexEmptyInput; onUpload?: () => void }) {
+export function IndexEmpty({ input, onUpload }: { input: IndexEmptyInput | undefined; onUpload?: () => void }) {
+  if (!input) return null;
   return <EmptyState {...indexEmptyState(input, onUpload)} />;
 }

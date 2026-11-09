@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { StateView } from '@/components/ui/state-view.tsx';
+
 import { pageProfiles } from '../profiles.ts';
 import { expiredReason, expiredReplaysQuery } from '../index/expired-query.ts';
 
@@ -11,12 +13,10 @@ export function SuiteExpired({ replayIds }: { replayIds: readonly string[] }) {
   const { data } = useQuery(expiredReplaysQuery);
   const record = data?.records.find((item) => replayIds.includes(item.id));
   return (
-    <div className="empty">
-      <strong>These recordings are no longer available</strong>
-      <span>
-        {record ? `${expiredReason(record, pageProfiles())}.` : 'Retention removed them once their window passed.'} Use Keep suite to hold
-        on to a suite's recordings.
-      </span>
-    </div>
+    <StateView
+      kind="not-found"
+      title="These recordings are no longer available"
+      cause={`${record ? `${expiredReason(record, pageProfiles())}.` : 'Retention removed them once their window passed.'} Use Keep suite to hold on to a suite’s recordings next time.`}
+    />
   );
 }
