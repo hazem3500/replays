@@ -24,6 +24,7 @@ import { captionEdge } from '../caption-placement.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
+import { normalizeSteps } from '../../shared/step-names.ts';
 import { CAPTION_IN_MS, captionAt, captionDisplayText, captionKey, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
 import { jpegThumbHash } from './thumbhash-capture.ts';
 import { dirtyAt, exportMap, exportTimes, type PlaybackMap, posterMoment, poseKey, type PreviewPlan, previewPlan } from './frames.ts';
@@ -107,7 +108,8 @@ async function start() {
     editsParam ? loadEdits(id, editsParam) : undefined,
   ]);
   if (!response.ok) throw new Error(`bundle ${response.status}`);
-  const { bundle, effects } = applyEdits((await response.json()) as ReplayBundle, edits);
+  const stored = (await response.json()) as ReplayBundle;
+  const { bundle, effects } = applyEdits({ ...stored, steps: normalizeSteps(stored.steps) }, edits);
   const host = document.querySelector<HTMLElement>('#render-host');
   if (!host) throw new Error('no render host');
   const { width, height } = bundle.meta.viewport;
@@ -226,7 +228,7 @@ async function start() {
           ...bundle.console.filter((entry) => entry.level === 'error').map((entry) => entry.at),
           ...bundle.network.filter(isFailedRequest).map((entry) => entry.at),
         ],
-        stepTimes: bundle.steps.map((step) => step.at),
+        stepTimes: bundle.steps.filter((step) => !step.folded).map((step) => step.at),
         snapshotTimes,
         duration: controller.duration,
       });
