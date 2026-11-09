@@ -141,7 +141,10 @@ function ClipStepsSkeleton({
         />
       ))}
       {runs.map((run) => {
-        const box = clipBox(run.from * px, run.to * px, { first: run.members.includes(0), last: run.members.includes(segments.length - 1) });
+        const box = clipBox(run.from * px, run.to * px, {
+          first: run.members.includes(0),
+          last: run.members.includes(segments.length - 1),
+        });
         return <span key={run.from} className="tl-clip-run" style={{ left: `${box.left}px`, width: `${box.width}px` }} />;
       })}
     </>

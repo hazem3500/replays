@@ -104,7 +104,10 @@ function ClipSteps({
         );
       })}
       {runs.map((run) => {
-        const box = clipBox(run.from * px, run.to * px, { first: run.members.includes(0), last: run.members.includes(segments.length - 1) });
+        const box = clipBox(run.from * px, run.to * px, {
+          first: run.members.includes(0),
+          last: run.members.includes(segments.length - 1),
+        });
         return (
           <span key={run.from} className="tl-clip-run" aria-hidden="true" style={{ left: `${box.left}px`, width: `${box.width}px` }}>
             {wordsThatFit(`${run.steps} steps`, box.width, { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel })}
