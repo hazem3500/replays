@@ -28,6 +28,72 @@ const RECORDED = steps([
   [20000, 'stop', 'Recording stopped'],
 ]);
 
+const CASES = [
+  ['trims a trailing colon', [[0, 'click', 'Clicked “Profile:”']], ['Clicked “Profile”']],
+  ['collapses whitespace', [[0, 'click', 'Clicked “Plan   time ”']], ['Clicked “Plan time”']],
+  ['reads straight quotes', [[0, 'click', 'Clicked "Tasks"']], ['Clicked “Tasks”']],
+  [
+    'folds a navigation within a second',
+    [
+      [0, 'click', 'Clicked “Tasks”'],
+      [1000, 'navigate', 'Navigated'],
+    ],
+    ['Opened “Tasks”'],
+  ],
+  [
+    'keeps a navigation after a second',
+    [
+      [0, 'click', 'Clicked “Tasks”'],
+      [1001, 'navigate', 'Navigated'],
+    ],
+    ['Clicked “Tasks”', 'Navigated'],
+  ],
+  [
+    'drops the navigation after an unnamed click',
+    [
+      [0, 'click', 'Clicked link'],
+      [10, 'navigate', 'Navigated'],
+    ],
+    ['Clicked link'],
+  ],
+  [
+    'drops a form submission after its click',
+    [
+      [0, 'click', 'Clicked “Save”'],
+      [0, 'submit', 'Requested “Save”'],
+    ],
+    ['Clicked “Save”'],
+  ],
+  ['keeps a form submission without a click', [[0, 'submit', 'Submitted form']], ['Submitted form']],
+  [
+    'keeps the navigation that follows a submission',
+    [
+      [0, 'click', 'Clicked “Save”'],
+      [0, 'submit', 'Submitted form'],
+      [100, 'navigate', 'Navigated'],
+    ],
+    ['Clicked “Save”', 'Navigated'],
+  ],
+  [
+    'folds only the first navigation',
+    [
+      [0, 'click', 'Clicked “A”'],
+      [10, 'navigate', 'Navigated'],
+      [20, 'navigate', 'Navigated'],
+    ],
+    ['Opened “A”', 'Navigated'],
+  ],
+  [
+    'keeps a click that does not match',
+    [
+      [0, 'click', 'Clicked “A”'],
+      [10, 'action', 'Checked A'],
+      [20, 'navigate', 'Navigated'],
+    ],
+    ['Clicked “A”', 'Checked A', 'Navigated'],
+  ],
+] as const;
+
 describe('normalizeSteps', () => {
   it('turns a recorded Toggl Focus session into compact steps, keeping their times', () => {
     expect(
@@ -52,71 +118,7 @@ describe('normalizeSteps', () => {
     ]);
   });
 
-  it.each([
-    ['trims a trailing colon', [[0, 'click', 'Clicked “Profile:”']], ['Clicked “Profile”']],
-    ['collapses whitespace', [[0, 'click', 'Clicked “Plan   time ”']], ['Clicked “Plan time”']],
-    ['reads straight quotes', [[0, 'click', 'Clicked "Tasks"']], ['Clicked “Tasks”']],
-    [
-      'folds a navigation within a second',
-      [
-        [0, 'click', 'Clicked “Tasks”'],
-        [1000, 'navigate', 'Navigated'],
-      ],
-      ['Opened “Tasks”'],
-    ],
-    [
-      'keeps a navigation after a second',
-      [
-        [0, 'click', 'Clicked “Tasks”'],
-        [1001, 'navigate', 'Navigated'],
-      ],
-      ['Clicked “Tasks”', 'Navigated'],
-    ],
-    [
-      'drops the navigation after an unnamed click',
-      [
-        [0, 'click', 'Clicked link'],
-        [10, 'navigate', 'Navigated'],
-      ],
-      ['Clicked link'],
-    ],
-    [
-      'drops a form submission after its click',
-      [
-        [0, 'click', 'Clicked “Save”'],
-        [0, 'submit', 'Requested “Save”'],
-      ],
-      ['Clicked “Save”'],
-    ],
-    ['keeps a form submission without a click', [[0, 'submit', 'Submitted form']], ['Submitted form']],
-    [
-      'keeps the navigation that follows a submission',
-      [
-        [0, 'click', 'Clicked “Save”'],
-        [0, 'submit', 'Submitted form'],
-        [100, 'navigate', 'Navigated'],
-      ],
-      ['Clicked “Save”', 'Navigated'],
-    ],
-    [
-      'folds only the first navigation',
-      [
-        [0, 'click', 'Clicked “A”'],
-        [10, 'navigate', 'Navigated'],
-        [20, 'navigate', 'Navigated'],
-      ],
-      ['Opened “A”', 'Navigated'],
-    ],
-    [
-      'keeps a click that does not match',
-      [
-        [0, 'click', 'Clicked “A”'],
-        [10, 'action', 'Checked A'],
-        [20, 'navigate', 'Navigated'],
-      ],
-      ['Clicked “A”', 'Checked A', 'Navigated'],
-    ],
-  ] as const)('%s', (_name, rows, expected) => {
+  it.each(CASES)('%s', (_name, rows, expected) => {
     expect(shown(normalizeSteps(steps(rows)))).toEqual(expected);
   });
 
@@ -127,7 +129,9 @@ describe('normalizeSteps', () => {
     expect(out.flatMap((step, index) => (step.folded ? [index] : []))).toEqual([2, 4, 6, 11]);
     expect(out[3]?.label).toBe('Opened “Projects”');
   });
+});
 
+describe('normalizeSteps and manual labels', () => {
   it('leaves steps a person labelled, or the capture CLI labelled, as they are', () => {
     const manual = [
       { at: 0, kind: 'click', label: 'Clicked “Profile:”', auto: false },

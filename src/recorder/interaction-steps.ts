@@ -72,8 +72,9 @@ function innerName(control: Element, privacy: RecorderPrivacy, blocked: string):
  * labels, never its value. The accessible name (aria-label, aria-labelledby, label, title) comes before visible text.
  */
 function controlName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
-  if (privacy.textMasked(control) || control.closest(blocked)) return '';
   const field = control.matches(FIELD);
+  // why: rrweb never unmasks a field's own text, so a field is named by what surrounds it, under the same policy.
+  if (privacy.textMasked(field ? (control.parentElement ?? undefined) : control) || control.closest(blocked)) return '';
   const sources = [
     () => control.getAttribute('aria-label'),
     () => labelledBy(control, privacy, blocked),
@@ -104,12 +105,20 @@ function clickLabel(control: Element, name: string): string {
   return `${control.matches(TYPING_FIELD) ? 'Focused' : 'Clicked'} “${name}”`;
 }
 
+function decoded(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return '';
+  }
+}
+
 /** The last meaningful path segment of the page the route changed to, humanized: `/projects/` → Projects. */
 function routeName(): string {
   const path = location.hash.startsWith('#/') ? location.hash.slice(1) : location.pathname;
   const segments = path.split(/[?#]/)[0]?.split('/').filter(Boolean) ?? [];
   if (!segments.length) return 'home';
-  const words = humanized(decodeURIComponent(segments.at(-1) ?? '').replace(/\.[a-z0-9]+$/i, ''));
+  const words = humanized(decoded(segments.at(-1) ?? '').replace(/\.[a-z0-9]+$/i, ''));
   return words ? redactText(words, Number.MAX_SAFE_INTEGER) : '';
 }
 

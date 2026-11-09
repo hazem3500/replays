@@ -44,22 +44,23 @@ export function normalizeSteps<T extends NamedStep>(steps: readonly T[]): T[] {
       continue;
     }
     const near = click && step.at - click.at >= 0 && step.at - click.at <= FOLD_WINDOW_MS ? click : undefined;
-    const absorbed = near && absorbs(step, near, out);
-    out.push(absorbed ? { ...step, folded: true } : step);
-    if (!absorbed) click = undefined;
+    const fold = near && absorption(step, near);
+    if (!near || !fold) {
+      out.push(step);
+      click = undefined;
+      continue;
+    }
+    out.push({ ...step, folded: true });
+    const target = out[near.index];
+    if (fold === 'navigation' && target && near.name) out[near.index] = { ...target, label: `Opened “${near.name}”` };
+    click = { ...near, consumed: true };
   }
   return out;
 }
 
-/** Whether `step` is the submission or navigation `click` caused; a navigation also renames the click that opened it. */
-function absorbs<T extends NamedStep>(step: T, click: Click, out: T[]): boolean {
-  if (isGenerated(step, SUBMIT) && step.kind === 'submit') {
-    click.consumed = true;
-    return true;
-  }
-  if (click.consumed || !isGenerated(step, NAVIGATE) || step.kind !== 'navigate') return false;
-  const target = out[click.index];
-  if (target && click.name) out[click.index] = { ...target, label: `Opened “${click.name}”` };
-  click.consumed = true;
-  return true;
+/** How `step` is the consequence of `click`: the form it submitted, or the page it opened (once). */
+function absorption(step: NamedStep, click: Click): 'submission' | 'navigation' | undefined {
+  if (step.kind === 'submit' && isGenerated(step, SUBMIT)) return 'submission';
+  if (step.kind === 'navigate' && !click.consumed && isGenerated(step, NAVIGATE)) return 'navigation';
+  return undefined;
 }

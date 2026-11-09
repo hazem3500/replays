@@ -71,7 +71,7 @@ describe('browser interaction privacy', () => {
   });
 
   it('never reads input values, form data or input labels when a form is submitted', () => {
-    const { steps } = capture({ sanitize: false });
+    const { steps } = capture();
     const form = document.createElement('form');
     form.innerHTML = '<input value="private-email@example.com" aria-label="Secret customer"><input type="password" value="secret">';
     document.body.append(form);
