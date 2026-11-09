@@ -20,7 +20,6 @@ import { applyEdits, assertReplayEdits, editListOf, editsVersion, type ReplayEdi
 import { editCaptionAt, effectsKey } from '../../shared/effects.ts';
 import type { PosterMoment } from '../../shared/profiles.ts';
 import { isFailedRequest, type ReplayBundle } from '../../shared/replay.ts';
-import { captionEdge } from '../caption-placement.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
@@ -156,9 +155,6 @@ async function start() {
       const root = document.createElement('div');
       root.className = 'step-caption';
       root.setAttribute('aria-hidden', 'true');
-      // why: the edge the viewer and the editor give this caption (caption-placement.ts), so the video matches them.
-      const span = editCaptions ? effects.captions[frame.index] : undefined;
-      root.dataset['edge'] = span ? captionEdge({ input: pointer, first, height }, span) : 'bottom';
       const text = document.createElement('span');
       text.className = 'step-caption-text';
       const label = document.createElement('span');
