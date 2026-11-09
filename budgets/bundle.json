@@ -10,7 +10,7 @@
     "dist/cli/cli.mjs": {
       "raw": 491739,
       "gzip": 126695,
-      "brotli": 103217
+      "brotli": 103147
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190449,
@@ -155,7 +155,7 @@
     "dist/client/assets/edits-HASH.js": {
       "raw": 39237,
       "gzip": 13991,
-      "brotli": 12591
+      "brotli": 12529
     },
     "dist/client/assets/elements-HASH.js": {
       "raw": 17251,
@@ -205,11 +205,11 @@
     "dist/client/assets/HostSurface-HASH.js": {
       "raw": 1266,
       "gzip": 704,
-      "brotli": 626
+      "brotli": 624
     },
     "dist/client/assets/index-queries-HASH.js": {
       "raw": 6806,
-      "gzip": 2748,
+      "gzip": 2746,
       "brotli": 2509
     },
     "dist/client/assets/Inspector-HASH.css": {
@@ -219,8 +219,8 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 308550,
-      "gzip": 105472,
-      "brotli": 86989
+      "gzip": 105469,
+      "brotli": 86937
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -270,7 +270,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 68,
       "gzip": 84,
-      "brotli": 71
+      "brotli": 67
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -310,7 +310,7 @@
     "dist/client/assets/plus-HASH.js": {
       "raw": 422,
       "gzip": 282,
-      "brotli": 266
+      "brotli": 248
     },
     "dist/client/assets/progress-HASH.js": {
       "raw": 27680,
@@ -365,7 +365,7 @@
     "dist/client/assets/sliders-horizontal-HASH.js": {
       "raw": 464,
       "gzip": 273,
-      "brotli": 245
+      "brotli": 244
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 1918,
@@ -374,8 +374,8 @@
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 1388,
-      "gzip": 824,
-      "brotli": 753
+      "gzip": 822,
+      "brotli": 740
     },
     "dist/client/assets/storage-HASH.js": {
       "raw": 461,
@@ -439,7 +439,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 74027,
-      "gzip": 26665,
+      "gzip": 24573,
       "brotli": 22998
     },
     "dist/client/assets/VitalsTile-HASH.js": {
@@ -610,7 +610,7 @@
     "dist/lib/config.mjs": {
       "raw": 465,
       "gzip": 197,
-      "brotli": 176
+      "brotli": 169
     },
     "dist/lib/index.mjs": {
       "raw": 1761,
@@ -640,7 +640,7 @@
     "dist/lib/recorder-chunks/attribute-classes.ts-8c1791dec11f.mjs": {
       "raw": 79264,
       "gzip": 21659,
-      "brotli": 18862
+      "brotli": 18845
     },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
@@ -699,7 +699,7 @@
     },
     "dist/lib/recorder-ui.mjs": {
       "raw": 40283,
-      "gzip": 10931,
+      "gzip": 10922,
       "brotli": 9531
     },
     "dist/lib/recorder.iife.js": {
