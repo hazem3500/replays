@@ -1,5 +1,5 @@
 import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
-import { SignInError, SignInLink } from '../sign-in.tsx';
+import { SignInError, SignInLink, useSignInRedirect } from '../sign-in.tsx';
 import { readSplitterSize, Splitter } from '../components/ui/splitter.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
@@ -32,7 +32,7 @@ import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns } from './runs.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
-import { compareDefaults, suiteViewLayout } from '../compare/defaults.ts';
+import { compareDefaults, isComparisonView, suiteViewLayout } from '../compare/defaults.ts';
 import { monograms, shortNames } from '../compare/tiles.ts';
 import { usePanelMotion } from '../hooks/use-panel-motion.ts';
 import { usePageView } from '../hooks/use-page-view.ts';
@@ -119,6 +119,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const editsSettled = edits.data !== undefined || edits.isError;
   // An observed auth failure must win over cached suite, bundle or edit data.
   const authFailure = [suiteFailure, bundleFailure, edits.error].find((candidate) => candidate instanceof SignInError);
+  const signingIn = useSignInRedirect(authFailure);
   const [tab, setTab] = useState<InspectorTab>('console');
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
   const [collapsed, setRailPreference] = useState(false);
@@ -146,7 +147,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     recordings: playable.length,
     viewLayout: suiteViewLayout(view),
   });
-  const comparing = defaults.compare;
+  const comparing = defaults.compare && isComparisonView(view);
 
   // The run being switched to: the sidebar's selection moves at once, the viewer once its data is in (or after a
   // short wait), as one calm in-place transition (transitions/swap.ts).
@@ -261,6 +262,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const tone = run ? statusTone(run, detailed) : undefined;
   const runStatus = tone ? <RunStatusChip tone={tone} /> : undefined;
 
+  if (signingIn) return <ViewerSkeleton suite label="Signing in" />;
   if (authFailure || (error && !suite)) {
     const message = authFailure?.message ?? error;
     return (

@@ -52,7 +52,7 @@ for (const [width, height, mobile] of [
         { id: 'attempt-2', label: 'After', status: 'passed', replayId: `${suite}-after` },
       ]);
       await captionsOn(page);
-      await openReplay(page, `${server().origin}/s/${suite}`);
+      await openReplay(page, `${server().origin}/s/${suite}?view=compare`);
       await expect(page.getByTestId('compare-stage')).toBeVisible();
       const pill = await playToCaption(page);
       expect(inside(await boxOf(pill), await boxOf(page.locator('.ct-tile[data-current]')))).toBe(true);

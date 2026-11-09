@@ -9,7 +9,7 @@ import { replayQuery } from '../queries.ts';
 import { replayHref } from '../routing/links.ts';
 import { editorPage } from '../routing/pages.ts';
 import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
-import { SignInError, SignInLink } from '../sign-in.tsx';
+import { SignInError, SignInLink, useSignInRedirect } from '../sign-in.tsx';
 import { EditorSkeleton, LoadingSwap } from '../ViewerSkeleton.tsx';
 
 /** The failure edit mode shows, a sign-in failure first (it needs the person, not a retry). */
@@ -37,6 +37,8 @@ export function EditPage({ id }: { id: string }) {
   const ready = usePageCode(editorPage.loaded, editorPage.preload);
   useDocumentTitle(bundle ? `Edit · ${bundle.meta.title} · ${productName()}` : productName());
   const error = failureOf(failure, edits.error);
+  const signingIn = useSignInRedirect(error);
+  if (signingIn) return <EditorSkeleton id={id} />;
   if (error) return <EditFailure id={id} error={error} />;
   // why: fresh edits only: a cached copy could be older than someone else's save.
   const loaded = edits.data && !edits.isFetching ? edits.data : undefined;

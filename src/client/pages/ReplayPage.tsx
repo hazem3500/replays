@@ -12,7 +12,7 @@ import { usePageCode } from '../hooks/use-page-code.ts';
 import { replayQuery } from '../queries.ts';
 import { comparePage, viewerPage } from '../routing/pages.ts';
 import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
-import { SignInError, SignInLink } from '../sign-in.tsx';
+import { SignInError, SignInLink, useSignInRedirect } from '../sign-in.tsx';
 import { LoadingSwap, ViewerSkeleton } from '../ViewerSkeleton.tsx';
 
 /** `/r/<id>`: the replay on its own, or with `?with=` the same viewer comparing it with others. */
@@ -36,9 +36,11 @@ function SingleReplayPage({ id }: { id: string }) {
   useEditsFailureNote(Boolean(bundle) && edits.isError && !(edits.error instanceof SignInError));
   const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
   const error = (authFailure ?? failure)?.message ?? '';
+  const signingIn = useSignInRedirect(authFailure);
   const ready = usePageCode(viewerPage.loaded, viewerPage.preload);
   useDocumentTitle(bundle ? `${bundle.meta.title} · ${productName()}` : productName());
 
+  if (signingIn) return <ViewerSkeleton />;
   if (error) {
     return (
       <StateShell {...failureCopy('replay', error)} details={`${error} · ${id}`} secondary={TRY_AGAIN}>
