@@ -168,9 +168,9 @@
       "brotli": 102
     },
     "dist/client/assets/expired-query-HASH.js": {
-      "raw": 2377,
-      "gzip": 1136,
-      "brotli": 1009
+      "raw": 2907,
+      "gzip": 1441,
+      "brotli": 1305
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
@@ -388,9 +388,9 @@
       "brotli": 670
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 22869,
-      "gzip": 9627,
-      "brotli": 8291
+      "raw": 22224,
+      "gzip": 9409,
+      "brotli": 8149
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -440,7 +440,7 @@
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 74027,
       "gzip": 24573,
-      "brotli": 22998
+      "brotli": 21236
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 691,
@@ -1829,6 +1829,16 @@
       },
       "reason": "recordedRuns and tileColour in suite/runs.ts: one source for a run's colour shared by the runs sidebar and the Compare stage. Small justified growth under Hazem's standing approval. Boat measurement, head: raw 2307, gzip 1104, brotli 981 bytes against main caps 2195, 1058, 936; cap is head times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/239"
+    },
+    {
+      "file": "dist/client/assets/expired-query-HASH.js",
+      "cap": {
+        "raw": 2907,
+        "gzip": 1441,
+        "brotli": 1305
+      },
+      "reason": "displayTitle and sourceShortLabel (src/client/display-title.ts) land in this chunk, which the index rows and the suite workspace share. CI same-runner main to head: raw 2307 to 2822, gzip 1106 to 1399, brotli 981 to 1267; caps are head times 1.03. Small justified growth under Hazem's standing approval.",
+      "pr": "https://github.com/hazem3500/replays/pull/271"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
