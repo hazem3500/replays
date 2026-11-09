@@ -914,12 +914,7 @@ function PhoneHeader({
         {...props}
         compact
         appearanceInMenu
-        menuItems={[
-          detailsItem,
-          ...copyLinkItems(player, steps, suite?.href),
-          ...menuItems,
-          ...download.items,
-        ]}
+        menuItems={[detailsItem, ...copyLinkItems(player, steps, suite?.href), ...menuItems, ...download.items]}
         actions={
           <>
             <ActionsBar
