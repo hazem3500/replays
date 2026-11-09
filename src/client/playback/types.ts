@@ -1,6 +1,5 @@
 import { PLAYBACK_SPEEDS } from '../../shared/render-variant.ts';
 import type { IdleGap } from '../../shared/skip.ts';
-import type { CaptionEdge } from '../caption-placement.ts';
 import type { ReplayController } from './controller.ts';
 
 export const SPEEDS = PLAYBACK_SPEEDS;
@@ -58,6 +57,4 @@ export type Playback = Pick<
 > & {
   /** False when the playback cannot fast-forward idle stretches (a shared clock: one ruler for every recording). */
   readonly canSkipInactive?: boolean;
-  /** Where captions sit (ReplayController.captionEdge); without it they stay at the bottom. */
-  readonly captionEdge?: (from: number, to: number) => CaptionEdge;
 };

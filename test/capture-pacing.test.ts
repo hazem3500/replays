@@ -71,6 +71,7 @@ describe('capture labels', () => {
 
   it('uses field names without including typed secrets, and respects explicit labels', () => {
     expect(labelFor({ kind: 'click', selector: 'text=Save' })).toBe('Click “Save”');
+    expect(labelFor({ kind: 'click', selector: 'text=Profile:' })).toBe('Click “Profile”');
     for (const kind of ['type', 'fill'] as const) {
       expect(labelFor({ kind, selector: '[aria-label="Password"]', text: 'secret-value' })).toBe(
         kind === 'type' ? 'Type into “Password”' : 'Fill “Password”',

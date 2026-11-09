@@ -249,6 +249,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
           epoch: Date.now(),
           kind: step.kind,
           label: labelFor(step),
+          ...(step.label ? {} : { auto: true as const }),
           ...('selector' in step ? { selector: step.selector } : {}),
           ...('url' in step ? { url: sanitizeUrl(step.url) } : {}),
         });
