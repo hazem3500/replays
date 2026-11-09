@@ -1887,16 +1887,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/243"
     },
     {
-      "file": "dist/lib/recorder-chunks/attribute-classes.ts-e5b119bffc36.mjs",
-      "cap": {
-        "raw": 68574,
-        "gzip": 18616,
-        "brotli": 16386
-      },
-      "reason": "The recorder core chunk under a new source membership (adds step-label.ts), replacing attribute-classes.ts-1cc4ef463b88. Main 65229/17615/15501 B, head 66576/18073/15908 B raw/gzip/brotli: click labels read the accessible name or first line and cap at a word boundary, with no ellipsis.",
-      "pr": "https://github.com/hazem3500/replays/pull/243"
-    },
-    {
       "file": "dist/client/assets/step-caption-HASH.js",
       "cap": {
         "raw": 1388,
