@@ -64,6 +64,14 @@ describe('reviewed bundle allowances', () => {
     const growth = { [file]: { raw: 120, gzip: 60, brotli: 50 } };
     assert.deepEqual(ratchetBudget(base(), growth, measured).files, base().files);
   });
+  it('accepts caps within one percent of the headroom target after a small shrink', () => {
+    const budget = { ...base(), files: { [file]: { raw: 1000, gzip: 500, brotli: 400 } } };
+    const measured = { [file]: { raw: 970, gzip: 485, brotli: 388 } };
+    const main = { [file]: { raw: 971, gzip: 486, brotli: 389 } };
+    assert.deepEqual(ratchetBudget(budget, measured, main).files[file], { raw: 1000, gzip: 500, brotli: 400 });
+    const large = { [file]: { raw: 800, gzip: 400, brotli: 300 } };
+    assert.deepEqual(ratchetBudget(budget, large, main).files[file], { raw: 824, gzip: 412, brotli: 309 });
+  });
   it('removes budgets and allowance entries when their artifacts disappear', () => {
     const next = ratchetBudget({ ...base(), allowances: [allowance()] }, {});
     assert.deepEqual(next.files, {});
