@@ -10,7 +10,7 @@ import { stepKindName } from '../viewer/step-kinds.ts';
 import { measureLabel } from './label-measure.ts';
 import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
 import { blockText } from './BlockLabel.tsx';
-import { clipRuns, keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
+import { clipBox, clipRuns, keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
 import { Durations } from './Durations.tsx';
 import { BAR_TOOLS } from './bar-tools.ts';
 import { laneRegions } from './lanes.tsx';
@@ -25,9 +25,8 @@ const PAD = 14;
  * editor-layout.css): the dock's 20 px padding, the timeline's 4 px inset and, on the left, the 36 px lane gutter.
  */
 const TRACK_INSET = 20 * 2 + 4 * 2 + 36 + PAD * 2;
-/** A clip step's inline padding, and the wider one under a trim tab (Timeline.tsx ClipSteps). */
+/** A clip step's inline padding (Timeline.tsx ClipSteps). */
 const STEP_PAD = 8;
-const EDGE_STEP_PAD = 12;
 /** A region block's inline padding (TimelineRegion.tsx). */
 const REGION_PAD = 8;
 /** The recording before its length is known: an invisible stand-in that holds the readout's width. */
@@ -113,11 +112,13 @@ function ClipStepsSkeleton({
   px: number;
 }) {
   const segments = stepSegments(steps, trim);
-  const length = Math.max(1, trim.end - trim.start);
+  const boxes = segments.map((segment, index) =>
+    clipBox(segment.offset * px, (segment.offset + segment.length) * px, { first: index === 0, last: index === segments.length - 1 }),
+  );
   const labels = segments.map((segment, index) => {
-    const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
     const room = labelRoom(segment, trim.start, cuts);
-    return segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px - edges * (EDGE_STEP_PAD - STEP_PAD), {
+    const inset = segment.length * px - (boxes[index]?.width ?? 0);
+    return segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px - inset, {
       pad: STEP_PAD,
       measure: measureLabel,
       fallback: stepKindName(segment.kind),
@@ -127,6 +128,7 @@ function ClipStepsSkeleton({
     segments,
     labels.map((label) => !label.text),
   );
+  const inRun = new Set(runs.flatMap((run) => run.members));
   return (
     <>
       {segments.map((segment, index) => (
@@ -134,18 +136,14 @@ function ClipStepsSkeleton({
           key={segment.at}
           className="tl-clip-step"
           data-wait={segment.wait || undefined}
-          data-blank={!segment.wait && !labels[index]?.text ? '' : undefined}
-          data-last={index === segments.length - 1 ? '' : undefined}
-          style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
+          data-blank={inRun.has(index) ? '' : undefined}
+          style={{ left: `${boxes[index]?.left ?? 0}px`, width: `${boxes[index]?.width ?? 0}px` }}
         />
       ))}
-      {runs.map((run) => (
-        <span
-          key={run.from}
-          className="tl-clip-run"
-          style={{ left: `${(run.from / length) * 100}%`, width: `${((run.to - run.from) / length) * 100}%` }}
-        />
-      ))}
+      {runs.map((run) => {
+        const box = clipBox(run.from * px, run.to * px, { first: run.members.includes(0), last: run.members.includes(segments.length - 1) });
+        return <span key={run.from} className="tl-clip-run" style={{ left: `${box.left}px`, width: `${box.width}px` }} />;
+      })}
     </>
   );
 }

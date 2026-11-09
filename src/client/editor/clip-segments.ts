@@ -159,3 +159,18 @@ export function clipRuns(segments: readonly StepSegment[], blank: readonly boole
     .map((run) => ({ ...run, steps: run.members.filter((index) => segments[index]?.wait === false).length }))
     .filter((run) => run.steps > 1);
 }
+
+/** The one gap between neighbouring clip segments, in px. */
+export const CLIP_GAP_PX = 2;
+/** How far the clip's first and last segment stay clear of their trim tab, in px. */
+export const CLIP_END_INSET_PX = 12;
+
+/**
+ * Where a clip segment (or run) is drawn, from its own edges in px on the clip: half the gap off each side it shares
+ * with a neighbour, so every boundary is one CLIP_GAP_PX wide, and the trim tab's room off the clip's two ends.
+ */
+export function clipBox(from: number, to: number, ends: { first: boolean; last: boolean }) {
+  const left = from + (ends.first ? CLIP_END_INSET_PX : CLIP_GAP_PX / 2);
+  const right = to - (ends.last ? CLIP_END_INSET_PX : CLIP_GAP_PX / 2);
+  return { left, width: Math.max(0, right - left) };
+}
