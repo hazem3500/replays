@@ -54,6 +54,10 @@ test('a sign-in that does not stick stops automatically and offers a manual link
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sign in to view this replay' })).toBeVisible();
+  await expect(page.getByText('Use your @toggl.com Google account.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Try again' })).toHaveCount(0);
+  await expect(page.locator('details.state-view-details')).toHaveCount(0);
   expect(attempts).toBe(1);
 });
 

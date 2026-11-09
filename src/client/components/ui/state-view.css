@@ -55,7 +55,16 @@
   justify-content: flex-start;
 }
 .state-action {
+  min-width: 96px;
   text-decoration: none;
+}
+@media (max-width: 480px) {
+  .state-view[data-layout="page"] .state-view-actions {
+    width: 100%;
+    max-width: 320px;
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 .state-view[data-layout="panel"] .state-action {
   height: 32px;
@@ -93,7 +102,7 @@
   overflow-wrap: anywhere;
 }
 
-/* The illustration: a tilted, dashed card behind a plate with the kind's glyph in the kind's colour. */
+/* The illustration: a plate with the kind's glyph; only errors and warnings are tinted. */
 .state-art {
   --art: 64px;
   --art-ink: var(--text-tertiary);
@@ -114,16 +123,9 @@
 .state-art[data-kind="not-captured"] {
   --art-ink: var(--accent);
 }
-.state-art-back {
-  position: absolute;
-  inset: 8%;
-  border: 1px dashed var(--line-strong);
-  border-radius: 14px;
-  transform: rotate(-9deg) translate(-6%, 4%);
-}
 .state-art-plate {
   position: absolute;
-  inset: 8%;
+  inset: 0;
   display: grid;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--art-ink) 30%, var(--line));
