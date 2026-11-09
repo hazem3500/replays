@@ -129,6 +129,8 @@ describe('tokensCss', () => {
   });
 });
 
+const iconOf = (html: string) => decodeURIComponent(/<link rel="icon" href="data:image\/svg\+xml,([^"]*)"/.exec(html)?.[1] ?? '');
+
 describe('pageBranding and publicConfig', () => {
   const branding: BrandingConfig = validateBranding({
     name: 'Acme Replays',
@@ -141,6 +143,7 @@ describe('pageBranding and publicConfig', () => {
       name: 'Acme Replays',
       logoUrl: 'https://example.com/logo.svg',
       tokensCss: ':root{--accent:#7aa2ff}',
+      accent: { dark: '#7aa2ff' },
     });
     expect(pageBranding({ name: 'Plain' })).toEqual({ name: 'Plain', tokensCss: '' });
   });
@@ -194,7 +197,6 @@ describe('withBase with branding', () => {
   });
 
   const FAVICON_INDEX = INDEX.replace('<title>', '<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" /><title>');
-  const iconOf = (html: string) => decodeURIComponent(/<link rel="icon" href="data:image\/svg\+xml,([^"]*)"/.exec(html)?.[1] ?? '');
 
   it('draws the tab icon in the theme accent, for either scheme', () => {
     const html = withBase(
