@@ -1,24 +1,13 @@
 #!/usr/bin/env node
-import { commandHelp } from '../command-help.ts';
+import { commandHelp, renderAgentGuide, renderHelp } from '../command-help.ts';
+import { createTerminal } from './terminal.ts';
+import { startCliUpdateNotice } from './update-check.ts';
 import { PRODUCT_SLUG } from '../shared/brand.ts';
 
-const usage = `${PRODUCT_SLUG} <command> [options]
-
-Capture-only distribution commands:
-  capture   record a page into a replay
-  import    convert an rrweb recording into a replay
-  upload    upload an existing replay
-  connect   save a named server URL
-  login     sign in using device approval
-  status    show server and sign-in state
-  logout    remove saved credentials
-  config    show or reset local configuration
-  doctor    check server connectivity
-
-Run ${PRODUCT_SLUG} capture --help for recording options.
-Server, migration and plugin workshop commands require the full distribution.`;
+const usage = (stream: typeof process.stdout | typeof process.stderr) => renderHelp(createTerminal({ stream }), { captureOnly: true });
 
 const [command, ...args] = process.argv.slice(2);
+const finishUpdateNotice = startCliUpdateNotice(command, args);
 const help = commandHelp(command, args);
 if (help) process.stdout.write(`${help}\n`);
 else
@@ -50,17 +39,22 @@ else
     case 'doctor':
       await (await import('./upload.ts')).runDoctorCli(args);
       break;
+    case 'agent-guide':
+      process.stdout.write(`${renderAgentGuide({ captureOnly: true })}\n`);
+      break;
     case undefined:
     case '--help':
     case '-h':
     case 'help':
-      process.stdout.write(`${usage}\n`);
+      process.stdout.write(`${usage(process.stdout)}\n`);
       break;
     default:
       process.stderr.write(
         ['serve', 'migrate', 'build-static', 'plugin', 'mcp'].includes(command)
           ? `${command} requires the full ${PRODUCT_SLUG} distribution; this artifact supports capture and upload only.\n`
-          : `unknown command: ${command}\n\n${usage}\n`,
+          : `unknown command: ${command}\n\n${usage(process.stderr)}\n`,
       );
       process.exitCode = 2;
   }
+
+finishUpdateNotice();

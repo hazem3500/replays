@@ -1,30 +1,13 @@
 #!/usr/bin/env node
-import { commandHelp } from './command-help.ts';
-import { PRODUCT_SLUG } from './shared/brand.ts';
+import { commandHelp, renderAgentGuide, renderHelp } from './command-help.ts';
+import { createTerminal } from './capture/terminal.ts';
+import { startCliUpdateNotice } from './capture/update-check.ts';
 
-const USAGE = `${PRODUCT_SLUG} <command> [options]
-
-Commands:
-  capture   record a page with scripted steps into replay.json (see: ${PRODUCT_SLUG} capture --help)
-  import    convert a plain rrweb recording into a replay
-  upload    POST an existing replay.json to a server
-  connect   save a named server URL for future uploads
-  login     sign in through an advertised OIDC device approval flow
-  status    show the configured server and CLI sign-in state
-  logout    remove saved CLI credentials and request provider revocation
-  config    show saved server names, or reset local CLI configuration
-  doctor    check whether the configured viewer server is reachable
-  migrate   copy a store into another, converting stored replays (see: ${PRODUCT_SLUG} migrate --help)
-  plugin    check a server/browser/user plugin against a fixture (plugin check --help)
-  mcp       MCP server (stdio) for the plugin workshop's agent bridge (beta: REPLAYS_BETA_MALLEABLE)
-  serve     start the viewer and upload server (configuration: environment variables, see the README)
-  build-static  copy the built viewer to --out <dir> with the base, name, logo and theme stamped in (CDN hosting;
-            the API stays on a server): ${PRODUCT_SLUG} build-static --out <dir> [--base /] [--config path]
-
-Run \`${PRODUCT_SLUG} capture --help\` for the capture options.`;
+const usage = (stream: typeof process.stdout | typeof process.stderr) => renderHelp(createTerminal({ stream }));
 
 const [command, ...rest] = process.argv.slice(2);
 
+const finishUpdateNotice = startCliUpdateNotice(command, rest);
 const help = commandHelp(command, rest);
 if (help) process.stdout.write(`${help}\n`);
 else
@@ -56,6 +39,9 @@ else
     case 'logout':
       await (await import('./capture/upload.ts')).runLogoutCli(rest);
       break;
+    case 'agent-guide':
+      process.stdout.write(`${renderAgentGuide()}\n`);
+      break;
     case 'migrate':
       await (await import('./server/migrate-cli.ts')).runMigrateCli(rest);
       break;
@@ -79,9 +65,11 @@ else
     case '--help':
     case '-h':
     case 'help':
-      process.stdout.write(`${USAGE}\n`);
+      process.stdout.write(`${usage(process.stdout)}\n`);
       break;
     default:
-      process.stderr.write(`unknown command: ${command}\n\n${USAGE}\n`);
+      process.stderr.write(`unknown command: ${command}\n\n${usage(process.stderr)}\n`);
       process.exitCode = 2;
   }
+
+finishUpdateNotice();

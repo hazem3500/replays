@@ -122,9 +122,16 @@ replays upload ./out/replay.json
 `connect` stores a named server and makes it the default in the platform config directory (`$XDG_CONFIG_HOME/replays/config.json`,
 or the platform equivalent). It stores no credentials. Add another server with `--name staging`; select it with
 `--server staging`. Upload target precedence is explicit `--upload-url`, explicit `--server`, `REPLAYS_SERVER_URL`,
-`REPLAYS_SERVER`, then the saved default. Server URLs must use HTTPS except on loopback. `doctor` checks reachability and
-reports whether this server advertises a supported CLI login; it does not prove that a user can upload.
+`REPLAYS_SERVER`, then the saved default. Server URLs must use HTTPS except on loopback. `doctor` checks Node, Chrome, ffmpeg, reachability and your saved
+sign-in, and reports whether this server advertises a supported CLI login; it does not prove that a user can upload.
 Use `replays config` to list saved server names and URLs, and `replays config reset` to remove the saved configuration.
+
+At a terminal the CLI shows a branded header, spinners, aligned status blocks and clickable links. Output is plain, with no colour or
+spinners and the same exit codes, when it is piped, in CI (`CI`), with `NO_COLOR`, or with `--json`. Agents can use `--json` on
+`capture`, `upload`, `status` and `doctor` for one stable JSON object, and `replays agent-guide` prints markdown generated from the
+same command definitions as `--help`. A distribution can enable a once-a-day update notice (stderr, terminal only, never in CI or
+`--json`) by setting `REPLAYS_UPDATE_URL` to its registry's `latest` document and, optionally, `REPLAYS_UPDATE_COMMAND`; users opt
+out with `REPLAYS_NO_UPDATE_CHECK=1`.
 
 If `doctor` reports OIDC device login, run `replays login` once. The CLI displays the provider's approval URL and short code;
 after approval it saves an upload-only session and resumes. Later uploads reuse it, refreshing tokens when the provider

@@ -18,6 +18,8 @@ import { loadConfig } from '../config/index.ts';
 import { resolvePlugins } from '../plugin/registry.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import { defaultId, flagMap, prepareOutputDirectory, profileFlag } from './bundle-io.ts';
+import { CAPTURE_USAGE } from './capture-usage.ts';
+import { createTerminal, reportCliFailure } from './terminal.ts';
 import { uploadConfigured } from './upload.ts';
 import { buildReplayContext, readContextFile } from './context.ts';
 import { agentBrowserDriver } from './drivers/agent-browser.ts';
@@ -78,36 +80,7 @@ export interface CaptureArgs extends CapturePacingOptions {
 
 const BOOLEAN_FLAGS = new Set(['video', 'headed', 'upload', 'login', 'no-performance']);
 
-export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output <dir> [options]
-
-  --url <url>              page to open (https, or http on localhost)
-  --output <dir>           empty directory for replay.json (and session.mp4)
-  --steps <json|@file>     closed list of steps: click, hover, type, fill, press, wait, scroll, goto
-  --step-pause <ms>        hold after non-wait actions, 0..10000 (config.capture.stepPauseMs, else 0)
-  --title <text>           title shown in the viewer (default: the host name)
-  --id <id>                replay id (default: <host>-<timestamp>-<random>)
-  --driver <name>          playwright (default) or agent-browser
-  --viewport <WxH>         default 1440x900
-  --video                  also write session.mp4 (playwright driver needs ffmpeg)
-  --tag <tag>              label for filtering; repeatable
-  --profile <id>           why it was recorded: one of the server's profiles (GET /api/config lists them);
-                           its capture defaults apply under the flags here. --purpose is its deprecated name
-  --network <mode>         headers (default), off, or bodies: also keep request and response bodies (JSON,
-                           text and form data only, cut at 64 KiB, secrets redacted)
-  --no-performance         leave out paint, long-task and interaction timings
-  --person <spec>          someone related to it, role:email[:handle=value] (reviewer:ada@example.com); repeatable
-  --source <p:ref>         link to the thing under test, e.g. github:owner/repo#12; repeatable
-  --context-file <file>    JSON { app?, test?, sources?, fields? } from your test runner
-  --context-schema <file>  JSON Schema that context.fields must satisfy (same file as the server's)
-  --suite-id <id> --run-id <id>   attach the replay to a suite run
-  --upload-url <url>       POST the finished replay to <server>/api/replays
-  --upload                 upload to the saved default server
-  --login                  explicitly start sign-in before upload
-  --server <name>          use a saved server name with --upload
-  --header-file <file>     JSON object of headers for the upload (e.g. Authorization)
-  --headed                 show the browser window (playwright driver)
-  --config <file>          replays.config.* whose redaction rules apply (default: REPLAYS_CONFIG, else
-                           replays.config.* in the working directory)`;
+export { CAPTURE_USAGE };
 
 function parseViewport(value: string | undefined) {
   if (!value) return { width: 1440, height: 900 };
@@ -354,19 +327,34 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
   }
 }
 
-/** `replays capture …`: prints one JSON line on success or failure (machine-readable for agents and CI). */
+/** `replays capture …`: one JSON line on success or failure for agents and CI; a spinner and summary for a person at a terminal. */
 export async function runCaptureCli(argv: string[]) {
   if (argv.includes('--help') || argv.includes('-h')) {
     process.stdout.write(`${CAPTURE_USAGE}\n`);
     return;
   }
+  const json = argv.includes('--json');
+  const spinner = createTerminal({ json }).spinner('Recording the page');
   try {
-    const args = await parseArgs(argv);
+    const args = await parseArgs(argv.filter((arg) => arg !== '--json'));
     const result = await capture(args, createDriver(args.driver, { headed: args.headed }));
-    process.stdout.write(`${JSON.stringify({ success: true, ...result })}\n`);
+    spinner.stop();
+    const out = createTerminal({ stream: process.stdout, json });
+    if (out.fancy) {
+      const seconds = (result.duration / 1000).toFixed(1);
+      const rows: Array<[string, string]> = [
+        ['Replay', result.replayPath],
+        ['Events', String(result.eventCount)],
+        ['Requests', String(result.requestCount)],
+        ['Console', String(result.consoleCount)],
+        ...(result.video ? ([['Video', result.video]] as Array<[string, string]>) : []),
+      ];
+      process.stdout.write(
+        `${out.header()}\n\n${out.ok(`Captured ${result.eventCount} events in ${seconds}s`)}\n\n${out.keyValue(rows)}\n`,
+      );
+    } else process.stdout.write(`${JSON.stringify({ success: true, ...result })}\n`);
   } catch (error) {
-    process.stderr.write(`${JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) })}\n`);
-    process.exitCode =
-      typeof error === 'object' && error !== null && 'exitCode' in error && typeof error.exitCode === 'number' ? error.exitCode : 1;
+    spinner.stop();
+    process.exitCode = reportCliFailure(error, { json });
   }
 }
