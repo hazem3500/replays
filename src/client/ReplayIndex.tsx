@@ -1,5 +1,5 @@
 import { useIndexPluginEvents } from './hooks/use-index-plugin-events.ts';
-import { SignInError, SignInLink, fetchPage } from './sign-in.tsx';
+import { SignInError, fetchPage, signInHref, useSignInRedirect } from './sign-in.tsx';
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedText } from '@/components/animated-text.tsx';
@@ -40,6 +40,7 @@ import { RefreshLine, ScopeCount } from './index/ScopeCount.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, appBase } from './api/fetch.ts';
 import { writePageCookie } from './page-meta.ts';
+import { FOR_YOU, landingTab, parseTabChoice, tabChoiceKey, type TabChoice } from './index/for-you.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
@@ -631,6 +632,7 @@ export function ReplayIndex({
     Boolean(me?.people) ||
     Boolean(items?.some((summary) => summary.people?.length)) ||
     Boolean(suites?.some((suite) => suite.people?.length || suite.runDetails.some((run) => run.replay?.people?.length)));
+  const forYouTab = Boolean(me) && (Boolean(me?.email) || Object.keys(linked).length > 0);
   const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: linked }), [me, linked]);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   // why: a retry re-runs the request with a fresh filters object; the failure stays on screen while it runs.
@@ -639,6 +641,8 @@ export function ReplayIndex({
   const unreachable = error.startsWith('Could not reach ') || /\((?:502|503|504)\)$/.test(error);
   // why: a list already on screen beats a blank page, so a failed refresh keeps it under a banner and keeps trying.
   const stale = Boolean(items && error) && !authFailure;
+  const signingIn = useSignInRedirect(authFailure);
+  const signInTarget = authFailure ? signInHref() : undefined;
   const autoRetry = useAutoRetry({
     failing: Boolean(error) && !authFailure,
     pending: settledFilters !== filters,
@@ -648,6 +652,10 @@ export function ReplayIndex({
       setFilters(next);
     },
   });
+  const listFailure = ((): IndexEmptyInput | undefined => {
+    if (signInTarget) return signingIn ? undefined : { kind: 'sign-in', href: signInTarget };
+    return { kind: 'error', product: productName(), connection: unreachable, reason: error, retry: autoRetry };
+  })();
   const pluginFilters = usePluginSnapshot().filters;
   const replays = entries ? replayCount(entries) : 0;
   const suiteRows = entries ? entries.filter((entry) => entry.kind === 'suite').length : 0;
@@ -656,6 +664,19 @@ export function ReplayIndex({
   const changeSort = (next: Sort) => feedTransition(() => setSort(next));
   const changeKind = (next: IndexKind | undefined) => feedTransition(() => setKind(next));
   const changeProfile = (next: string | undefined) => feedTransition(() => setProfile(next));
+  const probing = useRef(false);
+  const rememberTab = (choice: TabChoice) => {
+    probing.current = false;
+    if (me) writeStorage(tabChoiceKey(me.id), choice);
+  };
+  const changeTab = (next: string | undefined) => {
+    rememberTab(next === FOR_YOU ? FOR_YOU : 'all');
+    feedTransition(() => {
+      setProfile(next === FOR_YOU ? undefined : next);
+      setForMe(next === FOR_YOU);
+      setFilters((current) => ({ ...current }));
+    });
+  };
   const update = <K extends keyof ReplayFilters>(key: K, value: ReplayFilters[K] | undefined) =>
     feedTransition(() => setFilters((current) => withFilter(current, key, value)));
   /** A plugin filter's `x-*` param (registerIndexFilter); undefined or '' removes it. */
@@ -696,6 +717,23 @@ export function ReplayIndex({
     setLinked(next);
     if (forMe) setFilters((current) => ({ ...current }));
   };
+  // The landing tab: a stored choice wins; otherwise For you, unless the link has its own view or For you comes up empty.
+  const landed = useRef(false);
+  useEffect(() => {
+    if (!me || landed.current) return;
+    landed.current = true;
+    const explicit = [...new URLSearchParams(opened).keys()].some((key) => key !== 'sort');
+    const canMatch = Boolean(me.email) || Object.keys(linked).length > 0;
+    const landing = landingTab({ explicit, canMatch, stored: parseTabChoice(readStorage(tabChoiceKey(me.id))) });
+    probing.current = landing.probe;
+    if (landing.forYou) changeForMe(true);
+  });
+  useEffect(() => {
+    if (!probing.current || !forMe || !entries || pending) return;
+    probing.current = false;
+    if (entries.length === 0) changeForMe(false);
+  });
+
   const chooseView = (next: FeedView) => {
     if (next !== preferredView) feedTransition(() => setPreferredView(next), 'poster');
     writeStorage(VIEW_KEY, next);
@@ -782,7 +820,17 @@ export function ReplayIndex({
           <ScopeBar
             entering={leftFirstRun}
             count={count}
-            lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
+            lead={
+              tabs.length || forYouTab ? (
+                <ProfileSegments
+                  profiles={tabs}
+                  value={forMe ? FOR_YOU : profile}
+                  counts={forMe ? undefined : counts}
+                  onChange={changeTab}
+                  forYou={forYouTab}
+                />
+              ) : undefined
+            }
           >
             {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
             <SortMenu sort={sort} onChange={changeSort} />
@@ -795,10 +843,9 @@ export function ReplayIndex({
       <section className="index-body" aria-label="Replays" aria-busy={pending}>
         {/* Plugins' blocks above the list (registerIndexSection), given what the list shows. */}
         {items && !error ? <IndexSections summaries={items} /> : null}
-        {authFailure ? <SignInLink error={authFailure} /> : null}
         {stale ? <IndexEmpty input={{ kind: 'offline', connection: unreachable, retry: autoRetry }} /> : null}
-        {error && !stale ? (
-          <IndexEmpty input={{ kind: 'error', product: productName(), connection: unreachable, reason: error, retry: autoRetry }} />
+        {(error || signInTarget) && !stale ? (
+          <IndexEmpty input={listFailure} />
         ) : empty ? (
           <IndexEmpty input={empty} onUpload={() => upload.current?.open()} />
         ) : entries && entries.length === 0 ? (

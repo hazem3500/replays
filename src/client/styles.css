@@ -92,7 +92,8 @@
   --danger-solid-hover: #d23f31;
   --danger-solid-pressed: #b8342a;
   --danger-solid-foreground: #ffffff;
-  --warning: #e8bd72;
+  --warning: #fbbf24;
+  --warning-fill: #d97706;
   --success: #7ccfa2;
   --ring: #a9b6ff;
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -135,7 +136,8 @@
   --danger-solid-hover: #b02f26;
   --danger-solid-pressed: #9e2a22;
   --danger-solid-foreground: #ffffff;
-  --warning: #85570f;
+  --warning: #a84e08;
+  --warning-fill: #c27400;
   --success: #1f7445;
   --ring: #3d4fd1;
   --shadow-pop: 0 12px 32px rgba(20, 26, 46, 0.14), 0 2px 6px rgba(20, 26, 46, 0.08);
@@ -465,7 +467,6 @@ svg.lucide.lucide { stroke-width: 2; }
   bottom: calc(var(--frame-bottom, 0px) + max(8px, var(--caption-inset)));
   padding-inline: var(--clear);
 }
-.stage-wrap .step-caption[data-edge="top"] { top: calc(var(--frame-y, 0px) + max(8px, var(--caption-inset))); bottom: auto; padding-inline: 0; }
 
 /* The replay's source (a pull request, a ticket) as a quiet link chip beside the title. */
 /* The replay's source beside the title: a quiet ghost link at the topbar controls' size (28 px, 6 px radius), no
@@ -589,10 +590,9 @@ svg.lucide.lucide { stroke-width: 2; }
 
 
 .now-grip svg { width: 16px; height: 16px; stroke-width: 2.5; }
-/* Shown (by script, after a 250 ms hover intent): line and grip come up together, calmly, no overshoot. */
+/* Shown (by script, after a 250 ms hover intent): opacity and scale are animated by the presence motion, never set here. */
 /* Hidden, the grip takes no pointer events, so re-entering the line always goes through its hover intent. */
 .now-divider[data-grip="shown"] .now-grip, .now-divider[data-dragging] .now-grip, .now-grip:focus-visible { pointer-events: auto; }
-.now-divider[data-grip="shown"] .now-grip { scale: 1; opacity: 1; }
 .now-divider[data-dragging] .now-grip { cursor: grabbing; }
 .now-grip:focus-visible { box-shadow: none; }
 .now-grip:focus-visible::before { box-shadow: 0 0 0 2px var(--ring); }
@@ -625,7 +625,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .console-table th:nth-child(3), .console-table td:nth-child(3) { width: 180px; }
 .console-row code { display: block; overflow: hidden; color: var(--text); font-size: var(--text-xs); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
 /* While the scrubber is dragged its time bubble rises over the player's bottom edge: the caption steps up clear of it. */
-.player-region:has(.scrubber[data-scrubbing]) .step-caption:not([data-edge="top"]) { transform: translateY(-28px); }
+.player-region:has(.scrubber[data-scrubbing]) .step-caption { transform: translateY(-28px); }
 .console-row.error td { background: var(--danger-tint); }
 .source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -648,7 +648,11 @@ svg.lucide.lucide { stroke-width: 2; }
    third (components/ui/state-view.css). */
 .state-shell { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr; justify-items: center; padding: 20px 20px 0; box-sizing: border-box; }
 .state-shell > .state-view { min-height: 0; padding-top: max(32px, 12dvh); }
-.state-brand { justify-content: center; }
+.state-brand { justify-self: start; }
+.state-brand .product-mark { overflow: visible; color: var(--text); }
+.state-brand .product-mark .mark-seg { fill: currentColor; fill-opacity: 0.35; stroke: none; }
+.state-brand .product-mark .mark-seg[data-on], .state-brand .product-mark .mark-playhead { fill: var(--accent); fill-opacity: 1; stroke: none; }
+.state-brand .product-logo { width: 24px; height: 24px; object-fit: contain; }
 .button { min-height: 32px; display: inline-flex; align-items: center; margin-top: 18px; padding: 0 12px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent); color: var(--accent-contrast); font-size: var(--text-sm); font-weight: 600; text-decoration: none; cursor: pointer; }
 .button.secondary { border-color: var(--line-strong); background: transparent; color: var(--text); }
 
@@ -747,9 +751,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .suite-sidebar-status { display: inline-flex; align-items: center; gap: 5px; }
 .suite-sidebar-count::before { content: "·"; margin-right: 7px; }
 .suite-sidebar-duration { margin-left: auto; }
-.suite-sidebar-subject { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .suite-sidebar-meta a { color: var(--text-secondary); text-decoration: none; }
-.suite-subject-arrow { width: 11px; height: 11px; margin-left: 2px; vertical-align: -1px; }
 .suite-kept { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); }
 .suite-kept svg { width: 12px; height: 12px; }
 .sha-button { padding: 0 3px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); cursor: copy; }
@@ -784,7 +786,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .run-picker-item [data-slot="dropdown-menu-radio-item-indicator"] { top: 50%; translate: 0 -50%; }
 .run-copy { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1px 8px; }
 .sk-run .run-copy { grid-template-columns: minmax(0, 1fr); }
-.run-label { min-width: 0; overflow: hidden; font-weight: 500; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.run-label { min-width: 0; display: -webkit-box; overflow: hidden; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .run-meta { min-width: 0; grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; color: var(--text-tertiary); font-size: var(--text-2xs); white-space: nowrap; }
 .run-meta > span + span::before { content: "·"; margin-right: 5px; color: var(--text-tertiary); }
 .run-status::first-letter { text-transform: uppercase; }
@@ -795,7 +797,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .status-dot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: var(--text-tertiary); }
 .status-dot.tone-passed, .status-dot.tone-complete { background: var(--success); }
 .status-dot.tone-failed { background: var(--danger); }
-.status-dot.tone-partial { background: var(--warning); }
+.status-dot.tone-partial { background: var(--warning-fill); }
 .status-dot.tone-running { background: var(--accent); }
 .status-dot.tone-waiting { border: 1px solid var(--text-tertiary); background: transparent; }
 @container topbar (max-width: 600px) { .upload-label { display: none; } }
@@ -813,7 +815,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .index-status-passed .index-status-dot { background: var(--success); }
 .index-status-failed { color: var(--danger); }
 .index-status-failed .index-status-dot { background: var(--danger); }
-.index-status-partial .index-status-dot { background: var(--warning); }
+.index-status-partial .index-status-dot { background: var(--warning-fill); }
 .index-status-running .index-status-dot { background: var(--accent); }
 .index-status-waiting .index-status-dot { border: 1px solid var(--text-tertiary); background: transparent; }
 .run-sequence { width: 24px; flex: 0 0 24px; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
@@ -1099,14 +1101,12 @@ a.menu-link, a.menu-link:hover { color: inherit; text-decoration: none; }
 .edited-chip:hover .edited-label, .edited-chip[data-popup-open] .edited-label { color: var(--text-secondary); }
 .edited-chip:focus-visible { border-radius: var(--radius-sm); box-shadow: 0 0 0 2px var(--ring); }
 /* The Edit button carries the "has edits" mark as a small accent dot. */
-.edit-entry[data-has-edits] { position: relative; }
-.edit-entry[data-has-edits]::after { content: ""; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface); }
 
 /* StatusLabel (components/ui/status-label.tsx): dot + word in the verdict colour, no border, no fill. */
 :root { --status-dot-size: 7px; }
 .status-label { --status-color: var(--text-tertiary); min-width: 0; display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 550; line-height: 1; white-space: nowrap; }
 .status-label[data-tone="success"] { --status-color: var(--success); }
-.status-label[data-tone="warning"] { --status-color: var(--warning); }
+.status-label[data-tone="warning"] { --status-color: var(--warning-fill); }
 .status-label[data-tone="danger"] { --status-color: var(--danger); }
 .status-label[data-tone="accent"] { --status-color: var(--accent); }
 .status-label-dot { width: var(--status-dot-size); height: var(--status-dot-size); flex: 0 0 auto; border-radius: 50%; background: var(--status-color); }
@@ -1161,3 +1161,9 @@ a.menu-link, a.menu-link:hover { color: inherit; text-decoration: none; }
 .compare-picker-row:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
 .compare-picker-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .compare-picker-meta, .compare-picker-note { color: var(--text-tertiary); font-size: var(--text-xs); }
+
+@media (forced-colors: active) {
+  .cp-dot[data-level="warn"], .np-dot[data-status="slow"], .np-bar > span[data-tone="slow"], .pp-dot[data-verdict="needs-work"],
+  .pp-bar-fill[data-verdict="needs-work"], .ribbon-key i, .ribbon-mark[data-tone="warning"], .lt-bar[data-tone="warning"],
+  .run-seg[data-tone="partial"], .status-dot.tone-partial, .index-status-partial .index-status-dot, .status-label[data-tone="warning"] .status-label-dot { forced-color-adjust: none; background: Mark; }
+}

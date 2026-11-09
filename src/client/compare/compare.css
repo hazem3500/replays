@@ -683,7 +683,7 @@
 }
 
 /* The focused tile's step caption (CompareTile.tsx) clears the tile's name tag at the bottom-left. */
-.ct-picture .step-caption:not([data-edge="top"]) {
+.ct-picture .step-caption {
   bottom: max(calc(var(--frame-bottom, 0px) + max(8px, var(--caption-inset))), 26px);
 }
 

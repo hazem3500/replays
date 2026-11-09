@@ -1,10 +1,10 @@
-import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
-import { SignInError, SignInLink } from '../sign-in.tsx';
+import { StateView } from '@/components/ui/state-view.tsx';
+import { FailureShell, failureCopy, TRY_AGAIN } from '../routing/states.tsx';
+import { SignInError, useSignInRedirect } from '../sign-in.tsx';
 import { readSplitterSize, Splitter } from '../components/ui/splitter.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
-import { sourceLook } from '../source-looks.ts';
-import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { displayTitle } from '../display-title.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon } from 'lucide-react';
 import { type KeyboardEvent, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -32,7 +32,7 @@ import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns } from './runs.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
-import { compareDefaults, suiteViewLayout } from '../compare/defaults.ts';
+import { compareDefaults, isComparisonView, suiteViewLayout } from '../compare/defaults.ts';
 import { monograms, shortNames } from '../compare/tiles.ts';
 import { usePanelMotion } from '../hooks/use-panel-motion.ts';
 import { usePageView } from '../hooks/use-page-view.ts';
@@ -42,6 +42,14 @@ import { suiteComparePage } from '../routing/pages.ts';
 const SuiteCompare = suiteComparePage.Component;
 
 type WorkspaceRun = ReviewSuiteIndexRun & { duration?: number };
+
+/** A run whose recording did not load: gone for good (expired or removed), or worth another try. */
+function RunUnavailable({ message }: { message: string }) {
+  if (message === 'Replay not found')
+    return <StateView kind="not-found" title="This run’s recording is gone" cause="It has expired or was removed." />;
+  const { kind, title, cause, details } = failureCopy('run', message);
+  return <StateView kind={kind} title={title} cause={cause} details={details} actions={{ primary: TRY_AGAIN }} />;
+}
 
 /** Run rows from `runDetails` when present, else from the plain runs (no per-run error counts then). */
 function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
@@ -65,20 +73,11 @@ function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
   return orderedRuns(rows);
 }
 
-/** "GitHub · Faster checkout": the provider as it names itself (an id until a look names it), then the label. */
-function subjectText(subject: NonNullable<SuiteDetails['subject']>) {
-  const provider = sourceLook(subject.provider)?.label ?? subject.provider;
-  return subject.label ? `${provider} · ${subject.label}` : provider;
-}
-
 /** The suite's subject as a link (provider, address, label), when it names one. */
 function subjectLink(suite: Pick<ReviewSuite, 'subject'>): SuiteDetails['subject'] {
   const { subject } = suite;
   return subject ? { provider: subject.provider, url: subject.url, label: subject.label ?? subject.ref ?? '' } : undefined;
 }
-
-/** Only https addresses become links: a subject's URL comes from whoever registered the suite. */
-const isHttps = (url: string) => /^https:\/\//i.test(url);
 
 function runErrors(run: ReviewSuiteIndexRun) {
   return (run.replay?.consoleErrors ?? 0) + (run.replay?.failedRequests ?? 0);
@@ -119,6 +118,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const editsSettled = edits.data !== undefined || edits.isError;
   // An observed auth failure must win over cached suite, bundle or edit data.
   const authFailure = [suiteFailure, bundleFailure, edits.error].find((candidate) => candidate instanceof SignInError);
+  const signingIn = useSignInRedirect(authFailure);
   const [tab, setTab] = useState<InspectorTab>('console');
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
   const [collapsed, setRailPreference] = useState(false);
@@ -146,7 +146,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     recordings: playable.length,
     viewLayout: suiteViewLayout(view),
   });
-  const comparing = defaults.compare;
+  const comparing = defaults.compare && isComparisonView(view);
 
   // The run being switched to: the sidebar's selection moves at once, the viewer once its data is in (or after a
   // short wait), as one calm in-place transition (transitions/swap.ts).
@@ -261,13 +261,10 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const tone = run ? statusTone(run, detailed) : undefined;
   const runStatus = tone ? <RunStatusChip tone={tone} /> : undefined;
 
+  if (signingIn) return <ViewerSkeleton suite label="Signing in" />;
   if (authFailure || (error && !suite)) {
     const message = authFailure?.message ?? error;
-    return (
-      <StateShell {...failureCopy('review suite', message)} details={`${message} · ${id}`} secondary={TRY_AGAIN}>
-        <SignInLink error={authFailure ?? suiteFailure} />
-      </StateShell>
-    );
+    return <FailureShell thing="review suite" failure={authFailure ?? message} details={`${message} · ${id}`} />;
   }
 
   // Until the suite itself has loaded, the whole workspace is a skeleton (sidebar included), so the sidebar never
@@ -366,11 +363,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
               compact={narrow}
               {...(runMenu ? { titleMenu: runMenu } : {})}
             />
-            <div className="empty" role="alert">
-              <strong>Could not open this run</strong>
-              <span>{bundleError === 'Replay not found' ? 'Its recording has expired or was removed.' : bundleError}</span>
-              <SignInLink error={bundleFailure} />
-            </div>
+            <RunUnavailable message={bundleError} />
           </main>
         ) : !selected && playable.length === 0 ? (
           <main className="app-shell">
@@ -378,10 +371,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             {runs.some((item) => isExpired(item, detailed)) ? (
               <SuiteExpired replayIds={runs.flatMap((item) => (item.replayId ? [item.replayId] : []))} />
             ) : (
-              <div className="empty">
-                <strong>No recordings yet</strong>
-                <span>Runs appear here as the review uploads them.</span>
-              </div>
+              <StateView kind="empty" title="No recordings yet" cause="Runs appear here as the review uploads them." />
             )}
           </main>
         ) : (
@@ -419,7 +409,6 @@ function SuiteSidebar({
   const list = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const subject = subjectLink(suite);
-  const subjectLabel = subject && subjectText(subject);
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
   const colours = new Map(recorded.map((run) => [run.replayId, run.colour]));
   const names = shortNames(runs.map((run) => run.label));
@@ -451,7 +440,7 @@ function SuiteSidebar({
       <div className="suite-sidebar-head">
         {collapsed ? null : (
           <div className="suite-sidebar-title">
-            <h2 title={suite.title}>{suite.title}</h2>
+            <h2 title={suite.title}>{displayTitle({ title: suite.title, sources: subject && [subject] })}</h2>
           </div>
         )}
         <IconButton
@@ -479,19 +468,6 @@ function SuiteSidebar({
               <p className="suite-sidebar-meta suite-kept" data-testid="suite-kept">
                 <PinIcon aria-hidden="true" />
                 Kept by {keep.retention?.kept?.by ?? 'someone'}
-              </p>
-            ) : null}
-            {subject ? (
-              <p className="suite-sidebar-meta suite-sidebar-subject" title={subjectLabel}>
-                {isHttps(subject.url) ? (
-                  <a href={subject.url} target="_blank" rel="noopener noreferrer">
-                    {subjectLabel}
-                    <span className="visually-hidden"> (opens in a new tab)</span>
-                    <AnimatedIcon name="arrow-up-right" className="suite-subject-arrow" />
-                  </a>
-                ) : (
-                  <span>{subjectLabel}</span>
-                )}
               </p>
             ) : null}
           </>
