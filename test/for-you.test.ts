@@ -28,17 +28,15 @@ describe('For you landing', () => {
 });
 
 describe('who counts as you', () => {
-  const people = [
-    { role: 'pr-author', handles: { github: 'TobiasPrt' } },
-    { role: 'reviewer', email: 'Ada@Example.com' },
-  ];
+  const author = { role: 'pr-author', handles: { github: 'TobiasPrt' } };
+  const people = [author, { role: 'reviewer', email: 'Ada@Example.com' }];
 
   it('matches by email in any role, ignoring case', () => {
     expect(personMatch(people, { email: 'ada@example.com' })).toBe('reviewer');
   });
 
   it('matches by a linked handle, ignoring case', () => {
-    expect(isPersonMe(people[0]!, { handles: { github: 'tobiasprt' } })).toBe(true);
+    expect(isPersonMe(author, { handles: { github: 'tobiasprt' } })).toBe(true);
     expect(personMatch(people, { handles: { github: 'tobiasprt' } })).toBe('pr-author');
   });
 

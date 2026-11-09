@@ -17,15 +17,13 @@ export function parseTabChoice(raw: string | null): TabChoice | undefined {
  * stays on All; a stored choice wins; with neither, For you is tried and `probe` asks the caller to fall back to
  * All when it turns out empty.
  */
-export function landingTab({
-  explicit,
-  canMatch,
-  stored,
-}: {
+export interface LandingInput {
   explicit: boolean;
   canMatch: boolean;
   stored: TabChoice | undefined;
-}): { forYou: boolean; probe: boolean } {
+}
+
+export function landingTab({ explicit, canMatch, stored }: LandingInput): { forYou: boolean; probe: boolean } {
   if (explicit || !canMatch || stored === 'all') return { forYou: false, probe: false };
   return { forYou: true, probe: stored === undefined };
 }

@@ -657,6 +657,7 @@ export function ReplayIndex({
   // Feed changes cross-fade (feed-transition.ts).
   const changeSort = (next: Sort) => feedTransition(() => setSort(next));
   const changeKind = (next: IndexKind | undefined) => feedTransition(() => setKind(next));
+  const changeProfile = (next: string | undefined) => feedTransition(() => setProfile(next));
   const probing = useRef(false);
   const rememberTab = (choice: TabChoice) => {
     probing.current = false;
