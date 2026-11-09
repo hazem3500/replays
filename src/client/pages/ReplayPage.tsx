@@ -1,4 +1,4 @@
-import { displayTitle } from '../display-title.ts';
+import { contextTitle } from '../display-title.ts';
 import { useQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -38,8 +38,7 @@ function SingleReplayPage({ id }: { id: string }) {
   const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
   const error = (authFailure ?? failure)?.message ?? '';
   const ready = usePageCode(viewerPage.loaded, viewerPage.preload);
-  const sources = bundle?.context?.sources?.map((source) => ({ label: source.label ?? source.ref ?? '' }));
-  useDocumentTitle(bundle ? `${displayTitle({ title: bundle.meta.title, sources })} · ${productName()}` : productName());
+  useDocumentTitle(bundle ? `${contextTitle(bundle)} · ${productName()}` : productName());
 
   if (error) {
     return (

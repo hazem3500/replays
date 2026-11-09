@@ -23,3 +23,11 @@ export function displayTitle(meta: { title: string; sources?: Pick<ReplaySourceL
   const text = afterKindAndRef(meta.title, new Set(meta.sources?.map((source) => source.label))).replace(COMMIT_PREFIX, '');
   return text ? capitalize(text) : meta.title;
 }
+
+type ContextSource = { label?: string | undefined; ref?: string | undefined };
+
+/** The tab title for a replay: its title with the kind and source reference its context already carries removed. */
+export function contextTitle(bundle: { meta: { title: string }; context?: { sources?: ContextSource[] | undefined } | undefined }) {
+  const sources = bundle.context?.sources?.map((source) => ({ label: source.label ?? source.ref ?? '' }));
+  return displayTitle({ title: bundle.meta.title, sources });
+}
