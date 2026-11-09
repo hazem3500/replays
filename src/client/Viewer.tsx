@@ -440,29 +440,22 @@ export function Viewer({
   usePluginShortcuts(pluginContexts);
   const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
-  // why: the recording picker stays in More so the top bar keeps room for the view and layout switches. A suite already
+  // why: the recording picker stays in More (Compare with… in the View submenu) so the top bar keeps room for the view and layout switches. A suite already
   // says which runs belong together, so it offers no way to add another recording.
   const inSuite = Boolean(suite);
   const hasKeyboard = useHasKeyboard();
   const deletion = useReplayDeletion(bundle.meta.id, bundle.meta.title, true);
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
-      ...(inSuite
+      ...(inSuite || !sharedPlayer
         ? []
         : [
-            sharedPlayer
-              ? {
-                  label: 'Add a recording',
-                  icon: <AnimatedIcon name="plus" />,
-                  onSelect: () => setPickerOpen(true),
-                  testId: 'compare-with',
-                }
-              : {
-                  label: 'Compare with…',
-                  icon: <AnimatedIcon name="columns-2" />,
-                  onSelect: () => setPickerOpen(true),
-                  testId: 'compare-with',
-                },
+            {
+              label: 'Add a recording',
+              icon: <AnimatedIcon name="plus" />,
+              onSelect: () => setPickerOpen(true),
+              testId: 'compare-with',
+            },
           ]),
       ...pluginMenu.items,
       ...(betaMalleable()
@@ -643,7 +636,15 @@ export function Viewer({
           pluginActions={pluginMenu.bar}
           menuFooter={pluginMenu.settings}
           menu={menu}
-          menuSettings={comparisonContext ? null : <ViewMenuItems {...viewChoice} showReset={false} />}
+          menuSettings={
+            comparisonContext ? null : (
+              <ViewMenuItems
+                {...viewChoice}
+                showReset={false}
+                {...(inSuite || sharedPlayer ? {} : { onCompare: () => setPickerOpen(true) })}
+              />
+            )
+          }
           menuTail={<ResetViewItem onReset={layout.reset} />}
           {...(titleMenu ? { titleMenu } : {})}
           {...(titleFrom ? { titleFrom } : {})}
@@ -927,13 +928,7 @@ function PhoneHeader({
         {...props}
         compact
         appearanceInMenu
-        menuItems={[
-          ...menuItems.filter((item) => item.testId === 'compare-with'),
-          detailsItem,
-          ...copyLinkItems(player, steps, suite?.href),
-          ...menuItems.filter((item) => item.testId !== 'compare-with'),
-          ...download.items,
-        ]}
+        menuItems={[detailsItem, ...copyLinkItems(player, steps, suite?.href), ...menuItems, ...download.items]}
         actions={
           <>
             <ActionsBar

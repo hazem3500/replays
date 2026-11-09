@@ -25,6 +25,7 @@ const STRINGS = {
   group: 'View',
   trigger: (label: string) => `View: ${label}`,
   reset: 'Reset view',
+  compare: 'Compare with…',
 };
 
 export interface ViewChoice {
@@ -107,18 +108,19 @@ export function ViewSwitcher(choice: ViewChoice) {
 }
 
 /** View choices are one secondary row in More, with a back action in the phone sheet. */
-export function ViewMenuItems({ showReset = true, ...choice }: ViewChoice & { showReset?: boolean }) {
+export function ViewMenuItems({
+  showReset = true,
+  onCompare,
+  ...choice
+}: ViewChoice & { showReset?: boolean; /** Offers "Compare with…" below the view choices. */ onCompare?: () => void }) {
   const [open, setOpen] = useState(false);
   const phone = useMediaQuery(MOBILE_QUERY);
   const label = choice.views.find((view) => view.id === choice.current)?.label ?? choice.current;
   return (
     <DropdownMenuSub open={open} onOpenChange={setOpen}>
-      <DropdownMenuSubTrigger aria-label={STRINGS.trigger(label)} data-testid="view-submenu-trigger">
+      <DropdownMenuSubTrigger aria-label={STRINGS.trigger(label)} data-testid="view-submenu-trigger" value={label}>
         <AnimatedIcon name="panels-top-left" />
         {STRINGS.group}
-        <span className="ml-auto text-[var(--text-tertiary)]" aria-hidden="true">
-          {label}
-        </span>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent className="min-w-48" sideOffset={4} data-testid="view-submenu">
         {phone ? (
@@ -131,6 +133,15 @@ export function ViewMenuItems({ showReset = true, ...choice }: ViewChoice & { sh
           </>
         ) : null}
         <ViewItems {...choice} showReset={showReset} />
+        {onCompare ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onCompare} data-testid="compare-with">
+              <AnimatedIcon name="columns-2" />
+              {STRINGS.compare}
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuSubContent>
     </DropdownMenuSub>
   );
