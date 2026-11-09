@@ -31,10 +31,15 @@ test('a suite opens on its first failed run; J and Back move between runs', asyn
   await expect(sidebar.locator('[aria-disabled="true"]')).toContainText('No recording');
 
   await page.getByTestId('network-tab').click();
+  // Scrub past zero so a sticky shared playhead would fail the assertion after the run switch.
+  const seek = page.getByRole('slider', { name: 'Seek' });
+  const box = (await seek.boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.4, box.y + box.height / 2);
+  await expect(page.getByTestId('playhead')).not.toHaveText('0:00.0');
   await page.keyboard.press('Shift+J');
   await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
   await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
-  // The inspector tab carries over; the playhead starts again at zero.
+  // The inspector tab carries over; Single restarts the playhead (Grid/Spotlight keep the shared time).
   await expect(page.getByTestId('network-tab')).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByTestId('playhead')).toHaveText('0:00.0');
 

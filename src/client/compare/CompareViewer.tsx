@@ -114,7 +114,7 @@ function linkedTime(focused: LoadedTile, time: number | undefined) {
 function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewerProps; tiles: CompareTile[]; focused: LoadedTile }) {
   const { layout, onFocus, onLayout } = compare;
   const [initialTime] = useState(() => linkedTime(focused, compare.time));
-  const session = useCompareSession(tiles, focused.id, initialTime);
+  const session = useCompareSession(tiles, focused.id, initialTime, layout === 'single');
   const mobile = useMediaQuery(MOBILE_QUERY);
   const ready = tiles.filter(isLoaded);
   const summary = !compare.hideCompareSummary && !showsPhoneSwitch({ mobile, layout, count: tiles.length });
