@@ -31,7 +31,10 @@ export interface RibbonRange {
   to: number;
 }
 
-const STRINGS = { hint: 'Click to seek, drag the playhead to scrub, drag to show only that stretch', key: 'Click to seek · Drag the playhead to scrub · Drag to filter' };
+const STRINGS = {
+  hint: 'Click to seek, drag the playhead to scrub, drag to show only that stretch',
+  key: 'Click to seek · Drag the playhead to scrub · Drag to filter',
+};
 
 /**
  * One strip on the scrubber's own domain (0 to the replay's duration), so a mark at 40 % here sits at 40 % of the seek
