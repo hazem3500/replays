@@ -2,16 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { settleAnimations } from '../src/client/playback/settle-animations.ts';
 
-function fakeAnimation(playState: string, iterations: number, duration = 200) {
+function fakeAnimation(playState: AnimationPlayState, iterations: number, duration = 200) {
   return {
     playState,
     effect: { getComputedTiming: () => ({ iterations, duration }) },
-    finish: vi.fn(),
+    finish: vi.fn<() => void>(),
   };
 }
 
 function docWith(animations: ReturnType<typeof fakeAnimation>[]) {
-  return { getAnimations: () => animations } as unknown as Document;
+  return { getAnimations: () => animations };
 }
 
 describe('settleAnimations', () => {
@@ -45,6 +45,6 @@ describe('settleAnimations', () => {
 
   it('ignores a missing document', () => {
     expect(() => settleAnimations(null)).not.toThrow();
-    expect(() => settleAnimations({} as Document)).not.toThrow();
+    expect(() => settleAnimations({})).not.toThrow();
   });
 });
