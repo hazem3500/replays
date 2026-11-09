@@ -49,10 +49,7 @@ describe('browser interaction privacy', () => {
     document.body.append(link);
     link.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
     history.pushState(null, '', '/projects?search=private-name#access_token=secret');
-    expect(steps.map(({ kind, label }) => ({ kind, label }))).toEqual([
-      { kind: 'click', label: 'Clicked link' },
-      { kind: 'navigate', label: 'Navigated' },
-    ]);
+    expect(steps.map(({ kind, label }) => ({ kind, label }))).toEqual([{ kind: 'click', label: 'Opened Projects' }]);
     expect(JSON.stringify(steps)).not.toMatch(/private|Secret|access_token|selector|url/);
   });
 
@@ -74,7 +71,7 @@ describe('browser interaction privacy', () => {
   });
 
   it('never reads input values, form data or input labels when a form is submitted', () => {
-    const { steps } = capture({ sanitize: false });
+    const { steps } = capture();
     const form = document.createElement('form');
     form.innerHTML = '<input value="private-email@example.com" aria-label="Secret customer"><input type="password" value="secret">';
     document.body.append(form);

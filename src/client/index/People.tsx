@@ -35,11 +35,20 @@ export function roleLabel(role: string) {
 const personKey = (person: ReplayPersonSummary, index: number) =>
   `${person.role}:${person.email ?? JSON.stringify(person.handles ?? {})}:${index}`;
 
+const GITHUB_LOGIN = /^[a-z\d](?:[a-z\d-]{0,38})$/i;
+
+/** The deployment's avatar, else the GitHub avatar of the person's `github` handle; undefined when neither exists. */
+export function personAvatarSrc(person: ReplayPersonSummary) {
+  if (person.avatarUrl && /^https:\/\//i.test(person.avatarUrl)) return person.avatarUrl;
+  const login = person.handles?.github;
+  return login && GITHUB_LOGIN.test(login) ? `https://github.com/${login}.png?size=48` : undefined;
+}
+
 /** The person's avatar (https only) over their initials on a tinted disc, which also shows when the image fails. */
 export function PersonAvatar({ person, size = 18 }: { person: ReplayPersonSummary; size?: number }) {
   const [failed, setFailed] = useState(false);
   const name = personName(person);
-  const image = person.avatarUrl && /^https:\/\//i.test(person.avatarUrl) && !failed ? person.avatarUrl : undefined;
+  const image = failed ? undefined : personAvatarSrc(person);
   return (
     <span
       className="person-avatar"
