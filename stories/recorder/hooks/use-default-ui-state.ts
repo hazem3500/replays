@@ -16,7 +16,7 @@ export type DefaultUiState =
   | 'failed';
 
 const CHOICES: RecorderOptions['choices'] = {
-  privacy: ['visible', 'text-masked', 'masked'],
+  privacy: ['visible', 'inputs-masked', 'interface-visible', 'masked'],
   // why: shaped like a deployment's configured profiles, as a host would pass them from GET /api/config.
   profiles: [
     { id: 'triage', label: 'Triage', description: 'A bug to reproduce and fix' },

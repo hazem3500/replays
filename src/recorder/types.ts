@@ -164,8 +164,10 @@ export type { RecorderBodyLimits } from './body-limits.ts';
 /**
  * How much of the page one recording shows. The host's `privacy` caps every mode. `interface-visible` masks like
  * `masked` but keeps the text of the product interface marked `data-replay-public`; it is the customer default.
+ * `inputs-masked` records page text and media but masks typed values; `text-masked` is the older mode that also masks
+ * text, still accepted but no longer in the default options menu.
  */
-export type RecorderPrivacyMode = 'visible' | 'text-masked' | 'interface-visible' | 'masked';
+export type RecorderPrivacyMode = 'visible' | 'inputs-masked' | 'text-masked' | 'interface-visible' | 'masked';
 
 /**
  * A profile the deployment defines (`meta.profile`), as the options step shows it. Shaped like the server's
