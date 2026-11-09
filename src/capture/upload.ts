@@ -21,8 +21,8 @@ import { readCliConfig, resetCliConfig, resolveServerUrl, resolveUploadEndpoint,
 const LOGIN_REQUIRED_EXIT_CODE = 3;
 const isInteractive = () => Boolean(process.stdin.isTTY && process.stdout.isTTY);
 
-function reportFailure(error: unknown, json = false) {
-  process.exitCode = reportCliFailure(error, { json });
+function reportFailure(error: unknown, json = false, env: NodeJS.ProcessEnv = {}) {
+  process.exitCode = reportCliFailure(error, { env, stream: process.stderr, json });
 }
 
 function identityLabel(status: CliAuthStatus) {
@@ -170,7 +170,7 @@ export async function uploadConfigured(
 }
 
 /** `replays upload <replay.json> [--upload-url <endpoint> | --server <name>] [--login] [--header-file file] [--profile id]` */
-export async function runUploadCli(argv: string[]) {
+export async function runUploadCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
   try {
     const [file, ...flags] = argv;
     if (!file || file.startsWith('--'))
@@ -188,7 +188,7 @@ export async function runUploadCli(argv: string[]) {
     const profile = profileFlag(values);
     if (profile !== undefined) bundle.meta = withMetaProfile(bundle.meta, profile);
     const json = booleans.has('json');
-    const spinner = createTerminal({ json }).spinner('Uploading replay');
+    const spinner = createTerminal({ env, stream: process.stderr, json }).spinner('Uploading replay');
     try {
       await uploadWithCliAuth(bundle, dirname(resolve(file)), target, {
         ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
@@ -199,14 +199,14 @@ export async function runUploadCli(argv: string[]) {
     } finally {
       spinner.stop();
     }
-    const out = createTerminal({ stream: process.stdout, json });
+    const out = createTerminal({ env, stream: process.stdout, json });
     if (out.fancy) {
-      const base = /\/api\/replays$/.test(target) ? target.replace(/\/api\/replays$/, '') : undefined;
+      const base = target.endsWith('/api/replays') ? target.slice(0, -'/api/replays'.length) : undefined;
       const link = base ? `\n\n${out.keyValue([['Replay', out.link(`${base}/r/${encodeURIComponent(bundle.meta.id)}`)]])}` : '';
       process.stdout.write(`${out.header()}\n\n${out.ok(`Uploaded ${bundle.meta.id}`)}${link}\n`);
     } else process.stdout.write(`${JSON.stringify({ success: true, id: bundle.meta.id })}\n`);
   } catch (error) {
-    reportFailure(error, argv.includes('--json'));
+    reportFailure(error, argv.includes('--json'), env);
   }
 }
 
@@ -299,8 +299,8 @@ const STATE_LABELS: Record<StatusState, string> = {
   'signed-in': 'Signed in (upload only)',
 };
 
-function printStatus(report: StatusReport, json: boolean) {
-  const out = createTerminal({ stream: process.stdout, json });
+function printStatus(report: StatusReport, json: boolean, env: NodeJS.ProcessEnv) {
+  const out = createTerminal({ env, stream: process.stdout, json });
   const { message, ...fields } = report;
   if (json) process.stdout.write(`${JSON.stringify({ success: true, ...fields, message })}\n`);
   else if (out.fancy) {
@@ -316,14 +316,14 @@ function printStatus(report: StatusReport, json: boolean) {
 }
 
 /** `replays status [--server <name>] [--json]`; reports only server, identity, scopes and expiry. */
-export async function runStatusCli(argv: string[]) {
+export async function runStatusCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
   const json = argv.includes('--json');
   try {
     const target = await selectedServer(argv, 'status', true);
     const loginCommand = `replays login${target.name ? ` --server ${target.name}` : ''}`;
     const auth = await fetchCliAuthCapability(target.url);
     if (auth.auth === 'none') {
-      printStatus({ state: 'open', server: target.url, message: `Connected to ${target.url}; sign-in is not required.` }, json);
+      printStatus({ state: 'open', server: target.url, message: `Connected to ${target.url}; sign-in is not required.` }, json, env);
       return;
     }
     if (!auth.deviceFlow) {
@@ -334,6 +334,7 @@ export async function runStatusCli(argv: string[]) {
           message: `Connected to ${target.url}; ${auth.auth} authentication is managed by the host. CLI sign-in is not available.`,
         },
         json,
+        env,
       );
       return;
     }
@@ -348,6 +349,7 @@ export async function runStatusCli(argv: string[]) {
           hint: `Run \`${loginCommand}\``,
         },
         json,
+        env,
       );
       return;
     }
@@ -361,6 +363,7 @@ export async function runStatusCli(argv: string[]) {
           hint: `Run \`${loginCommand}\``,
         },
         json,
+        env,
       );
       return;
     }
@@ -377,6 +380,7 @@ export async function runStatusCli(argv: string[]) {
             hint: `Run \`${loginCommand}\``,
           },
           json,
+          env,
         );
         return;
       }
@@ -392,9 +396,10 @@ export async function runStatusCli(argv: string[]) {
         message: `Signed in to ${target.url} as ${identityLabel(status)} (upload only; expires ${expiresAt}).`,
       },
       json,
+      env,
     );
   } catch (error) {
-    reportFailure(error, json);
+    reportFailure(error, json, env);
   }
 }
 
@@ -521,13 +526,15 @@ const CHECK_LABELS: Record<DoctorCheck['id'], string> = {
   'sign-in': 'Sign-in',
 };
 
+const CHECK_MARKS = { ok: 'ok', warn: 'warn', fail: 'failed' } as const;
+
 /** Checks Node, Chrome, ffmpeg, the configured server and the saved sign-in. Reachability does not authenticate a user or prove upload permission. */
-export async function runDoctorCli(argv: string[]) {
+export async function runDoctorCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
   const json = argv.includes('--json');
   try {
     const { values } = flagMap(argv, new Set(['json']));
     if (Object.keys(values).some((key) => key !== 'server')) throw new Error('usage: replays doctor [--server <name>] [--json]');
-    const checks: DoctorCheck[] = localChecks();
+    const checks: DoctorCheck[] = localChecks(env);
     let server: Awaited<ReturnType<typeof probeServer>> | undefined;
     try {
       const target = await resolveServerUrl(values.server ? { explicitName: values.server } : {});
@@ -537,20 +544,20 @@ export async function runDoctorCli(argv: string[]) {
       checks.push({ id: 'server', status: 'fail', detail: error instanceof Error ? error.message : String(error) });
     }
     const failed = doctorOutcome(checks) === 'fail';
-    const out = createTerminal({ stream: process.stdout, json });
+    const out = createTerminal({ env, stream: process.stdout, json });
     if (failed) process.exitCode = 1;
     if (out.fancy) {
-      const mark = (check: DoctorCheck) => (check.status === 'ok' ? out.ok : check.status === 'warn' ? out.warn : out.failed)(check.detail);
+      const mark = (check: DoctorCheck) => out[CHECK_MARKS[check.status]](check.detail);
       const fixes = checks.filter((check) => check.fix).map((check) => `  ${out.dim(`→ ${CHECK_LABELS[check.id]}: ${check.fix}`)}`);
       process.stdout.write(
         `${out.header()}\n\n${out.keyValue(checks.map((check) => [CHECK_LABELS[check.id], mark(check)] as const))}\n${fixes.length ? `\n${fixes.join('\n')}\n` : ''}`,
       );
     } else if (failed)
       process.stderr.write(
-        `${JSON.stringify({ success: false, error: checks.find((check) => check.status === 'fail')!.detail, checks })}\n`,
+        `${JSON.stringify({ success: false, error: checks.find((check) => check.status === 'fail')?.detail, checks })}\n`,
       );
     else process.stdout.write(`${JSON.stringify({ success: true, ...server, checks })}\n`);
   } catch (error) {
-    reportFailure(error, json);
+    reportFailure(error, json, env);
   }
 }

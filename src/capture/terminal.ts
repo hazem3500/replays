@@ -12,8 +12,8 @@ export interface TerminalStream {
 }
 
 export interface TerminalOptions {
-  env?: NodeJS.ProcessEnv;
-  stream?: TerminalStream;
+  env: NodeJS.ProcessEnv;
+  stream: TerminalStream;
   /** `--json` was given: never decorate. */
   json?: boolean;
 }
@@ -26,13 +26,13 @@ export interface Spinner {
 }
 
 /** Colour, spinners and links only for a person at a terminal; never for pipes, CI, NO_COLOR, TERM=dumb or `--json`. */
-export function isFancy({ env = process.env, stream = process.stderr, json = false }: TerminalOptions = {}) {
+export function isFancy({ env, stream, json = false }: TerminalOptions) {
   const ci = env.CI !== undefined && env.CI !== '' && env.CI !== '0' && env.CI !== 'false';
   const noColor = env.NO_COLOR !== undefined && env.NO_COLOR !== '';
   return Boolean(stream.isTTY) && !json && !ci && !noColor && env.TERM !== 'dumb';
 }
 
-export function supportsHyperlinks(env: NodeJS.ProcessEnv = process.env) {
+export function supportsHyperlinks(env: NodeJS.ProcessEnv) {
   if (env.FORCE_HYPERLINK !== undefined) return env.FORCE_HYPERLINK !== '0';
   if (env.WT_SESSION || env.KITTY_WINDOW_ID || env.WEZTERM_EXECUTABLE) return true;
   if (env.TERM_PROGRAM && HYPERLINK_PROGRAMS.has(env.TERM_PROGRAM)) return true;
@@ -40,19 +40,22 @@ export function supportsHyperlinks(env: NodeJS.ProcessEnv = process.env) {
 }
 
 /** Light when COLORFGBG reports a light background (7 or 15); dark otherwise, which is the common default. */
-export function terminalTheme(env: NodeJS.ProcessEnv = process.env): 'dark' | 'light' {
+export function terminalTheme(env: NodeJS.ProcessEnv): 'dark' | 'light' {
   const background = env.COLORFGBG?.split(';').at(-1);
   return background === '7' || background === '15' ? 'light' : 'dark';
 }
 
-export function createTerminal(options: TerminalOptions = {}) {
-  const env = options.env ?? process.env;
-  const stream = options.stream ?? process.stderr;
-  const fancy = isFancy({ ...options, env, stream });
+function accentSequence(env: NodeJS.ProcessEnv, theme: 'dark' | 'light') {
+  if (env.COLORTERM === 'truecolor' || env.COLORTERM === '24bit') return `38;2;${ACCENT[theme].join(';')}`;
+  return /256/.test(env.TERM ?? '') ? `38;5;${ACCENT_256[theme]}` : '35';
+}
+
+export function createTerminal(options: TerminalOptions) {
+  const { env, stream } = options;
+  const fancy = isFancy(options);
   const theme = terminalTheme(env);
-  const truecolor = env.COLORTERM === 'truecolor' || env.COLORTERM === '24bit';
   const wrap = (open: string, close: string) => (text: string) => (fancy ? `\x1b[${open}m${text}\x1b[${close}m` : text);
-  const accentCode = truecolor ? `38;2;${ACCENT[theme].join(';')}` : /256/.test(env.TERM ?? '') ? `38;5;${ACCENT_256[theme]}` : '35';
+  const accentCode = accentSequence(env, theme);
 
   const bold = wrap('1', '22');
   const dim = wrap('2', '22');
@@ -70,19 +73,15 @@ export function createTerminal(options: TerminalOptions = {}) {
     green,
     red,
     yellow,
-    /** The compact brand line shown above human output. */
-    header: () => `${accent('◆')} ${bold(PRODUCT_NAME[0]!.toUpperCase() + PRODUCT_NAME.slice(1))}`,
-    /** A clickable OSC-8 link where the terminal supports it, the plain address otherwise. */
+    header: () => `${accent('◆')} ${bold(PRODUCT_NAME.charAt(0).toUpperCase() + PRODUCT_NAME.slice(1))}`,
     link: (url: string, label = url) => (hyperlinks ? `\x1b]8;;${url}\x07${label}\x1b]8;;\x07` : url),
     ok: (text: string) => `${green('✓')} ${text}`,
     failed: (text: string) => `${red('✗')} ${text}`,
     warn: (text: string) => `${yellow('!')} ${text}`,
-    /** Aligned label/value rows, labels dimmed. */
     keyValue(rows: ReadonlyArray<readonly [string, string]>, indent = 2) {
       const width = Math.max(0, ...rows.map(([label]) => label.length));
       return rows.map(([label, value]) => `${' '.repeat(indent)}${dim(label.padEnd(width))}  ${value}`).join('\n');
     },
-    /** Aligned name/description rows, names bold and descriptions dimmed. */
     columns(rows: ReadonlyArray<readonly [string, string]>, indent = 2) {
       const width = Math.max(0, ...rows.map(([name]) => name.length));
       return rows.map(([name, text]) => `${' '.repeat(indent)}${bold(name)}${' '.repeat(width - name.length + 2)}${dim(text)}`).join('\n');
@@ -92,7 +91,7 @@ export function createTerminal(options: TerminalOptions = {}) {
       let label = text;
       let frame = 0;
       const clear = '\r\x1b[2K';
-      const draw = () => stream.write(`${clear}${accent(SPINNER_FRAMES[frame++ % SPINNER_FRAMES.length]!)} ${label}`);
+      const draw = () => stream.write(`${clear}${accent(SPINNER_FRAMES[frame++ % SPINNER_FRAMES.length] ?? '')} ${label}`);
       const restore = () => stream.write('\x1b[?25h');
       stream.write('\x1b[?25l');
       process.once('exit', restore);
@@ -133,11 +132,11 @@ export function failureHint(message: string) {
 }
 
 /** Reports a failed command: one JSON line on stderr for agents and pipes, a short styled message for people. Returns the exit code. */
-export function reportCliFailure(error: unknown, options: TerminalOptions = {}) {
+export function reportCliFailure(error: unknown, options: TerminalOptions) {
   const message = error instanceof Error ? error.message : String(error);
   const hint = failureHint(message);
-  const stream = options.stream ?? process.stderr;
-  const term = createTerminal({ ...options, stream });
+  const { stream } = options;
+  const term = createTerminal(options);
   if (term.fancy) stream.write(`\n${term.failed(message)}${hint ? `\n  ${term.dim(`→ ${hint}`)}` : ''}\n`);
   else stream.write(`${JSON.stringify({ success: false, error: message, ...(hint ? { hint } : {}) })}\n`);
   return typeof error === 'object' && error !== null && 'exitCode' in error && typeof error.exitCode === 'number' ? error.exitCode : 1;

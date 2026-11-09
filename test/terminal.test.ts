@@ -96,7 +96,7 @@ describe('failures', () => {
       exitCode: 3,
     });
     expect(reportCliFailure(error, { env: {}, stream })).toBe(3);
-    const line = JSON.parse(stream.writes.join(''));
+    const line: { success: boolean; error: string; hint?: string } = JSON.parse(stream.writes.join(''));
     expect(line.success).toBe(false);
     expect(line.error).toContain('sign in is required');
     expect(line.hint).toContain('replays login');
@@ -111,7 +111,8 @@ describe('failures', () => {
   it('stays JSON under --json even at a terminal, and styled otherwise', () => {
     const json = tty();
     reportCliFailure(new Error('could not reach configured server https://x.test'), { env: {}, stream: json, json: true });
-    expect(JSON.parse(json.writes.join('')).success).toBe(false);
+    const failure: { success: boolean } = JSON.parse(json.writes.join(''));
+    expect(failure.success).toBe(false);
     const human = tty();
     reportCliFailure(new Error('could not reach configured server https://x.test'), { env: {}, stream: human });
     expect(human.writes.join('')).toContain('✗');

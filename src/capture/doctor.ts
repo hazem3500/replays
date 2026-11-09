@@ -19,7 +19,7 @@ export function checkNode(version: string = process.versions.node): DoctorCheck 
   return { id: 'node', status: 'fail', detail: `Node ${version}`, fix: 'Install Node 22.12 or newer (24.11+ recommended).' };
 }
 
-export function checkChrome(env: NodeJS.ProcessEnv = process.env): DoctorCheck {
+export function checkChrome(env: NodeJS.ProcessEnv): DoctorCheck {
   const explicit = env.CHROME_PATH || env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
   const found = explicit || findSystemBrowser(env);
   if (found) return { id: 'chrome', status: 'ok', detail: found };
@@ -32,7 +32,7 @@ export function checkChrome(env: NodeJS.ProcessEnv = process.env): DoctorCheck {
   };
 }
 
-export function checkFfmpeg(env: NodeJS.ProcessEnv = process.env): DoctorCheck {
+export function checkFfmpeg(env: NodeJS.ProcessEnv): DoctorCheck {
   const found = env.FFMPEG_PATH || findFfmpeg(env);
   if (found) return { id: 'ffmpeg', status: 'ok', detail: found };
   return {
@@ -43,6 +43,6 @@ export function checkFfmpeg(env: NodeJS.ProcessEnv = process.env): DoctorCheck {
   };
 }
 
-export const localChecks = (env: NodeJS.ProcessEnv = process.env): DoctorCheck[] => [checkNode(), checkChrome(env), checkFfmpeg(env)];
+export const localChecks = (env: NodeJS.ProcessEnv): DoctorCheck[] => [checkNode(), checkChrome(env), checkFfmpeg(env)];
 
 export const doctorOutcome = (checks: readonly DoctorCheck[]) => (checks.some((check) => check.status === 'fail') ? 'fail' : 'ok');

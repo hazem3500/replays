@@ -14,7 +14,7 @@ function rule(message, create) {
 }
 
 const noProcessEnv = rule('Read environment at the server configuration boundary; pass typed configuration to consumers.', (context) => {
-  if (!/(?:^|\/)src\//.test(filename(context)) || /(?:^|\/)src\/(?:server\/config|cli)\.ts$/.test(filename(context))) return {};
+  if (!/(?:^|\/)src\//.test(filename(context)) || /(?:^|\/)src\/(?:server\/config|cli|capture\/cli)\.ts$/.test(filename(context))) return {};
   return {
     MemberExpression(node) {
       if (node.object.name === 'process' && memberName(node) === 'env') context.report({ node, messageId: 'policy' });

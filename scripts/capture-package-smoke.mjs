@@ -46,8 +46,8 @@ try {
   const capture = run(process.execPath, [cli, 'capture', '--help'], sandbox);
   assert.equal(capture.status, 0, capture.stderr);
   const upload = run(process.execPath, [cli, 'upload', '--help'], sandbox);
-  assert.equal(upload.status, 1);
-  assert.match(upload.stderr, /usage: replays upload/);
+  assert.equal(upload.status, 0, upload.stderr);
+  assert.match(upload.stdout, /usage: replays upload/);
   const manifest = JSON.parse(await readFile(resolve(sandbox, 'node_modules', pkg.name, 'package.json'), 'utf8'));
   for (const dependency of Object.keys(manifest.dependencies)) {
     assert.ok((await readdir(resolve(sandbox, 'node_modules', dependency))).length > 0);

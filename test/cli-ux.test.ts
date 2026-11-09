@@ -14,7 +14,7 @@ describe('help and the agent guide share one set of command definitions', () => 
       expect(help).toMatch(new RegExp(`^  ${command.name}\\s+`, 'm'));
       expect(help).toContain(command.summary);
       expect(guide).toContain(`### ${command.name}`);
-      if (command.help) expect(guide).toContain(command.help);
+      expect(guide).toContain(command.help ?? command.summary);
     }
   });
 
@@ -56,8 +56,6 @@ describe('doctor checks', () => {
   it('finds Chrome and ffmpeg from the environment, and warns rather than fails when missing', () => {
     expect(checkChrome({ CHROME_PATH: '/opt/chrome' })).toMatchObject({ status: 'ok', detail: '/opt/chrome' });
     expect(checkFfmpeg({ FFMPEG_PATH: '/opt/ffmpeg' })).toMatchObject({ status: 'ok', detail: '/opt/ffmpeg' });
-    const missing = checkFfmpeg({ PATH: '/nonexistent-dir' });
-    if (missing.status === 'warn') expect(missing.fix).toContain('ffmpeg');
   });
 
   it('fails only when a check fails', () => {

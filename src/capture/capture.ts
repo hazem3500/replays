@@ -328,18 +328,18 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
 }
 
 /** `replays capture …`: one JSON line on success or failure for agents and CI; a spinner and summary for a person at a terminal. */
-export async function runCaptureCli(argv: string[]) {
+export async function runCaptureCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
   if (argv.includes('--help') || argv.includes('-h')) {
     process.stdout.write(`${CAPTURE_USAGE}\n`);
     return;
   }
   const json = argv.includes('--json');
-  const spinner = createTerminal({ json }).spinner('Recording the page');
+  const spinner = createTerminal({ env, stream: process.stderr, json }).spinner('Recording the page');
   try {
     const args = await parseArgs(argv.filter((arg) => arg !== '--json'));
     const result = await capture(args, createDriver(args.driver, { headed: args.headed }));
     spinner.stop();
-    const out = createTerminal({ stream: process.stdout, json });
+    const out = createTerminal({ env, stream: process.stdout, json });
     if (out.fancy) {
       const seconds = (result.duration / 1000).toFixed(1);
       const rows: Array<[string, string]> = [
@@ -355,6 +355,6 @@ export async function runCaptureCli(argv: string[]) {
     } else process.stdout.write(`${JSON.stringify({ success: true, ...result })}\n`);
   } catch (error) {
     spinner.stop();
-    process.exitCode = reportCliFailure(error, { json });
+    process.exitCode = reportCliFailure(error, { env, stream: process.stderr, json });
   }
 }

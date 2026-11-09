@@ -6,6 +6,7 @@ import { configPath } from './server-config.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 1500;
+const NOTICE_COMMANDS = new Set(['capture', 'import', 'upload', 'status', 'doctor', 'login']);
 
 export interface UpdateCache {
   checkedAt: number;
@@ -16,7 +17,7 @@ export interface UpdateCheckOptions {
   current: string;
   /** Where the newest version is published; the response is read as `{ "version": "x.y.z" }`. */
   latestUrl: string;
-  cachePath?: string;
+  cachePath: string;
   now?: number;
   intervalMs?: number;
   fetchLatest?: (url: string, signal?: AbortSignal) => Promise<string | undefined>;
@@ -28,16 +29,18 @@ export interface UpdateInfo {
   latest: string;
 }
 
-export const updateCachePath = (env: NodeJS.ProcessEnv = process.env) => join(dirname(configPath(env)), 'update-check.json');
+export const updateCachePath = (env: NodeJS.ProcessEnv) => join(dirname(configPath(env)), 'update-check.json');
+
+const versionParts = (version: string) =>
+  version
+    .split('-', 1)
+    .join('')
+    .split('.')
+    .map((part) => Number.parseInt(part, 10) || 0);
 
 /** Numeric `major.minor.patch` comparison; a pre-release suffix is ignored. */
 export function isNewer(latest: string, current: string) {
-  const parts = (version: string) =>
-    version
-      .split('-')[0]!
-      .split('.')
-      .map((part) => Number.parseInt(part, 10) || 0);
-  const [a, b] = [parts(latest), parts(current)];
+  const [a, b] = [versionParts(latest), versionParts(current)];
   for (let index = 0; index < 3; index++) if ((a[index] ?? 0) !== (b[index] ?? 0)) return (a[index] ?? 0) > (b[index] ?? 0);
   return false;
 }
@@ -50,14 +53,14 @@ export function shouldCheckForUpdates(env: NodeJS.ProcessEnv, stderrIsTty: boole
 }
 
 async function readCache(path: string): Promise<UpdateCache | undefined> {
+  let parsed: unknown;
   try {
-    const parsed: unknown = JSON.parse(await readFile(path, 'utf8'));
-    if (typeof parsed === 'object' && parsed !== null && 'checkedAt' in parsed && typeof parsed.checkedAt === 'number')
-      return { checkedAt: parsed.checkedAt, ...('latest' in parsed && typeof parsed.latest === 'string' ? { latest: parsed.latest } : {}) };
+    parsed = JSON.parse(await readFile(path, 'utf8'));
   } catch {
-    return undefined;
+    return;
   }
-  return undefined;
+  if (typeof parsed !== 'object' || parsed === null || !('checkedAt' in parsed) || typeof parsed.checkedAt !== 'number') return;
+  return { checkedAt: parsed.checkedAt, ...('latest' in parsed && typeof parsed.latest === 'string' ? { latest: parsed.latest } : {}) };
 }
 
 async function writeCache(path: string, cache: UpdateCache) {
@@ -75,9 +78,18 @@ export async function fetchLatestVersion(url: string, signal?: AbortSignal): Pro
     signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     headers: { accept: 'application/json' },
   });
-  if (!response.ok) return undefined;
+  if (!response.ok) return;
   const body: unknown = await response.json();
-  return typeof body === 'object' && body !== null && 'version' in body && typeof body.version === 'string' ? body.version : undefined;
+  if (typeof body === 'object' && body !== null && 'version' in body && typeof body.version === 'string') return body.version;
+  return;
+}
+
+async function lookUp(options: UpdateCheckOptions) {
+  try {
+    return await (options.fetchLatest ?? fetchLatestVersion)(options.latestUrl, options.signal);
+  } catch {
+    return;
+  }
 }
 
 /**
@@ -85,15 +97,16 @@ export async function fetchLatestVersion(url: string, signal?: AbortSignal): Pro
  * used. A failed check is cached as well so an offline machine is not retried on every command.
  */
 export async function checkForUpdate(options: UpdateCheckOptions): Promise<UpdateInfo | undefined> {
-  const path = options.cachePath ?? updateCachePath();
+  const path = options.cachePath;
   const now = options.now ?? Date.now();
   const cached = await readCache(path);
   let latest = cached?.latest;
   if (!cached || now - cached.checkedAt >= (options.intervalMs ?? DAY_MS) || now < cached.checkedAt) {
-    latest = await (options.fetchLatest ?? fetchLatestVersion)(options.latestUrl, options.signal).catch(() => undefined);
+    latest = await lookUp(options);
     await writeCache(path, { checkedAt: now, ...(latest ? { latest } : {}) });
   }
-  return latest && isNewer(latest, options.current) ? { current: options.current, latest } : undefined;
+  if (latest && isNewer(latest, options.current)) return { current: options.current, latest };
+  return;
 }
 
 export function updateNoticeText(info: UpdateInfo, command?: string) {
@@ -107,18 +120,19 @@ export function updateNoticeText(info: UpdateInfo, command?: string) {
 export function startUpdateCheck(options: UpdateCheckOptions) {
   const controller = new AbortController();
   let settled: { value: UpdateInfo | undefined } | undefined;
-  void checkForUpdate({ ...options, signal: controller.signal })
-    .catch(() => undefined)
-    .then((value) => {
+  void checkForUpdate({ ...options, signal: controller.signal }).then(
+    (value) => {
       settled = { value };
-    });
+    },
+    () => {
+      settled = { value: undefined };
+    },
+  );
   return () => {
     controller.abort();
     return settled?.value;
   };
 }
-
-const NOTICE_COMMANDS = new Set(['capture', 'import', 'upload', 'status', 'doctor', 'login']);
 
 function ownVersion() {
   for (const path of ['../package.json', '../../package.json']) {
@@ -129,7 +143,7 @@ function ownVersion() {
       continue;
     }
   }
-  return undefined;
+  return;
 }
 
 /**
@@ -137,11 +151,11 @@ function ownVersion() {
  * `latest` document (and optionally `REPLAYS_UPDATE_COMMAND` at its reinstall command). Call the result after the
  * command has finished: it prints to stderr only when the check is already done.
  */
-export function startCliUpdateNotice(command: string | undefined, argv: readonly string[], env: NodeJS.ProcessEnv = process.env) {
+export function startCliUpdateNotice(command: string | undefined, argv: readonly string[], env: NodeJS.ProcessEnv) {
   const latestUrl = env.REPLAYS_UPDATE_URL;
   const current = latestUrl && command && NOTICE_COMMANDS.has(command) ? ownVersion() : undefined;
   if (!latestUrl || !current || !shouldCheckForUpdates(env, Boolean(process.stderr.isTTY), argv.includes('--json'))) return () => {};
-  const read = startUpdateCheck({ current, latestUrl });
+  const read = startUpdateCheck({ current, latestUrl, cachePath: updateCachePath(env) });
   return () => {
     const info = read();
     if (info) process.stderr.write(`\n${updateNoticeText(info, env.REPLAYS_UPDATE_COMMAND)}\n`);
