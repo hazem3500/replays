@@ -9,6 +9,9 @@ describe('lint debt ratchet', () => {
   it('allows decreases and removed rules', () => {
     assert.deepEqual(increases({ existing: 1 }, { existing: 2, removed: 1 }), []);
   });
+  it('tolerates a rise up to the given tolerance', () => {
+    assert.deepEqual(increases({ a: 5, b: 20 }, { a: 2, b: 5 }, () => 10), ['b: 5 → 20']);
+  });
   it('keeps comment allowances attached to their original file', () => {
     const report = {
       diagnostics: [
@@ -20,10 +23,6 @@ describe('lint debt ratchet', () => {
     assert.deepEqual(increases(commentCounts(report), { 'src/existing.ts': 2 }), ['src/new.ts: 0 → 1']);
     assert.equal(countsFor(report)['replays(comment-policy)'], 2);
   });
-});
-
-it('tolerates a small rise when given a tolerance', () => {
-  assert.deepEqual(increases({ a: 5, b: 20 }, { a: 2, b: 5 }, () => 10), ['b: 5 → 20']);
 });
 
 it('refuses an unspecified comparison base instead of silently checking zero files', async () => {
