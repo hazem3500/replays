@@ -40,8 +40,9 @@ function cdpLike(session: CDPSession): CdpLike {
 
 /** Drives Chrome through Playwright: no extra CLI needed, `recordHar` for the network track, `recordVideo` for MP4 (needs ffmpeg). */
 export function playwrightDriver(options: PlaywrightDriverOptions = {}): CaptureDriver {
-  const configuredBrowser = options.executablePath ?? process.env.CHROME_PATH ?? process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
-  const configuredFfmpeg = options.ffmpegPath ?? process.env.FFMPEG_PATH;
+  const env = process.env;
+  const configuredBrowser = options.executablePath ?? env.CHROME_PATH ?? env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
+  const configuredFfmpeg = options.ffmpegPath ?? env.FFMPEG_PATH;
   let ffmpeg = 'ffmpeg';
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
@@ -60,10 +61,10 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
     recordsBodies: true,
     async launch(launch): Promise<CdpLike> {
       launched = launch;
-      const executablePath = configuredBrowser ?? findSystemBrowser();
-      if (!executablePath && !hasPlaywrightBrowser()) throw new Error(NO_BROWSER_MESSAGE);
+      const executablePath = configuredBrowser ?? findSystemBrowser(env);
+      if (!executablePath && !hasPlaywrightBrowser(env)) throw new Error(NO_BROWSER_MESSAGE);
       if (launch.videoPath) {
-        ffmpeg = configuredFfmpeg ?? findFfmpeg() ?? 'ffmpeg';
+        ffmpeg = configuredFfmpeg ?? findFfmpeg(env) ?? 'ffmpeg';
         await execFileAsync(ffmpeg, ['-version']).catch(() => {
           throw new Error(configuredFfmpeg ? `--video: cannot run ffmpeg at ${configuredFfmpeg}` : NO_FFMPEG_MESSAGE);
         });

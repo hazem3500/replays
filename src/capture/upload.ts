@@ -14,21 +14,21 @@ import {
   type CliAuthStatus,
 } from './device-auth.ts';
 import { deleteCliToken, loadCliToken, saveCliToken } from './credentials.ts';
+import { createTerminal, reportCliFailure } from './terminal.ts';
 import { readCliConfig, resetCliConfig, resolveServerUrl, resolveUploadEndpoint, saveServer, uploadEndpoint } from './server-config.ts';
 
 const LOGIN_REQUIRED_EXIT_CODE = 3;
 const isInteractive = () => Boolean(process.stdin.isTTY && process.stdout.isTTY);
 
-function reportFailure(error: unknown) {
-  process.stderr.write(`${JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) })}\n`);
-  process.exitCode = error instanceof CliAuthError ? error.exitCode : 1;
+export function reportFailure(error: unknown, json = false, env: NodeJS.ProcessEnv = {}) {
+  process.exitCode = reportCliFailure(error, { env, stream: process.stderr, json });
 }
 
-function identityLabel(status: CliAuthStatus) {
+export function identityLabel(status: CliAuthStatus) {
   return status.identity.email || status.identity.name || status.identity.id;
 }
 
-async function refreshIfNeeded(
+export async function refreshIfNeeded(
   server: string,
   capability: NonNullable<Awaited<ReturnType<typeof fetchCliAuthCapability>>['deviceFlow']>,
   cached: Awaited<ReturnType<typeof loadCliToken>>,
@@ -51,7 +51,7 @@ export async function uploadWithCliAuth(
   bundle: Parameters<typeof upload>[0],
   output: string,
   endpoint: string,
-  options: { headerFile?: string; forceLogin?: boolean; serverName?: string } = {},
+  options: { headerFile?: string; forceLogin?: boolean; serverName?: string; beforeLogin?: () => void } = {},
 ) {
   if (options.headerFile) {
     if (options.forceLogin)
@@ -122,6 +122,7 @@ export async function uploadWithCliAuth(
         `sign in is required for ${savedServer}; run \`replays login${options.serverName ? ` --server ${options.serverName}` : ''}\` in an interactive terminal`,
         LOGIN_REQUIRED_EXIT_CODE,
       );
+    options.beforeLogin?.();
     const authorized = await beginDeviceLogin(savedServer, auth.deviceFlow);
     cached = tokenFromResponse(savedServer, auth.deviceFlow, authorized.token, authorized.status);
     await saveCliToken(cached);
@@ -134,6 +135,7 @@ export async function uploadWithCliAuth(
       /* why: keep failures non-destructive: this request may have used an older
          token than a concurrent login or refresh has already saved. */
       if (options.forceLogin || isInteractive()) {
+        options.beforeLogin?.();
         const authorized = await beginDeviceLogin(savedServer, auth.deviceFlow);
         const refreshed = tokenFromResponse(savedServer, auth.deviceFlow, authorized.token, authorized.status);
         await saveCliToken(refreshed);
@@ -167,15 +169,14 @@ export async function uploadConfigured(
 }
 
 /** `replays upload <replay.json> [--upload-url <endpoint> | --server <name>] [--login] [--header-file file] [--profile id]` */
-export async function runUploadCli(argv: string[]) {
+export async function runUploadCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
   try {
     const [file, ...flags] = argv;
     if (!file || file.startsWith('--'))
       throw new Error(
         'usage: replays upload <replay.json> [--upload-url <endpoint> | --server <name>] [--login] [--header-file file] [--profile id]',
       );
-    const { values, booleans } = flagMap(flags, new Set(['login']));
-    if ([...booleans].some((key) => key !== 'login')) throw new Error('unknown upload option');
+    const { values, booleans } = flagMap(flags, new Set(['login', 'json']));
     const target = await resolveUploadEndpoint({
       ...(values['upload-url'] ? { explicitUploadUrl: values['upload-url'] } : {}),
       ...(values.server ? { explicitServerName: values.server } : {}),
@@ -185,20 +186,33 @@ export async function runUploadCli(argv: string[]) {
     // why: --profile sets (or replaces) the profile; the server checks it against its profiles.
     const profile = profileFlag(values);
     if (profile !== undefined) bundle.meta = withMetaProfile(bundle.meta, profile);
-    await uploadWithCliAuth(bundle, dirname(resolve(file)), target, {
-      ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
-      ...(booleans.has('login') ? { forceLogin: true } : {}),
-      ...(values.server ? { serverName: values.server } : {}),
-    });
-    process.stdout.write(`${JSON.stringify({ success: true, id: bundle.meta.id })}\n`);
+    const json = booleans.has('json');
+    const spinner = createTerminal({ env, stream: process.stderr, json }).spinner('Uploading replay');
+    try {
+      await uploadWithCliAuth(bundle, dirname(resolve(file)), target, {
+        ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
+        ...(booleans.has('login') ? { forceLogin: true } : {}),
+        ...(values.server ? { serverName: values.server } : {}),
+        beforeLogin: () => spinner.stop(),
+      });
+    } finally {
+      spinner.stop();
+    }
+    const out = createTerminal({ env, stream: process.stdout, json });
+    if (out.fancy) {
+      const base = target.endsWith('/api/replays') ? target.slice(0, -'/api/replays'.length) : undefined;
+      const link = base ? `\n\n${out.keyValue([['Replay', out.link(`${base}/r/${encodeURIComponent(bundle.meta.id)}`)]])}` : '';
+      process.stdout.write(`${out.header()}\n\n${out.ok(`Uploaded ${bundle.meta.id}`)}${link}\n`);
+    } else process.stdout.write(`${JSON.stringify({ success: true, id: bundle.meta.id })}\n`);
   } catch (error) {
-    reportFailure(error);
+    reportFailure(error, argv.includes('--json'), env);
   }
 }
 
-async function selectedServer(argv: string[], command: string) {
-  const { values } = flagMap(argv);
-  if (Object.keys(values).some((key) => key !== 'server')) throw new Error(`usage: replays ${command} [--server <name>]`);
+export async function selectedServer(argv: string[], command: string, allowJson = false) {
+  const { values } = flagMap(argv, new Set(allowJson ? ['json'] : []));
+  if (Object.keys(values).some((key) => key !== 'server'))
+    throw new Error(`usage: replays ${command} [--server <name>]${allowJson ? ' [--json]' : ''}`);
   return resolveServerUrl(values.server ? { explicitName: values.server } : {});
 }
 
@@ -264,52 +278,6 @@ export async function runLoginCli(argv: string[]) {
   }
 }
 
-/** `replays status [--server <name>]`; reports only server, identity, scopes and expiry. */
-export async function runStatusCli(argv: string[]) {
-  try {
-    const target = await selectedServer(argv, 'status');
-    const auth = await fetchCliAuthCapability(target.url);
-    if (auth.auth === 'none') {
-      process.stdout.write(`Connected to ${target.url}; sign-in is not required.\n`);
-      return;
-    }
-    if (!auth.deviceFlow) {
-      process.stdout.write(
-        `Connected to ${target.url}; ${auth.auth} authentication is managed by the host. CLI sign-in is not available.\n`,
-      );
-      return;
-    }
-    const capability = auth.deviceFlow;
-    const cached = await loadCliToken(target.url, capability.issuer, capability.clientId);
-    if (!cached) {
-      process.stdout.write(`Not signed in to ${target.url}. Run \`replays login${target.name ? ` --server ${target.name}` : ''}\`.\n`);
-      return;
-    }
-    const refreshed = await refreshIfNeeded(target.url, capability, cached);
-    if (!refreshed) {
-      process.stdout.write(`Session expired for ${target.url}. Run \`replays login${target.name ? ` --server ${target.name}` : ''}\`.\n`);
-      return;
-    }
-    let status: CliAuthStatus;
-    try {
-      status = refreshed.status ?? (await getCliTokenStatus(target.url, capability, refreshed.cached.accessToken));
-    } catch (error) {
-      if (error instanceof CliAuthError && error.message.startsWith('the provider token was rejected')) {
-        process.stdout.write(
-          `The saved session for ${target.url} is no longer accepted. Run \`replays login${target.name ? ` --server ${target.name}` : ''}\`.\n`,
-        );
-        return;
-      }
-      throw error;
-    }
-    process.stdout.write(
-      `Signed in to ${target.url} as ${identityLabel(status)} (upload only; expires ${new Date(status.expiresAt ? status.expiresAt * 1000 : refreshed.cached.expiresAt * 1000).toISOString()}).\n`,
-    );
-  } catch (error) {
-    reportFailure(error);
-  }
-}
-
 /** `replays logout [--server <name>]`; local credentials are always removed, provider revocation is attempted when advertised. */
 export async function runLogoutCli(argv: string[]) {
   try {
@@ -366,51 +334,6 @@ export async function runConfigCli(argv: string[]) {
     const config = await readCliConfig();
     process.stdout.write(
       `${JSON.stringify({ success: true, defaultServer: config.defaultServer, servers: Object.entries(config.servers).map(([name, server]) => ({ name, url: server.url })) })}\n`,
-    );
-  } catch (error) {
-    reportFailure(error);
-  }
-}
-
-/** A read-only reachability check; it does not authenticate a user or prove upload permission. */
-export async function runDoctorCli(argv: string[]) {
-  try {
-    const { values } = flagMap(argv);
-    if (Object.keys(values).some((key) => key !== 'server')) throw new Error('usage: replays doctor [--server <name>]');
-    const target = await resolveServerUrl(values.server ? { explicitName: values.server } : {});
-    let response: Response;
-    try {
-      response = await fetch(`${target.url}/api/cli/auth/capabilities`, { redirect: 'manual', signal: AbortSignal.timeout(8000) });
-      if (response.status === 404)
-        response = await fetch(`${target.url}/api/config`, { redirect: 'manual', signal: AbortSignal.timeout(8000) });
-    } catch {
-      throw new Error(`could not reach configured server ${target.url}; check the URL and network`);
-    }
-    if (response.status >= 300 && response.status < 400)
-      throw new Error('server check was redirected; configure the final server URL directly');
-    const authRequired = response.status === 401 || response.status === 403;
-    if (authRequired) {
-      process.stdout.write(
-        `${JSON.stringify({ success: true, reachable: true, server: target.url, uploadEndpoint: uploadEndpoint(target.url), auth: 'host-managed', cliDeviceLogin: 'not advertised', note: 'Reachability only; this check does not create an upload session.' })}\n`,
-      );
-      return;
-    }
-    if (!response.ok) throw new Error(`server responded with ${response.status} at ${target.url}; check that this is the viewer base URL`);
-    const config = (await response.json().catch(() => ({}))) as {
-      cliDeviceAuth?: { type?: string };
-      deviceFlow?: { type?: string } | null;
-      auth?: string;
-    };
-    process.stdout.write(
-      `${JSON.stringify({
-        success: true,
-        reachable: true,
-        server: target.url,
-        uploadEndpoint: uploadEndpoint(target.url),
-        auth: config.auth ?? 'unknown',
-        cliDeviceLogin: (config.cliDeviceAuth?.type ?? config.deviceFlow?.type) === 'oidc-device' ? 'available' : 'not advertised',
-        note: 'Reachability only; uploads may still require a signed-in identity and upload permission.',
-      })}\n`,
     );
   } catch (error) {
     reportFailure(error);
