@@ -1,27 +1,19 @@
 import type { ErrorComponentProps } from '@tanstack/react-router';
-import { lazy, type ReactNode, Suspense } from 'react';
+import type { ReactNode } from 'react';
 
+import { ProductMark } from '@/components/brand-mark.tsx';
 import { type StateAction, type StateActions, type StateKind, StateView } from '@/components/ui/state-view.tsx';
 
 import { productLogo, productName } from '../config.ts';
 import { signInHref, SignInError, useSignInRedirect } from '../sign-in.tsx';
 import { indexHref } from './links.ts';
 
-// why: the mark's geometry shares a module with the index's brand animation, which the entry chunk must not carry.
-const ProductMark = lazy(async () => ({ default: (await import('@/components/brand-mark.tsx')).ProductMark }));
-
 /** The product's identity, top left, as on the index: its mark and name, linking home. */
 function StateBrand() {
   const logo = productLogo();
   return (
     <a className="state-brand" href={indexHref()}>
-      {logo ? (
-        <img className="product-logo" src={logo} alt="" width={24} height={24} />
-      ) : (
-        <Suspense fallback={<span className="state-brand-mark" />}>
-          <ProductMark size={24} />
-        </Suspense>
-      )}
+      {logo ? <img className="product-logo" src={logo} alt="" width={24} height={24} /> : <ProductMark size={24} />}
       {productName()}
     </a>
   );

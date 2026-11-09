@@ -67,21 +67,18 @@ describe('failureActions', () => {
   });
 
   it('leads with the way back when retrying would not help', () => {
-    for (const kind of ['not-found', 'expired', 'no-access'] as const)
+    for (const kind of ['not-found', 'expired', 'no-access'] as const) {
       expect(failureActions(kind, back)).toEqual({ primary: back });
+    }
   });
 
   it('leads with Try again and keeps the way back as the secondary when a retry could work', () => {
-    for (const kind of ['error', 'offline'] as const)
-      expect(failureActions(kind, back)).toEqual({
-        primary: TRY_AGAIN,
-        secondary: back,
-      });
+    for (const kind of ['error', 'offline'] as const) {
+      expect(failureActions(kind, back)).toEqual({ primary: TRY_AGAIN, secondary: back });
+    }
   });
 
   it('falls back to all replays when no way back is given', () => {
-    expect(failureActions('not-found').primary).toMatchObject({
-      label: 'Back to all replays',
-    });
+    expect(failureActions('not-found').primary).toMatchObject({ label: 'Back to all replays' });
   });
 });
