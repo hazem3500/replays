@@ -57,7 +57,7 @@ describe('index row source', () => {
     expect(link.href).toBe('https://github.com/acme/api/issues/12');
     expect(link.getAttribute('aria-label')).toBe('github · acme/api#12 (opens in a new tab)');
     // why: the mark already says GitHub, so the visible text is the label alone.
-    expect(link.querySelector('.source-link-text')?.textContent).toBe('acme/api#12');
+    expect(link.querySelector('.source-link-text')?.textContent).toBe('api#12');
     expect(link.querySelector('[data-provider-mark="github"]')).not.toBeNull();
     expect(host.querySelector('.source-more')?.getAttribute('aria-label')).toBe('1 more source');
   });
