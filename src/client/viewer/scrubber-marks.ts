@@ -33,7 +33,7 @@ export function bubbleText(time: number, label?: string) {
  * sorted by time already (ReplayStep / ReplayError are); steps come first, so a step wins a tie.
  */
 export function scrubberMarks(
-  steps: ReadonlyArray<{ at: number; label: string }>,
+  steps: ReadonlyArray<{ at: number; label: string; folded?: true }>,
   errors: ReadonlyArray<{ at: number; label: string }>,
   duration: number,
   width: number,
@@ -56,7 +56,13 @@ export function scrubberMarks(
           : runLabel(indices.map((index) => entries[index]!.label));
       return { kind, x: px(at), at, label };
     });
-  return [...build('step', steps), ...build('error', errors)];
+  return [
+    ...build(
+      'step',
+      steps.filter((step) => !step.folded),
+    ),
+    ...build('error', errors),
+  ];
 }
 
 /** Index of the mark nearest `x` within `tolerance` pixels, or -1. */

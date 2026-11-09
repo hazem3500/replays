@@ -27,6 +27,7 @@ import { createMarkMotion, createStreak, crossfadeTitle } from './mark-burst.ts'
 import { Poster } from './Poster.tsx';
 import { sourceText } from './SourceLine.tsx';
 import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
+import { FOR_YOU } from './for-you.ts';
 
 /*
  * The index's two quiet header rows (sticky as one block): row 1 is identity (mark, product name h1) with a
@@ -404,15 +405,18 @@ export function ProfileSegments({
   value,
   counts,
   onChange,
+  forYou = false,
 }: {
   profiles: readonly ProfileInfo[];
   value: string | undefined;
   counts: ProfileCounts | undefined;
   onChange: (value: string | undefined) => void;
+  /** Adds a first "For you" segment (id `for-you`) for rows the viewer is involved in. */
+  forYou?: boolean;
 }) {
   const group = useRef<HTMLDivElement>(null);
   const indicator = useSlidingPill(group, { selector: `.profile-segment[data-segment="${value ?? ''}"]`, value });
-  const segments = [{ id: undefined, label: 'All' }, ...profiles];
+  const segments = [...(forYou ? [{ id: FOR_YOU, label: 'For you' }] : []), { id: undefined, label: 'All' }, ...profiles];
   return (
     <div className="profile-bar">
       <div ref={group} className="profile-segments" role="radiogroup" aria-label="Profile" data-testid="profile-segments">

@@ -5,10 +5,8 @@ import { boxOf, createSuite, openReplay, serveApp, uniqueId } from './support.ts
 const server = serveApp();
 
 async function captionsOn(page: Page) {
-  // why: captions are remembered per view; a replay on its own opens in Standard, a compared suite in Compare.
   await page.addInitScript(() => {
-    localStorage.setItem('replays-view:standard:captions', '1');
-    localStorage.setItem('replays-view:compare:captions', '1');
+    localStorage.setItem('replays-captions', '1');
   });
 }
 
@@ -52,7 +50,7 @@ for (const [width, height, mobile] of [
         { id: 'attempt-2', label: 'After', status: 'passed', replayId: `${suite}-after` },
       ]);
       await captionsOn(page);
-      await openReplay(page, `${server().origin}/s/${suite}`);
+      await openReplay(page, `${server().origin}/s/${suite}?view=compare`);
       await expect(page.getByTestId('compare-stage')).toBeVisible();
       const pill = await playToCaption(page);
       expect(inside(await boxOf(pill), await boxOf(page.locator('.ct-tile[data-current]')))).toBe(true);
