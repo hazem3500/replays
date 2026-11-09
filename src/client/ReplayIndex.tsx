@@ -40,6 +40,7 @@ import { RefreshLine, ScopeCount } from './index/ScopeCount.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, appBase } from './api/fetch.ts';
 import { writePageCookie } from './page-meta.ts';
+import { FOR_YOU, landingTab, parseTabChoice, tabChoiceKey, type TabChoice } from './index/for-you.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
@@ -631,6 +632,7 @@ export function ReplayIndex({
     Boolean(me?.people) ||
     Boolean(items?.some((summary) => summary.people?.length)) ||
     Boolean(suites?.some((suite) => suite.people?.length || suite.runDetails.some((run) => run.replay?.people?.length)));
+  const forYouTab = Boolean(me) && (Boolean(me?.email) || Object.keys(linked).length > 0);
   const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: linked }), [me, linked]);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   // why: a retry re-runs the request with a fresh filters object; the failure stays on screen while it runs.
@@ -655,7 +657,19 @@ export function ReplayIndex({
   // Feed changes cross-fade (feed-transition.ts).
   const changeSort = (next: Sort) => feedTransition(() => setSort(next));
   const changeKind = (next: IndexKind | undefined) => feedTransition(() => setKind(next));
-  const changeProfile = (next: string | undefined) => feedTransition(() => setProfile(next));
+  const probing = useRef(false);
+  const rememberTab = (choice: TabChoice) => {
+    probing.current = false;
+    if (me) writeStorage(tabChoiceKey(me.id), choice);
+  };
+  const changeTab = (next: string | undefined) => {
+    rememberTab(next === FOR_YOU ? FOR_YOU : 'all');
+    feedTransition(() => {
+      setProfile(next === FOR_YOU ? undefined : next);
+      setForMe(next === FOR_YOU);
+      setFilters((current) => ({ ...current }));
+    });
+  };
   const update = <K extends keyof ReplayFilters>(key: K, value: ReplayFilters[K] | undefined) =>
     feedTransition(() => setFilters((current) => withFilter(current, key, value)));
   /** A plugin filter's `x-*` param (registerIndexFilter); undefined or '' removes it. */
@@ -696,6 +710,23 @@ export function ReplayIndex({
     setLinked(next);
     if (forMe) setFilters((current) => ({ ...current }));
   };
+  // The landing tab: a stored choice wins; otherwise For you, unless the link has its own view or For you comes up empty.
+  const landed = useRef(false);
+  useEffect(() => {
+    if (!me || landed.current) return;
+    landed.current = true;
+    const explicit = [...new URLSearchParams(opened).keys()].some((key) => key !== 'sort');
+    const canMatch = Boolean(me.email) || Object.keys(linked).length > 0;
+    const landing = landingTab({ explicit, canMatch, stored: parseTabChoice(readStorage(tabChoiceKey(me.id))) });
+    probing.current = landing.probe;
+    if (landing.forYou) changeForMe(true);
+  });
+  useEffect(() => {
+    if (!probing.current || !forMe || !entries || pending) return;
+    probing.current = false;
+    if (entries.length === 0) changeForMe(false);
+  });
+
   const chooseView = (next: FeedView) => {
     if (next !== preferredView) feedTransition(() => setPreferredView(next), 'poster');
     writeStorage(VIEW_KEY, next);
@@ -782,7 +813,17 @@ export function ReplayIndex({
           <ScopeBar
             entering={leftFirstRun}
             count={count}
-            lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
+            lead={
+              tabs.length || forYouTab ? (
+                <ProfileSegments
+                  profiles={tabs}
+                  value={forMe ? FOR_YOU : profile}
+                  counts={forMe ? undefined : counts}
+                  onChange={changeTab}
+                  forYou={forYouTab}
+                />
+              ) : undefined
+            }
           >
             {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
             <SortMenu sort={sort} onChange={changeSort} />
