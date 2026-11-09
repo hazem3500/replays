@@ -138,6 +138,7 @@ const privacySentence = (facts: PrivacyFacts) =>
 
 const MODE_NAMES: Record<RecorderPrivacyMode, string> = {
   visible: 'Visible',
+  'inputs-masked': 'Inputs hidden',
   'text-masked': 'Text masked',
   'interface-visible': 'Your data hidden',
   masked: 'Fully masked',
@@ -146,6 +147,7 @@ const MODE_NAMES: Record<RecorderPrivacyMode, string> = {
 /** One short line per mode, from what it actually records once the host's cap applies. */
 const modeHint = ({ captures }: PrivacyFacts) => {
   const recorded = [captures.pageText && 'text', captures.inputs && 'inputs'].filter((item) => item !== false);
+  if (captures.pageText && !captures.inputs) return 'Records page text, hides what you type';
   if (recorded.length) return `Records ${listed(recorded)}`;
   if (captures.interfaceText) return "Shows only the app's menus and labels";
   return captures.media ? 'Hides text and inputs' : 'Hides everything';
