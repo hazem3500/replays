@@ -1,19 +1,27 @@
 import type { ErrorComponentProps } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
+import { lazy, type ReactNode, Suspense } from 'react';
 
-import { ProductMark } from '@/components/brand-mark.tsx';
 import { type StateAction, type StateActions, type StateKind, StateView } from '@/components/ui/state-view.tsx';
 
 import { productLogo, productName } from '../config.ts';
 import { signInHref, SignInError, useSignInRedirect } from '../sign-in.tsx';
 import { indexHref } from './links.ts';
 
+// why: the mark's geometry shares a module with the index's brand animation, which the entry chunk must not carry.
+const ProductMark = lazy(async () => ({ default: (await import('@/components/brand-mark.tsx')).ProductMark }));
+
 /** The product's identity, top left, as on the index: its mark and name, linking home. */
 function StateBrand() {
   const logo = productLogo();
   return (
     <a className="state-brand" href={indexHref()}>
-      {logo ? <img className="product-logo" src={logo} alt="" width={24} height={24} /> : <ProductMark size={24} />}
+      {logo ? (
+        <img className="product-logo" src={logo} alt="" width={24} height={24} />
+      ) : (
+        <Suspense fallback={<span className="state-brand-mark" />}>
+          <ProductMark size={24} />
+        </Suspense>
+      )}
       {productName()}
     </a>
   );
@@ -97,6 +105,11 @@ export const TRY_AGAIN: StateAction = {
   testId: 'try-again',
 };
 
+function failureMessage(failure: unknown) {
+  if (typeof failure === 'string') return failure;
+  return failure instanceof Error ? failure.message : '';
+}
+
 export type FailureKind = 'sign-in' | 'no-access' | 'expired' | 'not-found' | 'offline' | 'error';
 
 function failureKind(failure: unknown, message: string): FailureKind {
@@ -114,7 +127,7 @@ function failureKind(failure: unknown, message: string): FailureKind {
  * `verb` is what the person was doing ("view", "edit"). The raw message goes to the details.
  */
 export function failureCopy(thing: string, failure: unknown, verb = 'view') {
-  const message = typeof failure === 'string' ? failure : failure instanceof Error ? failure.message : '';
+  const message = failureMessage(failure);
   const kind = failureKind(failure, message);
   const copy = {
     'sign-in': {
@@ -147,7 +160,7 @@ export function failureCopy(thing: string, failure: unknown, verb = 'view') {
  * a missing or forbidden page leads with the way back; a transient failure leads with "Try again" and offers the way
  * back as an outline secondary.
  */
-export function failureActions(kind: FailureKind, signIn: string | undefined, back?: StateAction): StateActions {
+export function failureActions(kind: FailureKind, back?: StateAction, signIn?: string): StateActions {
   const home = back ?? { label: STRINGS.back, href: indexHref() };
   if (kind === 'sign-in' && signIn)
     return {
@@ -179,7 +192,7 @@ export function FailureShell({
     <StateShell
       {...view}
       details={kind === 'sign-in' ? undefined : (details ?? raw)}
-      actions={failureActions(kind, failure instanceof SignInError ? signInHref() : undefined, back)}
+      actions={failureActions(kind, back, failure instanceof SignInError ? signInHref() : undefined)}
     />
   );
 }

@@ -68,19 +68,19 @@ function attemptedRecently(now: number) {
 export function useSignInRedirect(error: unknown) {
   const needed = error instanceof SignInError;
   const [redirecting, setRedirecting] = useState(false);
+  const [tried] = useState(() => attemptedRecently(Date.now()));
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect -- latches once the redirect starts so the screen never flips back
+    // oxlint-disable-next-line react/set-state-in-effect -- why: latches once the redirect starts so the screen never flips back
     if (needed && redirectToSignIn()) setRedirecting(true);
   }, [needed]);
-  return needed && (redirecting || (signInHref() !== undefined && !attemptedRecently(Date.now())));
+  return needed && (redirecting || (signInHref() !== undefined && !tried));
 }
 
 export function redirectToSignIn(now = Date.now()) {
   const href = signInHref();
   if (!href) return false;
+  if (attemptedRecently(now)) return false;
   try {
-    const last = sessionStorage.getItem(ATTEMPT_KEY);
-    if (last !== null && now - Number(last) < ATTEMPT_WINDOW_MS) return false;
     sessionStorage.setItem(ATTEMPT_KEY, String(now));
   } catch {
     return false;

@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { failureActions, failureCopy, TRY_AGAIN } from '../src/client/routing/states.tsx';
 import { SignInError } from '../src/client/sign-in.tsx';
 
-afterEach(() => vi.unstubAllGlobals());
-
 describe('failureCopy', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it('asks a signed-out person to sign in, with no details to open', () => {
     expect(failureCopy('replay', new SignInError(), 'edit')).toEqual({
       failure: 'sign-in',
@@ -61,26 +61,26 @@ describe('failureActions', () => {
   const back = { label: 'Back to the replay', href: '/r/x' };
 
   it('offers only Sign in to a signed-out person', () => {
-    expect(failureActions('sign-in', '/sign-in', back)).toEqual({
+    expect(failureActions('sign-in', back, '/sign-in')).toEqual({
       primary: { label: 'Sign in', href: '/sign-in', testId: 'sign-in' },
     });
   });
 
   it('leads with the way back when retrying would not help', () => {
     for (const kind of ['not-found', 'expired', 'no-access'] as const)
-      expect(failureActions(kind, undefined, back)).toEqual({ primary: back });
+      expect(failureActions(kind, back)).toEqual({ primary: back });
   });
 
   it('leads with Try again and keeps the way back as the secondary when a retry could work', () => {
     for (const kind of ['error', 'offline'] as const)
-      expect(failureActions(kind, undefined, back)).toEqual({
+      expect(failureActions(kind, back)).toEqual({
         primary: TRY_AGAIN,
         secondary: back,
       });
   });
 
   it('falls back to all replays when no way back is given', () => {
-    expect(failureActions('not-found', undefined).primary).toMatchObject({
+    expect(failureActions('not-found').primary).toMatchObject({
       label: 'Back to all replays',
     });
   });

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { compareDefaults, isComparisonView, suiteViewLayout } from '../src/client/compare/defaults.ts';
 import { parseCompareSearch, writeCompareSearch } from '../src/client/compare/compare-search.ts';
 
+const view = (layout?: 'single' | 'grid') => ({ id: 'v', label: 'V', order: 0, ...(layout ? { layout } : {}) });
+
 describe('compare defaults', () => {
   it('opens a multi-run suite in single while retaining its layout controls', () => {
     expect(compareDefaults({ page: 'suite', recordings: 4 })).toEqual({ compare: true, layout: 'single' });
@@ -50,7 +52,6 @@ describe('compare defaults', () => {
   });
 
   it('treats only an explicitly chosen multi-recording layout as a comparison suite', () => {
-    const view = (layout?: 'single' | 'grid') => ({ id: 'v', label: 'V', order: 0, ...(layout ? { layout } : {}) });
     expect(isComparisonView({ source: 'suite', view: view('grid') })).toBe(true);
     expect(isComparisonView({ source: 'url', view: view('grid') })).toBe(true);
     expect(isComparisonView({ source: 'suite', view: view() })).toBe(false);

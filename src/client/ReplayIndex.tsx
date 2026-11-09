@@ -650,6 +650,10 @@ export function ReplayIndex({
       setFilters(next);
     },
   });
+  const listFailure = ((): IndexEmptyInput | undefined => {
+    if (signInTarget) return signingIn ? undefined : { kind: 'sign-in', href: signInTarget };
+    return { kind: 'error', product: productName(), connection: unreachable, reason: error, retry: autoRetry };
+  })();
   const pluginFilters = usePluginSnapshot().filters;
   const replays = entries ? replayCount(entries) : 0;
   const suiteRows = entries ? entries.filter((entry) => entry.kind === 'suite').length : 0;
@@ -798,12 +802,8 @@ export function ReplayIndex({
         {/* Plugins' blocks above the list (registerIndexSection), given what the list shows. */}
         {items && !error ? <IndexSections summaries={items} /> : null}
         {stale ? <IndexEmpty input={{ kind: 'offline', connection: unreachable, retry: autoRetry }} /> : null}
-        {signInTarget ? (
-          signingIn ? null : (
-            <IndexEmpty input={{ kind: 'sign-in', href: signInTarget }} />
-          )
-        ) : error && !stale ? (
-          <IndexEmpty input={{ kind: 'error', product: productName(), connection: unreachable, reason: error, retry: autoRetry }} />
+        {(error || signInTarget) && !stale ? (
+          <IndexEmpty input={listFailure} />
         ) : empty ? (
           <IndexEmpty input={empty} onUpload={() => upload.current?.open()} />
         ) : entries && entries.length === 0 ? (

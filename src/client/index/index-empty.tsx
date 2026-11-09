@@ -199,6 +199,7 @@ export function indexEmptyState(input: IndexEmptyInput, onUpload?: () => void): 
 }
 
 /** The index's empty/error state. `onUpload` opens the upload dialog (offered on an empty profile tab). */
-export function IndexEmpty({ input, onUpload }: { input: IndexEmptyInput; onUpload?: () => void }) {
+export function IndexEmpty({ input, onUpload }: { input: IndexEmptyInput | undefined; onUpload?: () => void }) {
+  if (!input) return null;
   return <EmptyState {...indexEmptyState(input, onUpload)} />;
 }
