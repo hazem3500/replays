@@ -60,11 +60,25 @@ describe('the once-a-day registry check', () => {
   useTempCache();
   it('asks the registry once, then answers from the cache for a day', async () => {
     const registry = counting('0.2.0');
-    const options = { current: '0.1.0', latestUrl: 'https://registry.test/latest', cachePath, fetchLatest: registry.fetchLatest };
-    expect(await checkForUpdate({ ...options, now: 1_000 })).toEqual({ current: '0.1.0', latest: '0.2.0' });
-    expect(await checkForUpdate({ ...options, now: 1_000 + DAY - 1 })).toEqual({ current: '0.1.0', latest: '0.2.0' });
+    const options = {
+      current: '0.1.0',
+      latestUrl: 'https://registry.test/latest',
+      cachePath,
+      fetchLatest: registry.fetchLatest,
+    };
+    expect(await checkForUpdate({ ...options, now: 1_000 })).toEqual({
+      current: '0.1.0',
+      latest: '0.2.0',
+    });
+    expect(await checkForUpdate({ ...options, now: 1_000 + DAY - 1 })).toEqual({
+      current: '0.1.0',
+      latest: '0.2.0',
+    });
     expect(registry.calls).toEqual(['https://registry.test/latest']);
-    expect(JSON.parse(await readFile(cachePath, 'utf8'))).toEqual({ checkedAt: 1_000, latest: '0.2.0' });
+    expect(JSON.parse(await readFile(cachePath, 'utf8'))).toEqual({
+      checkedAt: 1_000,
+      latest: '0.2.0',
+    });
     await checkForUpdate({ ...options, now: 1_000 + DAY });
     expect(registry.calls).toHaveLength(2);
   });
@@ -75,9 +89,9 @@ describe('the once-a-day registry check', () => {
       current: '0.1.0',
       latestUrl: 'https://registry.test/latest',
       cachePath,
-      fetchLatest: async () => {
+      fetchLatest: () => {
         calls.push(1);
-        throw new Error('offline');
+        return Promise.reject(new Error('offline'));
       },
     };
     expect(await checkForUpdate({ ...options, now: 5 })).toBeUndefined();
@@ -89,7 +103,13 @@ describe('the once-a-day registry check', () => {
     await writeFile(cachePath, '{not json');
     const registry = counting('0.1.0');
     expect(
-      await checkForUpdate({ current: '0.1.0', latestUrl: 'u', cachePath, now: 10, fetchLatest: registry.fetchLatest }),
+      await checkForUpdate({
+        current: '0.1.0',
+        latestUrl: 'u',
+        cachePath,
+        now: 10,
+        fetchLatest: registry.fetchLatest,
+      }),
     ).toBeUndefined();
     expect(registry.calls).toHaveLength(1);
   });
@@ -97,7 +117,13 @@ describe('the once-a-day registry check', () => {
   it('checks again when the clock moved backwards', async () => {
     await writeFile(cachePath, JSON.stringify({ checkedAt: 9_000_000, latest: '0.2.0' }));
     const registry = counting('0.3.0');
-    await checkForUpdate({ current: '0.1.0', latestUrl: 'u', cachePath, now: 100, fetchLatest: registry.fetchLatest });
+    await checkForUpdate({
+      current: '0.1.0',
+      latestUrl: 'u',
+      cachePath,
+      now: 100,
+      fetchLatest: registry.fetchLatest,
+    });
     expect(registry.calls).toHaveLength(1);
   });
 });
@@ -124,7 +150,11 @@ describe('the background check', () => {
 
   it('yields the cached notice once the check has settled', async () => {
     await writeFile(cachePath, JSON.stringify({ checkedAt: Date.now(), latest: '9.9.9' }));
-    const read = startUpdateCheck({ current: '0.1.0', latestUrl: 'u', cachePath });
+    const read = startUpdateCheck({
+      current: '0.1.0',
+      latestUrl: 'u',
+      cachePath,
+    });
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(read()).toEqual({ current: '0.1.0', latest: '9.9.9' });
   });
@@ -148,6 +178,9 @@ describe('a lookup cancelled by the finished command', () => {
       },
     });
     expect(result).toEqual({ current: '0.1.0', latest: '0.9.0' });
-    expect(JSON.parse(await readFile(cachePath, 'utf8'))).toEqual({ checkedAt: 0, latest: '0.9.0' });
+    expect(JSON.parse(await readFile(cachePath, 'utf8'))).toEqual({
+      checkedAt: 0,
+      latest: '0.9.0',
+    });
   });
 });

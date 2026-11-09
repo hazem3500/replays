@@ -9,9 +9,24 @@ export interface ToolHost {
   list(directory: string): string[];
 }
 
-const BROWSER_COMMANDS = ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser', 'microsoft-edge', 'microsoft-edge-stable'];
-const MAC_BROWSERS = ['Google Chrome.app/Contents/MacOS/Google Chrome', 'Chromium.app/Contents/MacOS/Chromium', 'Microsoft Edge.app/Contents/MacOS/Microsoft Edge'];
-const WINDOWS_BROWSERS = ['Google\\Chrome\\Application\\chrome.exe', 'Chromium\\Application\\chrome.exe', 'Microsoft\\Edge\\Application\\msedge.exe'];
+const BROWSER_COMMANDS = [
+  'google-chrome',
+  'google-chrome-stable',
+  'chromium',
+  'chromium-browser',
+  'microsoft-edge',
+  'microsoft-edge-stable',
+];
+const MAC_BROWSERS = [
+  'Google Chrome.app/Contents/MacOS/Google Chrome',
+  'Chromium.app/Contents/MacOS/Chromium',
+  'Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+];
+const WINDOWS_BROWSERS = [
+  'Google\\Chrome\\Application\\chrome.exe',
+  'Chromium\\Application\\chrome.exe',
+  'Microsoft\\Edge\\Application\\msedge.exe',
+];
 const FFMPEG_DIRS = ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin'];
 
 const systemHost: ToolHost = {
@@ -50,7 +65,9 @@ function onPath(names: string[], env: NodeJS.ProcessEnv, host: ToolHost): string
 export function findSystemBrowser(env: NodeJS.ProcessEnv = process.env, host: ToolHost = systemHost): string | undefined {
   const { join } = pathFor(host);
   if (host.platform === 'darwin')
-    return ['/Applications', join(host.home, 'Applications')].flatMap((root) => MAC_BROWSERS.map((app) => join(root, app))).find((file) => host.executable(file));
+    return ['/Applications', join(host.home, 'Applications')]
+      .flatMap((root) => MAC_BROWSERS.map((app) => join(root, app)))
+      .find((file) => host.executable(file));
   if (host.platform === 'win32')
     return [env.PROGRAMFILES, env['PROGRAMFILES(X86)'], env.LOCALAPPDATA]
       .filter((root): root is string => Boolean(root))
@@ -63,7 +80,10 @@ export function findSystemBrowser(env: NodeJS.ProcessEnv = process.env, host: To
 export function findFfmpeg(env: NodeJS.ProcessEnv = process.env, host: ToolHost = systemHost): string | undefined {
   const { join } = pathFor(host);
   const name = host.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
-  return onPath([name], env, host) ?? (host.platform === 'win32' ? undefined : FFMPEG_DIRS.map((directory) => join(directory, name)).find((file) => host.executable(file)));
+  return (
+    onPath([name], env, host) ??
+    (host.platform === 'win32' ? undefined : FFMPEG_DIRS.map((directory) => join(directory, name)).find((file) => host.executable(file)))
+  );
 }
 
 /** Whether Playwright's own Chromium has been downloaded (`npx playwright install chromium`). */

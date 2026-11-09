@@ -6,11 +6,21 @@ import { resolveServerUrl, uploadEndpoint } from './server-config.ts';
 import { createTerminal } from './terminal.ts';
 import { reportFailure } from './upload.ts';
 
+const field = (value: unknown, key: string): unknown =>
+  typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : undefined;
+
 async function probeServer(url: string) {
   let response: Response;
   try {
-    response = await fetch(`${url}/api/cli/auth/capabilities`, { redirect: 'manual', signal: AbortSignal.timeout(8000) });
-    if (response.status === 404) response = await fetch(`${url}/api/config`, { redirect: 'manual', signal: AbortSignal.timeout(8000) });
+    response = await fetch(`${url}/api/cli/auth/capabilities`, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(8000),
+    });
+    if (response.status === 404)
+      response = await fetch(`${url}/api/config`, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(8000),
+      });
   } catch {
     throw new Error(`could not reach configured server ${url}; check the URL and network`);
   }
@@ -26,17 +36,14 @@ async function probeServer(url: string) {
       note: 'Reachability only; this check does not create an upload session.',
     };
   if (!response.ok) throw new Error(`server responded with ${response.status} at ${url}; check that this is the viewer base URL`);
-  const config = (await response.json().catch(() => ({}))) as {
-    cliDeviceAuth?: { type?: string };
-    deviceFlow?: { type?: string } | null;
-    auth?: string;
-  };
+  const body: unknown = await response.json().catch(() => ({}));
+  const deviceType = field(field(body, 'cliDeviceAuth'), 'type') ?? field(field(body, 'deviceFlow'), 'type');
   return {
     reachable: true,
     server: url,
     uploadEndpoint: uploadEndpoint(url),
-    auth: config.auth ?? 'unknown',
-    cliDeviceLogin: (config.cliDeviceAuth?.type ?? config.deviceFlow?.type) === 'oidc-device' ? 'available' : 'not advertised',
+    auth: typeof field(body, 'auth') === 'string' ? String(field(body, 'auth')) : 'unknown',
+    cliDeviceLogin: deviceType === 'oidc-device' ? 'available' : 'not advertised',
     note: 'Reachability only; uploads may still require a signed-in identity and upload permission.',
   };
 }
@@ -45,7 +52,12 @@ async function signInCheck(url: string, serverName?: string): Promise<DoctorChec
   try {
     const auth = await fetchCliAuthCapability(url);
     if (auth.auth === 'none') return { id: 'sign-in', status: 'ok', detail: 'not required' };
-    if (!auth.deviceFlow) return { id: 'sign-in', status: 'ok', detail: `${auth.auth} authentication is managed by the host` };
+    if (!auth.deviceFlow)
+      return {
+        id: 'sign-in',
+        status: 'ok',
+        detail: `${auth.auth} authentication is managed by the host`,
+      };
     const saved = await loadCliToken(url, auth.deviceFlow.issuer, auth.deviceFlow.clientId);
     if (saved) return { id: 'sign-in', status: 'ok', detail: 'saved session found' };
     return {
@@ -55,7 +67,12 @@ async function signInCheck(url: string, serverName?: string): Promise<DoctorChec
       fix: `Run \`replays login${serverName ? ` --server ${serverName}` : ''}\`.`,
     };
   } catch {
-    return { id: 'sign-in', status: 'warn', detail: 'could not be checked', fix: 'Run `replays status` for details.' };
+    return {
+      id: 'sign-in',
+      status: 'warn',
+      detail: 'could not be checked',
+      fix: 'Run `replays status` for details.',
+    };
   }
 }
 
@@ -75,12 +92,25 @@ async function serverChecks(name: string | undefined) {
     const server = await probeServer(target.url);
     return {
       server,
-      checks: [{ id: 'server', status: 'ok', detail: target.url } satisfies DoctorCheck, await signInCheck(target.url, target.name)],
+      checks: [
+        {
+          id: 'server',
+          status: 'ok',
+          detail: target.url,
+        } satisfies DoctorCheck,
+        await signInCheck(target.url, target.name),
+      ],
     };
   } catch (error) {
     return {
       server: undefined,
-      checks: [{ id: 'server', status: 'fail', detail: error instanceof Error ? error.message : String(error) } satisfies DoctorCheck],
+      checks: [
+        {
+          id: 'server',
+          status: 'fail',
+          detail: error instanceof Error ? error.message : String(error),
+        } satisfies DoctorCheck,
+      ],
     };
   }
 }

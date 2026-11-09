@@ -11,7 +11,12 @@ const source = fileURLToPath(new URL('../src/cli.ts', import.meta.url));
 const args = process.argv.slice(2);
 const wantsHelp = args.includes('--help') || args.includes('-h');
 
-if (args[0] === 'serve' && !wantsHelp && !existsSync(source) && existsSync(fileURLToPath(new URL('../dist/lib/server.mjs', import.meta.url)))) {
+if (
+  args[0] === 'serve' &&
+  !wantsHelp &&
+  !existsSync(source) &&
+  existsSync(fileURLToPath(new URL('../dist/lib/server.mjs', import.meta.url)))
+) {
   // An installed package ships the built server (dist/lib/server.mjs), not the sources.
   const { startServer } = await import('../dist/lib/server.mjs');
   try {
