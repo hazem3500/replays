@@ -38,10 +38,7 @@ function SingleReplayPage({ id }: { id: string }) {
   const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
   const error = (authFailure ?? failure)?.message ?? '';
   const ready = usePageCode(viewerPage.loaded, viewerPage.preload);
-  const sources = bundle?.context?.sources?.flatMap((source) => {
-    const label = source.label ?? source.ref;
-    return label ? [{ label }] : [];
-  });
+  const sources = bundle?.context?.sources?.map((source) => ({ label: source.label ?? source.ref ?? '' }));
   useDocumentTitle(bundle ? `${displayTitle({ title: bundle.meta.title, sources })} · ${productName()}` : productName());
 
   if (error) {

@@ -45,8 +45,10 @@ function providerName(provider: string) {
 
 /** What a source shows beside its icon: the label alone when the icon already says the provider. */
 function shownText(link: ReplaySourceLink, short: boolean) {
-  const pr = sourceShortLabel(link);
-  if (pr) return pr;
+  return sourceShortLabel(link) ?? providerText(link, short);
+}
+
+function providerText(link: ReplaySourceLink, short: boolean) {
   if (short || !link.label) return providerName(link.provider);
   const distinct = Boolean(sourceLook(link.provider)?.icon) || providerMark(link.provider) !== 'link';
   return distinct ? link.label : sourceText(link);
