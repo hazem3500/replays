@@ -64,8 +64,10 @@ export function commentCounts(report) {
   return Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-export function increases(current, baseline) {
+export const commentRiseLimit = 10;
+
+export function increases(current, baseline, tolerance = () => 0) {
   return Object.entries(current)
-    .filter(([key, count]) => count > (baseline[key] ?? 0))
+    .filter(([key, count]) => count - (baseline[key] ?? 0) > tolerance(key))
     .map(([key, count]) => `${key}: ${baseline[key] ?? 0} → ${count}`);
 }
