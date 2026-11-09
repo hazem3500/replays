@@ -589,10 +589,9 @@ svg.lucide.lucide { stroke-width: 2; }
 
 
 .now-grip svg { width: 16px; height: 16px; stroke-width: 2.5; }
-/* Shown (by script, after a 250 ms hover intent): line and grip come up together, calmly, no overshoot. */
+/* Shown (by script, after a 250 ms hover intent): opacity and scale are animated by the presence motion, never set here. */
 /* Hidden, the grip takes no pointer events, so re-entering the line always goes through its hover intent. */
 .now-divider[data-grip="shown"] .now-grip, .now-divider[data-dragging] .now-grip, .now-grip:focus-visible { pointer-events: auto; }
-.now-divider[data-grip="shown"] .now-grip { scale: 1; opacity: 1; }
 .now-divider[data-dragging] .now-grip { cursor: grabbing; }
 .now-grip:focus-visible { box-shadow: none; }
 .now-grip:focus-visible::before { box-shadow: 0 0 0 2px var(--ring); }
