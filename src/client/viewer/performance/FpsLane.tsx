@@ -17,13 +17,20 @@ export function FpsLane({ bands, duration }: { bands: readonly FrameBand[]; dura
   const strip = useRef<HTMLDivElement>(null);
   const span = Math.max(1, duration);
   usePlayheadProgress(strip, span);
-  const seek = (event: MouseEvent<HTMLDivElement>) => {
+  const seek = (event: MouseEvent<HTMLButtonElement>) => {
     const box = event.currentTarget.getBoundingClientRect();
     player.seek(Math.min(1, Math.max(0, (event.clientX - box.left) / Math.max(1, box.width))) * span);
   };
   return (
     <div className="fps-lane-wrap">
-      <div ref={strip} className="fps-lane" data-testid="fps-lane" role="img" aria-label="Frame rate over time" onClick={seek}>
+      <button
+        ref={strip}
+        type="button"
+        className="fps-lane"
+        data-testid="fps-lane"
+        aria-label="Frame rate over time, click to seek"
+        onClick={seek}
+      >
         {bands.map((band) => (
           <span
             key={band.at}
@@ -37,7 +44,7 @@ export function FpsLane({ bands, duration }: { bands: readonly FrameBand[]; dura
         ))}
         <span className="ribbon-future" />
         <span className="ribbon-now" />
-      </div>
+      </button>
       <div className="ribbon-key">
         <span>
           <i data-tone="success" />
