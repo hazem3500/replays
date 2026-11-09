@@ -38,7 +38,11 @@ function SingleReplayPage({ id }: { id: string }) {
   const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
   const error = (authFailure ?? failure)?.message ?? '';
   const ready = usePageCode(viewerPage.loaded, viewerPage.preload);
-  useDocumentTitle(bundle ? `${displayTitle({ title: bundle.meta.title, sources: bundle.context?.sources?.flatMap((source) => (source.label ?? source.ref ? [{ label: (source.label ?? source.ref)! }] : [])) })} · ${productName()}` : productName());
+  const sources = bundle?.context?.sources?.flatMap((source) => {
+    const label = source.label ?? source.ref;
+    return label ? [{ label }] : [];
+  });
+  useDocumentTitle(bundle ? `${displayTitle({ title: bundle.meta.title, sources })} · ${productName()}` : productName());
 
   if (error) {
     return (

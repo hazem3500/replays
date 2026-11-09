@@ -233,7 +233,13 @@ function SessionItem({
       />
       <div className="feed-body">
         <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
-          <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped} data-full-title={summary.title}>
+          <a
+            className="row-target feed-title"
+            href={href}
+            aria-label={name}
+            onPointerEnter={titleIfClamped}
+            data-full-title={summary.title}
+          >
             {displayTitle(summary)}
           </a>
           <RowMenu title={summary.title} actions={replayRowActions(summary.id)} menu={menu} onDelete={deletion.requestDelete} />
@@ -475,7 +481,13 @@ function SuiteItem({
         )}
         <div className="feed-body">
           <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
-            <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped} data-full-title={suite.title}>
+            <a
+              className="row-target feed-title"
+              href={href}
+              aria-label={name}
+              onPointerEnter={titleIfClamped}
+              data-full-title={suite.title}
+            >
               {displayTitle({ title: suite.title, sources })}
             </a>
             <RowMenu title={suite.title} actions={suiteRowActions(href, suite.id, recordings)} menu={menu} />
