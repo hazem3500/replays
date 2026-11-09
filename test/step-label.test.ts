@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { capAtWord as recorderCap, STEP_LABEL_MAX as recorderMax } from '../src/recorder/step-label.ts';
-import { capAtWord, STEP_LABEL_MAX } from '../src/shared/step-label.ts';
+import { capAtWord as recorderCap, STEP_LABEL_MAX as recorderMax, tidyStepName as recorderTidy } from '../src/recorder/step-label.ts';
+import { capAtWord, STEP_LABEL_MAX, tidyStepName } from '../src/shared/step-label.ts';
 
 const CASES = [
   '',
@@ -45,6 +45,18 @@ describe('capAtWord', () => {
 
   it('flattens line breaks into one line', () => {
     expect(capAtWord('Line one\nLine two')).toBe('Line one Line two');
+  });
+});
+
+describe('tidyStepName', () => {
+  it.each([
+    ['Profile:', 'Profile'],
+    ['  Plan   time  –', 'Plan time'],
+    ['Tasks, ', 'Tasks'],
+    ['Plan time • 4h', 'Plan time • 4h'],
+  ])('tidies %j to %j', (text, expected) => {
+    expect(tidyStepName(text)).toBe(expected);
+    expect(recorderTidy(text)).toBe(expected);
   });
 });
 
