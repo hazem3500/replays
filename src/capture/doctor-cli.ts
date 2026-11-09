@@ -6,8 +6,7 @@ import { resolveServerUrl, uploadEndpoint } from './server-config.ts';
 import { createTerminal } from './terminal.ts';
 import { reportFailure } from './upload.ts';
 
-const field = (value: unknown, key: string): unknown =>
-  typeof value === 'object' && value !== null ? (value as Record<string, unknown>)[key] : undefined;
+const field = (value: unknown, key: string): unknown => (typeof value === 'object' && value !== null ? Reflect.get(value, key) : undefined);
 
 async function probeServer(url: string) {
   let response: Response;

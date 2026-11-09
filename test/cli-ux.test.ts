@@ -14,7 +14,7 @@ describe('help and the agent guide share one set of command definitions', () => 
       expect(help).toMatch(new RegExp(`^  ${command.name}\\s+`, 'm'));
       expect(help).toContain(command.summary);
       expect(guide).toContain(`### ${command.name}`);
-      expect(guide).toContain(command.help ?? command.summary);
+      expect(guide).toContain(command.help ?? command.details ?? command.summary);
     }
   });
 

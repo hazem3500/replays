@@ -9,13 +9,15 @@ interface CommandDefinition {
   summary: string;
   /** Usage text for `--help`; commands that print their own (migrate, build-static, mcp, plugin) leave it out. */
   help?: string;
+  /** Extra text for the agent guide only, for commands that print their own `--help`. */
+  details?: string;
   /** Also available in the capture-only distribution. */
   captureOnly?: true;
 }
 
 /** Every command, once: the help screens, `--help` per command and `agent-guide` are all generated from this list. */
 export const COMMANDS: readonly CommandDefinition[] = [
-  { name: 'capture', summary: 'record a page with scripted steps into replay.json', captureOnly: true, help: CAPTURE_USAGE },
+  { name: 'capture', summary: 'record a page with scripted steps into replay.json', captureOnly: true, details: CAPTURE_USAGE },
   {
     name: 'import',
     summary: 'convert a plain rrweb recording into a replay',
@@ -128,7 +130,8 @@ export function renderHelp(term: Terminal, { captureOnly = false } = {}) {
 /** Markdown for AI agents, built from the same definitions as `--help` so the two cannot drift. */
 export function renderAgentGuide({ captureOnly = false } = {}) {
   const sections = COMMANDS.filter((entry) => !captureOnly || entry.captureOnly).map((entry) => {
-    return [`### ${entry.name}`, '', entry.summary, ...(entry.help ? ['', '```text', entry.help, '```'] : []), ''].join('\n');
+    const text = entry.help ?? entry.details;
+    return [`### ${entry.name}`, '', entry.summary, ...(text ? ['', '```text', text, '```'] : []), ''].join('\n');
   });
   return [
     `# ${p}: guide for agents`,
