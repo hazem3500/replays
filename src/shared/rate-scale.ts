@@ -6,11 +6,16 @@ import { PLAYBACK_SPEEDS } from './render-variant.ts';
  * above), and the slider's own axis is the index into that list, so each step takes the same room on the track and
  * the low rates get the resolution. invariant: every value is a multiple of 0.25, so it is exact in a float.
  */
+function stepFor(rate: number) {
+  if (rate < 4) return 0.25;
+  return rate < 8 ? 0.5 : 1;
+}
+
 function buildRates() {
   const rates: number[] = [];
   for (let rate = MIN_SPEED_RATE; rate <= MAX_SPEED_RATE;) {
     rates.push(rate);
-    rate += rate < 4 ? 0.25 : rate < 8 ? 0.5 : 1;
+    rate += stepFor(rate);
   }
   return rates;
 }
