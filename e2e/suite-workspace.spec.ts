@@ -74,8 +74,7 @@ test('the runs sidebar opens expanded on every visit; collapsing only lasts for 
 
 test('at 390 px the sidebar becomes a run switcher in the topbar title', async ({ page }) => {
   // Long labels wrap in the phone title sheet so the selected check/status centering is real geometry.
-  const longOne =
-    'Turning the mock on from a review link, so the phone run sheet wraps this label onto a second line';
+  const longOne = 'Turning the mock on from a review link, so the phone run sheet wraps this label onto a second line';
   const longTwo = 'A second wrapped run label for switching away from the selected two-line row';
   const suite = uniqueId('suite');
   const one = `${suite}-one`;
