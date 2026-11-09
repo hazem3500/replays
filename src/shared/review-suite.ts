@@ -130,7 +130,18 @@ function date(value: unknown, label: string) {
 }
 
 export function assertReviewSuite(value: unknown): asserts value is ReviewSuite {
-  const suite = record(value, 'suite', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people', 'profile', 'summary', 'runs']);
+  const suite = record(value, 'suite', [
+    'version',
+    'id',
+    'title',
+    'createdAt',
+    'subject',
+    'context',
+    'people',
+    'profile',
+    'summary',
+    'runs',
+  ]);
   if (suite.version !== 1) throw new Error('suite.version is unsupported');
   if (typeof suite.id !== 'string') throw new Error('suite.id is invalid');
   assertReplayId(suite.id);
@@ -151,7 +162,18 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
   const sequences = new Set<number>();
   for (const [index, raw] of suite.runs.entries()) {
     const name = `suite.runs[${index}]`;
-    const run = record(raw, name, ['id', 'sequence', 'label', 'status', 'startedAt', 'finishedAt', 'summary', 'replayId', 'recording', 'context']);
+    const run = record(raw, name, [
+      'id',
+      'sequence',
+      'label',
+      'status',
+      'startedAt',
+      'finishedAt',
+      'summary',
+      'replayId',
+      'recording',
+      'context',
+    ]);
     if (typeof run.id !== 'string' || !RUN_ID.test(run.id) || ids.has(run.id)) throw new Error(`${name}.id is invalid or duplicated`);
     ids.add(run.id);
     if (!Number.isSafeInteger(run.sequence) || Number(run.sequence) < 1 || sequences.has(Number(run.sequence))) {
@@ -214,7 +236,17 @@ export interface ReviewRunRegistration {
 }
 
 export function assertReviewSuiteRegistration(value: unknown, suiteId: string): asserts value is ReviewSuiteRegistration {
-  const input = record(value, 'suite registration', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people', 'profile', 'summary']);
+  const input = record(value, 'suite registration', [
+    'version',
+    'id',
+    'title',
+    'createdAt',
+    'subject',
+    'context',
+    'people',
+    'profile',
+    'summary',
+  ]);
   if (input.id !== suiteId) throw new Error('suite ID does not match path');
   const { subject, ...rest } = input;
   if (subject !== undefined) record(subject, 'suite.subject', ['provider', 'ref', 'url', 'label']);

@@ -88,8 +88,7 @@ describe('review suite summaries', () => {
   it('refuses an empty, oversized or control-character summary', async () => {
     const { origin } = await start();
     const base = `${origin}/api/suites/${suite.id}`;
-    for (const summary of ['  ', 'x'.repeat(4001), 'bad\u0000text'])
-      expect((await put(base, { ...suite, summary })).status).toBe(400);
+    for (const summary of ['  ', 'x'.repeat(4001), 'bad\u0000text']) expect((await put(base, { ...suite, summary })).status).toBe(400);
   });
 });
 
