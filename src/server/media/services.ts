@@ -1,7 +1,7 @@
 import type { RenderJob } from '../../plugin/types.ts';
 import type { RenderHookRunner } from '../render-hooks.ts';
 import { RenderQueue } from '../render-queue.ts';
-import { createRenderer, type RenderTools } from '../renderer.ts';
+import { createRenderer, describeRender, type RenderTools } from '../renderer.ts';
 import { createMediaRenderer } from '../posters.ts';
 import type { ReplayStore } from '../store.ts';
 import type { RenderAssetPolicy } from './browser-network.ts';
@@ -53,10 +53,7 @@ export function createVideoQueue(
     runner: createRenderer({
       ...page,
       fps: env.RENDER_FPS === '15' ? 15 : 30,
-      onFinish: (stats) =>
-        log(
-          `render ${stats.id}: ${stats.frames} frames (${stats.captured} captured) for ${(stats.replayMs / 1000).toFixed(1)} s of replay`,
-        ),
+      onFinish: (stats) => log(describeRender(stats)),
     }),
   });
 }
