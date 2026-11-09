@@ -24,9 +24,9 @@ export type OptionsStepDeps = {
 let element: typeof createElement;
 let icon: typeof createIcon;
 
-const MODES: readonly RecorderPrivacyMode[] = ['visible', 'text-masked', 'interface-visible', 'masked'];
+const MODES: readonly RecorderPrivacyMode[] = ['visible', 'inputs-masked', 'text-masked', 'interface-visible', 'masked'];
 /** Modes a staff menu lists even when the host does not allow them, disabled with a reason. */
-const STAFF_MODES: readonly RecorderPrivacyMode[] = ['visible', 'text-masked', 'masked'];
+const STAFF_MODES: readonly RecorderPrivacyMode[] = ['visible', 'inputs-masked', 'interface-visible', 'masked'];
 const MENU_ID = 'recorder-options-menu';
 const STEPS: Record<string, (index: number, count: number) => number> = {
   ArrowDown: (index, count) => (index + 1) % count,
