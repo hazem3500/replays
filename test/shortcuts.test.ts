@@ -100,3 +100,14 @@ describe('suite run shortcuts', () => {
     expect(shortcutFor(press('k'))).toBe('play-pause');
   });
 });
+
+describe('folded steps', () => {
+  const steps = [{ at: 0 }, { at: 100 }, { at: 100, folded: true as const }, { at: 200 }];
+
+  it('are skipped by the active, next and previous step', () => {
+    expect(activeStepIndex(steps, 150)).toBe(1);
+    expect(nextStepIndex(steps, 50)).toBe(1);
+    expect(nextStepIndex(steps, 100, 1)).toBe(3);
+    expect(previousStepIndex(steps, 300, 3)).toBe(1);
+  });
+});

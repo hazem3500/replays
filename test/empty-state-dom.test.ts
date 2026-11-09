@@ -240,6 +240,12 @@ describe('index empty states', () => {
     ]);
   });
 
+  it('asks for sign-in with one primary action and no retry when the list needs a signed-in person', () => {
+    const props = indexEmptyState({ kind: 'sign-in', href: '/api/sign-in?next=%2F' });
+    expect([props.title, props.body]).toEqual(['Sign in to see these replays', 'Use your @toggl.com Google account.']);
+    expect(props.actions).toEqual([{ id: 'sign-in', label: 'Sign in', primary: true, href: '/api/sign-in?next=%2F' }]);
+  });
+
   it('keeps saved results while offline, under a banner', () => {
     expect(indexEmptyState({ kind: 'offline', connection: true, retry: retrying })).toMatchObject({ variant: 'banner', title: 'Offline' });
   });

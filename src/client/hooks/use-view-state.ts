@@ -3,7 +3,15 @@ import { useState } from 'react';
 import { type InspectorTab, isInspectorTab } from '../viewer/context.ts';
 import { initialInspectorHeight } from '../viewer/inspector-size.ts';
 import type { ViewDefaults } from '../views/resolve.ts';
-import { readViewFlag, readViewSetting, resetViewSettings, writeViewFlag, writeViewSetting } from '../views/settings.ts';
+import {
+  readCaptionsPreference,
+  readViewFlag,
+  readViewSetting,
+  resetViewSettings,
+  writeCaptionsPreference,
+  writeViewFlag,
+  writeViewSetting,
+} from '../views/settings.ts';
 
 interface ViewState {
   view: string;
@@ -31,7 +39,7 @@ function stateFor(view: string, defaults: ViewDefaults, { errorTab, fallbackTab 
     revealed: Boolean(errorTab),
     height: initialInspectorHeight(view),
     railCollapsed: readViewFlag(view, 'rail-collapsed') ?? defaults.steps === 'collapsed',
-    captions: readViewFlag(view, 'captions') ?? defaults.captions,
+    captions: readCaptionsPreference() ?? defaults.captions,
     tab,
   };
 }
@@ -69,7 +77,7 @@ function settersFor(setState: SetState): ViewSetters {
     },
     switchCaptions() {
       setState((current) => {
-        writeViewFlag(current.view, 'captions', !current.captions);
+        writeCaptionsPreference(!current.captions);
         return { ...current, captions: !current.captions };
       });
     },
@@ -84,7 +92,7 @@ function settersFor(setState: SetState): ViewSetters {
 
 /**
  * The viewer's layout in one view: the dock's height and fold, the steps rail's fold, captions and the open tab. Each is
- * remembered per view, else the view's preset decides; switching views swaps them all without remounting anything.
+ * remembered per view (captions once for all views), else the view's preset decides; switching views swaps them all without remounting anything.
  * The setters keep their identity for the viewer's life; `reset` ("Reset this view") forgets the view's settings.
  */
 export function useViewState(view: string, defaults: ViewDefaults, opening: Opening) {
