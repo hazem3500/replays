@@ -3,7 +3,7 @@
 .cp { container: console / inline-size; }
 .cp-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--text-tertiary); }
 .cp-dot[data-level="error"] { background: var(--danger); }
-.cp-dot[data-level="warn"] { background: var(--warning); }
+.cp-dot[data-level="warn"] { background: var(--warning-fill); }
 .cp-dot[data-level="debug"] { border: 1.5px solid var(--text-tertiary); background: transparent; }
 .np-chip[data-level="error"] .np-chip-count { color: var(--danger); }
 

@@ -15,7 +15,7 @@ export const CAPTION_IN_MS = 200;
 /** The label older captures gave every `wait` step; such a step is pacing, not something to caption. */
 const DEFAULT_WAIT_LABEL = 'Wait for the page';
 
-type CaptionStep = { at: number; label?: string; kind?: string };
+type CaptionStep = { at: number; label?: string; kind?: string; folded?: true };
 
 const isPacing = (step: CaptionStep) => step.kind === 'wait' && (step.label === undefined || step.label === DEFAULT_WAIT_LABEL);
 
@@ -29,8 +29,9 @@ export function captionIndex(steps: ReadonlyArray<CaptionStep>, time: number, du
   let index = activeStepIndex(steps, time, duration);
   while (index > 0 && isPacing(steps[index]!)) index--;
   for (let previous = index - 1; previous >= 0; previous--) {
-    if (isPacing(steps[previous]!)) continue;
-    if (steps[previous]!.label !== steps[index]!.label) break;
+    const before = steps[previous]!;
+    if (isPacing(before) || before.folded) continue;
+    if (before.label !== steps[index]!.label) break;
     index = previous;
   }
   return index;

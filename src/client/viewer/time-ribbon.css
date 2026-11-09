@@ -4,7 +4,7 @@
 .ribbon-ticks, .ribbon-key { display: flex; justify-content: space-between; gap: 12px; padding: 4px 10px; color: var(--text-secondary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
 .ribbon-key { justify-content: flex-start; }
 .ribbon-key > span { display: inline-flex; align-items: center; gap: 4px; }
-.ribbon-key i { width: 7px; height: 7px; background: var(--warning); }
+.ribbon-key i { width: 7px; height: 7px; background: var(--warning-fill); }
 .ribbon-key i[data-tone="danger"] { background: var(--danger); }
 button.ribbon-mark { padding: 0; border: 0; cursor: pointer; }
 button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; z-index: 5; }
@@ -29,7 +29,7 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
 .ribbon-mark[data-lane="top"] { top: 4px; bottom: 52%; }
 .ribbon-mark[data-lane="bottom"] { top: 52%; bottom: 4px; }
 .ribbon-mark[data-tone="danger"] { background: var(--danger); }
-.ribbon-mark[data-tone="warning"] { background: var(--warning); }
+.ribbon-mark[data-tone="warning"] { background: var(--warning-fill); }
 .ribbon-mark[data-tone="success"] { background: var(--success); }
 .ribbon-range { position: absolute; top: 0; bottom: 0; border-inline: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none; }
 .ribbon-range[data-live] { background: color-mix(in srgb, var(--accent) 24%, transparent); }
@@ -67,7 +67,7 @@ button.lt-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2
 .lt-track { position: relative; height: 8px; border-radius: 2px; background: repeating-linear-gradient(to right, color-mix(in srgb, var(--line) 70%, transparent) 0 1px, transparent 1px 20%); }
 .lt-bar { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 2px; background: var(--text-tertiary); }
 .lt-bar[data-tone="danger"] { background: var(--danger); }
-.lt-bar[data-tone="warning"] { background: var(--warning); }
+.lt-bar[data-tone="warning"] { background: var(--warning-fill); }
 .lt-bar[data-tone="success"] { background: var(--success); }
 .lt-bar[data-tone="current"] { background: var(--accent); }
 .lt-value { color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }

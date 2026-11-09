@@ -157,6 +157,7 @@ export function NetworkPanel({
             max={Math.max(280, panelWidth - 320)}
             defaultValue={400}
             onChange={setDetailWidth}
+            onPreview={(size) => panel.current?.style.setProperty('--np-detail-width', `${size}px`)}
             label="Request details width"
           />
         ) : null}

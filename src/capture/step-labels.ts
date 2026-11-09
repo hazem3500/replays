@@ -1,4 +1,4 @@
-import { capAtWord } from '../shared/step-label.ts';
+import { tidyStepName } from '../shared/step-label.ts';
 import type { RawStep } from './drivers/types.ts';
 
 const NAMING_ATTRIBUTES = ['aria-label', 'title', 'alt', 'name', 'placeholder', 'data-tracking-id', 'data-testid'];
@@ -64,7 +64,7 @@ function controlDescription(selector: string, field: boolean): string {
 export function labelFor(step: RawStep): string {
   if (step.label) return step.label;
   const named = 'selector' in step ? selectorName(step.selector) : undefined;
-  const name = named ? capAtWord(named) : undefined;
+  const name = named ? tidyStepName(named) : undefined;
   const target = (field: boolean) => {
     if (name) return `“${name}”`;
     return 'selector' in step ? controlDescription(step.selector, field) : '';

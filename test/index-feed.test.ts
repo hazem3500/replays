@@ -270,7 +270,8 @@ describe('mark easter egg', () => {
   });
 
   it('scrubs one segment per click, nods when full, and parks the playhead after the last filled segment', async () => {
-    const { scrub, playheadX, SEGMENTS, REST_FILLED } = await import('../src/client/index/mark-burst.ts');
+    const { scrub } = await import('../src/client/index/mark-burst.ts');
+    const { playheadX, SEGMENTS, REST_FILLED } = await import('../src/client/components/brand-mark-geometry.ts');
     expect(SEGMENTS).toHaveLength(5);
     expect(REST_FILLED).toBe(2);
     expect(scrub(2)).toEqual({ filled: 3, fills: 2, nod: false });
