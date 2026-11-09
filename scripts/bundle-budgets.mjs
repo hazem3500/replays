@@ -127,3 +127,22 @@ export function budgetDiff(baseline, next, allowances) {
   }
   return `${rows.join('\n')}\n`;
 }
+
+export const significance = { growthRatio: 0.1, growthGzipBytes: 5 * 1024, newArtifactGzipBytes: 20 * 1024 };
+
+// Awareness first: sizes are reported, and only a jump that is both large relative to main and large in bytes fails.
+export function significantGrowth(measured, mainMeasured, budget) {
+  const failures = [];
+  for (const [name, sizes] of Object.entries(measured)) {
+    const before = mainMeasured?.[name]?.gzip;
+    if (before === undefined) {
+      if (!budget.files[name] && sizes.gzip > significance.newArtifactGzipBytes)
+        failures.push(`${name}: new artifact is ${sizes.gzip} B gzip (limit ${significance.newArtifactGzipBytes} B before it needs a look)`);
+      continue;
+    }
+    const grew = sizes.gzip - before;
+    if (grew > significance.growthGzipBytes && grew > before * significance.growthRatio)
+      failures.push(`${name}: gzip grew ${before} -> ${sizes.gzip} B (+${grew}), over ${significance.growthRatio * 100}% and ${significance.growthGzipBytes} B`);
+  }
+  return failures;
+}

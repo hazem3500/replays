@@ -22,6 +22,10 @@ describe('lint debt ratchet', () => {
   });
 });
 
+it('tolerates a small rise when given a tolerance', () => {
+  assert.deepEqual(increases({ a: 5, b: 20 }, { a: 2, b: 5 }, () => 10), ['b: 5 → 20']);
+});
+
 it('refuses an unspecified comparison base instead of silently checking zero files', async () => {
   const { spawnSync } = await import('node:child_process');
   const result = spawnSync(process.execPath, ['scripts/lint-new-files.mjs'], {

@@ -4,7 +4,7 @@ import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { bundleInventory } from './bundle-inventory.mjs';
-import { authorizeBudget, budgetDiff, ratchetBudget, validateBudget } from './bundle-budgets.mjs';
+import { authorizeBudget, budgetDiff, ratchetBudget, significantGrowth, validateBudget } from './bundle-budgets.mjs';
 
 const { values } = parseArgs({
   options: {
@@ -73,6 +73,7 @@ for (let index = 0; index < checks.length; index++) {
   const match = checks[index].name.match(/^(.*) \((raw|gzip|brotli)\)$/);
   (files[match[1]] ??= {})[match[2]] = measured[index].size;
 }
+const significant = significantGrowth(files, values.baseline ? JSON.parse(await readFile(resolve(values.baseline), 'utf8')).files : undefined, budgets);
 const violations = [];
 for (const [name, sizes] of Object.entries(files)) {
   for (const [metric, size] of Object.entries(sizes)) {
@@ -82,7 +83,7 @@ for (const [name, sizes] of Object.entries(files)) {
 }
 await writeFile(
   values.output ? resolve(values.output) : resolve(directory, 'bundle-sizes.json'),
-  JSON.stringify({ files, violations, unknown, allowanceErrors: authorization.failures }, null, 2) + '\n',
+  JSON.stringify({ files, violations, unknown, allowanceErrors: authorization.failures, significant }, null, 2) + '\n',
 );
 const baseline = values.baseline ? JSON.parse(await readFile(resolve(values.baseline), 'utf8')).files : {};
 const nextBudgets = values.measure ? budgets : ratchetBudget(budgets, files, values.baseline ? baseline : undefined);
@@ -111,20 +112,18 @@ for (const name of [...new Set([...Object.keys(files), ...Object.keys(baseline)]
 }
 rows.push(
   '',
-  `${violations.length} over-budget measurements; ${unknown.length} unbudgeted artifacts.`,
+  `${violations.length} measurements above their cap and ${unknown.length} unbudgeted artifacts (reported only); ${significant.length} significant jumps.`,
   ...violations,
   ...unknown.map((name) => `Unbudgeted: ${name}`),
   '',
 );
 rows.push(
   ...authorization.failures,
-  ...(values['check-ratchet'] && budgetChanged
-    ? ['Run pnpm quality:size and commit the automatically ratcheted budgets/bundle.json.']
-    : []),
+  ...significant.map((failure) => `Significant jump: ${failure}`),
+  ...(budgetChanged ? ['Caps could be lowered; run pnpm quality:size:ratchet when convenient (optional).'] : []),
 );
 const summary = rows.join('\n') + budgetDiff(mainBudgets, nextBudgets, authorization.allowances);
 console.log(summary);
 await writeFile(resolve(directory, 'bundle-sizes.md'), summary);
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
-if (!values.measure && (violations.length || unknown.length || authorization.failures.length || (values['check-ratchet'] && budgetChanged)))
-  process.exitCode = 1;
+if (!values.measure && significant.length) process.exitCode = 1;

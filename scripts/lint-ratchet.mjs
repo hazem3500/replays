@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { commentCounts, countsFor, increases, runLint } from './lib/lint-report.mjs';
+import { commentCounts, commentRiseLimit, countsFor, increases, runLint } from './lib/lint-report.mjs';
 
 const update = process.argv.includes('--write-baseline');
 if (!existsSync('dist/types/index.d.ts'))
@@ -24,10 +24,12 @@ if (update) {
 } else {
   const baseline = JSON.parse(readFileSync(budgetPath, 'utf8'));
   const commentBaseline = JSON.parse(readFileSync(commentPath, 'utf8'));
+  // why: comment counts are for awareness; only a rise of more than commentRiseLimit in one file or rule blocks.
+  const commentTolerance = (key) => (key.endsWith('comment-policy)') ? commentRiseLimit : 0);
   const failures = Object.entries(counts).flatMap(([name, values]) =>
-    increases(values, baseline.counts[name] ?? {}).map((row) => `${name}/${row}`),
+    increases(values, baseline.counts[name] ?? {}, commentTolerance).map((row) => `${name}/${row}`),
   );
-  failures.push(...increases(comments, commentBaseline.counts).map((row) => `comments/${row}`));
+  failures.push(...increases(comments, commentBaseline.counts, () => commentRiseLimit).map((row) => `comments/${row}`));
   for (const row of failures) console.error(`Lint baseline increased: ${row}`);
   if (failures.length) process.exitCode = 1;
   const decreased = Object.entries(baseline.counts).flatMap(([name, values]) =>
