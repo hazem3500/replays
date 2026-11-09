@@ -50,9 +50,8 @@ function humanized(value: string | null): string {
 
 /** The text of the `<label for>` or wrapping `<label>` of a field, or of its fieldset's legend. */
 function fieldLabel(control: Element, privacy: RecorderPrivacy, blocked: string): string {
-  const root = control.getRootNode();
   const id = control.getAttribute('id');
-  const labels = id && (root instanceof Document || root instanceof ShadowRoot) ? Array.from(root.querySelectorAll('label[for]')) : [];
+  const labels = id ? Array.from(control.ownerDocument.querySelectorAll('label[for]')) : [];
   const label = labels.find((candidate) => candidate.getAttribute('for') === id) ?? control.closest('label');
   const legend = control.closest('fieldset')?.querySelector('legend');
   const names = [label, legend].map((element) =>
