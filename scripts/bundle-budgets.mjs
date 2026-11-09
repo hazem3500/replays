@@ -85,7 +85,10 @@ export function ratchetBudget(budget, measured, mainMeasured) {
     for (const metric of metrics) {
       const mainSize = mainMeasured?.[file]?.[metric];
       if (mainSize !== undefined && sizes[metric] >= mainSize) continue;
-      if (caps[metric] !== undefined) caps[metric] = Math.min(caps[metric], Math.ceil(sizes[metric] * 1.03));
+      if (caps[metric] === undefined) continue;
+      const target = Math.ceil(sizes[metric] * 1.03);
+      // why: a cap within 1% of the 3% headroom target is intended headroom, not slack worth a commit.
+      if (caps[metric] - target > Math.ceil(sizes[metric] * 0.01)) caps[metric] = target;
     }
   }
   for (const file of Object.keys(next.files)) if (!measured[file]) delete next.files[file];
