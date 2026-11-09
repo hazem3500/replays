@@ -48,7 +48,7 @@ export function isNewer(latest: string, current: string) {
 
 /** Update notices are for a person at a terminal: stderr is a TTY, and not in CI, JSON mode or when opted out. */
 export function shouldCheckForUpdates(env: NodeJS.ProcessEnv, stderrIsTty: boolean, json: boolean) {
-  const optedOut = Boolean(env.REPLAYS_NO_UPDATE_CHECK || env.NO_UPDATE_NOTIFIER);
+  const optedOut = [env.REPLAYS_NO_UPDATE_CHECK, env.NO_UPDATE_NOTIFIER].some((value) => value !== undefined && value !== '');
   return stderrIsTty && !json && !isCi(env) && !optedOut;
 }
 

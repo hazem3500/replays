@@ -21,6 +21,8 @@ export function checkNode(version: string = process.versions.node): DoctorCheck 
   return { id: 'node', status: 'fail', detail: `Node ${version}`, fix: 'Install Node 22.12 or newer (24.11+ recommended).' };
 }
 
+const unset = (value: string | undefined) => (value === '' ? undefined : value);
+
 const staleCheck = (id: 'chrome' | 'ffmpeg', variable: string, path: string): DoctorCheck => ({
   id,
   status: 'warn',
@@ -29,10 +31,10 @@ const staleCheck = (id: 'chrome' | 'ffmpeg', variable: string, path: string): Do
 });
 
 export function checkChrome(env: NodeJS.ProcessEnv, exists: (path: string) => boolean = existsSync): DoctorCheck {
-  const explicit = env.CHROME_PATH || env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
+  const explicit = unset(env.CHROME_PATH) ?? unset(env.PLAYWRIGHT_CHROMIUM_EXECUTABLE);
   if (explicit && !exists(explicit))
-    return staleCheck('chrome', env.CHROME_PATH ? 'CHROME_PATH' : 'PLAYWRIGHT_CHROMIUM_EXECUTABLE', explicit);
-  const found = explicit || findSystemBrowser(env);
+    return staleCheck('chrome', unset(env.CHROME_PATH) ? 'CHROME_PATH' : 'PLAYWRIGHT_CHROMIUM_EXECUTABLE', explicit);
+  const found = explicit ?? findSystemBrowser(env);
   if (found) return { id: 'chrome', status: 'ok', detail: found };
   if (hasPlaywrightBrowser(env)) return { id: 'chrome', status: 'ok', detail: "Playwright's Chromium" };
   return {
@@ -44,8 +46,9 @@ export function checkChrome(env: NodeJS.ProcessEnv, exists: (path: string) => bo
 }
 
 export function checkFfmpeg(env: NodeJS.ProcessEnv, exists: (path: string) => boolean = existsSync): DoctorCheck {
-  if (env.FFMPEG_PATH && !exists(env.FFMPEG_PATH)) return staleCheck('ffmpeg', 'FFMPEG_PATH', env.FFMPEG_PATH);
-  const found = env.FFMPEG_PATH || findFfmpeg(env);
+  const explicit = unset(env.FFMPEG_PATH);
+  if (explicit && !exists(explicit)) return staleCheck('ffmpeg', 'FFMPEG_PATH', explicit);
+  const found = explicit ?? findFfmpeg(env);
   if (found) return { id: 'ffmpeg', status: 'ok', detail: found };
   return {
     id: 'ffmpeg',

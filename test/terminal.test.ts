@@ -96,10 +96,10 @@ describe('failures', () => {
       exitCode: 3,
     });
     expect(reportCliFailure(error, { env: {}, stream })).toBe(3);
-    const line: { success: boolean; error: string; hint?: string } = JSON.parse(stream.writes.join(''));
-    expect(line.success).toBe(false);
-    expect(line.error).toContain('sign in is required');
-    expect(line.hint).toContain('replays login');
+    const text = stream.writes.join('');
+    expect(text).toContain('"success":false');
+    expect(text).toContain('sign in is required');
+    expect(text).toContain('"hint":"Run `replays login`');
   });
 
   it('leaves the hint out when there is none, and defaults to exit code 1', () => {
@@ -111,8 +111,7 @@ describe('failures', () => {
   it('stays JSON under --json even at a terminal, and styled otherwise', () => {
     const json = tty();
     reportCliFailure(new Error('could not reach configured server https://x.test'), { env: {}, stream: json, json: true });
-    const failure: { success: boolean } = JSON.parse(json.writes.join(''));
-    expect(failure.success).toBe(false);
+    expect(json.writes.join('')).toContain('"success":false');
     const human = tty();
     reportCliFailure(new Error('could not reach configured server https://x.test'), { env: {}, stream: human });
     expect(human.writes.join('')).toContain('✗');

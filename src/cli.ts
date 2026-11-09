@@ -28,13 +28,13 @@ else
       await (await import('./capture/upload.ts')).runConfigCli(rest);
       break;
     case 'doctor':
-      await (await import('./capture/upload.ts')).runDoctorCli(rest, process.env);
+      await (await import('./capture/doctor-cli.ts')).runDoctorCli(rest, process.env);
       break;
     case 'login':
       await (await import('./capture/upload.ts')).runLoginCli(rest);
       break;
     case 'status':
-      await (await import('./capture/upload.ts')).runStatusCli(rest, process.env);
+      await (await import('./capture/status-cli.ts')).runStatusCli(rest, process.env);
       break;
     case 'logout':
       await (await import('./capture/upload.ts')).runLogoutCli(rest);

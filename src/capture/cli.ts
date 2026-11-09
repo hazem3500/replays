@@ -29,7 +29,7 @@ else
       await (await import('./upload.ts')).runLoginCli(args);
       break;
     case 'status':
-      await (await import('./upload.ts')).runStatusCli(args, process.env);
+      await (await import('./status-cli.ts')).runStatusCli(args, process.env);
       break;
     case 'logout':
       await (await import('./upload.ts')).runLogoutCli(args);
@@ -38,7 +38,7 @@ else
       await (await import('./upload.ts')).runConfigCli(args);
       break;
     case 'doctor':
-      await (await import('./upload.ts')).runDoctorCli(args, process.env);
+      await (await import('./doctor-cli.ts')).runDoctorCli(args, process.env);
       break;
     case 'agent-guide':
       process.stdout.write(`${renderAgentGuide({ captureOnly: true })}\n`);

@@ -14,22 +14,21 @@ import {
   type CliAuthStatus,
 } from './device-auth.ts';
 import { deleteCliToken, loadCliToken, saveCliToken } from './credentials.ts';
-import { doctorOutcome, localChecks, type DoctorCheck } from './doctor.ts';
 import { createTerminal, reportCliFailure } from './terminal.ts';
 import { readCliConfig, resetCliConfig, resolveServerUrl, resolveUploadEndpoint, saveServer, uploadEndpoint } from './server-config.ts';
 
 const LOGIN_REQUIRED_EXIT_CODE = 3;
 const isInteractive = () => Boolean(process.stdin.isTTY && process.stdout.isTTY);
 
-function reportFailure(error: unknown, json = false, env: NodeJS.ProcessEnv = {}) {
+export function reportFailure(error: unknown, json = false, env: NodeJS.ProcessEnv = {}) {
   process.exitCode = reportCliFailure(error, { env, stream: process.stderr, json });
 }
 
-function identityLabel(status: CliAuthStatus) {
+export function identityLabel(status: CliAuthStatus) {
   return status.identity.email || status.identity.name || status.identity.id;
 }
 
-async function refreshIfNeeded(
+export async function refreshIfNeeded(
   server: string,
   capability: NonNullable<Awaited<ReturnType<typeof fetchCliAuthCapability>>['deviceFlow']>,
   cached: Awaited<ReturnType<typeof loadCliToken>>,
@@ -210,7 +209,7 @@ export async function runUploadCli(argv: string[], env: NodeJS.ProcessEnv = {}) 
   }
 }
 
-async function selectedServer(argv: string[], command: string, allowJson = false) {
+export async function selectedServer(argv: string[], command: string, allowJson = false) {
   const { values } = flagMap(argv, new Set(allowJson ? ['json'] : []));
   if (Object.keys(values).some((key) => key !== 'server'))
     throw new Error(`usage: replays ${command} [--server <name>]${allowJson ? ' [--json]' : ''}`);
@@ -279,130 +278,6 @@ export async function runLoginCli(argv: string[]) {
   }
 }
 
-type StatusState = 'open' | 'host-managed' | 'signed-out' | 'expired' | 'rejected' | 'signed-in';
-
-interface StatusReport {
-  state: StatusState;
-  server: string;
-  message: string;
-  identity?: string;
-  expiresAt?: string;
-  hint?: string;
-}
-
-const STATE_LABELS: Record<StatusState, string> = {
-  open: 'No sign-in required',
-  'host-managed': 'Managed by the host',
-  'signed-out': 'Not signed in',
-  expired: 'Session expired',
-  rejected: 'Session no longer accepted',
-  'signed-in': 'Signed in (upload only)',
-};
-
-function printStatus(report: StatusReport, json: boolean, env: NodeJS.ProcessEnv) {
-  const out = createTerminal({ env, stream: process.stdout, json });
-  const { message, ...fields } = report;
-  if (json) process.stdout.write(`${JSON.stringify({ success: true, ...fields, message })}\n`);
-  else if (out.fancy) {
-    const good = report.state === 'signed-in' || report.state === 'open';
-    const rows: Array<[string, string]> = [
-      ['Server', report.server],
-      ...(report.identity ? ([['Account', report.identity]] as Array<[string, string]>) : []),
-      ['State', good ? out.ok(STATE_LABELS[report.state]) : out.warn(STATE_LABELS[report.state])],
-      ...(report.expiresAt ? ([['Expires', report.expiresAt]] as Array<[string, string]>) : []),
-    ];
-    process.stdout.write(`${out.header()}\n\n${out.keyValue(rows)}\n${report.hint ? `\n  ${out.dim(`→ ${report.hint}`)}\n` : ''}`);
-  } else process.stdout.write(`${message}\n`);
-}
-
-/** `replays status [--server <name>] [--json]`; reports only server, identity, scopes and expiry. */
-export async function runStatusCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
-  const json = argv.includes('--json');
-  try {
-    const target = await selectedServer(argv, 'status', true);
-    const loginCommand = `replays login${target.name ? ` --server ${target.name}` : ''}`;
-    const auth = await fetchCliAuthCapability(target.url);
-    if (auth.auth === 'none') {
-      printStatus({ state: 'open', server: target.url, message: `Connected to ${target.url}; sign-in is not required.` }, json, env);
-      return;
-    }
-    if (!auth.deviceFlow) {
-      printStatus(
-        {
-          state: 'host-managed',
-          server: target.url,
-          message: `Connected to ${target.url}; ${auth.auth} authentication is managed by the host. CLI sign-in is not available.`,
-        },
-        json,
-        env,
-      );
-      return;
-    }
-    const capability = auth.deviceFlow;
-    const cached = await loadCliToken(target.url, capability.issuer, capability.clientId);
-    if (!cached) {
-      printStatus(
-        {
-          state: 'signed-out',
-          server: target.url,
-          message: `Not signed in to ${target.url}. Run \`${loginCommand}\`.`,
-          hint: `Run \`${loginCommand}\``,
-        },
-        json,
-        env,
-      );
-      return;
-    }
-    const refreshed = await refreshIfNeeded(target.url, capability, cached);
-    if (!refreshed) {
-      printStatus(
-        {
-          state: 'expired',
-          server: target.url,
-          message: `Session expired for ${target.url}. Run \`${loginCommand}\`.`,
-          hint: `Run \`${loginCommand}\``,
-        },
-        json,
-        env,
-      );
-      return;
-    }
-    let status: CliAuthStatus;
-    try {
-      status = refreshed.status ?? (await getCliTokenStatus(target.url, capability, refreshed.cached.accessToken));
-    } catch (error) {
-      if (error instanceof CliAuthError && error.message.startsWith('the provider token was rejected')) {
-        printStatus(
-          {
-            state: 'rejected',
-            server: target.url,
-            message: `The saved session for ${target.url} is no longer accepted. Run \`${loginCommand}\`.`,
-            hint: `Run \`${loginCommand}\``,
-          },
-          json,
-          env,
-        );
-        return;
-      }
-      throw error;
-    }
-    const expiresAt = new Date(status.expiresAt ? status.expiresAt * 1000 : refreshed.cached.expiresAt * 1000).toISOString();
-    printStatus(
-      {
-        state: 'signed-in',
-        server: target.url,
-        identity: identityLabel(status),
-        expiresAt,
-        message: `Signed in to ${target.url} as ${identityLabel(status)} (upload only; expires ${expiresAt}).`,
-      },
-      json,
-      env,
-    );
-  } catch (error) {
-    reportFailure(error, json, env);
-  }
-}
-
 /** `replays logout [--server <name>]`; local credentials are always removed, provider revocation is attempted when advertised. */
 export async function runLogoutCli(argv: string[]) {
   try {
@@ -462,102 +337,5 @@ export async function runConfigCli(argv: string[]) {
     );
   } catch (error) {
     reportFailure(error);
-  }
-}
-
-async function probeServer(url: string) {
-  let response: Response;
-  try {
-    response = await fetch(`${url}/api/cli/auth/capabilities`, { redirect: 'manual', signal: AbortSignal.timeout(8000) });
-    if (response.status === 404) response = await fetch(`${url}/api/config`, { redirect: 'manual', signal: AbortSignal.timeout(8000) });
-  } catch {
-    throw new Error(`could not reach configured server ${url}; check the URL and network`);
-  }
-  if (response.status >= 300 && response.status < 400)
-    throw new Error('server check was redirected; configure the final server URL directly');
-  if (response.status === 401 || response.status === 403)
-    return {
-      reachable: true,
-      server: url,
-      uploadEndpoint: uploadEndpoint(url),
-      auth: 'host-managed',
-      cliDeviceLogin: 'not advertised',
-      note: 'Reachability only; this check does not create an upload session.',
-    };
-  if (!response.ok) throw new Error(`server responded with ${response.status} at ${url}; check that this is the viewer base URL`);
-  const config = (await response.json().catch(() => ({}))) as {
-    cliDeviceAuth?: { type?: string };
-    deviceFlow?: { type?: string } | null;
-    auth?: string;
-  };
-  return {
-    reachable: true,
-    server: url,
-    uploadEndpoint: uploadEndpoint(url),
-    auth: config.auth ?? 'unknown',
-    cliDeviceLogin: (config.cliDeviceAuth?.type ?? config.deviceFlow?.type) === 'oidc-device' ? 'available' : 'not advertised',
-    note: 'Reachability only; uploads may still require a signed-in identity and upload permission.',
-  };
-}
-
-async function signInCheck(url: string, serverName?: string): Promise<DoctorCheck> {
-  try {
-    const auth = await fetchCliAuthCapability(url);
-    if (auth.auth === 'none') return { id: 'sign-in', status: 'ok', detail: 'not required' };
-    if (!auth.deviceFlow) return { id: 'sign-in', status: 'ok', detail: `${auth.auth} authentication is managed by the host` };
-    const saved = await loadCliToken(url, auth.deviceFlow.issuer, auth.deviceFlow.clientId);
-    if (saved) return { id: 'sign-in', status: 'ok', detail: 'saved session found' };
-    return {
-      id: 'sign-in',
-      status: 'warn',
-      detail: 'not signed in',
-      fix: `Run \`replays login${serverName ? ` --server ${serverName}` : ''}\`.`,
-    };
-  } catch {
-    return { id: 'sign-in', status: 'warn', detail: 'could not be checked', fix: 'Run `replays status` for details.' };
-  }
-}
-
-const CHECK_LABELS: Record<DoctorCheck['id'], string> = {
-  node: 'Node',
-  chrome: 'Chrome',
-  ffmpeg: 'ffmpeg',
-  server: 'Server',
-  'sign-in': 'Sign-in',
-};
-
-const CHECK_MARKS = { ok: 'ok', warn: 'warn', fail: 'failed' } as const;
-
-/** Checks Node, Chrome, ffmpeg, the configured server and the saved sign-in. Reachability does not authenticate a user or prove upload permission. */
-export async function runDoctorCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
-  const json = argv.includes('--json');
-  try {
-    const { values } = flagMap(argv, new Set(['json']));
-    if (Object.keys(values).some((key) => key !== 'server')) throw new Error('usage: replays doctor [--server <name>] [--json]');
-    const checks: DoctorCheck[] = localChecks(env);
-    let server: Awaited<ReturnType<typeof probeServer>> | undefined;
-    try {
-      const target = await resolveServerUrl(values.server ? { explicitName: values.server } : {});
-      server = await probeServer(target.url);
-      checks.push({ id: 'server', status: 'ok', detail: target.url }, await signInCheck(target.url, target.name));
-    } catch (error) {
-      checks.push({ id: 'server', status: 'fail', detail: error instanceof Error ? error.message : String(error) });
-    }
-    const failed = doctorOutcome(checks) === 'fail';
-    const out = createTerminal({ env, stream: process.stdout, json });
-    if (failed) process.exitCode = 1;
-    if (out.fancy) {
-      const mark = (check: DoctorCheck) => out[CHECK_MARKS[check.status]](check.detail);
-      const fixes = checks.filter((check) => check.fix).map((check) => `  ${out.dim(`→ ${CHECK_LABELS[check.id]}: ${check.fix}`)}`);
-      process.stdout.write(
-        `${out.header()}\n\n${out.keyValue(checks.map((check) => [CHECK_LABELS[check.id], mark(check)] as const))}\n${fixes.length ? `\n${fixes.join('\n')}\n` : ''}`,
-      );
-    } else if (failed)
-      process.stderr.write(
-        `${JSON.stringify({ success: false, error: checks.find((check) => check.status === 'fail')?.detail, checks })}\n`,
-      );
-    else process.stdout.write(`${JSON.stringify({ success: true, ...server, checks })}\n`);
-  } catch (error) {
-    reportFailure(error, json, env);
   }
 }
