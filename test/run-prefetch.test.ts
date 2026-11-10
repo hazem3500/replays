@@ -5,7 +5,8 @@ import { cancelReplayPrefetch, replayCached, replayQuery } from '../src/client/q
 import { prefetchOrder, RunPrefetcher } from '../src/client/suite/prefetch-runs.ts';
 import { replay } from './fixtures.ts';
 
-const never = () => new Promise<never>(() => undefined);
+const noop = () => {};
+const never = () => new Promise<never>(noop);
 const ids = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7'];
 
 describe('prefetchOrder', () => {
@@ -100,7 +101,7 @@ describe('replay prefetch cache', () => {
   it('reports loaded and loading runs, and cancels a preload nothing shows', async () => {
     const client = new QueryClient();
     expect(replayCached(client, 'a')).toBe(false);
-    void client.query({ ...replayQuery('a'), queryFn: never }).catch(() => undefined);
+    void client.query({ ...replayQuery('a'), queryFn: never }).catch(noop);
     expect(replayCached(client, 'a')).toBe(true);
     cancelReplayPrefetch(client, 'a');
     await Promise.resolve();

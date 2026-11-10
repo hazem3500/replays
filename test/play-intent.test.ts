@@ -7,16 +7,18 @@ import { type IntentPlayer, PlayIntent } from '../src/client/suite/play-intent.t
 function fakePlayer(initial: Partial<PlayerState> = {}) {
   let hold: PlayHold | undefined;
   const state: PlayerState = { status: 'paused', speed: 1, skipInactive: false, ...initial };
-  const player: IntentPlayer & { press(): void; hold(): PlayHold | undefined } = {
+  const plays = vi.fn<() => void>(() => {
+    if (hold) {
+      hold.request();
+      state.starting = true;
+      return;
+    }
+    state.status = 'playing';
+  });
+  const player: IntentPlayer & { plays: typeof plays; press(): void; hold(): PlayHold | undefined } = {
     getState: () => state,
-    play: vi.fn<() => void>(() => {
-      if (hold) {
-        hold.request();
-        state.starting = true;
-        return;
-      }
-      state.status = 'playing';
-    }),
+    plays,
+    play: () => plays(),
     setPlayHold: (next) => {
       hold = next;
     },
@@ -78,7 +80,9 @@ describe('PlayIntent', () => {
     expect(seen).toHaveBeenCalledTimes(1);
     expect(intent.getWanted()).toBeUndefined();
   });
+});
 
+describe('PlayIntent while a switch is pending', () => {
   it('cancels when pause is pressed while play is held', () => {
     const intent = new PlayIntent();
     const old = fakePlayer();
@@ -96,7 +100,7 @@ describe('PlayIntent', () => {
     intent.switching('b');
     intent.switching('a');
     intent.settled();
-    expect(a.play).toHaveBeenCalledTimes(1);
+    expect(a.plays).toHaveBeenCalledTimes(1);
     expect(intent.getWanted()).toBeUndefined();
   });
 

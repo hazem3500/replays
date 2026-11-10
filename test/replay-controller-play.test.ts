@@ -1,6 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 
+import { ReplayController } from '../src/client/playback/controller.ts';
+import type { ReplayBundle } from '../src/shared/replay.ts';
+
 vi.mock('rrweb', () => ({
   Replayer: class {
     wrapper = document.createElement('div');
@@ -13,9 +16,6 @@ vi.mock('rrweb', () => ({
     setConfig = vi.fn<() => void>();
   },
 }));
-
-import { ReplayController } from '../src/client/playback/controller.ts';
-import type { ReplayBundle } from '../src/shared/replay.ts';
 
 const bundle: ReplayBundle = {
   meta: {

@@ -1,11 +1,4 @@
 /**
- * Preloading a suite's other runs: once the run on screen is ready, the rest are fetched at low priority (nearest
- * first, so J / Shift+J and the next click land on a loaded run), two at a time, and dropped the moment the suite is
- * left. Fetching itself goes through the replay query cache (queries.ts), so a prefetched switch is instant and the
- * cache's LRU cap bounds what stays parsed in memory.
- */
-
-/**
  * The runs to preload, nearest first: next, previous, the one after next, and so on. At most `limit` of them: the
  * cache keeps only so many bundles, and one more would push an earlier, nearer one out.
  */
