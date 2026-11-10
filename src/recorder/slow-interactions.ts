@@ -23,8 +23,8 @@ export function describeTarget(node: Node | null | undefined, privacy: RecorderP
   const blocked = String(privacy.rrwebOptions().blockSelector);
   const control = node.closest(CONTROL) ?? node;
   const tag = control.tagName.toLowerCase();
-  const explicit = control.getAttribute('role')?.trim().split(/\s+/)[0];
-  const role = explicit ? explicit : IMPLICIT_ROLES[tag];
+  const explicit = control.getAttribute('role')?.split(/\s+/).find(Boolean);
+  const role = explicit ?? IMPLICIT_ROLES[tag];
   const target: ReplayInteractionTarget = { tag, ...(role ? { role: role.slice(0, 30) } : {}) };
   if (control.closest(blocked) || privacy.textMasked(control)) return target;
   const name = controlName(control, privacy, blocked);
