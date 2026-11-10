@@ -8,7 +8,7 @@ import { usePlayhead } from '../../player.ts';
 import { useWindowedRows } from '../../windowing.ts';
 import { formatDuration, stepAt } from '../network/model.ts';
 import { HEADER_HEIGHT, SeekTime } from '../TrackList.tsx';
-import { BUDGETS, type Moment, VERDICT_WORDS } from './model.ts';
+import { BUDGETS, type Moment, type MomentOrder, VERDICT_WORDS } from './model.ts';
 import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
 import { ListSpacer } from '../ListSpacer.tsx';
 
@@ -20,6 +20,9 @@ const STRINGS = {
   took: 'Took',
   budget: 'Against budget',
   why: 'During, and what it waited on',
+  orderWorst: 'Worst first',
+  orderTime: 'In order',
+  sortBy: (column: string) => `Sort by ${column.toLowerCase()}`,
   budgetHint: (good: number, poor: number) => `Ticks at ${formatDuration(good)} (good) and ${formatDuration(poor)} (poor)`,
 };
 
@@ -36,6 +39,9 @@ export function MomentList({
   steps,
   explain,
   selected,
+  hovered,
+  order,
+  onOrder,
   onSelect,
   onHover,
   empty,
@@ -44,6 +50,11 @@ export function MomentList({
   steps: readonly ReplayStep[];
   explain: (moment: Moment) => string;
   selected: string | undefined;
+  /** Moments lit from the timeline: their rows are raised. */
+  hovered: readonly string[];
+  /** The order the rows are in; the When and Took headers switch it. */
+  order: MomentOrder;
+  onOrder: (order: MomentOrder) => void;
   onSelect: (id?: string) => void;
   /** The moment under the pointer or focus, so the time ribbon can light its range; undefined when it leaves. */
   onHover?: ((id?: string) => void) | undefined;
@@ -73,16 +84,34 @@ export function MomentList({
         <div className="pp-table" role="table" aria-rowcount={moments.length + 1}>
           <div className="pp-row pp-head" role="row" aria-rowindex={1}>
             <span role="columnheader">{STRINGS.moment}</span>
-            <span role="columnheader">{STRINGS.when}</span>
-            <span role="columnheader" className="pp-took">
-              {STRINGS.took}
-            </span>
+            <SortHeader
+              label={STRINGS.when}
+              active={order === 'time'}
+              direction="ascending"
+              sortable={moments.length > 1}
+              onSort={() => onOrder('time')}
+            />
+            <SortHeader
+              label={STRINGS.took}
+              className="pp-took"
+              active={order === 'worst'}
+              direction="descending"
+              sortable={moments.length > 1}
+              onSort={() => onOrder('worst')}
+            />
             <span role="columnheader" className="pp-budget">
               {STRINGS.budget}
             </span>
             <span role="columnheader" className="pp-why">
               {STRINGS.why}
             </span>
+            {moments.length > 1 ? (
+              <span role="columnheader" className="pp-sort-phone">
+                <button type="button" className="pp-sort" data-active="" onClick={() => onOrder(order === 'worst' ? 'time' : 'worst')}>
+                  {order === 'worst' ? STRINGS.orderWorst : STRINGS.orderTime}
+                </button>
+              </span>
+            ) : null}
           </div>
           {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: delegated hover and focus only light the row's mark on the time ribbon; every row keeps its own button. */}
           <div
@@ -100,6 +129,7 @@ export function MomentList({
                 moment={item}
                 rowIndex={start + offset + 2}
                 selected={item.id === selected}
+                lit={hovered.includes(item.id)}
                 why={[stepAt(steps, item.at)?.label, explain(item)].filter(Boolean).join(' · ')}
                 onSelect={onSelect}
                 onStep={step}
@@ -117,6 +147,7 @@ function MomentRow({
   moment,
   rowIndex,
   selected,
+  lit,
   why,
   onSelect,
   onStep,
@@ -124,6 +155,7 @@ function MomentRow({
   moment: Moment;
   rowIndex: number;
   selected: boolean;
+  lit: boolean;
   why: string;
   onSelect: (id?: string) => void;
   onStep: (id: string, move: StepMove) => void;
@@ -150,6 +182,7 @@ function MomentRow({
       data-row-id={moment.id}
       data-verdict={moment.verdict}
       data-selected={selected || undefined}
+      data-lit={lit || undefined}
       data-future={future || undefined}
     >
       <span role="cell" className="pp-moment">
@@ -182,8 +215,43 @@ function MomentRow({
   );
 }
 
+function SortHeader({
+  label,
+  active,
+  direction,
+  sortable,
+  className,
+  onSort,
+}: {
+  label: string;
+  active: boolean;
+  direction: 'ascending' | 'descending';
+  sortable: boolean;
+  className?: string;
+  onSort: () => void;
+}) {
+  return (
+    <span role="columnheader" className={className} aria-sort={active ? direction : undefined}>
+      {sortable ? (
+        <button
+          type="button"
+          className="pp-sort"
+          data-active={active || undefined}
+          data-direction={direction}
+          aria-label={STRINGS.sortBy(label)}
+          onClick={onSort}
+        >
+          {label}
+        </button>
+      ) : (
+        label
+      )}
+    </span>
+  );
+}
+
 /** A bullet graph: the value against the good and poor lines of its budget. */
-export function BudgetBar({ moment }: { moment: Moment }) {
+function BudgetBar({ moment }: { moment: Moment }) {
   const [good, poor] = moment.kind === 'task' ? BUDGETS.task : BUDGETS.interaction;
   const top = poor * TRACK_SPAN;
   return (

@@ -7,22 +7,15 @@ import { Empty } from '../Empty.tsx';
 import { NotCaptured } from '../NotCaptured.tsx';
 import type { NetworkRow } from '../network/model.ts';
 import type { PerformanceModel } from '../performance.ts';
-import { type RibbonMark, type RibbonRange, type RibbonTone, TimeRibbon } from '../TimeRibbon.tsx';
-import { CadenceSummary } from './CadenceSummary.tsx';
+import type { RibbonRange } from '../TimeRibbon.tsx';
 import { MomentDetail } from './MomentDetail.tsx';
 import { MomentList } from './MomentList.tsx';
-import {
-  buildMoments,
-  buildVitals,
-  causeOf,
-  causeText,
-  type Moment,
-  type MomentOrder,
-  orderMoments,
-  type Verdict,
-  type Vital,
-  vitalDeltas,
-} from './model.ts';
+import { PerfTimeline } from './PerfTimeline.tsx';
+import { cadenceStats } from './stats.ts';
+import { buildLanes } from './timeline-model.ts';
+import { VerdictLine } from './VerdictLine.tsx';
+import { buildVerdict } from './verdict.ts';
+import { buildMoments, buildVitals, causeOf, causeText, type MomentOrder, orderMoments, type Vital, vitalDeltas } from './model.ts';
 import { type VitalPeer, VitalsBar } from './VitalsBar.tsx';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the panel shares the network panel's frame styles, loaded with the lazy inspector.
 import '../network/network.css';
@@ -40,54 +33,15 @@ export interface PerformancePeer {
 const SIDE_DETAIL_MIN_WIDTH = 760;
 
 const STRINGS = {
-  order: 'Order',
-  worst: 'Worst first',
-  time: 'In order',
   calmTitle: 'No slow activity captured',
   calm: 'No long tasks or slow interactions were recorded. Available observations depend on browser support.',
   outsideTitle: 'Nothing slow in this stretch',
   outside: 'Clear the time range to see every moment.',
 };
 
-const TONES: Readonly<Record<Verdict, RibbonTone>> = { poor: 'danger', 'needs-work': 'warning', good: 'neutral' };
-
-function ribbonMarks(moments: readonly Moment[], vitals: readonly Vital[]): RibbonMark[] {
-  const spans = moments.map((item): RibbonMark => ({
-    id: item.id,
-    at: item.at,
-    end: item.end,
-    tone: TONES[item.verdict],
-    lane: item.kind === 'task' ? 'top' : 'bottom',
-  }));
-  const paints = vitals.flatMap((vital): RibbonMark[] =>
-    vital.at === undefined ? [] : [{ id: vital.id, at: vital.at, end: vital.at, tone: 'success', lane: 'cap' }],
-  );
-  return [...spans, ...paints];
-}
-
 /** Something was measured: a vital has a value or was watched (`None`), or there is a moment. */
 function recorded(vitals: readonly Vital[], moments: number) {
   return moments > 0 || vitals.some((vital) => vital.missing !== 'not-captured');
-}
-
-const otherOrder = (order: MomentOrder): MomentOrder => (order === 'worst' ? 'time' : 'worst');
-
-function OrderSwitch({ order, onOrder }: { order: MomentOrder; onOrder: (order: MomentOrder) => void }) {
-  return (
-    <div className="pp-order" role="group" aria-label={STRINGS.order}>
-      {(['worst', 'time'] as const).map((value) => (
-        <button
-          key={value}
-          type="button"
-          aria-pressed={order === value}
-          // why: on a phone only the current order shows, so pressing it switches to the other one.
-          onClick={() => onOrder(order === value ? otherOrder(value) : value)}
-        >
-          {value === 'worst' ? STRINGS.worst : STRINGS.time}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 /**
@@ -122,10 +76,13 @@ export function PerformancePanel({
   const [selected, setSelected] = useState<string>();
   const [order, setOrder] = useState<MomentOrder>('worst');
   const [range, setRange] = useState<RibbonRange>();
-  const [hovered, setHovered] = useState<string>();
+  const [hovered, setHovered] = useState<readonly string[]>([]);
+  // why: the verdict's jump lights its marks until the person picks something else.
+  const [pinned, setPinned] = useState<readonly string[]>([]);
   const moments = buildMoments(model.signals);
   const vitals = buildVitals(model.signals, moments, model.track);
-  const marks = ribbonMarks(moments, vitals);
+  const lanes = buildLanes(moments, requests, model.shifts);
+  const verdict = buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests });
   const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
   const open = moments.find((item) => item.id === selected);
   const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
@@ -149,26 +106,41 @@ export function PerformancePanel({
   ) : (
     <Empty title={STRINGS.calmTitle}>{STRINGS.calm}</Empty>
   );
+  const lit = [hovered, pinned, selected ? [selected] : []].find((ids) => ids.length) ?? [];
+  const select = (id?: string) => {
+    setPinned([]);
+    setSelected(id);
+  };
   return (
     <div ref={panel} className="np pp" data-testid="performance-diagnostics" data-stacked={stacked || undefined}>
+      <VerdictLine
+        verdict={verdict}
+        onJump={(jump) => {
+          player.seek(jump.at);
+          setSelected(undefined);
+          setPinned(jump.ids);
+        }}
+      />
       <VitalsBar
         vitals={vitals}
         peers={vitalPeers}
-        onPick={(vital) => (vital.moment ? setSelected(vital.moment.id) : player.seek(vital.at ?? 0))}
-      >
-        {moments.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
-      </VitalsBar>
+        cadence={cadenceStats(model.track, model.shifts)}
+        onPick={(vital) => (vital.moment ? select(vital.moment.id) : player.seek(vital.at ?? 0))}
+      />
       {extra}
-      {model.track ? <CadenceSummary track={model.track} /> : null}
-      {marks.length || model.frames.length ? (
-        <TimeRibbon
-          testId="performance-ribbon"
+      {lanes.length || model.frames.length ? (
+        <PerfTimeline
           duration={duration}
-          marks={marks}
+          lanes={lanes}
+          frames={model.frames}
           range={range}
           onRange={setRange}
-          highlight={hovered ?? selected}
-          frames={model.frames}
+          lit={lit}
+          onLight={setHovered}
+          onPick={(mark) => {
+            const id = mark.items.find((item) => item.momentId)?.momentId;
+            if (id) select(id);
+          }}
         />
       ) : null}
       <div className="np-body">
@@ -178,8 +150,11 @@ export function PerformancePanel({
             steps={steps}
             explain={(item) => causeText(causeOf(item, moments, requests))}
             selected={selected}
-            onSelect={setSelected}
-            onHover={setHovered}
+            hovered={lit}
+            order={order}
+            onOrder={setOrder}
+            onSelect={select}
+            onHover={(id) => setHovered(id ? [id] : [])}
             empty={empty}
           />
         </div>
@@ -190,7 +165,7 @@ export function PerformancePanel({
             requests={requests}
             steps={steps}
             stacked={stacked}
-            onSelect={setSelected}
+            onSelect={select}
             onOpenRequest={onOpenRequest}
           />
         ) : null}

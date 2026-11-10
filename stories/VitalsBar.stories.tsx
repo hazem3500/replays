@@ -33,7 +33,7 @@ export const SixRecordings: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.queryByText('Same as Run 2')).not.toBeInTheDocument();
     await expect(canvas.getAllByText('Good')).toHaveLength(5);
-    await userEvent.click(canvas.getByRole('button', { name: 'First paint 540 ms Good' }));
+    await userEvent.click(canvas.getByRole('button', { name: /^First paint\s*540\s*ms\s*Good$/ }));
     await expect(args.onPick).toHaveBeenCalledWith(vitals[0]);
     const trigger = canvas.getByRole('button', { name: 'Compare first paint with 5 recordings' });
     await userEvent.click(trigger);
