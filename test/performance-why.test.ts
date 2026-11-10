@@ -65,7 +65,7 @@ describe('performance why: moments', () => {
   });
 
   it('drops interactions inside a cut and moves the rest onto the edited clock', () => {
-    const model = buildPerformance(recording(), editTimeline({ version: 1, cuts: [{ from: 2000, to: 3000 }] }, 12_000));
+    const model = buildPerformance(recording(), editTimeline({ cuts: [{ from: 2000, to: 3000 }] }, 12_000));
     expect(model.why.interactions?.map((item) => item.at)).toEqual([4200, 7600]);
     expect(model.why.frames.map((frame) => frame.index)).toEqual([0, 1, 2]);
   });
