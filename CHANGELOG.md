@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- CLI: `capture --json` reports `networkRequested` and `networkMode`, so `--network bodies` on the `agent-browser` driver (which records headers only) no longer degrades silently; the human summary has a Network line saying so. `--profile triage`, `design-review`, `walkthrough` and `support` are accepted without a declaration; only an unknown id warns, naming `replays.config.*` and the ids to use. `doctor` splits the Node check into `capture/upload` and `serve` (`needs Node 22.22+` is a warning that blocks `serve` only).
+
 - CLI upload: a video that cannot be read or sent no longer fails the command once the replay JSON is saved. Human output reads "Replay uploaded · video skipped: <reason>" and `--json` carries `"video":{"uploaded":false,"error":"..."}`. The result also carries `url`, the viewer link (the server's own receipt `url`, else `<server>/r/<id>`), for `upload` and `capture --upload`.
 
 - Bundles carry `meta.formatVersion` (currently 1). An upload the server rejects with 400 or 422 answers with the server's format in `x-replays-format`, and the CLI prints "This CLI writes format X; the server expects Y. Update with `replays update`, or the server needs a newer pin." A bundle from a newer format than the server reads is refused naming `replay.meta.formatVersion`.

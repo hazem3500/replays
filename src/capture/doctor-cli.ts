@@ -1,6 +1,6 @@
 import { fetchCliAuthCapability } from './device-auth.ts';
 import { loadCliToken } from './credentials.ts';
-import { doctorOutcome, localChecks, type DoctorCheck } from './doctor.ts';
+import { doctorLabel, doctorOutcome, doctorRows, localChecks, type DoctorCheck } from './doctor.ts';
 import { flagMap } from './bundle-io.ts';
 import { resolveServerUrl, uploadEndpoint } from './server-config.ts';
 import { createTerminal } from './terminal.ts';
@@ -75,16 +75,6 @@ async function signInCheck(url: string, serverName?: string): Promise<DoctorChec
   }
 }
 
-const CHECK_LABELS: Record<DoctorCheck['id'], string> = {
-  node: 'Node',
-  chrome: 'Chrome',
-  ffmpeg: 'ffmpeg',
-  server: 'Server',
-  'sign-in': 'Sign-in',
-};
-
-const CHECK_MARKS = { ok: 'ok', warn: 'warn', fail: 'failed' } as const;
-
 async function serverChecks(name: string | undefined) {
   try {
     const target = await resolveServerUrl(name ? { explicitName: name } : {});
@@ -118,8 +108,8 @@ function printDoctor(checks: readonly DoctorCheck[], server: object | undefined,
   const out = createTerminal({ env, stream: process.stdout, json });
   const failed = doctorOutcome(checks) === 'fail';
   if (out.fancy) {
-    const rows = checks.map((check): [string, string] => [CHECK_LABELS[check.id], out[CHECK_MARKS[check.status]](check.detail)]);
-    const fixes = checks.filter((check) => check.fix).map((check) => `  ${out.dim(`→ ${CHECK_LABELS[check.id]}: ${check.fix}`)}`);
+    const rows = doctorRows(checks, out);
+    const fixes = checks.filter((check) => check.fix).map((check) => `  ${out.dim(`→ ${doctorLabel(check)}: ${check.fix}`)}`);
     process.stdout.write(`${out.header()}\n\n${out.keyValue(rows)}\n${fixes.length ? `\n${fixes.join('\n')}\n` : ''}`);
   } else if (failed)
     process.stderr.write(`${JSON.stringify({ success: false, error: checks.find((check) => check.status === 'fail')?.detail, checks })}\n`);
