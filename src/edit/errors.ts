@@ -8,4 +8,10 @@ export class EditError extends Error {
   }
 }
 
+/** A value that the surrounding checks guarantee; a miss is a bug in the CLI, not in the input. */
+export function must<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('internal error: a checked value was missing');
+  return value;
+}
+
 export const usageError = (message: string) => new EditError(message, 2);

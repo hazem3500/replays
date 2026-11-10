@@ -5,7 +5,7 @@ import { refreshIfNeeded, identityLabel } from '../capture/upload.ts';
 import { beginDeviceLogin, CliAuthError, fetchCliAuthCapability, tokenFromResponse } from '../capture/device-auth.ts';
 import { loadCliToken, saveCliToken } from '../capture/credentials.ts';
 import { normalizeServerUrl, resolveServerUrl } from '../capture/server-config.ts';
-import { EditError, usageError } from './errors.ts';
+import { EditError, must, usageError } from './errors.ts';
 import type { Headers } from './client.ts';
 
 const REPLAY_ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
@@ -83,7 +83,7 @@ export async function resolveTarget(raw: string, options: TargetOptions): Promis
       });
     } catch (error) {
       if (options.serverName || options.env.REPLAYS_SERVER_URL || !/no server named/.test((error as Error).message)) throw error;
-      return undefined;
+      return;
     }
   };
   const configured = options.trustedServerUrl ? undefined : await saved();
@@ -98,14 +98,14 @@ export async function resolveTarget(raw: string, options: TargetOptions): Promis
     }
     const match = LINK.exec(`${url.origin}${url.pathname}`);
     if (!match) throw usageError(`"${raw}" is not a replay link; it should end in /r/<id>`);
-    server = normalizeServerUrl(match[1]!);
-    id = match[2]!;
+    server = normalizeServerUrl(must(match[1]));
+    id = must(match[2]);
   } else {
     if (!REPLAY_ID.test(raw)) throw usageError(`"${raw}" is not a replay id or a viewer link`);
     id = raw;
     if (!configured && !options.trustedServerUrl)
       throw new EditError('no server is configured; run `replays connect <server-url>` or pass a viewer link');
-    server = normalizeServerUrl(options.trustedServerUrl ?? configured!.url);
+    server = normalizeServerUrl(options.trustedServerUrl ?? must(configured).url);
   }
   if (options.trustedServerUrl && normalizeServerUrl(options.trustedServerUrl) !== server)
     throw usageError(`this command only edits replays on ${normalizeServerUrl(options.trustedServerUrl)}`);

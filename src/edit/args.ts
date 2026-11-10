@@ -1,4 +1,4 @@
-import { usageError } from './errors.ts';
+import { must, usageError } from './errors.ts';
 
 export interface ParsedArgs {
   positionals: string[];
@@ -15,14 +15,14 @@ const SHORT: Record<string, string> = { o: 'output', h: 'help' };
 export function parseArgs(argv: readonly string[], known: { values: readonly string[]; booleans: readonly string[] }): ParsedArgs {
   const parsed: ParsedArgs = { positionals: [], values: {}, booleans: new Set() };
   for (let index = 0; index < argv.length; index++) {
-    const token = argv[index]!;
+    const token = must(argv[index]);
     if (token === '--') continue;
     const flag = /^--([a-z][a-z-]*)(?:=(.*))?$/s.exec(token) ?? /^-([a-z])$/.exec(token);
     if (!flag) {
       parsed.positionals.push(token);
       continue;
     }
-    const name = SHORT[flag[1]!] ?? flag[1]!;
+    const name = SHORT[must(flag[1])] ?? must(flag[1]);
     if (known.booleans.includes(name)) {
       if (flag[2] !== undefined) throw usageError(`--${name} takes no value`);
       parsed.booleans.add(name);

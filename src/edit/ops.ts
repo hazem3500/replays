@@ -3,7 +3,7 @@ import type { ReplayBlur, ReplayCaption, ReplaySpeedRange, ReplayZoomRegion } fr
 import { type ReplayCut, type ReplayEdits, type ReplayHighlight, proposeWaitCuts, withStepName } from '../shared/edits.ts';
 import { WAIT_PAD_MS } from '../shared/edits.ts';
 import type { ReplayStep } from '../shared/replay.ts';
-import { EditError, usageError } from './errors.ts';
+import { EditError, must, usageError } from './errors.ts';
 
 /** What an edit needs to know about the replay it applies to. */
 export interface EditContext {
@@ -101,9 +101,9 @@ export function pinnedTarget(key: ListKey, number: number) {
   };
 }
 
-export function parseNumber(text: string, what: string): number {
-  if (!/^#?\d+$/.test(text.trim()))
-    throw usageError(`${what} must be a number from the list (run \`replays edit <id> show\`), not "${text}"`);
+export function parseNumber(text: string | undefined, what: string): number {
+  if (text === undefined || !/^#?\d+$/.test(text.trim()))
+    throw usageError(`${what} must be a number from the list (run \`replays edit <id> show\`), not "${String(text)}"`);
   return Number(text.replace('#', ''));
 }
 
@@ -135,7 +135,7 @@ export function parseRect(text: string, viewport: { width: number; height: numbe
 export function parsePoint(text: string, viewport: { width: number; height: number }) {
   const parts = text.split(',');
   if (parts.length !== 2) throw usageError('--at takes two values: x,y (for example 0.5,0.4 or 50%,40%)');
-  return { x: fractionOf(parts[0]!, viewport.width, 'x'), y: fractionOf(parts[1]!, viewport.height, 'y') };
+  return { x: fractionOf(must(parts[0]), viewport.width, 'x'), y: fractionOf(must(parts[1]), viewport.height, 'y') };
 }
 
 export function addCut(edits: ReplayEdits, from: number, to: number, label?: string): ReplayEdits {

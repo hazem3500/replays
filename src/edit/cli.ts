@@ -10,7 +10,7 @@ import { type ParsedArgs, parseArgs } from './args.ts';
 import { resolveTarget, type TargetOptions } from './auth.ts';
 import { EditClient } from './client.ts';
 import { changeLines, diffEdits, type EditChanges, listEdits, noChanges } from './describe.ts';
-import { EditError, usageError } from './errors.ts';
+import { EditError, must, usageError } from './errors.ts';
 import { assertFreeFile, defaultVideoName, exportParams, parseExportSpeed, renderVideo } from './export.ts';
 import { modifyEdits } from './modify.ts';
 import * as ops from './ops.ts';
@@ -261,7 +261,7 @@ async function push(session: Session, args: ParsedArgs): Promise<EditOutput> {
   const [file] = positionals(args, { min: 1, max: 1 }, 'push <edits.json> [--force] [--dry-run]');
   let raw: unknown;
   try {
-    raw = JSON.parse(await readFile(resolve(file!), 'utf8'));
+    raw = JSON.parse(await readFile(resolve(must(file)), 'utf8'));
   } catch (error) {
     throw usageError(`could not read ${file} as JSON: ${(error as Error).message}`);
   }
@@ -305,8 +305,8 @@ async function rename(session: Session, args: ParsedArgs): Promise<EditOutput> {
   const reset = args.booleans.has('reset');
   const [step, name] = positionals(args, { min: reset ? 1 : 2, max: reset ? 1 : 2 }, 'rename <step> "<name>"  |  rename <step> --reset');
   const bundle = await session.bundle();
-  const row = resolveStep(stepRows(bundle.steps, undefined), step!);
-  const text = reset ? '' : name!.trim();
+  const row = resolveStep(stepRows(bundle.steps, undefined), must(step));
+  const text = reset ? '' : must(name).trim();
   if (!reset && !text) throw usageError('the new name is empty; use --reset to go back to the automatic label');
   if (text.length > MAX_LABEL) throw usageError(`a step name is at most ${MAX_LABEL} characters (this one is ${text.length})`);
   return mutate(
@@ -321,7 +321,7 @@ async function cut(session: Session, args: ParsedArgs): Promise<EditOutput> {
   const [sub, rest] = args.positionals;
   if (sub === 'rm') {
     only(args, [], 'cut rm');
-    const number = ops.parseNumber(positionals(args, { min: 2, max: 2 }, 'cut rm <n>')[1]!, 'the cut number');
+    const number = ops.parseNumber(positionals(args, { min: 2, max: 2 }, 'cut rm <n>')[1], 'the cut number');
     const target = ops.pinnedTarget('cuts', number);
     return mutate(session, 'cut rm', `Removed cut ${number}`, (edits) => ops.removeItem(edits, 'cuts', target(edits)));
   }
@@ -353,7 +353,7 @@ async function listCommand(
 ): Promise<EditOutput> {
   if (args.positionals[0] === 'rm') {
     only(args, [], `${kind.name} rm`);
-    const number = ops.parseNumber(positionals(args, { min: 2, max: 2 }, `${kind.name} rm <n>`)[1]!, `the ${kind.name} number`);
+    const number = ops.parseNumber(positionals(args, { min: 2, max: 2 }, `${kind.name} rm <n>`)[1], `the ${kind.name} number`);
     const target = ops.pinnedTarget(kind.key, number);
     return mutate(session, `${kind.name} rm`, `Removed ${ops.ITEM_NAME[kind.key]} ${number}`, (edits) =>
       ops.removeItem(edits, kind.key, target(edits)),
@@ -423,19 +423,19 @@ async function caption(session: Session, args: ParsedArgs): Promise<EditOutput> 
     const [, text] = positionals(args, { min: 2, max: 2 }, 'caption add --from 3s --to 6s "text"');
     const { from, to } = timeRange(args, context, 'caption add');
     return mutate(session, 'caption add', `Added caption ${formatTime(from)}–${formatTime(to)}`, (edits) =>
-      ops.addCaption(edits, from, to, text!.trim()),
+      ops.addCaption(edits, from, to, must(text).trim()),
     );
   }
   if (sub === 'rm') {
     only(args, [], 'caption rm');
-    const number = ops.parseNumber(positionals(args, { min: 2, max: 2 }, 'caption rm <n>')[1]!, 'the caption number');
+    const number = ops.parseNumber(positionals(args, { min: 2, max: 2 }, 'caption rm <n>')[1], 'the caption number');
     const target = ops.pinnedTarget('captions', number);
     return mutate(session, 'caption rm', `Removed caption ${number}`, (edits) => ops.removeItem(edits, 'captions', target(edits)));
   }
   if (sub === 'edit') {
     only(args, ['from', 'to'], 'caption edit');
     positionals(args, { min: 2, max: 3 }, 'caption edit <n> [--from t] [--to t] ["text"]');
-    const number = ops.parseNumber(rest[0]!, 'the caption number');
+    const number = ops.parseNumber(rest[0], 'the caption number');
     const text = rest[1]?.trim();
     const from = args.values.from === undefined ? undefined : parseTime(args.values.from, context.duration);
     const to = args.values.to === undefined ? undefined : parseTime(args.values.to, context.duration);
@@ -457,7 +457,7 @@ async function highlight(session: Session, args: ParsedArgs): Promise<EditOutput
   const [sub, ...rest] = args.positionals;
   if (sub === 'rm') {
     only(args, [], 'highlight rm');
-    const number = ops.parseNumber(positionals(args, { min: 2, max: 2 }, 'highlight rm <n>')[1]!, 'the highlight number');
+    const number = ops.parseNumber(positionals(args, { min: 2, max: 2 }, 'highlight rm <n>')[1], 'the highlight number');
     const target = ops.pinnedTarget('highlights', number);
     return mutate(session, 'highlight rm', `Removed highlight ${number}`, (edits) => ops.removeItem(edits, 'highlights', target(edits)));
   }
