@@ -188,6 +188,8 @@ export type RecordingChoice = {
   networkBodies?: boolean;
   performance?: boolean;
   debugging?: boolean;
+  /** With Performance: reload the page and record from its start. */
+  fromLoad?: boolean;
 };
 
 /**
@@ -199,6 +201,12 @@ export type RecordingChoice = {
 export type RecorderChoices = {
   /** Offer independent diagnostic toggles, capped by capture.performance/debugging. */
   diagnostics?: boolean;
+  /**
+   * Offer "Start from a fresh page load" next to Performance: picking it saves a short-lived flag, reloads the page and
+   * records from the new page's start. Default `true` for staff, `false` for `by: 'customer'`; set `false` where a reload
+   * would lose state. Needs `diagnostics` and `capture.performance`.
+   */
+  fromLoad?: boolean;
   /**
    * Who picks. `'customer'`: every recording starts in `interface-visible` without bodies, with `masked` (Fully masked)
    * always offered; `defaults` cannot loosen that, nothing is remembered, a looser mode or bodies need a pick in that
@@ -227,6 +235,8 @@ export type RecorderChoices = {
 /** What `chooseOptions` may offer, already capped by the host's `privacy`. */
 export type RecordingChoiceOffer = {
   diagnostics?: { performance: boolean; debugging: boolean };
+  /** Present when the host allows recording from a fresh page load. */
+  fromLoad?: boolean;
   /** Who picks (`choices.by`). A customer offer lists only allowed modes, in display order. */
   by: 'staff' | 'customer';
   /**
@@ -321,6 +331,8 @@ export type RecorderOptions = {
   /** How to load rrweb; default `import('rrweb')`. For tests and custom builds. */
   activation?: () => boolean;
   indicatorGraceMs?: number;
+  /** Reloads the page for a recording from load. Default `location.reload()`; for tests and hosts with their own router. */
+  reload?: () => void;
   /** Warn-only during the two-minor / 90-day migration window. */
   strictInvariants?: boolean;
   loadRrweb?: () => Promise<RrwebModule>;

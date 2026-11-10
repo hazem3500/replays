@@ -19,6 +19,17 @@ const { metafile } = await build({
   external: ['rrweb', 'motion/mini', 'react', 'react/jsx-runtime', 'node:assert/strict'],
   metafile: true,
 });
+const early = await build({
+  entryPoints: { 'recorder-early': 'src/recorder/early.ts' },
+  outdir: 'dist/lib',
+  bundle: true,
+  minify: true,
+  platform: 'browser',
+  format: 'iife',
+  target: 'es2022',
+  metafile: true,
+});
+console.log(`Recorder early entry: ${early.metafile.outputs['dist/lib/recorder-early.js'].bytes} bytes`);
 if (Object.keys(metafile.inputs).some((path) => !path.startsWith('src/recorder/'))) throw new Error('Recorder includes non-browser source');
 const visited = new Set();
 function visit(path) {

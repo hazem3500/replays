@@ -81,6 +81,8 @@ export interface SessionWiring {
   rrweb: RrwebModule;
   bodies: BodyModule | null | undefined;
   capture: ResolvedCapture;
+  /** The page was reloaded to record from its start, so observers also take what the browser buffered. */
+  fromLoad: boolean;
   privacy: RecorderPrivacy;
   options: Pick<RecorderOptions, 'ignoreUrls' | 'privacy' | 'ui'>;
   limits: { maxDurationMs: number; maxBytes: number };
@@ -165,11 +167,13 @@ export function wireSession(current: Session, wiring: SessionWiring): void {
     });
   };
   if (wiring.capture.performance) {
-    const diagnostic = capturePerformance((entry) => {
-      if (!wiring.isCurrent()) return;
-      diagnostic.track.entries.push(entry);
-      grow(JSON.stringify(entry).length);
-    }, grow);
+    const diagnostic = capturePerformance(
+      (entry) => {
+        if (wiring.isCurrent()) grow(JSON.stringify(entry).length);
+      },
+      grow,
+      wiring.fromLoad,
+    );
     current.performance = diagnostic.track;
     const { track } = diagnostic;
     const stepAt = (time: number) => {
@@ -179,8 +183,8 @@ export function wireSession(current: Session, wiring: SessionWiring): void {
     current.cleanups.push(
       diagnostic.stop,
       captureFramePacing(track, grow),
-      captureLongFrames(track, grow, () => linkInteractions(track)),
-      captureInteractions(track, grow, wiring.privacy, stepAt),
+      captureLongFrames(track, grow, () => linkInteractions(track), wiring.fromLoad),
+      captureInteractions(track, grow, wiring.privacy, stepAt, wiring.fromLoad),
       () => linkInteractions(track),
     );
   }

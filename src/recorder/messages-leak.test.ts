@@ -51,6 +51,7 @@ const sentinels: RecorderMessages = {
   networkLabel: mark('networkLabel'),
   diagnosticsLabel: mark('diagnosticsLabel'),
   performanceLabel: mark('performanceLabel'),
+  fromLoadLabel: mark('fromLoadLabel'),
   debuggingLabel: mark('debuggingLabel'),
   networkBodies: mark('networkBodies'),
   record: mark('record'),
@@ -110,6 +111,7 @@ const offer: RecordingChoiceOffer = {
   profiles: [{ id: 'triage', label: mark('profile.label'), description: mark('profile.description') }],
   networkBodies: { allowed: true },
   diagnostics: { performance: true, debugging: true },
+  fromLoad: true,
   initial: { privacy: 'masked', profile: 'triage' },
   defaults: { privacy: 'masked', profile: 'triage' },
 };
@@ -194,6 +196,7 @@ const OPTIONS_KEYS = new Set([
   'networkLabel',
   'diagnosticsLabel',
   'performanceLabel',
+  'fromLoadLabel',
   'debuggingLabel',
   'networkBodies',
   'record',

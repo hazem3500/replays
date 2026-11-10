@@ -94,6 +94,11 @@ function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {
         }),
       )
     : [];
+  if (offer.fromLoad) {
+    diagnostics.push(
+      itemNode({ group: 'diagnostics', value: 'fromLoad', label: messages.fromLoadLabel, disabled: !offer.diagnostics?.performance }),
+    );
+  }
   const profiles = offer.profiles.map(({ id, label, description }) =>
     itemNode({ group: 'profile', value: id, label, ...(description ? { detail: description } : {}) }),
   );
@@ -145,8 +150,14 @@ type Parts = {
 };
 
 function checked(item: HTMLElement, choice: RecordingChoice): boolean {
-  if (item.dataset.group === 'diagnostics')
-    return item.dataset.value === 'performance' ? choice.performance === true : choice.debugging === true;
+  if (item.dataset.group === 'diagnostics') {
+    const flags = new Map([
+      ['performance', choice.performance],
+      ['debugging', choice.debugging],
+      ['fromLoad', choice.fromLoad],
+    ]);
+    return flags.get(item.dataset.value ?? '') === true;
+  }
   if (item.dataset.group === 'network') return choice.networkBodies === true;
   return item.dataset.value === (item.dataset.group === 'privacy' ? choice.privacy : choice.profile);
 }
@@ -154,8 +165,11 @@ function checked(item: HTMLElement, choice: RecordingChoice): boolean {
 /** `choice` with `item`'s value, or the body option toggled; a value outside the offer changes nothing. */
 function picked(choice: RecordingChoice, item: HTMLElement): RecordingChoice {
   const value = item.dataset.value;
-  if (item.dataset.group === 'diagnostics')
-    return value === 'performance' ? { ...choice, performance: !choice.performance } : { ...choice, debugging: !choice.debugging };
+  if (item.dataset.group === 'diagnostics') {
+    if (value === 'fromLoad') return choice.performance ? { ...choice, fromLoad: !choice.fromLoad } : choice;
+    if (value === 'performance') return { ...choice, performance: !choice.performance, ...(choice.performance ? { fromLoad: false } : {}) };
+    return { ...choice, debugging: !choice.debugging };
+  }
   if (item.dataset.group === 'network') return { ...choice, networkBodies: choice.networkBodies !== true };
   if (item.dataset.group !== 'privacy') return value ? { ...choice, profile: value } : choice;
   const mode = MODES.find((candidate) => candidate === value);
@@ -180,7 +194,8 @@ function render({ offer, messages, menu, controls }: Parts, choice: RecordingCho
       choice.profile !== offer.defaults.profile ||
       (choice.networkBodies === true) !== (offer.defaults.networkBodies === true) ||
       (choice.performance === true) !== (offer.defaults.performance === true) ||
-      (choice.debugging === true) !== (offer.defaults.debugging === true),
+      (choice.debugging === true) !== (offer.defaults.debugging === true) ||
+      (choice.fromLoad === true) !== (offer.defaults.fromLoad === true),
   );
 }
 

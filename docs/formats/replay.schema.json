@@ -71,6 +71,10 @@
                 "chosen": { "const": true }
               }
             },
+            "fromLoad": {
+              "description": "`true` when the recorder reloaded the page to record from its start (Performance mode), so the load metrics are complete. Absent means recording began on an already loaded page. Source of truth: src/shared/network-bodies.ts.",
+              "const": true
+            },
             "choice": {
               "description": "What a customer picked in the recorder's options step: the `mode` (so the server knows which text rules applied; `interface-visible` masks every text but the product interface marked `data-replay-public`), whether it shows typed values (`inputs`) and page text (`text`), and whether they asked for request and response content (`bodies`). A claim the server honours only for a host with `privacy.keepCustomerChoices`, and only when it matches `inputs` and `network` and the mode allows typed values; otherwise it masks every input, drops every body and rewrites the claim to what it kept. Passwords, hidden inputs, credential URLs and auth headers are redacted either way. Source of truth: src/shared/capture-profile.ts.",
               "type": "object",
