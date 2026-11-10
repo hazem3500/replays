@@ -1,3 +1,4 @@
+import { ChevronDownIcon } from 'lucide-react';
 import { useLayoutEffect, useRef } from 'react';
 import { formatClock } from '../../shared/replay.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
@@ -7,6 +8,7 @@ import { usePlayheadProgress } from '../hooks/use-playhead-progress.ts';
 import { useRibbonScrub } from '../hooks/use-ribbon-scrub.ts';
 import { useRibbonBrush } from '../hooks/use-ribbon-brush.ts';
 import { usePlayer } from '../player.ts';
+import { toggleRibbonCollapsed, useRibbonCollapsed } from './ribbon-collapse.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the ribbon's styles load with the lazy inspector chunk, not with every page.
 import './time-ribbon.css';
 
@@ -34,6 +36,8 @@ export interface RibbonRange {
 const STRINGS = {
   hint: 'Click to seek, drag the playhead to scrub, drag to show only that stretch',
   key: 'Click to seek · Drag the playhead to scrub · Drag to filter',
+  keyCollapsed: 'Click to seek',
+  toggle: 'Time ribbon',
 };
 
 /**
@@ -76,17 +80,34 @@ export function TimeRibbon({
   const lit = highlight ? marks.find((mark) => mark.id === highlight) : undefined;
   const highlightRef = useRibbonHighlightMotion(lit?.id, lit?.at ?? 0, lit?.end ?? 0, span);
   const shown = brush ?? range;
+  const collapsed = useRibbonCollapsed();
   return (
-    <div className="ribbon-overview">
-      <div className="ribbon-ticks">
-        <span>{formatClock(0)}</span>
-        <span>{formatClock(duration / 2)}</span>
-        <span>{formatClock(duration)}</span>
+    <div className="ribbon-overview" data-collapsed={collapsed || undefined}>
+      <div className="ribbon-ticks-wrap" aria-hidden={collapsed || undefined}>
+        <div className="ribbon-ticks">
+          <span>{formatClock(0)}</span>
+          <span>{formatClock(duration / 2)}</span>
+          <span>{formatClock(duration)}</span>
+        </div>
       </div>
-      <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} {...handlers}>
+      <div
+        ref={strip}
+        id={`${testId}-strip`}
+        className="time-ribbon"
+        data-testid={testId}
+        title={collapsed ? STRINGS.keyCollapsed : STRINGS.hint}
+        {...handlers}
+      >
         {density ? <Density counts={density} /> : null}
         {marks.map((mark) => (
-          <RibbonMarkTarget key={mark.id} mark={mark} span={span} highlighted={mark.id === highlight} onHighlight={onHighlight} />
+          <RibbonMarkTarget
+            key={mark.id}
+            mark={mark}
+            span={span}
+            highlighted={mark.id === highlight}
+            onHighlight={onHighlight}
+            focusable={!collapsed}
+          />
         ))}
         {shown ? (
           <span
@@ -112,7 +133,8 @@ export function TimeRibbon({
             className="ribbon-handle"
             data-ribbon-handle=""
             role="slider"
-            tabIndex={0}
+            tabIndex={collapsed ? -1 : 0}
+            aria-hidden={collapsed || undefined}
             aria-label="Playhead"
             aria-orientation="horizontal"
             aria-valuemin={0}
@@ -135,7 +157,17 @@ export function TimeRibbon({
             </span>
           </>
         ) : null}
-        <span>{STRINGS.key}</span>
+        <span>{collapsed ? STRINGS.keyCollapsed : STRINGS.key}</span>
+        <button
+          type="button"
+          className="ribbon-toggle"
+          aria-label={STRINGS.toggle}
+          aria-expanded={!collapsed}
+          aria-controls={`${testId}-strip`}
+          onClick={toggleRibbonCollapsed}
+        >
+          <ChevronDownIcon aria-hidden="true" />
+        </button>
       </div>
     </div>
   );
@@ -146,11 +178,13 @@ function RibbonMarkTarget({
   span,
   highlighted,
   onHighlight,
+  focusable,
 }: {
   mark: RibbonMark;
   span: number;
   highlighted: boolean;
   onHighlight: ((id?: string) => void) | undefined;
+  focusable: boolean;
 }) {
   const player = usePlayer();
   return (
@@ -159,6 +193,7 @@ function RibbonMarkTarget({
         render={
           <button
             type="button"
+            tabIndex={focusable ? undefined : -1}
             aria-label={`${formatClock(mark.at)} ${mark.label ?? mark.tone}`}
             onPointerDown={(event) => event.stopPropagation()}
             onFocus={() => onHighlight?.(mark.id)}

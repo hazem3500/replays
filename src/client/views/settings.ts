@@ -44,6 +44,17 @@ export function writeCaptionsPreference(value: boolean) {
   writeStorage(CAPTIONS_KEY, value ? '1' : '0');
 }
 
+const RIBBON_COLLAPSED_KEY = 'replays-ribbon-collapsed';
+
+/** Whether the time ribbon is a slim strip, one choice for every replay; false until the person first collapses it. */
+export function readRibbonCollapsed() {
+  return readStorage(RIBBON_COLLAPSED_KEY) === '1';
+}
+
+export function writeRibbonCollapsed(value: boolean) {
+  writeStorage(RIBBON_COLLAPSED_KEY, value ? '1' : '0');
+}
+
 /** "Reset this view": forget everything remembered for it, so it opens as its preset says. */
 export function resetViewSettings(view: string) {
   for (const setting of SETTINGS) removeStorage(viewSettingKey(view, setting));

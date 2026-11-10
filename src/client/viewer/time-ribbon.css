@@ -1,9 +1,18 @@
 /* The time ribbon: one strip on the seek bar's domain. Density in quiet ink, failures full height in danger,
    slow spans as a warning cap, the future veiled; the playhead is the scrubber's accent. */
 .ribbon-overview { flex: none; border-bottom: 1px solid var(--line); }
+.ribbon-ticks-wrap { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--motion) var(--ease-out), opacity var(--motion) var(--ease-out); }
+.ribbon-ticks-wrap > .ribbon-ticks { min-height: 0; overflow: hidden; padding-block: 0; }
+.ribbon-ticks > span { padding-block: 4px; }
 .ribbon-ticks, .ribbon-key { display: flex; justify-content: space-between; gap: 12px; padding: 4px 10px; color: var(--text-secondary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
 .ribbon-key { justify-content: flex-start; }
 .ribbon-key > span { display: inline-flex; align-items: center; gap: 4px; }
+.ribbon-key { align-items: center; }
+.ribbon-toggle { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: auto; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); cursor: pointer; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
+.ribbon-toggle:hover { background: var(--surface-hover); color: var(--text); }
+.ribbon-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ribbon-toggle svg { width: 14px; height: 14px; transition: transform var(--motion) var(--ease-out); }
+.ribbon-overview[data-collapsed] .ribbon-toggle svg { transform: rotate(180deg); }
 .ribbon-key i { width: 7px; height: 7px; background: var(--warning-fill); }
 .ribbon-key i[data-tone="danger"] { background: var(--danger); }
 button.ribbon-mark { padding: 0; border: 0; cursor: pointer; }
@@ -21,6 +30,7 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
   cursor: crosshair;
   touch-action: pan-y;
   user-select: none;
+  transition: height var(--motion) var(--ease-out);
 }
 .ribbon-density { position: absolute; inset: 6px 0 0; width: 100%; height: calc(100% - 6px); fill: var(--text-tertiary); opacity: 0.55; }
 .ribbon-mark { position: absolute; top: 3px; bottom: 3px; border-radius: 1px; background: var(--text-tertiary); pointer-events: none; }
@@ -46,11 +56,21 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
 .ribbon-mark[data-lane="tick"] { top: 35%; bottom: 35%; opacity: 0.8; }
 .ribbon-mark[data-lit] { z-index: 1; opacity: 1; box-shadow: 0 0 0 1.5px var(--accent); }
 .ribbon-lit { position: absolute; top: 0; bottom: 0; border-inline: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; }
+/* The slim strip: density and the failed and slow marks as thin ticks, the playhead line, click to seek. */
+.ribbon-overview[data-collapsed] .ribbon-ticks-wrap { grid-template-rows: 0fr; opacity: 0; }
+.ribbon-overview[data-collapsed] .time-ribbon { --ribbon-height: 6px; }
+.ribbon-overview[data-collapsed] .ribbon-density { inset: 0; height: 100%; opacity: 0.45; }
+.ribbon-overview[data-collapsed] .ribbon-mark { top: 0; bottom: 0; height: auto; min-width: 2px; pointer-events: none; }
+.ribbon-overview[data-collapsed] .ribbon-mark:not([data-tone="danger"], [data-tone="warning"]) { opacity: 0; }
+.ribbon-overview[data-collapsed] .ribbon-handle { pointer-events: none; }
+.ribbon-overview[data-collapsed] .ribbon-handle::after { opacity: 0; }
+.ribbon-handle::after, .ribbon-mark { transition: opacity var(--motion) var(--ease-out); }
 @media (pointer: coarse) {
   .time-ribbon { --ribbon-height: 32px; --ribbon-mark-min: 3px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .time-ribbon { --ribbon-glide: 0ms; }
+  .time-ribbon, .ribbon-ticks-wrap, .ribbon-toggle svg, .ribbon-handle::after, .ribbon-mark { transition: none; }
 }
 
 /* The local timeline: a moment's own scale. Label | track | value on one grid; a light ruler of round offsets. */
