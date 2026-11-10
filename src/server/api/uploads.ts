@@ -1,10 +1,10 @@
 import type { ReplayContext, ReplaySourceInput } from '../../shared/context.ts';
-import type { ReplayBundle } from '../../shared/replay.ts';
+import { REPLAY_FORMAT_VERSION, type ReplayBundle } from '../../shared/replay.ts';
 import { publicPath } from '../base-path.ts';
 import { readJsonUpload } from '../http/body.ts';
 import { json, REVALIDATE } from '../http/respond.ts';
 import { defineRoute, type RouteContext } from '../http/route.ts';
-import { HttpError } from '../http/errors.ts';
+import { classifyError, HttpError } from '../http/errors.ts';
 import { assertUploadBundle, assertUploadEnvelope } from '../upload-validation.ts';
 import { applyContextAdapters, runAfterUpload, runBeforeUpload, runPrepareUpload } from '../plugin-runtime.ts';
 import { isStaffUpload } from '../privacy-config.ts';
@@ -49,6 +49,23 @@ function revalidate(services: ApiServices, bundle: unknown): ReplayBundle {
   assertUploadBundle(resolved);
   resolveContext(resolved, services.deployment);
   return resolved;
+}
+
+/**
+ * A rejected upload (4xx) says which bundle format this server reads, in `x-replays-format`, so a CLI that writes another
+ * format can tell the person which side is behind instead of showing a bare validation message.
+ */
+function withFormatHeader<Args extends unknown[], Result>(handler: (...args: Args) => Promise<Result>) {
+  return async (...args: Args) => {
+    try {
+      return await handler(...args);
+    } catch (error) {
+      const { status, message } = classifyError(error);
+      if (status !== 400 && status !== 422) throw error;
+      const headers = error instanceof HttpError ? error.headers : {};
+      throw new HttpError(status, message, { cause: error, headers: { ...headers, 'x-replays-format': String(REPLAY_FORMAT_VERSION) } });
+    }
+  };
 }
 
 /** `POST /api/replays` and the plugins' aliases: hooks, the privacy pass and validation, then the store. */
@@ -104,7 +121,7 @@ function uploadHandler(services: ApiServices) {
 
 /** `POST /api/replays`, the plugins' upload aliases (`api.uploadEndpoint`) and `POST /api/replays/import`. */
 export function uploadRoutes(services: ApiServices) {
-  const upload = uploadHandler(services);
+  const upload = withFormatHeader(uploadHandler(services));
   return [
     defineRoute({ method: 'POST', path: '/api/replays', handler: upload }),
     ...[...services.registry.uploadEndpoints.keys()].map((path) => defineRoute({ method: 'POST', path, handler: upload })),

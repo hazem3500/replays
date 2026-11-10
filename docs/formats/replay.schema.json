@@ -23,6 +23,11 @@
         },
         "eventCount": { "type": "integer", "minimum": 0 },
         "version": { "const": 1 },
+        "formatVersion": {
+          "description": "The bundle format the producer wrote. A server rejecting a bundle for schema reasons names the format it expects in the `x-replays-format` response header. Source of truth: REPLAY_FORMAT_VERSION in src/shared/replay.ts.",
+          "type": "integer",
+          "minimum": 1
+        },
         "videoFile": { "type": "string" },
         "source": { "enum": ["agent", "human"] },
         "profile": {
