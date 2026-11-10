@@ -217,8 +217,8 @@ and the action it belongs to. Select a row for its detail beside the list (in it
 against the recording's median, the step it belongs to, what else was in flight on the request's own scale, the
 retained headers, Copy URL and Copy as cURL. ↑/↓, Home/End and Escape work from the keyboard.
 
-**Performance** answers "was this slow, where, and why?". A one-line verdict leads, and each phrase in it seeks to its
-moment. Below it, the stats are grouped as Loading (first and largest paint), Responsiveness (slowest interaction,
+**Performance** answers "was this slow, where, and why?". A one-line headline leads ("Slow around 0:05: long tasks blocked 5 clicks") with a
+"Jump to 0:05" button that seeks there and lights those marks. Below it, the stats are grouped as Loading (first and largest paint), Responsiveness (slowest interaction,
 longest task, blocking time) and Smoothness (median frame rate, slowest second, dropped frames, layout shift), each with a
 threshold meter and a dash with a reason when the browser couldn't observe it. A swimlane timeline shares the frame-rate
 chart's time axis and hover crosshair: interactions, long tasks (the first 50 ms muted), slow requests and layout shifts,

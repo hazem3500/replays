@@ -1,68 +1,66 @@
 /* The performance timeline: lanes and the frame-rate plot in one plot column, so gridlines, crosshair and playhead cross
    all of them. Shares the ribbon's playhead, veil and range classes (time-ribbon.css). */
-.pt { --pt-gutter: 116px; --pt-end: 14px; --pt-lane: 24px; flex: none; border-bottom: 1px solid var(--line); background: var(--surface); }
-.pt-body { display: grid; grid-template-columns: var(--pt-gutter) minmax(0, 1fr) var(--pt-end); padding-top: 4px; }
+.pt { --pt-gutter: 116px; --pt-end: 14px; --pt-lane: 24px; position: relative; flex: none; margin-bottom: 8px; background: var(--surface); }
+.pt-body { display: grid; grid-template-columns: var(--pt-gutter) minmax(0, 1fr) var(--pt-end); padding-top: 8px; }
 .pt-gutter { display: flex; flex-direction: column; min-width: 0; }
 .pt-axis-gap { height: 18px; }
-.pt-label { display: flex; align-items: center; gap: 6px; height: var(--pt-lane); padding-left: 12px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; white-space: nowrap; }
-.pt-label svg { width: 12px; height: 12px; flex: none; }
+.pt-label { display: flex; align-items: center; gap: 6px; height: var(--pt-lane); padding-left: 14px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; white-space: nowrap; }
+.pt-label svg { width: 11px; height: 11px; flex: none; stroke-width: 1.75; }
 .pt-label[data-lane="fps"] { height: 64px; align-items: flex-start; padding-top: 8px; }
 .pt-plot { position: relative; cursor: crosshair; touch-action: pan-y; user-select: none; }
 .pt-axis { position: relative; height: 18px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
+.pt-tick[data-first] { translate: 10px 0; }
 .pt-tick { position: absolute; top: 2px; translate: -50% 0; line-height: 14px; white-space: nowrap; }
 .pt-grid { position: absolute; inset: 18px 0 0; pointer-events: none; }
-.pt-grid > span { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in srgb, var(--line) 75%, transparent); }
+.pt-grid > span { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in srgb, var(--line) 38%, transparent); }
 .pt-lanes { position: relative; }
 .pt-lane { position: relative; height: var(--pt-lane); }
 .pt-lane::before { content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: color-mix(in srgb, var(--line) 55%, transparent); }
 .pt-mark { position: absolute; top: 6px; bottom: 6px; min-width: 3px; padding: 0; border: 0; border-radius: 2px; background: var(--text-tertiary); color: var(--surface); cursor: pointer; }
 .pt-mark::after { content: ""; position: absolute; inset: -6px -3px; }
-.pt-mark[data-verdict="good"] { background: var(--success); }
-.pt-mark[data-verdict="needs-work"] { background: var(--warning-fill); }
-.pt-mark[data-verdict="poor"] { background: var(--danger); }
-.pt-mark[data-lane="task"] { background: color-mix(in srgb, var(--text-tertiary) 55%, var(--surface)); }
-.pt-mark[data-lane="task"][data-cluster] { background: var(--text-tertiary); }
-.pt-mark[data-lane="task"][data-cluster][data-verdict="needs-work"] { background: var(--warning-fill); }
-.pt-mark[data-lane="task"][data-cluster][data-verdict="poor"] { background: var(--danger); }
-.pt-over { position: absolute; top: 0; right: 0; bottom: 0; border-radius: 2px; box-shadow: -1px 0 0 var(--surface); }
-.pt-mark[data-verdict="good"] .pt-over { background: var(--success); }
-.pt-mark[data-verdict="needs-work"] .pt-over { background: var(--warning-fill); }
-.pt-mark[data-verdict="poor"] .pt-over { background: var(--danger); }
+.pt-mark[data-verdict="good"] { background: var(--rating-good); }
+.pt-mark[data-verdict="needs-work"] { background: var(--rating-needs-work); }
+.pt-mark[data-verdict="poor"] { background: var(--rating-poor); }
+/* A long task's first 50 ms (every captured task is already past it) is a tint of its rating, solid, then the full colour: one bar, no gap. */
+.pt-over { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px 0 0 2px; }
+.pt-mark[data-verdict="good"] .pt-over { background: color-mix(in oklch, var(--rating-good) 30%, var(--surface)); }
+.pt-mark[data-verdict="needs-work"] .pt-over { background: color-mix(in oklch, var(--rating-needs-work) 30%, var(--surface)); }
+.pt-mark[data-verdict="poor"] .pt-over { background: color-mix(in oklch, var(--rating-poor) 30%, var(--surface)); }
 .pt-mark[data-lane="shift"] { top: 50%; bottom: auto; min-width: 0; border-radius: 50%; translate: -50% -50%; }
 .pt-mark[data-lane="shift"][data-quiet] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-tertiary); }
 .pt-count { position: absolute; inset: 0; display: grid; place-items: center; color: var(--surface); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; font-weight: 600; line-height: 1; }
-.pt-mark[data-lit], .pt-mark:hover { z-index: 2; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--accent); }
+.pt-mark[data-lit], .pt-mark:hover { z-index: 2; box-shadow: 0 0 0 1px var(--text); }
 .pt-mark:focus-visible { z-index: 2; outline: 2px solid var(--accent); outline-offset: 2px; }
 .pt-tip { display: flex; flex-direction: column; gap: 1px; max-width: 260px; }
 .pt-tip strong { font-weight: 600; }
+.pt-tip-dot { display: inline-block; width: 7px; height: 7px; margin-right: 4px; border-radius: 50%; background: var(--text-tertiary); }
+.pt-tip-dot[data-verdict="good"] { background: var(--rating-good); }
+.pt-tip-dot[data-verdict="needs-work"] { background: var(--rating-needs-work); }
+.pt-tip-dot[data-verdict="poor"] { background: var(--rating-poor); }
 .pt-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-tertiary); opacity: 0.6; pointer-events: none; }
 .pt-readout { position: absolute; top: 0; z-index: 3; translate: -50% 0; padding: 1px 6px; border-radius: 3px; background: var(--surface-raised); box-shadow: 0 0 0 1px var(--line); color: var(--text); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; line-height: 14px; pointer-events: none; white-space: nowrap; }
 .pt .ribbon-handle { bottom: auto; height: 18px; }
-.pt .ribbon-lit { top: 18px; }
-.pt .ribbon-key { align-items: center; gap: 12px; border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
-.pt-legend { display: inline-flex; gap: 10px; }
-.pt-legend > span { display: inline-flex; align-items: center; gap: 4px; }
-.pt .pt-legend i { width: 8px; height: 8px; border-radius: 2px; background: var(--text-tertiary); }
-.pt .pt-legend i[data-verdict="good"] { background: var(--success); }
-.pt .pt-legend i[data-verdict="needs-work"] { background: var(--warning-fill); }
-.pt .pt-legend i[data-verdict="poor"] { background: var(--danger); }
-.pt .ribbon-key > .pt-hint { margin-left: auto; margin-right: 4px; }
-
+/* why: the shared ribbon dims what has not played by 45%, which at the start muddied every mark; here it only hints. */
+.pt .ribbon-future { background: color-mix(in srgb, var(--surface) 16%, transparent); }
+.pt .ribbon-lit { top: 18px; border-inline: 0; background: color-mix(in srgb, var(--text) 5%, transparent); }
+.pt:not([data-collapsed]) .ribbon-key { position: absolute; top: 4px; right: 2px; padding: 0; }
+.pt[data-collapsed] .ribbon-key { justify-content: flex-end; padding: 0 4px 2px; }
+.pt[data-collapsed] .ribbon-toggle svg { transform: rotate(180deg); }
 /* The frame-rate plot: one accent line and light fill on a 0 to 60 scale, guides at 60 and 30, the fill under 30 tinted danger. */
 .pt-fps { position: relative; height: 64px; }
 .fps-plot { position: absolute; inset: 8px 0 6px; }
 .fps-plot svg, .pt-fps > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .fps-guide { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed color-mix(in srgb, var(--line-strong) 70%, transparent); pointer-events: none; }
 .fps-guide-label { position: absolute; left: 4px; translate: 0 -50%; padding: 0 3px; border-radius: 2px; background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; line-height: 12px; pointer-events: none; }
-.fps-line { fill: none; stroke: var(--accent); stroke-width: 1.5px; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.fps-area { fill: color-mix(in srgb, var(--accent) 14%, transparent); stroke: none; }
-.fps-danger { fill: color-mix(in srgb, var(--danger) 30%, transparent); stroke: none; }
+.fps-line { fill: none; stroke: color-mix(in srgb, var(--accent) 75%, var(--surface)); stroke-width: 1.25px; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.fps-area { fill: color-mix(in srgb, var(--accent) 9%, transparent); stroke: none; }
+.fps-danger { fill: color-mix(in oklch, var(--rating-poor) 24%, var(--surface)); stroke: none; }
 
 /* Collapsed: one slim strip of the rated marks over a thin frame-rate line; the playhead stays, click seeks. */
 .pt[data-collapsed] { --pt-gutter: 0px; --pt-end: 0px; }
 .pt[data-collapsed] .pt-body { padding-top: 0; }
 .pt[data-collapsed] .pt-gutter { height: 0; overflow: hidden; visibility: hidden; }
-.pt[data-collapsed] :is(.pt-axis, .pt-grid, .pt-cursor, .pt-readout, .pt-legend, .fps-guide, .fps-guide-label, .fps-area, .fps-danger, .pt-lane::before) { display: none; }
+.pt[data-collapsed] :is(.pt-axis, .pt-grid, .pt-cursor, .pt-readout, .fps-guide, .fps-guide-label, .fps-area, .fps-danger, .pt-lane::before) { display: none; }
 .pt[data-collapsed] .pt-lanes { height: 6px; }
 .pt[data-collapsed] .pt-lane { position: absolute; inset: 0; height: 6px; }
 .pt[data-collapsed] .pt-mark { top: 0; bottom: 0; height: auto; border-radius: 1px; pointer-events: none; }
@@ -73,11 +71,9 @@
 .pt[data-collapsed] .fps-line { stroke-width: 1px; }
 .pt[data-collapsed] .ribbon-handle { pointer-events: none; }
 .pt[data-collapsed] .ribbon-handle::after { opacity: 0; }
-.pt[data-collapsed] .ribbon-key { border-top: 0; }
 .pt[data-collapsed] .pt-plot { cursor: pointer; }
 @container performance (max-width: 559px) {
   .pt { --pt-gutter: 32px; --pt-end: 10px; }
   .pt-label { justify-content: center; padding-left: 0; }
-  .pt-label-text, .pt .ribbon-key > .pt-hint { display: none; }
-  .pt .ribbon-key { justify-content: space-between; }
+  .pt-label-text { display: none; }
 }

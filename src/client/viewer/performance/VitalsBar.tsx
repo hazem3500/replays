@@ -158,7 +158,7 @@ function StatMeter({ stat }: { stat: Stat }) {
   return (
     <span className="pp-meter" aria-hidden="true">
       {meter.bands.map((band) => (
-        <span key={band.verdict} className="pp-meter-band" data-verdict={band.verdict} style={{ flexGrow: band.share }} />
+        <span key={band.verdict} className="pp-meter-band" data-verdict={band.verdict} data-active={band.verdict === stat.verdict || undefined} style={{ flexGrow: band.share }} />
       ))}
       <span className="pp-meter-mark" style={{ left: `${meter.at * 100}%` }} />
     </span>

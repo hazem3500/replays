@@ -104,21 +104,37 @@ describe('time axis', () => {
 });
 
 describe('verdict line', () => {
-  it('names the slow click, what blocked it and where to seek', () => {
-    const { moments, requests, vitals, model } = inputs();
-    const verdict = buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests });
-    const text = verdict.parts.map((sentence) => sentence.map((part) => part.text).join('')).join('. ');
-    expect(text).toContain('A slow click at 0:08, blocked by a long task');
-    expect(text).toContain('Layout shift score 0.12');
+  const verdictOf = (bundle = recording()) => {
+    const { moments, requests, vitals, model } = inputs(bundle);
+    return { verdict: buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests }), moments, vitals };
+  };
+
+  it('names the main problem and its cause, and jumps to it', () => {
+    const { verdict, moments } = verdictOf();
+    expect(verdict.headline).toBe('Slow at 0:08: a long task blocked a click');
     expect(verdict.tone).toBe('poor');
-    const [first] = verdict.parts[0] ?? [];
-    expect(first).toMatchObject({ at: 8626, momentId: expect.any(String) });
+    expect(verdict.jump).toMatchObject({ label: 'Jump to 0:08', at: 8626 });
+    expect(verdict.jump?.ids).toEqual([must(moments.find((moment) => moment.value === 608)).id]);
+  });
+
+  it('points at the same moment the Slowest interaction stat does, and repeats no figures', () => {
+    const { verdict, vitals } = verdictOf();
+    const slowest = must(vitals.find((vital) => vital.id === 'interaction'));
+    expect(verdict.jump?.at).toBe(must(slowest.moment).at);
+    expect(verdict.headline).not.toMatch(/\d+ ?ms/);
+  });
+
+  it('blames the long tasks when no interaction was slow', () => {
+    const bundle = recording();
+    must(bundle.performance).entries = must(bundle.performance).entries.filter((entry) => entry.kind === 'long-task');
+    const { verdict } = verdictOf(bundle);
+    expect(verdict.headline).toMatch(/^Slow around 0:\d\d: 2 long tasks blocked the page$|^Slow at/);
+    expect(verdict.jump?.ids.length).toBeGreaterThan(0);
   });
 
   it('says nothing was slow when nothing was', () => {
     const verdict = buildVerdict({ moments: [], vitals: [], frames: [], shifts: [], requests: [] });
-    expect(verdict.tone).toBe('good');
-    expect(verdict.parts).toEqual([[{ text: 'Nothing slow: no moment over budget' }]]);
+    expect(verdict).toEqual({ tone: 'good', headline: 'No slowdowns found' });
   });
 });
 

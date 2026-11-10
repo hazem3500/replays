@@ -32,7 +32,9 @@ function Described({ mark }: { mark: LaneMark }) {
       <>
         <strong>{single.title}</strong>
         <span>
-          {single.value} · {VERDICT_WORDS[single.verdict]}
+          {single.value} ·{' '}
+          <i className="pt-tip-dot" data-verdict={single.verdict} aria-hidden="true" />
+          {VERDICT_WORDS[single.verdict]}
         </span>
         <span>{formatClock(single.at)}</span>
         {single.note ? <span>{single.note}</span> : null}
@@ -49,7 +51,8 @@ function Described({ mark }: { mark: LaneMark }) {
         {formatClock(mark.at)} to {formatClock(mark.end)}
       </span>
       <span>
-        Worst: {worst.value}, {VERDICT_WORDS[worst.verdict]}
+        Worst: {worst.value} <i className="pt-tip-dot" data-verdict={worst.verdict} aria-hidden="true" />
+        {VERDICT_WORDS[worst.verdict]}
       </span>
     </>
   );
@@ -112,10 +115,11 @@ export function LaneMarkButton({
         data-lit={lit || undefined}
         style={style}
       >
-        {over === undefined ? null : <i className="pt-over" style={{ left: `${over}%` }} />}
+        {over === undefined ? null : <i className="pt-over" style={{ width: `${over}%` }} />}
         {!dot && mark.items.length > 1 && pixels >= COUNT_MIN_PX ? <span className="pt-count">{mark.items.length}</span> : null}
       </TooltipTrigger>
-      <TooltipContent side="top">
+      {/* why: below the mark, so the tooltip stays inside the timeline instead of covering the stats above it. */}
+      <TooltipContent side="bottom">
         <span className="pt-tip">
           <Described mark={mark} />
         </span>

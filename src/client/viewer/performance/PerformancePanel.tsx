@@ -87,6 +87,8 @@ export function PerformancePanel({
   const [order, setOrder] = useState<MomentOrder>('worst');
   const [range, setRange] = useState<RibbonRange>();
   const [hovered, setHovered] = useState<readonly string[]>([]);
+  // why: the verdict's jump lights its marks until the person picks something else.
+  const [pinned, setPinned] = useState<readonly string[]>([]);
   const moments = buildMoments(model.signals);
   const vitals = buildVitals(model.signals, moments, model.track);
   const lanes = buildLanes(moments, requests, model.shifts);
@@ -114,21 +116,26 @@ export function PerformancePanel({
   ) : (
     <Empty title={STRINGS.calmTitle}>{STRINGS.calm}</Empty>
   );
-  const lit = hovered.length ? hovered : selected ? [selected] : [];
+  const lit = hovered.length ? hovered : pinned.length ? pinned : selected ? [selected] : [];
+  const select = (id?: string) => {
+    setPinned([]);
+    setSelected(id);
+  };
   return (
     <div ref={panel} className="np pp" data-testid="performance-diagnostics" data-stacked={stacked || undefined}>
       <VerdictLine
         verdict={verdict}
-        onPick={(part) => {
-          if (part.at !== undefined) player.seek(part.at);
-          if (part.momentId) setSelected(part.momentId);
+        onJump={(jump) => {
+          player.seek(jump.at);
+          setSelected(undefined);
+          setPinned(jump.ids);
         }}
       />
       <VitalsBar
         vitals={vitals}
         peers={vitalPeers}
         cadence={cadenceStats(model.track, model.shifts)}
-        onPick={(vital) => (vital.moment ? setSelected(vital.moment.id) : player.seek(vital.at ?? 0))}
+        onPick={(vital) => (vital.moment ? select(vital.moment.id) : player.seek(vital.at ?? 0))}
       />
       {extra}
       {lanes.length || model.frames.length ? (
@@ -142,7 +149,7 @@ export function PerformancePanel({
           onLight={setHovered}
           onPick={(mark) => {
             const id = mark.items.find((item) => item.momentId)?.momentId;
-            if (id) setSelected(id);
+            if (id) select(id);
           }}
         />
       ) : null}
@@ -156,7 +163,7 @@ export function PerformancePanel({
             hovered={lit}
             order={order}
             onOrder={setOrder}
-            onSelect={setSelected}
+            onSelect={select}
             onHover={(id) => setHovered(id ? [id] : [])}
             empty={empty}
           />
@@ -168,7 +175,7 @@ export function PerformancePanel({
             requests={requests}
             steps={steps}
             stacked={stacked}
-            onSelect={setSelected}
+            onSelect={select}
             onOpenRequest={onOpenRequest}
           />
         ) : null}

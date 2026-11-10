@@ -27,16 +27,15 @@ const ICONS = {
 } as const;
 
 const STRINGS = {
-  hint: 'Click to seek · Drag the playhead to scrub · Drag to filter',
-  hintCollapsed: 'Click to seek',
+  hint: 'Click to seek. Drag the playhead to scrub. Drag across the timeline to filter the moments.',
   toggle: 'Timeline',
   frameRate: 'Frame rate',
-  good: 'Good',
-  needsWork: 'Needs work',
-  poor: 'Poor',
 };
 
 const MAX_TICKS = 6;
+/** A narrow plot labels fewer ticks so the labels never crowd. */
+const NARROW_PX = 420;
+const NARROW_TICKS = 4;
 /** The plot's width before it is measured, so the first paint clusters about right. */
 const FIRST_WIDTH = 640;
 
@@ -107,19 +106,20 @@ export function PerfTimeline({
           id="performance-timeline-plot"
           className="pt-plot"
           data-testid="performance-ribbon"
+          aria-description={STRINGS.hint}
           {...handlers}
           onPointerMove={track}
           onPointerLeave={() => setHover(undefined)}
         >
-          <div className="pt-axis" aria-hidden="true">
-            {niceTicks(span, MAX_TICKS).map((at) => (
+          <div className="pt-axis" title={STRINGS.hint} aria-hidden="true">
+            {niceTicks(span, width < NARROW_PX ? NARROW_TICKS : MAX_TICKS).map((at) => (
               <span key={at} className="pt-tick" data-first={at === 0 || undefined} style={{ left: `${(at / span) * 100}%` }}>
                 {clockLabel(at)}
               </span>
             ))}
           </div>
           <div className="pt-grid" aria-hidden="true">
-            {niceTicks(span, MAX_TICKS).map((at) => (
+            {niceTicks(span, width < NARROW_PX ? NARROW_TICKS : MAX_TICKS).map((at) => (
               <span key={at} style={{ left: `${(at / span) * 100}%` }} />
             ))}
           </div>
@@ -184,8 +184,6 @@ export function PerfTimeline({
         </div>
       </div>
       <div className="ribbon-key">
-        <Legend />
-        <span className="pt-hint">{collapsed ? STRINGS.hintCollapsed : STRINGS.hint}</span>
         <button
           type="button"
           className="ribbon-toggle"
@@ -207,25 +205,6 @@ function LaneLabel({ id, text }: { id: LaneId | 'fps'; text: string }) {
     <span className="pt-label" data-lane={id} title={text}>
       <Icon aria-hidden="true" />
       <span className="pt-label-text">{text}</span>
-    </span>
-  );
-}
-
-function Legend() {
-  return (
-    <span className="pt-legend" aria-label="Rating colours">
-      <span>
-        <i data-verdict="good" />
-        {STRINGS.good}
-      </span>
-      <span>
-        <i data-verdict="needs-work" />
-        {STRINGS.needsWork}
-      </span>
-      <span>
-        <i data-verdict="poor" />
-        {STRINGS.poor}
-      </span>
     </span>
   );
 }
