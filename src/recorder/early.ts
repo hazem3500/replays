@@ -1,13 +1,14 @@
 // why: dependency-free on purpose. A host puts this inline or as a sync script in <head>, so it must stay a few hundred bytes.
 (() => {
   const w = window as unknown as Record<string, unknown>;
-  let flag: { exp?: number } | undefined;
+  let flag: unknown;
   try {
     flag = JSON.parse(sessionStorage.getItem('replays-record-after-reload') ?? 'null');
   } catch {
     return;
   }
-  if (!flag || typeof flag.exp !== 'number' || flag.exp < Date.now() || w.__replaysEarly) return;
+  const exp = typeof flag === 'object' && flag !== null && 'exp' in flag ? flag.exp : 0;
+  if (typeof exp !== 'number' || exp < Date.now() || w.__replaysEarly) return;
   const queue: Record<string, { observer: PerformanceObserver; entries: PerformanceEntry[] }> = {};
   w.__replaysEarly = queue;
   for (const type of ['paint', 'largest-contentful-paint', 'longtask', 'long-animation-frame', 'layout-shift', 'event']) {

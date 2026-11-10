@@ -29,6 +29,13 @@ function uiWith(choice?: RecordingChoice) {
 const build = (options: Partial<RecorderOptions>) =>
   createRecorder({ upload: createFakeTransport().upload, loadRrweb: createFakeRrweb().load, activation: () => true, ...HOST, ...options });
 
+const offerOf = async (choices: NonNullable<RecorderOptions['choices']>) => {
+  const { recorderChoices } = await import('./recorder-choices.ts');
+  const { settingsBuilder } = await import('./recorder-settings.ts');
+  const host = { ...HOST, choices };
+  return recorderChoices(host, settingsBuilder(host)).offer((privacy) => privacy.facts(1, true))?.fromLoad;
+};
+
 describe('recording from page load', () => {
   afterEach(() => sessionStorage.clear());
 
@@ -54,7 +61,10 @@ describe('recording from page load', () => {
   });
 
   it('resumes after the reload with no prompt, marks the bundle, and fires once', async () => {
-    sessionStorage.setItem(RELOAD_FLAG_KEY, JSON.stringify({ exp: Date.now() + 20_000, choice: { privacy: 'text-masked', performance: true } }));
+    sessionStorage.setItem(
+      RELOAD_FLAG_KEY,
+      JSON.stringify({ exp: Date.now() + 20_000, choice: { privacy: 'text-masked', performance: true } }),
+    );
     const transport = createFakeTransport();
     const rrweb = createFakeRrweb();
     const { ui, consents, stop } = uiWith();
@@ -84,12 +94,6 @@ describe('recording from page load', () => {
   });
 
   it('offers it to staff by default, and not to a host that opts out or to customers', () => {
-    const offerOf = async (choices: RecorderOptions['choices']) => {
-      const { recorderChoices } = await import('./recorder-choices.ts');
-      const { settingsBuilder } = await import('./recorder-settings.ts');
-      const host = { ...HOST, choices };
-      return recorderChoices(host, settingsBuilder(host)).offer((privacy) => privacy.facts(1, true))?.fromLoad;
-    };
     return Promise.all([
       expect(offerOf({ diagnostics: true, privacy: ['text-masked', 'masked'] })).resolves.toBe(true),
       expect(offerOf({ diagnostics: true, fromLoad: false, privacy: ['text-masked', 'masked'] })).resolves.toBeUndefined(),

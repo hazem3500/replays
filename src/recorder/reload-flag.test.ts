@@ -38,7 +38,10 @@ describe('reload flag', () => {
   it('drops unknown or mistyped choice fields instead of trusting page-writable storage', () => {
     sessionStorage.setItem(
       RELOAD_FLAG_KEY,
-      JSON.stringify({ exp: NOW + 1_000, choice: { privacy: 'everything', profile: 'Bad Profile', networkBodies: 'yes', performance: true, extra: 1 } }),
+      JSON.stringify({
+        exp: NOW + 1_000,
+        choice: { privacy: 'everything', profile: 'Bad Profile', networkBodies: 'yes', performance: true, extra: 1 },
+      }),
     );
     expect(takeReload(NOW)).toEqual({ performance: true, fromLoad: true });
   });
@@ -49,7 +52,11 @@ describe('reload flag', () => {
   });
 
   it('reports false when storage is blocked, so the recorder records on this page', () => {
-    const storage = { setItem: () => { throw new Error('blocked'); } } as unknown as Storage;
+    const storage = {
+      setItem: () => {
+        throw new Error('blocked');
+      },
+    } as unknown as Storage;
     expect(armReload({ performance: true }, NOW, storage)).toBe(false);
   });
 });
@@ -85,7 +92,9 @@ describe('buffered observation', () => {
 
   it('hands over what the early entry queued, once, and does not buffer twice', () => {
     const seen = stub();
-    const early = { paint: { observer: { takeRecords: () => [{ name: 'late' }], disconnect: vi.fn<() => void>() }, entries: [{ name: 'first' }] } };
+    const early = {
+      paint: { observer: { takeRecords: () => [{ name: 'late' }], disconnect: vi.fn<() => void>() }, entries: [{ name: 'first' }] },
+    };
     vi.stubGlobal(EARLY_GLOBAL, early);
     const handled: string[][] = [];
     observeType('paint', (entries) => handled.push(entries.map((entry) => entry.name)), true);

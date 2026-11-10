@@ -7,7 +7,7 @@ The private [capture-only staging artifact](packaging.md#capture-only-staging-bo
 
 `IssueUploadErrorDetails.action` is an optional recorder recovery contract, with a lifetime-scoped abort signal and one retained-report retry after success. Existing error links remain compatible; the default UI prefers an action when both are supplied. See [recorder recovery](recorder.md#compose-the-built-in-steps).
 
-The recorder adds `RecorderHostContext`, `RecorderOptions.context` (a value or start-time getter), `Recorder.annotateStep`, `capture.performance`, `capture.debugging` and `choices.diagnostics`. These are opt-in additive contracts; context getter failure omits context, and inactive annotations never load capture. Optional replay performance `frames` and `layoutShifts` preserve old bundles. Frame loss is an estimate against a 60 Hz reference, not CPU profiling.
+The recorder adds `RecorderHostContext`, `RecorderOptions.context` (a value or start-time getter), `Recorder.annotateStep`, `capture.performance`, `capture.debugging` and `choices.diagnostics`. These are opt-in additive contracts; context getter failure omits context, and inactive annotations never load capture. Optional replay performance `frames` and `layoutShifts` preserve old bundles. Frame loss is an estimate against a 60 Hz reference, not CPU profiling. Optional `longFrames` and `interactions` (long animation frames and interaction breakdowns) and `meta.captured.fromLoad` are additive too. `choices.fromLoad`, `RecordingChoice.fromLoad`, `RecorderOptions.reload` and the `/recorder/early` script are opt-in additions; the script reads one `sessionStorage` key and its handoff global is not public.
 
 ## What is public API
 

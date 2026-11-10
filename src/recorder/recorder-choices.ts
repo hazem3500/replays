@@ -181,7 +181,9 @@ function assertCustomerUnmask(host: Host): void {
 
 /** Whether a recording from load is offered: staff by default, a customer only when the host sets it, and only with Performance on offer. */
 function fromLoadAllowed(host: Host): boolean {
-  return host.choices?.diagnostics === true && host.capture?.performance === true && (host.choices.fromLoad ?? host.choices.by !== 'customer');
+  return (
+    host.choices?.diagnostics === true && host.capture?.performance === true && (host.choices.fromLoad ?? host.choices.by !== 'customer')
+  );
 }
 
 function settledDiagnostic(host: Host, key: 'performance' | 'debugging', choice: LooseChoice, explicit: boolean): boolean {

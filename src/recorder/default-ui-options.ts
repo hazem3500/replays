@@ -95,7 +95,9 @@ function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {
       )
     : [];
   if (offer.fromLoad) {
-    diagnostics.push(itemNode({ group: 'diagnostics', value: 'fromLoad', label: messages.fromLoadLabel, disabled: !offer.diagnostics?.performance }));
+    diagnostics.push(
+      itemNode({ group: 'diagnostics', value: 'fromLoad', label: messages.fromLoadLabel, disabled: !offer.diagnostics?.performance }),
+    );
   }
   const profiles = offer.profiles.map(({ id, label, description }) =>
     itemNode({ group: 'profile', value: id, label, ...(description ? { detail: description } : {}) }),

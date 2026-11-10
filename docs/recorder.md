@@ -5,6 +5,7 @@ The host app owns prompts such as “Record the problem?”. `@hazem3500/replays
 | Entry | API |
 | --- | --- |
 | `/recorder` | `createRecorder`, `createDeferredUi`, `createRecorderStore`, selectors, timer/format helpers, `defaultRecorderMessages`, `resolveRecorderMessages`, `createRecorderFormat`, privacy props and selector builder, upload utilities |
+| `/recorder/early` | A 619 byte script, not a module: add it to `<head>` so Performance mode records from page load (see below) |
 | `/recorder/kit` | `createAnnouncer`, `focusReturn`, `trapFocus`, `markRecorderUi`, `mountRecorderRoot`, privacy helpers and chat-widget presets |
 | `/recorder/ui` | `createGuidedRecorder`, `createDefaultUi`, step kit, `composeUi`, messages, formatting, themes and completion options |
 | `/recorder/react` | Optional React 18+ provider and hooks; core never imports React |
@@ -19,6 +20,18 @@ The host app owns prompts such as “Record the problem?”. `@hazem3500/replays
 ## Diagnostic capture
 
 `capture.performance` and `capture.debugging` are independent opt-in booleans. `choices.diagnostics: true` offers combinable Performance and Debugging toggles capped by those capture options. Performance retains supported observer timings, bounded foreground frame-pacing estimates, Long Animation Frames (Chromium) with their heaviest scripts, and interactions with an input delay, processing and presentation breakdown; these are not CPU profiles. Script sources are origin and path only, and an interaction's target keeps its name only where the privacy mode shows text (see [replay format](formats/README.md)). Debugging permits bounded redacted Error stacks only in visible recordings. Privacy settings remain authoritative.
+
+### Record from page load
+
+With Performance on, the options step offers "Start from a fresh page load". Choosing it saves the choice in `sessionStorage` for 30 seconds, reloads, and the recorder resumes on the new page without asking again, so the recording includes the load: paint, largest contentful paint, layout shifts, long tasks, long animation frames and slow interactions are all read from the browser's buffer, and `meta.captured.fromLoad` is `true`. The flag is read once and removed first, so a stale or repeated flag never reloads or records twice. The choice defaults on for staff and off for customers; a host opts out with `choices: { fromLoad: false }`, and the recorder reloads with `location.reload()` unless `reload` is given.
+
+The recorder works without anything else, but it cannot start observers before the host calls `createRecorder`. The early entry closes that gap: it checks the flag, and only when it is set starts buffered observers and queues what they see, then starts loading the recorder. Add one tag to `<head>`, before your app bundle:
+
+```html
+<script src="/node_modules/@hazem3500/replays/dist/lib/recorder-early.js" data-boot="/assets/recorder.js"></script>
+```
+
+Serve the file from your own origin (copy it with your assets); `data-boot` is optional and names the module that calls `createRecorder`; when the flag is set it is fetched at once instead of after the app. Without the flag the script does one `sessionStorage` read and nothing else. A host that inlines it pastes the file's contents between `<script>` tags, and then has no `data-boot`.
 
 ## Built-in flow
 
