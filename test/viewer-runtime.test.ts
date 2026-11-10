@@ -64,7 +64,9 @@ describe('viewer runtime', () => {
 
   it('explains a failed install and leaves no partial cache behind', async () => {
     const env = { REPLAYS_VIEWER_CACHE: join(work, 'cache') };
-    await expect(prepareViewerRuntime({ packageRoot, env, stream: silent, install: failingInstall })).rejects.toThrow(/offline[\s\S]*network/);
+    await expect(prepareViewerRuntime({ packageRoot, env, stream: silent, install: failingInstall })).rejects.toThrow(
+      /offline[\s\S]*network/,
+    );
     const again = await prepareViewerRuntime({ packageRoot, env, stream: silent, install: async () => {} });
     expect(again).toContain('viewer-1.2.3-');
   });

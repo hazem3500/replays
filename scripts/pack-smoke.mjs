@@ -15,7 +15,14 @@ const run = (command, args, cwd) => execFileSync(command, args, { cwd, stdio: ['
 /** Starts `replays serve` from an install that lacks the viewer's dependencies, returns its output once it is listening. */
 async function bootViewer(cli, cache) {
   const child = spawn(cli, ['serve'], {
-    env: { ...process.env, PORT: '0', DATA_DIR: join(work, 'serve-data'), REPLAYS_VIEWER_CACHE: cache, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' },
+    env: {
+      ...process.env,
+      PORT: '0',
+      DATA_DIR: join(work, 'serve-data'),
+      REPLAYS_VIEWER_CACHE: cache,
+      POSTERS_DISABLED: '1',
+      RENDER_DISABLED: '1',
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let output = '';

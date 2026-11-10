@@ -39,7 +39,13 @@ const onDemand = {
 };
 
 const results = {
-  edit: await build({ ...node, entryPoints: [join(root, 'src/edit/cli.ts')], outfile: join(out, 'edit.mjs'), external: cliExternal, banner }),
+  edit: await build({
+    ...node,
+    entryPoints: [join(root, 'src/edit/cli.ts')],
+    outfile: join(out, 'edit.mjs'),
+    external: cliExternal,
+    banner,
+  }),
   cli: await build({
     ...node,
     entryPoints: [join(root, 'src/cli.ts')],
@@ -62,5 +68,8 @@ const results = {
   }),
 };
 if (process.env.REPLAYS_CLI_METAFILE)
-  await writeFile(process.env.REPLAYS_CLI_METAFILE, JSON.stringify(Object.fromEntries(Object.entries(results).map(([name, { metafile }]) => [name, metafile]))));
+  await writeFile(
+    process.env.REPLAYS_CLI_METAFILE,
+    JSON.stringify(Object.fromEntries(Object.entries(results).map(([name, { metafile }]) => [name, metafile]))),
+  );
 console.log(`built ${join(out, 'cli.mjs')}`);

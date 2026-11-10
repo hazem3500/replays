@@ -24,14 +24,20 @@ test('the CLI bundle needs only playwright-core and loads no server or viewer mo
     for (const name of ['cli', 'edit']) {
       const externals = new Set();
       for (const output of Object.values(builds[name].outputs))
-        for (const item of output.imports) if (item.external && !builtins.has(item.path) && !item.path.startsWith('./')) externals.add(packageName(item.path));
+        for (const item of output.imports)
+          if (item.external && !builtins.has(item.path) && !item.path.startsWith('./')) externals.add(packageName(item.path));
       assert.deepEqual(
-        [...externals].filter((dependency) => !Object.hasOwn(manifest.dependencies, dependency) && !['esbuild', 'bufferutil', 'utf-8-validate'].includes(dependency)),
+        [...externals].filter(
+          (dependency) =>
+            !Object.hasOwn(manifest.dependencies, dependency) && !['esbuild', 'bufferutil', 'utf-8-validate'].includes(dependency),
+        ),
         [],
         `${name}: packages outside dependencies`,
       );
       const serverOnly = Object.keys(builds[name].inputs).filter((input) =>
-        /^src\/(client|mcp|first-party)\/|^src\/server\/(main|start|app|migrate|migrate-cli|static|runtime|tracing-sdk|http\/node)\.ts$|node_modules\/(@opentelemetry|srvx|h3|effect|@agent-native|react|rrweb)\//.test(input),
+        /^src\/(client|mcp|first-party)\/|^src\/server\/(main|start|app|migrate|migrate-cli|static|runtime|tracing-sdk|http\/node)\.ts$|node_modules\/(@opentelemetry|srvx|h3|effect|@agent-native|react|rrweb)\//.test(
+          input,
+        ),
       );
       assert.deepEqual(serverOnly, [], `${name}: server-only inputs`);
     }
