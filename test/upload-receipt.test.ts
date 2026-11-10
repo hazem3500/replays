@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { PassThrough } from 'node:stream';
 import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -13,9 +14,7 @@ import { replay } from './fixtures.ts';
 
 const servers: Array<ReturnType<typeof createServer>> = [];
 
-afterEach(async () => {
-  await Promise.all(servers.splice(0).map((server) => new Promise<void>((done) => server.close(() => done()))));
-});
+const closeAll = () => Promise.all(servers.splice(0).map((server) => new Promise<void>((done) => server.close(() => done()))));
 
 type Handler = (request: IncomingMessage, response: ServerResponse) => void;
 
@@ -28,6 +27,21 @@ async function serve(handler: Handler) {
   return `http://127.0.0.1:${address.port}`;
 }
 
+/** Answers every request after its body is read, with the status the callback picks for the method. */
+const reply =
+  (
+    status: (method: string | undefined) => number,
+    body: (method: string | undefined) => string,
+    headers: Record<string, string> = {},
+  ): Handler =>
+  (request, response) => {
+    request.resume();
+    request.on('end', () => {
+      response.writeHead(status(request.method), headers);
+      response.end(body(request.method));
+    });
+  };
+
 async function withVideo(write = true): Promise<{ bundle: ReplayBundle; dir: string }> {
   const dir = await mkdtemp(join(tmpdir(), 'replays-receipt-'));
   if (write) await writeFile(join(dir, 'session.mp4'), Buffer.from('mp4-bytes'));
@@ -37,15 +51,18 @@ async function withVideo(write = true): Promise<{ bundle: ReplayBundle; dir: str
 }
 
 describe('upload receipt and partial success', () => {
+  afterEach(closeAll);
+
   it('returns the viewer link and a delivered video', async () => {
     const seen: string[] = [];
+    const answer = reply(
+      (method) => (method === 'POST' ? 201 : 204),
+      (method) => (method === 'POST' ? JSON.stringify({ id: 'with-video', url: '/r/with-video' }) : ''),
+      { 'content-type': 'application/json' },
+    );
     const origin = await serve((request, response) => {
       seen.push(`${request.method} ${request.url}`);
-      request.resume();
-      request.on('end', () => {
-        response.writeHead(request.method === 'POST' ? 201 : 204, { 'content-type': 'application/json' });
-        response.end(request.method === 'POST' ? JSON.stringify({ id: 'with-video', url: '/r/with-video' }) : '');
-      });
+      answer(request, response);
     });
     const { bundle, dir } = await withVideo();
     const result = await upload(bundle, dir, `${origin}/api/replays`);
@@ -54,13 +71,12 @@ describe('upload receipt and partial success', () => {
   });
 
   it('reports a video the server refused without failing the replay', async () => {
-    const origin = await serve((request, response) => {
-      request.resume();
-      request.on('end', () => {
-        response.writeHead(request.method === 'POST' ? 201 : 500);
-        response.end(request.method === 'POST' ? '{"id":"with-video"}' : '');
-      });
-    });
+    const origin = await serve(
+      reply(
+        (method) => (method === 'POST' ? 201 : 500),
+        () => '{"id":"with-video"}',
+      ),
+    );
     const { bundle, dir } = await withVideo();
     const result = await upload(bundle, dir, `${origin}/api/replays`);
     expect(result.url).toBe(`${origin}/r/with-video`);
@@ -69,17 +85,19 @@ describe('upload receipt and partial success', () => {
   });
 
   it('reports an unreadable video file as skipped', async () => {
-    const origin = await serve((request, response) => {
-      request.resume();
-      request.on('end', () => response.writeHead(201).end('{}'));
-    });
+    const origin = await serve(
+      reply(
+        () => 201,
+        () => '{}',
+      ),
+    );
     const { bundle, dir } = await withVideo(false);
     const result = await upload(bundle, dir, `${origin}/api/replays`);
     expect(result.video).toEqual({ uploaded: false, error: 'the video file was not found next to replay.json' });
   });
 
-  it('prints the partial success on one line', async () => {
-    const out = createTerminal({ env: {}, stream: { isTTY: true, write: () => true } as never });
+  it('prints the partial success on one line', () => {
+    const out = createTerminal({ env: {}, stream: Object.assign(new PassThrough(), { isTTY: true }) });
     const text = uploadSummary(out, { id: 'a', url: 'https://r.example/r/a', video: { uploaded: false, error: 'no ffmpeg' } });
     expect(text).toContain('Replay uploaded');
     expect(text).toContain('video skipped: no ffmpeg');
@@ -94,14 +112,16 @@ describe('upload receipt and partial success', () => {
 });
 
 describe('format mismatch', () => {
+  afterEach(closeAll);
+
   it('names both formats when the server rejects the bundle', async () => {
-    const origin = await serve((request, response) => {
-      request.resume();
-      request.on('end', () => {
-        response.writeHead(400, { 'content-type': 'text/plain', 'x-replays-format': '2' });
-        response.end('replay.meta.source must be equal to one of the allowed values');
-      });
-    });
+    const origin = await serve(
+      reply(
+        () => 400,
+        () => 'replay.meta.source must be equal to one of the allowed values',
+        { 'content-type': 'text/plain', 'x-replays-format': '2' },
+      ),
+    );
     const failure = await upload(replay('a'), tmpdir(), `${origin}/api/replays`).catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(UploadHttpError);
     const message = failure instanceof Error ? failure.message : '';
@@ -111,10 +131,12 @@ describe('format mismatch', () => {
   });
 
   it('admits an older server that reports no format', async () => {
-    const origin = await serve((request, response) => {
-      request.resume();
-      request.on('end', () => response.writeHead(400).end('bad'));
-    });
+    const origin = await serve(
+      reply(
+        () => 400,
+        () => 'bad',
+      ),
+    );
     const failure = await upload(replay('a'), tmpdir(), `${origin}/api/replays`).catch((error: unknown) => error);
     expect(failure instanceof Error ? failure.message : '').toContain('the server expects an older or unreported one');
   });
