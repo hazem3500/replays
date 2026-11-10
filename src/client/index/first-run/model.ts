@@ -70,6 +70,8 @@ export interface FirstRunContext {
   uploadUrl: string;
   chooseFile: () => void;
   profiles: readonly ProfileInfo[];
+  /** Recorder guide link from host config; omitted when the host hides it. */
+  recorderGuide?: string;
 }
 
 const RECORDER_SNIPPET = `import { createGuidedRecorder } from '@hazem3500/replays/recorder/ui';
@@ -92,12 +94,12 @@ export const coreWays: ReadonlyArray<SlotDescriptor<FirstRunContext, FirstRunWay
   {
     id: 'core:record',
     order: 200,
-    render: () => ({
+    render: (context) => ({
       title: firstRunStrings.record.title,
       description: firstRunStrings.record.description,
       icon: 'record',
       command: { label: firstRunStrings.record.commandLabel, text: RECORDER_SNIPPET },
-      action: { label: firstRunStrings.record.guide, href: 'https://github.com/hazem3500/replays/blob/main/docs/recorder.md' },
+      ...(context.recorderGuide ? { action: { label: firstRunStrings.record.guide, href: context.recorderGuide } } : {}),
     }),
   },
   {

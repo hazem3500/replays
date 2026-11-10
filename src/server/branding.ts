@@ -5,6 +5,9 @@ import type { ProfileInfo } from '../shared/profiles.ts';
 import type { ViewInfo } from '../shared/views.ts';
 
 import { THEME_TOKENS, type ThemeTokens } from '../shared/theme-tokens.ts';
+import { LINK_KEYS, type CliConfig, type LinkKey, type LinksConfig } from '../shared/help-links.ts';
+
+export type { CliConfig, LinksConfig };
 
 export { THEME_TOKENS, type ThemeToken, type ThemeTokens } from '../shared/theme-tokens.ts';
 
@@ -16,6 +19,49 @@ export interface BrandingConfig {
   theme?: { dark?: ThemeTokens; light?: ThemeTokens };
   /** Links out of the viewer to the deployment's other tools. */
   integrations?: IntegrationsConfig;
+  /** Commands the Settings CLI section shows in place of the from-source defaults (a host that publishes its own CLI). */
+  cli?: CliConfig;
+  /** Where the viewer's help links point; `false` hides a link. A link left unset keeps this project's own docs. */
+  links?: LinksConfig;
+}
+
+const CLI_KEYS = ['install', 'installHint', 'connect', 'connectHint', 'upload', 'uploadHint'] as const;
+type CliKey = (typeof CLI_KEYS)[number];
+
+const isCliKey = (key: string): key is CliKey => CLI_KEYS.some((known) => known === key);
+const isLinkKey = (key: string): key is LinkKey => LINK_KEYS.some((known) => known === key);
+
+function validateCli(input: unknown): CliConfig | undefined {
+  if (input === undefined) return undefined;
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('cli must be an object');
+  const out: CliConfig = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (!isCliKey(key)) throw new Error(`cli.${key} is not a CLI setting (${CLI_KEYS.join(', ')})`);
+    if (value === undefined) continue;
+    const text = typeof value === 'string' ? value.trim() : '';
+    if (!text || text.length > 300 || /[\r\n]/.test(text)) throw new Error(`cli.${key} must be one line of 1-300 characters`);
+    out[key] = text;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+function linkValue(key: string, value: unknown): string | false {
+  if (value === false) return false;
+  const url = typeof value === 'string' ? value.trim() : '';
+  if (!/^https:\/\/\S+$/i.test(url)) throw new Error(`links.${key} must be an https URL or false`);
+  return url;
+}
+
+function validateLinks(input: unknown): LinksConfig | undefined {
+  if (input === undefined) return undefined;
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('links must be an object');
+  const out: LinksConfig = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (!isLinkKey(key)) throw new Error(`links.${key} is not a link (${LINK_KEYS.join(', ')})`);
+    if (value === undefined) continue;
+    out[key] = linkValue(key, value);
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 export interface IntegrationsConfig {
@@ -48,8 +94,12 @@ export function validateBranding(input: Partial<BrandingConfig> | undefined): Br
   const traceUrlTemplate = input?.integrations?.traceUrlTemplate?.trim();
   if (traceUrlTemplate && (!/^https:\/\//i.test(traceUrlTemplate) || !traceUrlTemplate.includes('{traceId}')))
     throw new Error('TRACE_URL_TEMPLATE must be an https URL containing {traceId}');
+  const cli = validateCli(input?.cli);
+  const links = validateLinks(input?.links);
   return {
     name,
+    ...(cli ? { cli } : {}),
+    ...(links ? { links } : {}),
     ...(logoUrl ? { logoUrl } : {}),
     ...(input?.theme ? { theme: input.theme } : {}),
     ...(traceUrlTemplate ? { integrations: { traceUrlTemplate } } : {}),
@@ -119,6 +169,8 @@ export function publicConfig(
     name: branding.name,
     ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}),
     ...(branding.integrations ? { integrations: branding.integrations } : {}),
+    ...(branding.cli ? { cli: branding.cli } : {}),
+    ...(branding.links ? { links: branding.links } : {}),
     ...(extra.contextSchema ? { contextSchema: extra.contextSchema } : {}),
     sourceProviders: extra.sourceProviders,
     auth: extra.auth,

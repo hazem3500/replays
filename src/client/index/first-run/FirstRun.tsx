@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { BotIcon, CircleDotIcon, LinkIcon, TerminalIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 
@@ -9,6 +10,8 @@ import { copyText } from '../../clipboard.ts';
 import { resolveSlot } from '../../plugins/registry.ts';
 import { apiUrl } from '../../api/fetch.ts';
 import { useHydrated } from '../../hooks/use-hydrated.ts';
+import { configQuery } from '../../queries.ts';
+import { helpLink } from '../../settings/config-query.ts';
 import { coreWays, FIRST_RUN_SLOT, type FirstRunCommand, type FirstRunContext, type FirstRunWay, firstRunStrings } from './model.ts';
 
 const ICONS = { record: CircleDotIcon, upload: UploadIcon, cli: TerminalIcon, agent: BotIcon, link: LinkIcon } as const;
@@ -102,11 +105,13 @@ function Profiles({ profiles }: { profiles: readonly ProfileInfo[] }) {
 export function FirstRun({ onUpload, profiles = NO_PROFILES }: { onUpload: () => void; profiles?: readonly ProfileInfo[] }) {
   // why: a server render has no location; the commands take the page's origin once hydrated, so both renders agree.
   const origin = useHydrated() ? location.origin : '';
+  const recorderGuide = helpLink(useQuery(configQuery).data, 'recorderGuide');
   const context: FirstRunContext = {
     origin,
     uploadUrl: `${origin}${apiUrl(`replays`)}`,
     chooseFile: onUpload,
     profiles,
+    ...(recorderGuide ? { recorderGuide } : {}),
   };
   const ways = resolveSlot<FirstRunContext, FirstRunWay>(FIRST_RUN_SLOT, coreWays, context);
   return (

@@ -39,6 +39,10 @@ export interface ClientConfig {
   logoUrl?: string;
   /** Links to the deployment's other tools. */
   integrations?: { traceUrlTemplate?: string };
+  /** Host CLI commands for Settings (src/shared/help-links.ts `CliConfig`). */
+  cli?: import('../shared/help-links.ts').CliConfig;
+  /** Host help links; `false` hides one, unset keeps the project's own (src/shared/help-links.ts `LinksConfig`). */
+  links?: import('../shared/help-links.ts').LinksConfig;
   /** Schema of `context.fields`, when the deployment configured one. */
   contextSchema?: FieldSchema;
   sourceProviders: string[];

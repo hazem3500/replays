@@ -5,7 +5,7 @@ import { Disclosure } from '@/components/ui/disclosure.tsx';
 import { AgentCredentials } from './AgentCredentials.tsx';
 import { CommandField } from './CommandField.tsx';
 import { configQuery } from '../queries.ts';
-import { serverUrl, SETTINGS_LINKS, shellQuote } from './config-query.ts';
+import { helpLink, serverUrl, shellQuote } from './config-query.ts';
 import { ExternalLink, SettingsGroup } from './rows.tsx';
 import { strings } from './strings.ts';
 
@@ -26,6 +26,14 @@ const UPLOAD_HINTS: Record<Exclude<SignInMode, 'managed'>, string> = { open: str
 
 /** Host-managed sign-in: what headers.json carries depends on the auth adapter. */
 const MANAGED_UPLOAD_HINTS: Partial<Record<string, string>> = { oidc: strings.cli.uploadOidc, header: strings.cli.uploadHeader };
+
+/** Omit the prop when a host gave no hint (exactOptionalPropertyTypes). */
+const hintProp = (hint: string | undefined) => (hint ? { hint } : {});
+
+function uploadHint(mode: SignInMode, auth: string): string {
+  if (mode === 'managed') return MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther;
+  return UPLOAD_HINTS[mode];
+}
 
 export function CliSection() {
   const config = useQuery(configQuery);
@@ -54,6 +62,10 @@ export function CliSection() {
   const anonymous = auth === 'none';
   const deviceLogin = Boolean(config.data.cliDeviceAuth);
   const mode = signInMode(auth, deviceLogin);
+  const host = config.data.cli ?? {};
+  const sourceLink = helpLink(config.data, 'source');
+  const cliGuide = helpLink(config.data, 'cliGuide');
+  const authGuide = helpLink(config.data, 'authGuide');
   return (
     <div className="settings-cli">
       <dl className="cli-access">
@@ -61,23 +73,31 @@ export function CliSection() {
         <dd>{ACCESS[mode]}</dd>
       </dl>
       <SettingsGroup title={strings.cli.install}>
-        <p className="cli-source">
-          {strings.cli.installIntro} <ExternalLink href={SETTINGS_LINKS.cli}>{strings.cli.source}</ExternalLink>
-        </p>
+        {host.install ? null : (
+          <p className="cli-source">
+            {strings.cli.installIntro}
+            {sourceLink ? (
+              <>
+                {' '}
+                <ExternalLink href={sourceLink}>{strings.cli.source}</ExternalLink>
+              </>
+            ) : null}
+          </p>
+        )}
         <CommandField
           label={strings.cli.installCommand}
-          command="pnpm install --frozen-lockfile && pnpm build && pnpm build:cli && npm install -g ."
-          hint={strings.cli.installHint}
+          command={host.install ?? 'pnpm install --frozen-lockfile && pnpm build && pnpm build:cli && npm install -g .'}
+          {...hintProp(host.install ? host.installHint : strings.cli.installHint)}
         />
       </SettingsGroup>
       <SettingsGroup title={strings.cli.connect}>
         <CommandField
-          label={strings.cli.connectCommand}
-          command={`replays connect ${shellQuote(serverUrl())} && replays doctor`}
-          hint={strings.cli.connectHint}
+          label={host.connect ? strings.cli.signInCommand : strings.cli.connectCommand}
+          command={host.connect ?? `replays connect ${shellQuote(serverUrl())} && replays doctor`}
+          {...hintProp(host.connect ? host.connectHint : strings.cli.connectHint)}
         />
       </SettingsGroup>
-      {deviceLogin ? (
+      {deviceLogin && !host.connect ? (
         <SettingsGroup title={strings.cli.signIn}>
           <CommandField label={strings.cli.signInCommand} command="replays login" hint={strings.cli.signInHint} />
         </SettingsGroup>
@@ -85,18 +105,20 @@ export function CliSection() {
       <SettingsGroup title={strings.cli.upload}>
         <CommandField
           label={strings.cli.uploadCommand}
-          command={`replays upload replay.json${anonymous || deviceLogin ? '' : ' --header-file headers.json'}`}
-          hint={mode === 'managed' ? (MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther) : UPLOAD_HINTS[mode]}
+          command={host.upload ?? `replays upload replay.json${anonymous || deviceLogin ? '' : ' --header-file headers.json'}`}
+          {...hintProp(host.upload ? host.uploadHint : uploadHint(mode, auth))}
         />
       </SettingsGroup>
       <Disclosure className="settings-group settings-credentials" summary={strings.cli.agentsAdvanced}>
         <AgentCredentials />
         <p className="settings-group-footer">{strings.cli.agentsHint}</p>
       </Disclosure>
-      <nav className="settings-links" aria-label={strings.sections.cli}>
-        <ExternalLink href={SETTINGS_LINKS.cli}>{strings.cli.cliGuide}</ExternalLink>
-        <ExternalLink href={SETTINGS_LINKS.auth}>{strings.cli.authGuide}</ExternalLink>
-      </nav>
+      {cliGuide || authGuide ? (
+        <nav className="settings-links" aria-label={strings.sections.cli}>
+          {cliGuide ? <ExternalLink href={cliGuide}>{strings.cli.cliGuide}</ExternalLink> : null}
+          {authGuide ? <ExternalLink href={authGuide}>{strings.cli.authGuide}</ExternalLink> : null}
+        </nav>
+      ) : null}
     </div>
   );
 }
