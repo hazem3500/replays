@@ -10,7 +10,7 @@ export interface SuiteChange<T> {
 
 /**
  * Registering again is idempotent: the same registration changes nothing, a different one conflicts. `people` is not
- * identity: a re-registration may add or replace them (absent keeps what is stored).
+ * identity: a re-registration may add or replace them (absent keeps what is stored). `summary` is not identity either.
  */
 export function registration(current: ReviewSuite | undefined, id: string, input: ResolvedSuiteRegistration): SuiteChange<ReviewSuite> {
   if (!current) {
@@ -18,15 +18,18 @@ export function registration(current: ReviewSuite | undefined, id: string, input
     return { next: suite, result: suite };
   }
   const { runs, ...stored } = current;
-  const { people: currentPeople, ...currentIdentity } = stored;
-  const { people: requestedPeople, ...requestedIdentity } = input;
+  const { people: currentPeople, summary: currentSummary, ...currentIdentity } = stored;
+  const { people: requestedPeople, summary: requestedSummary, ...requestedIdentity } = input;
   if (JSON.stringify(currentIdentity) !== JSON.stringify({ ...requestedIdentity, id })) {
     throw new HttpError(409, `suite ${id} conflicts with its existing registration`);
   }
-  if (requestedPeople === undefined || JSON.stringify(requestedPeople) === JSON.stringify(currentPeople))
-    return { next: undefined, result: current };
-  // why: key order as on first registration (people before runs), so the stored file reads the same either way.
-  const updated: ReviewSuite = { ...stored, people: requestedPeople, runs };
+  const peopleChanged = requestedPeople !== undefined && JSON.stringify(requestedPeople) !== JSON.stringify(currentPeople);
+  const summaryChanged = requestedSummary !== undefined && requestedSummary !== currentSummary;
+  if (!peopleChanged && !summaryChanged) return { next: undefined, result: current };
+  // why: key order as on first registration (people, summary, then runs), so the stored file reads the same either way.
+  const people = requestedPeople ?? currentPeople;
+  const summary = requestedSummary ?? currentSummary;
+  const updated: ReviewSuite = { ...currentIdentity, id, ...(people ? { people } : {}), ...(summary ? { summary } : {}), runs };
   return { next: updated, result: updated };
 }
 
@@ -45,8 +48,10 @@ export function withRun(suite: ReviewSuite, runId: string, input: ReviewRunRegis
   const existing = suite.runs.find((run) => run.id === runId);
   if (existing) assertRunUnchanged(existing, runId, input);
   if (existing?.replayId && input.status === 'running') return suite;
+  const summary = input.summary ?? existing?.summary;
   const run: ReviewSuiteRun = {
     ...input,
+    ...(summary ? { summary } : {}),
     ...(existing?.replayId ? { replayId: existing.replayId, recording: existing.recording } : {}),
   };
   return {

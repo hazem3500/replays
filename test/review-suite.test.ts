@@ -44,6 +44,54 @@ const resolvedSubject = {
 const put = (url: string, body: unknown) =>
   fetch(url, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
+describe('review suite summaries', () => {
+  const suite = {
+    version: 1 as const,
+    id: 'review-summary-a',
+    title: 'Summary review',
+    createdAt: '2026-10-10T12:00:00.000Z',
+    subject,
+  };
+  const run = {
+    id: 'step-01',
+    sequence: 1,
+    label: 'Dates persist',
+    status: 'passed' as const,
+    startedAt: '2026-10-10T12:01:00.000Z',
+    finishedAt: '2026-10-10T12:02:00.000Z',
+  };
+
+  it('stores a summary on a suite and a run without making it part of their identity', async () => {
+    const { origin } = await start();
+    const base = `${origin}/api/suites/${suite.id}`;
+    expect((await put(base, suite)).status).toBe(200);
+    expect((await put(`${base}/runs/${run.id}`, run)).status).toBe(200);
+
+    const suiteSummary = 'Good enough: yes.\n\n- Not verified: yearly plan';
+    const runSummary = 'Checked: reload.\n- Nov 11-13 stayed selected';
+    expect((await put(base, { ...suite, summary: suiteSummary })).status).toBe(200);
+    expect((await put(`${base}/runs/${run.id}`, { ...run, summary: runSummary })).status).toBe(200);
+    const stored = (await (await fetch(base)).json()) as { summary?: string; runs: Array<{ summary?: string }> };
+    expect(stored.summary).toBe(suiteSummary);
+    expect(stored.runs[0]?.summary).toBe(runSummary);
+
+    expect((await put(base, suite)).status).toBe(200);
+    expect((await put(`${base}/runs/${run.id}`, run)).status).toBe(200);
+    const kept = (await (await fetch(base)).json()) as { summary?: string; runs: Array<{ summary?: string }> };
+    expect(kept.summary).toBe(suiteSummary);
+    expect(kept.runs[0]?.summary).toBe(runSummary);
+
+    const expanded = (await (await fetch(`${base}?expand=runs`)).json()) as ReviewSuiteIndexEntry;
+    expect(expanded.runDetails[0]?.summary).toBe(runSummary);
+  });
+
+  it('refuses an empty, oversized or control-character summary', async () => {
+    const { origin } = await start();
+    const base = `${origin}/api/suites/${suite.id}`;
+    for (const summary of ['  ', 'x'.repeat(4001), 'bad\u0000text']) expect((await put(base, { ...suite, summary })).status).toBe(400);
+  });
+});
+
 describe('review suites', () => {
   it('does not call an empty suite complete', () => {
     expect(suiteOverallStatus([])).toBe('Waiting');
