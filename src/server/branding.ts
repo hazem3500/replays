@@ -5,6 +5,9 @@ import type { ProfileInfo } from '../shared/profiles.ts';
 import type { ViewInfo } from '../shared/views.ts';
 
 import { THEME_TOKENS, type ThemeTokens } from '../shared/theme-tokens.ts';
+import { LINK_KEYS, type CliConfig, type LinkKey, type LinksConfig } from '../shared/help-links.ts';
+
+export type { CliConfig, LinksConfig };
 
 export { THEME_TOKENS, type ThemeToken, type ThemeTokens } from '../shared/theme-tokens.ts';
 
@@ -21,20 +24,6 @@ export interface BrandingConfig {
   /** Where the viewer's help links point; `false` hides a link. A link left unset keeps this project's own docs. */
   links?: LinksConfig;
 }
-
-/** One line each, shown in a copy field. Setting `connect` replaces the connect and sign-in steps with that one command. */
-export interface CliConfig {
-  install?: string;
-  installHint?: string;
-  connect?: string;
-  connectHint?: string;
-  upload?: string;
-  uploadHint?: string;
-}
-
-export const LINK_KEYS = ['source', 'cliGuide', 'authGuide', 'labs', 'docs', 'issues', 'recorderGuide'] as const;
-export type LinkKey = (typeof LINK_KEYS)[number];
-export type LinksConfig = Partial<Record<LinkKey, string | false>>;
 
 const CLI_KEYS = ['install', 'installHint', 'connect', 'connectHint', 'upload', 'uploadHint'] as const;
 type CliKey = (typeof CLI_KEYS)[number];

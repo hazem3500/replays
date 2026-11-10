@@ -1,6 +1,6 @@
 import { apiUrl } from '../api/fetch.ts';
 import type { ClientConfig } from '../config.ts';
-import type { LinkKey } from '../../server/branding.ts';
+import type { LinkKey } from '../../shared/help-links.ts';
 
 const REPO = 'https://github.com/hazem3500/replays';
 /** This project's own docs: what a link shows unless the host sets it (or hides it with `false`). */
