@@ -3,7 +3,7 @@ import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-import { stepPauseMs, type CapturePacingOptions } from '../shared/capture-pacing.ts';
+import { shotDelayMs, stepPauseMs, typeDelayMs, type CapturePacingOptions } from '../shared/capture-pacing.ts';
 import type { CaptureNetwork, NetworkBodyLimits } from '../shared/capture-profile.ts';
 import { type ProfileConfig, profileOf, profilesOf } from '../shared/profiles.ts';
 import type { ConsoleLevel } from '../shared/replay.ts';
@@ -32,8 +32,11 @@ import { RecorderSession } from './session.ts';
 import { assertCaptureUrl, readSteps } from './capture-steps.ts';
 import { saveShot, type CapturedShot } from './capture-shots.ts';
 import { labelFor } from './step-labels.ts';
+import { assertPrivacyFitsProfile, inputsVisible, privacyFlag } from './capture-privacy.ts';
+import { compressPacingWaits, isPacingWait, pacingClock, pacingWaitLabel, type PacingSpan } from './pacing-waits.ts';
 import { waitForManualStop, type ManualStopOptions, type ManualStopReason } from './manual.ts';
 import { DEFAULT_MAX_DURATION_MS, MAX_DURATION_CEILING_MS } from '../recorder/recorder-limits.ts';
+import type { RecorderPrivacyMode } from '../recorder/types.ts';
 
 export type { RawStep } from './drivers/types.ts';
 export { createPullGate, normalizeConsole, normalizePerformance } from './session.ts';
@@ -86,6 +89,16 @@ export interface CaptureArgs extends CapturePacingOptions {
   performanceChosen?: boolean;
   /** Console levels kept; default all. */
   console?: readonly ConsoleLevel[];
+  /** The recorder's privacy mode (`--privacy`); default `inputs-masked`, typed values hidden and page text shown. */
+  privacy?: RecorderPrivacyMode;
+  /** CSS selectors hidden from the first frame, in the recording and in a `shot` (`--hide`, repeatable). */
+  hide?: readonly string[];
+  /** Per-character delay of a `type` step in ms (`--type-delay`); default 80. */
+  typeDelayMs?: number;
+  /** Hold after a `shot` step in ms (`--shot-delay`); default the step pause. */
+  shotDelayMs?: number;
+  /** Compress unlabelled fixed waits over 5 s to 2 s of replay time (`--compress-waits`); not with a video. */
+  compressWaits?: boolean;
   /** A manual recording: the person drives the browser and `steps` is empty; it ends at `maxDurationMs` at the latest. */
   manual?: { maxDurationMs: number };
 }
@@ -97,7 +110,7 @@ export interface ManualHooks extends Pick<ManualStopOptions, 'stdin' | 'signals'
   onStopped?: (reason: ManualStopReason) => void;
 }
 
-const BOOLEAN_FLAGS = new Set(['video', 'headed', 'manual', 'upload', 'login', 'performance', 'no-performance']);
+const BOOLEAN_FLAGS = new Set(['video', 'headed', 'manual', 'upload', 'login', 'performance', 'no-performance', 'compress-waits']);
 
 export { CAPTURE_USAGE };
 
@@ -184,10 +197,18 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     ...(values.network === undefined ? {} : { network: networkFlag(values.network) }),
     ...(booleans.has('no-performance') ? { performance: false } : booleans.has('performance') ? { performance: true } : {}),
   });
+  const privacy = privacyFlag(values.privacy);
+  assertPrivacyFitsProfile(privacy, settings.maskAllText);
   const redaction = settings.maskAllText ? mergeRedactionRules(loaded.redaction, { maskSelectors: ['body'] }) : loaded.redaction;
-  const pause = stepPauseMs(
-    values['step-pause'] === undefined ? (own?.stepPauseMs ?? loaded.pacing?.stepPauseMs) : Number(values['step-pause']),
-  );
+  if (values['step-pause'] !== undefined && values['step-delay'] !== undefined)
+    throw new Error('--step-delay is the same flag as --step-pause; use one');
+  const stepFlag = values['step-pause'] ?? values['step-delay'];
+  const pause = stepPauseMs(stepFlag === undefined ? (own?.stepPauseMs ?? loaded.pacing?.stepPauseMs) : Number(stepFlag));
+  const typeDelay = values['type-delay'] === undefined ? undefined : typeDelayMs(Number(values['type-delay']));
+  const shotDelay = values['shot-delay'] === undefined ? undefined : shotDelayMs(Number(values['shot-delay']));
+  const video = booleans.has('video') || own?.video === true;
+  if (booleans.has('compress-waits') && video)
+    throw new Error('--compress-waits cannot be combined with --video; the video keeps real time');
   const state = values.state ? await readStateFile(values.state) : undefined;
   const args = {
     url: values.url,
@@ -195,11 +216,16 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     id,
     steps: await readSteps(values.steps),
     stepPauseMs: pause,
-    video: booleans.has('video') || own?.video === true,
+    video,
     headed: booleans.has('headed'),
     driver,
     viewport: values.viewport === undefined && own?.viewport ? own.viewport : parseViewport(values.viewport),
     ...(state ? { state } : {}),
+    ...(privacy ? { privacy } : {}),
+    ...(lists.hide?.length ? { hide: lists.hide } : {}),
+    ...(typeDelay === undefined ? {} : { typeDelayMs: typeDelay }),
+    ...(shotDelay === undefined ? {} : { shotDelayMs: shotDelay }),
+    ...(booleans.has('compress-waits') ? { compressWaits: true } : {}),
     network: settings.network,
     ...(settings.bodies ? { bodies: settings.bodies } : {}),
     performance: settings.performance,
@@ -249,6 +275,11 @@ export function createDriver(name: DriverName, options: { headed?: boolean } = {
 
 export async function capture(args: CaptureArgs, driver: CaptureDriver = createDriver(args.driver), hooks: ManualHooks = {}) {
   const pause = stepPauseMs(args.stepPauseMs);
+  const typeDelay = typeDelayMs(args.typeDelayMs);
+  const shotHold = shotDelayMs(args.shotDelayMs) ?? pause;
+  // why: a raw video runs on the real clock, so a capture that keeps one keeps real time too.
+  const compressWaits = args.compressWaits === true && !args.video;
+  const pacingSpans: PacingSpan[] = [];
   await prepareOutputDirectory(args.output);
   const scratch = await mkdtemp(join(tmpdir(), 'replays-'));
   const harPath = join(scratch, 'session.har');
@@ -267,6 +298,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     const cdp = await driver.launch({
       viewport: args.viewport,
       harPath,
+      typeDelayMs: typeDelay,
       ...(args.state ? { state: args.state } : {}),
       ...(bodiesRecorded ? { bodies: true } : {}),
       ...(args.video ? { videoPath: rawVideoPath } : {}),
@@ -274,6 +306,8 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     session = await RecorderSession.start(cdp, {
       ...(args.redaction ? { redaction: args.redaction } : {}),
       ...(args.manual ? { steps: true } : {}),
+      ...(args.privacy ? { privacy: args.privacy } : {}),
+      ...(args.hide?.length ? { hide: args.hide } : {}),
     });
 
     rawSteps.push({
@@ -300,10 +334,17 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
           ...('selector' in step ? { selector: step.selector } : {}),
           ...('url' in step ? { url: sanitizeUrl(step.url) } : {}),
         });
+      const startedAt = Date.now();
       if (step.kind === 'shot')
         shotFiles.push({ name: step.name, file: await saveShot(driver, args.output, step.name), step: rawSteps.length });
       else await driver.step(step);
-      if (step.kind !== 'wait' && pause > 0) await driver.wait(pause);
+      if (compressWaits && isPacingWait(step)) {
+        const span = { from: startedAt, to: Date.now() };
+        pacingSpans.push(span);
+        rawSteps.push({ at: 0, epoch: startedAt, kind: 'wait', label: pacingWaitLabel(span) });
+      }
+      const hold = step.kind === 'shot' ? shotHold : pause;
+      if (step.kind !== 'wait' && hold > 0) await driver.wait(hold);
       await session.flush();
     }
     if (args.manual) {
@@ -331,11 +372,13 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       ...tracks.steps.map((step) => ({ ...step, at: Math.max(0, step.at - origin) })),
     ].sort((a, b) => a.at - b.at);
     const { duration } = tracks;
+    const spans = pacingSpans.map(({ from, to }) => ({ from: from - origin, to: to - origin }));
+    const replayClock = pacingClock(spans);
     const shots: CapturedShot[] = shotFiles.map(({ step, ...shot }) => ({
       ...shot,
       label: rawSteps[step - 1]!.label,
       step,
-      at: Math.max(0, rawSteps[step - 1]!.epoch - origin),
+      at: replayClock(Math.max(0, rawSteps[step - 1]!.epoch - origin)),
     }));
     const context = buildContext(args, new Date(origin).toISOString());
     const profile = profileOf(args);
@@ -361,6 +404,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
             performance: args.performance ?? true,
             performanceChosen: args.performanceChosen === true,
             ...(args.console ? { console: args.console } : {}),
+            inputsVisible: inputsVisible(args.privacy),
           },
           args.video,
           bodiesRecorded,
@@ -377,8 +421,10 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       ...(context ? { context } : {}),
       ...(args.suiteRun ? { suiteRun: args.suiteRun } : {}),
     };
+    bundle = compressPacingWaits(bundle, spans);
+    const keepVisibleInputs = inputsVisible(args.privacy);
     // why: the host's rules also cover what the steps added (labels, the title), as the server's upload pass does.
-    if (args.redaction || bodiesRecorded) bundle = sanitizeReplayBundle(bundle, args.redaction);
+    if (args.redaction || bodiesRecorded || keepVisibleInputs) bundle = sanitizeReplayBundle(bundle, args.redaction, { keepVisibleInputs });
     const replayPath = join(args.output, 'replay.json');
     await writeFile(replayPath, `${JSON.stringify(bundle)}\n`, { flag: 'wx' });
     if (args.video) await copyFile(rawVideoPath, join(args.output, 'session.mp4'), constants.COPYFILE_EXCL);

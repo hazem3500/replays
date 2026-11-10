@@ -7,14 +7,14 @@ import { STEP_TIMEOUT } from './locate.ts';
 import { waitForSelectorOverCdp } from './wait-selector.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
 
-function stepArgs(step: Exclude<RawStep, { kind: 'shot' | 'wait' }>) {
+function stepArgs(step: Exclude<RawStep, { kind: 'shot' | 'wait' }>, typeDelayMs: number) {
   switch (step.kind) {
     case 'click':
       return ['click', step.selector];
     case 'hover':
       return ['hover', step.selector];
     case 'type':
-      return ['type', step.selector, step.text, '--delay', String(TYPE_DELAY_MS)];
+      return ['type', step.selector, step.text, '--delay', String(typeDelayMs)];
     case 'fill':
       return ['fill', step.selector, step.text];
     case 'press':
@@ -32,6 +32,7 @@ export function agentBrowserDriver(): CaptureDriver {
   let cdp: CdpClient | undefined;
   let page: CdpLike | undefined;
   let launched: LaunchOptions | undefined;
+  const typeDelay = () => launched?.typeDelayMs ?? TYPE_DELAY_MS;
   let harStarted = false;
   let videoStarted = false;
   return {
@@ -63,8 +64,8 @@ export function agentBrowserDriver(): CaptureDriver {
         else if ('ms' in step) await browser.command(['wait', String(step.ms)]);
         return;
       }
-      if (page && (await runOnFirstVisible(page, step))) return;
-      await browser.command(stepArgs(step));
+      if (page && (await runOnFirstVisible(page, step, typeDelay()))) return;
+      await browser.command(stepArgs(step, typeDelay()));
     },
     async screenshot(path) {
       await browser.command(['screenshot', path]);

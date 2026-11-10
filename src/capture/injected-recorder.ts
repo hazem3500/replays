@@ -2,7 +2,9 @@ import { record } from 'rrweb';
 
 import { resolveCapture } from '../recorder/capture-options.ts';
 import { captureInteractionSteps } from '../recorder/interaction-steps.ts';
+import { modePrivacy } from '../recorder/recorder-choices.ts';
 import { recorderPrivacy } from '../recorder/recorder-privacy.ts';
+import type { RecorderPrivacyMode } from '../recorder/types.ts';
 import { MASK_INPUT_OPTIONS } from './mask-inputs.ts';
 
 declare global {
@@ -15,6 +17,8 @@ declare global {
     __REPLAYS_MASK_TEXT__?: string;
     /** Set by the capture session for a manual recording: the page names the person's clicks and route changes as steps. */
     __REPLAYS_STEPS__?: boolean;
+    /** Set by the capture session for `--privacy`: the recorder's mode, applied the way its own options step applies it. */
+    __REPLAYS_PRIVACY__?: RecorderPrivacyMode;
   }
 }
 
@@ -25,6 +29,9 @@ interface RecorderChunk {
   performanceSupported: string[];
   steps: Array<{ at: number; kind: string; label: string; auto: true }>;
 }
+
+/** invariant: the capture has no host cap of its own, so a mode shows exactly what it names. */
+const EVERYTHING = { text: true, inputs: true, media: true, interface: true };
 
 try {
   if (window.top === window && !window.__REPLAYS_RUNNING__) {
@@ -132,6 +139,15 @@ try {
     // why: an invalid selector stops the recorder (the capture fails) rather than recording the text it should hide.
     if (maskTextSelector) document.createDocumentFragment().querySelector(maskTextSelector);
 
+    const mode = window.__REPLAYS_PRIVACY__;
+    delete window.__REPLAYS_PRIVACY__;
+    // invariant: without `--privacy` the recorder masks exactly as before; a mode takes the recorder's own masking for it.
+    const modeOptions = mode ? { ...modePrivacy({}, mode, EVERYTHING), ...(maskTextSelector ? { maskTextSelector } : {}) } : undefined;
+    const privacy = recorderPrivacy(
+      modeOptions ?? (maskTextSelector ? { maskTextSelector } : {}),
+      resolveCapture(modeOptions ? { privacy: modeOptions } : { privacy: { maskAllText: false, blockMedia: false } }),
+    );
+
     record({
       emit(event) {
         events.push(event as unknown as RecorderChunk['events'][number]);
@@ -139,14 +155,11 @@ try {
       // why: rrweb's maskAllInputs set plus hidden inputs (CSRF tokens); see sanitize.ts.
       maskInputOptions: MASK_INPUT_OPTIONS,
       ...(maskTextSelector ? { maskTextSelector } : {}),
+      ...(modeOptions ? privacy.rrwebOptions() : {}),
     });
 
     if (window.__REPLAYS_STEPS__) {
       delete window.__REPLAYS_STEPS__;
-      const privacy = recorderPrivacy(
-        maskTextSelector ? { maskTextSelector } : {},
-        resolveCapture({ privacy: { maskAllText: false, blockMedia: false } }),
-      );
       captureInteractionSteps(privacy, (step) => {
         steps.push({ at: step.at, kind: step.kind, label: step.label, auto: true });
       });
