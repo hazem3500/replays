@@ -30,6 +30,8 @@
 .cp-count { color: var(--text); font-weight: 600; }
 .cp-page { padding-top: 0; overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
 .cp-head .cp-page { padding-top: 0; }
+/* why: the stronger error tint drops tertiary ink under 4.5:1; past error rows use secondary for their time and page. */
+.cp-row[data-level="error"]:not([data-future]) :is(.cp-time time, .cp-page) { color: var(--text-secondary); }
 .cp-row[data-future] .cp-text, .cp-row[data-future] .cp-page { color: var(--text-tertiary); }
 .cp-row[data-future] .cp-level-icon { opacity: 0.5; }
 .cp-row[data-future][data-level="error"] { background: color-mix(in srgb, color-mix(in srgb, var(--danger) 15%, var(--danger-tint)) 75%, transparent); }
