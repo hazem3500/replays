@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
+import * as z from 'zod/mini';
 
 import { editListOf, type ReplayEdits, type StoredReplayEdits, stepNameKeys, withStepName } from '../../shared/edits.ts';
 import type { ReplayPerson } from '../../shared/people.ts';
@@ -11,6 +12,8 @@ import { fetchPage } from '../sign-in.tsx';
 import { notify } from '../toast.ts';
 import { createRenameStore, mayRename, renameResult, type RenameViewer } from '../viewer/step-rename.ts';
 import type { StepRenaming } from '../viewer/step-rename-context.ts';
+
+const viewerSchema = z.object({ email: z.optional(z.string()), roles: z.optional(z.array(z.string())) });
 
 const NO_NAMES: Readonly<Record<string, string>> = {};
 
@@ -24,8 +27,8 @@ function useViewerIdentity(enabled: boolean) {
     queryFn: async ({ signal }): Promise<RenameViewer> => {
       const response = await fetchPage(apiUrl('me'), { signal });
       if (!response.ok) throw new Error(`me ${response.status}`);
-      const viewer: RenameViewer = await response.json();
-      return viewer;
+      const viewer = viewerSchema.parse(await response.json());
+      return { ...(viewer.email ? { email: viewer.email } : {}), ...(viewer.roles ? { roles: viewer.roles } : {}) };
     },
   }).data;
 }
