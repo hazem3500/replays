@@ -27,6 +27,10 @@ import { Topbar } from '../Topbar.tsx';
 import { EditedViewer } from '../Viewer.tsx';
 import { editsQuery } from '../edits.ts';
 import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
+import { LoadingPlayContext } from '../ViewerLoadingParts.tsx';
+import { useLoadingPlayKeys, useWantedRun } from '../hooks/use-play-intent.ts';
+import { useRunPrefetch } from '../hooks/use-run-prefetch.ts';
+import { PlayIntent } from './play-intent.ts';
 import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import { SummaryText } from '../viewer/SummaryText.tsx';
@@ -130,6 +134,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // Runs show their saved edits too; a failed load shows the run as recorded.
   const edits = useQuery({ ...editsQuery(selected ?? ''), enabled: Boolean(selected) });
   const editsSettled = edits.data !== undefined || edits.isError;
+  const viewerReady = Boolean(bundle && bundle.meta.id === selected && editsSettled);
   // An observed auth failure must win over cached suite, bundle or edit data.
   const authFailure = [suiteFailure, bundleFailure, edits.error].find((candidate) => candidate instanceof SignInError);
   const signingIn = useSignInRedirect(authFailure);
@@ -171,13 +176,17 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const queryClient = useQueryClient();
   const [pending, setPending] = useState<string>();
   const target = pending ?? selected;
+  // why: play pressed (or playing) around a switch goes to the run being switched to, and the latest switch wins.
+  const [playIntent] = useState(() => new PlayIntent());
   const switchTo = useCallback(
     (replayId: string | undefined, instant = false) => {
       setPending(replayId);
+      if (replayId) playIntent.switching(replayId);
       swapInPlace(
         () => {
           setSelected(replayId);
           setPending(undefined);
+          playIntent.settled();
         },
         replayId
           ? Promise.all([queryClient.query(replayQuery(replayId)), queryClient.query(editsQuery(replayId)).catch(() => undefined)])
@@ -185,7 +194,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         { instant },
       );
     },
-    [queryClient],
+    [playIntent, queryClient],
   );
 
   useEffect(() => {
@@ -198,6 +207,15 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, [comparing, id, switchTo]);
+
+  // why: until the viewer is up, its stand-in's play button and Space / K ask for play, and a failed run drops the request.
+  const wantedRun = useWantedRun(playIntent);
+  const toggleLoadingPlay = () => {
+    if (!selected) return;
+    if (playIntent.getWanted() === selected) playIntent.cancel();
+    else playIntent.request(selected);
+  };
+  useLoadingPlayKeys(playIntent, selected, bundleError ? 'failed' : viewerReady || comparing ? 'ready' : 'loading');
 
   const select = useCallback(
     (replayId: string | undefined, instant = false) => {
@@ -228,19 +246,11 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [comparing, detailed, runs, select, target]);
 
-  // The neighbouring runs load at low priority once the suite is up, so J / Shift+J and a click on the next
-  // or previous run swap in place without a skeleton (bundles are capped, so only the two neighbours).
-  useEffect(() => {
-    if (!suite || !selected) return;
-    const idle = window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 800));
-    const handle = idle(() => {
-      for (const step of [1, -1] as const) {
-        const neighbour = neighbourReplayId(runs, selected, step, detailed);
-        if (neighbour && neighbour !== selected) void prefetchReplay(queryClient, neighbour);
-      }
-    });
-    return () => (window.cancelIdleCallback ?? window.clearTimeout)(handle);
-  }, [detailed, queryClient, runs, selected, suite]);
+  useRunPrefetch(
+    runs.flatMap((item) => playableReplayId(item, detailed) ?? []),
+    selected,
+    viewerReady && Boolean(suite),
+  );
 
   useEffect(() => {
     if (suite) document.title = `${suite.title} · ${productName()}`;
@@ -357,7 +367,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
               }}
             />
           </Suspense>
-        ) : bundle && bundle.meta.id === selected && editsSettled ? (
+        ) : viewerReady && bundle ? (
           <EditedViewer
             key={bundle.meta.id}
             bundle={bundle}
@@ -373,6 +383,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             initialTab={tab}
             onTabChange={setTab}
             suiteProfile={suite?.profile}
+            playIntent={playIntent}
           />
         ) : bundleError ? (
           <main className="app-shell">
@@ -395,7 +406,9 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             )}
           </main>
         ) : (
-          <ViewerSkeleton label="Loading run" />
+          <LoadingPlayContext value={{ wanted: wantedRun === selected, toggle: toggleLoadingPlay }}>
+            <ViewerSkeleton label="Loading run" />
+          </LoadingPlayContext>
         )}
       </div>
     </div>

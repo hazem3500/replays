@@ -11,6 +11,8 @@ export interface PlayerState {
   /** The chosen speed; a skip's fast-forward never changes it. */
   speed: Speed;
   skipInactive: boolean;
+  /** Play was asked for and starts once the replay is ready (its frame is still loading, or its run is being switched in). */
+  starting?: boolean | undefined;
   /** The idle gap being fast-forwarded right now, if any. */
   skipping?: IdleGap | undefined;
 }
@@ -21,6 +23,12 @@ export interface Viewport {
 }
 
 export type Listener = () => void;
+
+/** Takes a player's play requests while a run switch is pending: `request` on play, `cancel` on pause. */
+export interface PlayHold {
+  request(): void;
+  cancel(): void;
+}
 
 /**
  * What the viewer's chrome (transport, shortcuts, steps, inspector) drives: one recording's controller, or a

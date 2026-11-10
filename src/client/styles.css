@@ -329,6 +329,9 @@ kbd:not([data-slot]) { min-width: 22px; padding: 1px 6px; border: 1px solid var(
  */
 .transport { container: transport / inline-size; min-height: 40px; display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "play time scrub captions options"; align-items: center; column-gap: 4px; padding: 4px 8px; border-top: 1px solid var(--line); background: var(--surface-raised); }
 .play-button { grid-area: play; }
+.play-spinner { display: block; width: 16px; height: 16px; box-sizing: border-box; border: 2px solid var(--line-strong); border-top-color: var(--text); border-radius: 50%; animation: play-spin 0.8s linear infinite; }
+@keyframes play-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .play-spinner { animation: play-spin 2.4s linear infinite; } }
 .transport-readouts { grid-area: time; display: flex; align-items: center; gap: 8px; margin-left: 4px; }
 .scrubber { grid-area: scrub; }
 .playback-options { grid-area: options; }

@@ -100,6 +100,7 @@ describe('notice errors', () => {
     expect(root().querySelector('.icon-alert')).toBeNull();
     ui.showResult({ status: 'error', error: new Error('x'), retry() {} });
     expect(root().querySelector('.icon-alert')).not.toBeNull();
+    expect(root().querySelector('[data-tone]')).toBeNull();
     ui.dismiss();
   });
 });
