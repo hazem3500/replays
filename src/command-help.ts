@@ -24,10 +24,12 @@ export const COMMANDS: readonly CommandDefinition[] = [
     name: 'probe',
     summary: 'open a page headless and list what a selector matches (visibility, boxes)',
     captureOnly: true,
-    help: `usage: ${p} probe --url <url> --selector <selector> [--json]
+    help: `usage: ${p} probe --url <url> --selector <selector> [--state <storageState.json>] [--viewport <WxH>] [--json]
 
 Opens the page headless and reports every match (up to 20) with its tag, text, visibility and bounding box.
-Capture steps act on the first visible match, marked with * . Use it to test a selector before recording.`,
+Capture steps act on the first visible match, marked with * . Use it to test a selector before recording.
+  --state <file>      Playwright storage state (cookies and local storage) to probe a signed-in page
+  --viewport <WxH>    window size, default 1280x800`,
   },
   {
     name: 'import',

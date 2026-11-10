@@ -1,4 +1,8 @@
+import { access } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
 import { flagMap } from './bundle-io.ts';
+import { parseViewport } from './capture.ts';
 import { assertCaptureUrl } from './capture-steps.ts';
 import { describeMatches, type MatchInfo } from './drivers/locate.ts';
 import { launchChromium } from './drivers/playwright.ts';
@@ -17,11 +21,21 @@ export interface ProbeResult {
   matches: MatchInfo[];
 }
 
+export interface ProbeOptions {
+  /** A Playwright storage state file (cookies and local storage), to probe pages behind a sign-in. */
+  state?: string;
+  viewport?: { width: number; height: number };
+}
+
 /** Opens `url` headless and reports what `selector` matches, so a script can be fixed before a recording. */
-export async function probeSelector(url: string, selector: string): Promise<ProbeResult> {
+export async function probeSelector(url: string, selector: string, options: ProbeOptions = {}): Promise<ProbeResult> {
   const browser = await launchChromium();
   try {
-    const page = await (await browser.newContext({ viewport: VIEWPORT })).newPage();
+    const context = await browser.newContext({
+      viewport: options.viewport ?? VIEWPORT,
+      ...(options.state ? { storageState: options.state } : {}),
+    });
+    const page = await context.newPage();
     await page.goto(url, { waitUntil: 'load', timeout: 30_000 });
     const { count, matches } = await describeMatches(page, selector, PROBE_LIMIT);
     const visibleCount =
@@ -35,17 +49,24 @@ export async function probeSelector(url: string, selector: string): Promise<Prob
   }
 }
 
-const USAGE = 'usage: replays probe --url <url> --selector <selector> [--json]';
+const FLAGS = new Set(['url', 'selector', 'state', 'viewport']);
 
-/** `replays probe --url <u> --selector <s> [--json]` */
+const USAGE = 'usage: replays probe --url <url> --selector <selector> [--state <storageState.json>] [--viewport <WxH>] [--json]';
+
+/** `replays probe --url <u> --selector <s> [--state <file>] [--viewport <WxH>] [--json]` */
 export async function runProbeCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
   const json = argv.includes('--json');
   const spinner = createTerminal({ env, stream: process.stderr, json }).spinner('Opening the page');
   try {
     const { values } = flagMap(argv, new Set(['json']));
-    if (!values.url || !values.selector || Object.keys(values).some((key) => key !== 'url' && key !== 'selector')) throw new Error(USAGE);
+    if (!values.url || !values.selector || Object.keys(values).some((key) => !FLAGS.has(key))) throw new Error(USAGE);
     assertCaptureUrl(values.url, '--url');
-    const result = await probeSelector(values.url, values.selector);
+    const state = values.state ? resolve(values.state) : undefined;
+    if (state) await access(state).catch(() => Promise.reject(new Error(`--state: cannot read ${state}`)));
+    const result = await probeSelector(values.url, values.selector, {
+      ...(state ? { state } : {}),
+      ...(values.viewport ? { viewport: parseViewport(values.viewport) } : {}),
+    });
     spinner.stop();
     const out = createTerminal({ env, stream: process.stdout, json });
     if (!out.fancy) {
