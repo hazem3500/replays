@@ -134,6 +134,24 @@ describe('the account menu', () => {
       expect(document.querySelector('[data-testid="github-disconnect"]')).toBeNull();
     });
 
+    it('on another host, starts the flow on the public origin and asks to come back to this page', () => {
+      offer({ available: true, linked: null, start: 'https://replays.example.com/auth/github/start' });
+      renderBar(IAP);
+      openAccount();
+      expect(document.querySelector('[data-testid="github-connect"]')?.getAttribute('href')).toBe(
+        `https://replays.example.com/auth/github/start?return=${encodeURIComponent(window.location.href)}`,
+      );
+    });
+
+    it('on the public origin itself, keeps the same-origin start', () => {
+      offer({ available: true, linked: null, start: `${window.location.origin}/auth/github/start` });
+      renderBar(IAP);
+      openAccount();
+      expect(document.querySelector('[data-testid="github-connect"]')?.getAttribute('href')).toBe(
+        `/auth/github/start?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+      );
+    });
+
     it('shows the linked account with its avatar and Disconnect instead', () => {
       offer({ available: true, linked: { login: 'octocat', avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4' } });
       renderBar(IAP);

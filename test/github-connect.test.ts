@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,6 +18,8 @@ function closeServersAfterEach() {
   });
 }
 
+const PUBLIC_HOST = 'replays.example.com';
+const OTHER_HOST = 'labs.example.com';
 const SETTINGS = { clientId: 'Iv1.test-client', clientSecret: 'test-secret' };
 
 interface GithubCall {
@@ -71,7 +73,8 @@ async function start(options: { configured?: boolean; login?: string; plugins?: 
     clientDir: join(root, 'client'),
     plugins: await resolvePlugins(plugins),
     ...(configured ? { githubConnect: { ...SETTINGS, fetch: github.fetchStub } } : {}),
-    publicOrigin: 'https://replays.example.com',
+    publicOrigin: `https://${PUBLIC_HOST}`,
+    hosts: { [PUBLIC_HOST]: { basePath: '' }, [OTHER_HOST]: { basePath: '/labs' } },
   });
   const server = createServer((request, response) => void handle(request, response));
   servers.push(server);
@@ -79,21 +82,37 @@ async function start(options: { configured?: boolean; login?: string; plugins?: 
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('no port');
   const origin = `http://127.0.0.1:${address.port}`;
+  // why: fetch cannot set Host, and the flow depends on which host a request came in on.
   const send = (method: string, path: string, headers: Record<string, string> = {}, body?: unknown) =>
-    fetch(`${origin}${path}`, {
-      method,
-      redirect: 'manual',
-      headers: { 'content-type': 'application/json', ...headers },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    new Promise<Response>((resolve, reject) => {
+      const outgoing = httpRequest(
+        `${origin}${path}`,
+        { method, headers: { 'content-type': 'application/json', host: PUBLIC_HOST, ...headers } },
+        (incoming) => {
+          const chunks: Buffer[] = [];
+          incoming.on('data', (chunk: Buffer) => chunks.push(chunk));
+          incoming.on('error', reject);
+          incoming.on('end', () => {
+            const reply = new Response([204, 302].includes(incoming.statusCode ?? 0) ? null : Buffer.concat(chunks), {
+              status: incoming.statusCode ?? 0,
+            });
+            for (const [name, value] of Object.entries(incoming.headers))
+              for (const one of [value ?? []].flat()) reply.headers.append(name, one);
+            resolve(reply);
+          });
+        },
+      );
+      outgoing.on('error', reject);
+      outgoing.end(body === undefined ? undefined : JSON.stringify(body));
     });
-  const begin = async (headers: Record<string, string> = {}, next = '/r/demo') => {
-    const response = await send('GET', `/auth/github/start?next=${encodeURIComponent(next)}`, headers);
+  const begin = async (headers: Record<string, string> = {}, next = '/r/demo', extra = '') => {
+    const response = await send('GET', `/auth/github/start?next=${encodeURIComponent(next)}${extra}`, headers);
     const authorize = new URL(response.headers.get('location') ?? 'http://missing.test/');
     const cookie = (response.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
     return { response, authorize, cookie };
   };
-  const connect = async (headers: Record<string, string> = {}, next = '/r/demo') => {
-    const { authorize, cookie } = await begin(headers, next);
+  const connect = async (headers: Record<string, string> = {}, next = '/r/demo', extra = '') => {
+    const { authorize, cookie } = await begin(headers, next, extra);
     return send('GET', `/auth/github/callback?code=abc&state=${authorize.searchParams.get('state')}`, { ...headers, cookie });
   };
   return { send, begin, connect, github };
@@ -190,7 +209,7 @@ describe('Connect GitHub callback', () => {
       handles: { github: 'octocat' },
       avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
     });
-    expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toEqual({
+    expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toMatchObject({
       available: true,
       linked: { login: 'octocat', avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4' },
     });
@@ -213,6 +232,63 @@ describe('Connect GitHub callback', () => {
   });
 });
 
+describe('Connect GitHub from another host', () => {
+  closeServersAfterEach();
+  const labs = { host: OTHER_HOST };
+  const labsPage = `https://${OTHER_HOST}/labs/r/demo`;
+
+  it('hands a start on another host over to the public origin, with no state cookie set here', async () => {
+    const { send } = await start();
+    const response = await send('GET', `/labs/auth/github/start?next=${encodeURIComponent('/labs/r/demo')}`, labs);
+    expect(response.status).toBe(302);
+    expect(response.headers.get('set-cookie')).toBeNull();
+    const handover = new URL(response.headers.get('location') ?? 'http://missing.test/');
+    expect(`${handover.origin}${handover.pathname}`).toBe(`https://${PUBLIC_HOST}/auth/github/start`);
+    expect(handover.searchParams.get('return')).toBe(labsPage);
+  });
+
+  it('runs the flow on the public origin and returns to a URL on another served host, where the link then shows', async () => {
+    const { connect, send } = await start();
+    const done = await connect({}, '/r/demo', `&return=${encodeURIComponent(`${labsPage}?tab=perf`)}`);
+    expect(done.status).toBe(302);
+    expect(done.headers.get('location')).toBe(`${labsPage}?tab=perf`);
+    const state: unknown = await (await send('GET', '/labs/api/plugins/github-connect/link', labs)).json();
+    expect(state).toEqual({
+      available: true,
+      linked: { login: 'octocat', avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4' },
+      start: `https://${PUBLIC_HOST}/auth/github/start`,
+    });
+    expect(await (await send('GET', '/labs/api/me', labs)).json()).toMatchObject({ handles: { github: 'octocat' } });
+  });
+
+  it('refuses a return URL on a host the server does not serve, with another scheme, or with credentials', async () => {
+    const { connect } = await start();
+    for (const foreign of [
+      'https://evil.example.com/steal',
+      `http://${OTHER_HOST}/labs/r/demo`,
+      `https://user:pass@${OTHER_HOST}/labs/r/demo`,
+      `https://${OTHER_HOST}.evil.example.com/`,
+      '//evil.example.com/x',
+      'javascript:alert(1)',
+    ]) {
+      const done = await connect({}, '/r/demo', `&return=${encodeURIComponent(foreign)}`);
+      expect(`${foreign} -> ${done.headers.get('location')}`).toBe(`${foreign} -> /r/demo`);
+    }
+  });
+
+  it('keeps a foreign return out of the handover too', async () => {
+    const { send } = await start();
+    const response = await send(
+      'GET',
+      `/labs/auth/github/start?return=${encodeURIComponent('https://evil.example.com/')}&next=%2Flabs%2Fr%2Fx`,
+      labs,
+    );
+    expect(new URL(response.headers.get('location') ?? 'http://missing.test/').searchParams.get('return')).toBe(
+      `https://${OTHER_HOST}/labs/r/x`,
+    );
+  });
+});
+
 describe('Connect GitHub link', () => {
   closeServersAfterEach();
 
@@ -224,7 +300,7 @@ describe('Connect GitHub link', () => {
     const me: unknown = await (await send('GET', '/api/me')).json();
     expect(me).not.toHaveProperty('handles');
     expect(me).not.toHaveProperty('avatarUrl');
-    expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toEqual({ available: true, linked: null });
+    expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toMatchObject({ available: true, linked: null });
   });
 
   it('offers nothing to a person the host already vouches a GitHub login for', async () => {
@@ -238,7 +314,7 @@ describe('Connect GitHub link', () => {
       },
     });
     const { send } = await start({ plugins: [roster] });
-    expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toEqual({ available: false, linked: null });
+    expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toMatchObject({ available: false, linked: null });
     expect(await (await send('GET', '/api/plugins/github-connect/link', { 'x-email': 'bob@example.com' })).json()).toMatchObject({
       available: true,
     });

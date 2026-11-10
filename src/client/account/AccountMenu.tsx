@@ -69,7 +69,7 @@ export function accountMenuItems(account: Account | undefined): TopbarMenuItem[]
             {
               label: STRINGS.connectGithub,
               icon: <ProviderIcon provider="github" size={16} />,
-              href: githubConnectHref(),
+              href: githubConnectHref(github.start),
               onSelect: () => {},
               testId: 'github-connect',
             },
@@ -138,7 +138,7 @@ export function AccountMenu({ account }: { account: Account }) {
             </DropdownMenuItem>
           </>
         ) : github?.available ? (
-          <DropdownMenuItem render={<a href={githubConnectHref()} className="menu-link" />} data-testid="github-connect">
+          <DropdownMenuItem render={<a href={githubConnectHref(github.start)} className="menu-link" />} data-testid="github-connect">
             <ProviderIcon provider="github" size={16} />
             {STRINGS.connectGithub}
           </DropdownMenuItem>
