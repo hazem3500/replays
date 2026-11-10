@@ -1,6 +1,7 @@
-import { type CSSProperties, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Splitter } from '../components/ui/splitter.tsx';
+import { cssVars } from '../lib/css-vars.ts';
 import { useElementWidth } from '../hooks/use-element-width.ts';
 import { readStorage } from '../storage.ts';
 import { RequestLabel } from './network/RequestLabel.tsx';
@@ -96,7 +97,7 @@ export function LocalTimeline({
   const left = (at: number) => `${(Math.max(0, at - from) / span) * 100}%`;
   const width = (item: LocalItem) => `${((Math.min(to, item.end) - Math.max(from, item.at)) / span) * 100}%`;
   return (
-    <div ref={box} className="local-timeline" role="group" aria-label={label} style={{ '--lt-label': `${labelWidth}px` } as CSSProperties}>
+    <div ref={box} className="local-timeline" role="group" aria-label={label} style={cssVars({ '--lt-label': `${labelWidth}px` })}>
       <div className="lt-seam" style={{ left: `${labelWidth + 5}px` }}>
         <Splitter
           orientation="vertical"

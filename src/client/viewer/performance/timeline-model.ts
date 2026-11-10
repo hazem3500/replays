@@ -2,7 +2,7 @@ import { formatDuration, type NetworkRow } from '../network/model.ts';
 import type { LayoutShift } from '../performance.ts';
 import type { Moment, Verdict } from './model.ts';
 import { shiftVerdict } from './stats.ts';
-import { BREAKDOWN_PARTS, frameNote, type BreakdownPart } from './why.ts';
+import { frameNote, type BreakdownPart } from './why.ts';
 
 export type LaneId = 'interaction' | 'task' | 'request' | 'shift' | 'failed';
 
@@ -92,7 +92,7 @@ function momentItem(moment: Moment): LaneItem {
     value: formatDuration(moment.value),
     momentId: moment.id,
     ...(interaction
-      ? { breakdown: Object.fromEntries(BREAKDOWN_PARTS.map((part) => [part, interaction[part]])) as Record<BreakdownPart, number> }
+      ? { breakdown: { inputDelay: interaction.inputDelay, processing: interaction.processing, presentation: interaction.presentation } }
       : {}),
   };
 }

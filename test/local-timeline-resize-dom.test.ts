@@ -26,23 +26,23 @@ const pointer = (type: string, clientX: number) =>
     seam().dispatchEvent(new PointerEvent(type, { clientX, button: 0, pointerId: 1, bubbles: true, cancelable: true }));
   });
 
-beforeEach(() => {
-  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-  localStorage.clear();
-  vi.spyOn(HTMLElement.prototype, 'setPointerCapture').mockImplementation(() => {});
-  host = document.createElement('div');
-  document.body.append(host);
-  root = createRoot(host);
-});
-
-afterEach(() => {
-  act(() => root.unmount());
-  host.remove();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
-});
-
 describe('LocalTimeline label column', () => {
+  beforeEach(() => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    localStorage.clear();
+    vi.spyOn(HTMLElement.prototype, 'setPointerCapture').mockImplementation(() => {});
+    host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    host.remove();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('widens when its seam is dragged, within 25% to 75%, and keeps the width', () => {
     render();
     const start = labelWidth();
