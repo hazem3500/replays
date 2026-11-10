@@ -6,22 +6,36 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildIndexEntries, entryIsMine, tabCounts } from '../src/client/ReplayIndex.tsx';
 import { ProfileSegments } from '../src/client/index/IndexHeader.tsx';
 import { FOR_YOU } from '../src/client/index/for-you.ts';
+import type { ReplayPersonSummary } from '../src/shared/people.ts';
+import type { ProfileInfo } from '../src/shared/profiles.ts';
 import type { ReplaySummary } from '../src/shared/replay.ts';
-import type { ReviewSuiteIndexEntry } from '../src/shared/review-suite.ts';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
-const summary = (id: string, profile: string | undefined, email?: string) =>
-  ({ id, ...(profile ? { profile } : {}), ...(email ? { people: [{ role: 'reviewer', email }] } : {}) }) as unknown as ReplaySummary;
+const summary = (id: string, profile: string | undefined, people: ReplayPersonSummary[] = []): ReplaySummary => ({
+  id,
+  title: id,
+  url: 'https://app.test/',
+  host: 'app.test',
+  capturedAt: '2026-10-01T00:00:00Z',
+  duration: 1000,
+  steps: 2,
+  consoleErrors: 0,
+  failedRequests: 0,
+  source: 'agent',
+  ...(profile ? { profile } : {}),
+  ...(people.length ? { people } : {}),
+});
+const reviewer = (email: string): ReplayPersonSummary => ({ role: 'reviewer', email });
 
 const me = { email: 'ada@example.com', handles: {} };
 const sessions = [
-  summary('a', 'triage', 'ada@example.com'),
+  summary('a', 'triage', [reviewer('ada@example.com')]),
   summary('b', 'triage'),
-  summary('c', 'walkthrough', 'bob@example.com'),
-  summary('d', undefined, 'ada@example.com'),
+  summary('c', 'walkthrough', [reviewer('bob@example.com')]),
+  summary('d', undefined, [reviewer('ada@example.com')]),
 ];
-const entries = buildIndexEntries(sessions, [] as ReviewSuiteIndexEntry[], {});
+const entries = buildIndexEntries(sessions, [], {});
 
 describe('tab counts come from one list', () => {
   it('counts every tab, For you included, from the same entries', () => {
@@ -29,11 +43,8 @@ describe('tab counts come from one list', () => {
   });
 
   it('matches a row by a linked handle and never matches an empty identity', () => {
-    const row = buildIndexEntries(
-      [{ ...summary('h', undefined), people: [{ role: 'reviewer', handles: { github: 'Ada-L' } }] } as ReplaySummary],
-      [],
-      {},
-    )[0]!;
+    const [row] = buildIndexEntries([summary('h', undefined, [{ role: 'reviewer', handles: { github: 'Ada-L' } }])], [], {});
+    if (!row) throw new Error('expected a row');
     expect(entryIsMine(row, { handles: { github: 'ada-l' } })).toBe(true);
     expect(entryIsMine(row, {})).toBe(false);
   });
@@ -52,10 +63,10 @@ describe('profile tabs', () => {
     host.remove();
   });
 
-  const profiles = [
-    { id: 'triage', label: 'Triage' },
-    { id: 'walkthrough', label: 'Walkthrough' },
-  ] as never;
+  const profiles: ProfileInfo[] = [
+    { id: 'triage', label: 'Triage', order: 0 },
+    { id: 'walkthrough', label: 'Walkthrough', order: 1 },
+  ];
   const render = (value: string | undefined) =>
     act(() => {
       root.render(createElement(ProfileSegments, { profiles, value, counts: tabCounts(entries, me), onChange: () => {}, forYou: true }));
