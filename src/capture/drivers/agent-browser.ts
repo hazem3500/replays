@@ -2,6 +2,7 @@ import { CdpClient } from '../cdp.ts';
 import type { CdpLike } from '../session.ts';
 import { AgentBrowser } from './agent-browser-cli.ts';
 import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
+import { runOnFirstVisible } from './first-visible.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
 
 function stepArgs(step: RawStep) {
@@ -29,6 +30,7 @@ function stepArgs(step: RawStep) {
 export function agentBrowserDriver(): CaptureDriver {
   const browser = new AgentBrowser(`replays-${process.pid}-${Date.now()}`);
   let cdp: CdpClient | undefined;
+  let page: CdpLike | undefined;
   let launched: LaunchOptions | undefined;
   let harStarted = false;
   let videoStarted = false;
@@ -46,12 +48,14 @@ export function agentBrowserDriver(): CaptureDriver {
         await browser.command(['record', 'start', options.videoPath, '--fps', '60', '--cursor']);
         videoStarted = true;
       }
-      return cdp.forSession(target);
+      page = cdp.forSession(target);
+      return page;
     },
     async open(url) {
       await browser.open(url);
     },
     async step(step) {
+      if (page && (await runOnFirstVisible(page, step))) return;
       await browser.command(stepArgs(step));
     },
     async wait(ms) {

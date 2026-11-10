@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- CLI selectors: capture steps act on the first visible match of a selector (Playwright `.filter({ visible: true }).first()`, and the same through CDP for `agent-browser`) instead of failing on a hidden duplicate. A step that times out lists up to five candidates with tag, text and visible or hidden. New `replays probe --url <url> --selector <selector> [--json]` opens the page headless and reports every match with visibility and bounding box.
+
 - Viewer: people on a replay (any role, matched by signed-in email) and admins can rename a step by double-clicking it in the Steps list (or F2 on a focused row) or the caption on the player. Names are stored in the edits sidecar as `stepNames` (see [edits.schema.json](docs/formats/edits.schema.json)) and show in the list, seek bar, captions and exports; "Reset" restores the automatic name. `PUT /api/replays/<id>/edits` answers 403 when `stepNames` change and the caller is not related to the replay.
 
 - Request policies: an optional `originPatterns` list of anchored host patterns (such as `^https://[0-9]+-web\.pull\.example\.com$`) for trusted origins that vary by subdomain, validated at registration so none can be broad. A refused cross-origin request now answers `403` with `Vary: Origin` and a JSON body, and a listed origin can read the refusal of a method or header it may not use.

@@ -9,6 +9,7 @@ import { chromium, type Browser, type BrowserContext, type CDPSession, type Page
 import type { CdpLike } from '../session.ts';
 import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
 import { findFfmpeg, findSystemBrowser, hasPlaywrightBrowser, NO_BROWSER_MESSAGE, NO_FFMPEG_MESSAGE } from './system-tools.ts';
+import { onFirstVisible } from './locate.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
 
 const execFileAsync = promisify(execFile);
@@ -24,7 +25,7 @@ export interface PlaywrightDriverOptions {
 }
 
 /** Wraps Playwright's CDPSession in the minimal CDP surface the recorder uses. */
-function cdpLike(session: CDPSession): CdpLike {
+export function cdpLike(session: CDPSession): CdpLike {
   // why: Playwright types CDP methods/events as a closed union; the recorder only uses documented protocol names.
   const loose = session as unknown as {
     send(method: string, params?: object): Promise<unknown>;
@@ -38,10 +39,20 @@ function cdpLike(session: CDPSession): CdpLike {
   };
 }
 
+/** Starts Chrome the way every Playwright-backed command does: the configured or system browser, else Playwright's own. */
+export async function launchChromium(options: PlaywrightDriverOptions = {}, env: NodeJS.ProcessEnv = process.env) {
+  const executablePath = options.executablePath ?? env.CHROME_PATH ?? env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ?? findSystemBrowser(env);
+  if (!executablePath && !hasPlaywrightBrowser(env)) throw new Error(NO_BROWSER_MESSAGE);
+  return chromium.launch({
+    headless: options.headless ?? true,
+    ...(executablePath ? { executablePath } : {}),
+    args: (options.noSandbox ?? env.CHROMIUM_NO_SANDBOX === '1') ? ['--no-sandbox'] : [],
+  });
+}
+
 /** Drives Chrome through Playwright: no extra CLI needed, `recordHar` for the network track, `recordVideo` for MP4 (needs ffmpeg). */
 export function playwrightDriver(options: PlaywrightDriverOptions = {}): CaptureDriver {
   const env = process.env;
-  const configuredBrowser = options.executablePath ?? env.CHROME_PATH ?? env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
   const configuredFfmpeg = options.ffmpegPath ?? env.FFMPEG_PATH;
   let ffmpeg = 'ffmpeg';
   let browser: Browser | undefined;
@@ -61,8 +72,6 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
     recordsBodies: true,
     async launch(launch): Promise<CdpLike> {
       launched = launch;
-      const executablePath = configuredBrowser ?? findSystemBrowser(env);
-      if (!executablePath && !hasPlaywrightBrowser(env)) throw new Error(NO_BROWSER_MESSAGE);
       if (launch.videoPath) {
         ffmpeg = configuredFfmpeg ?? findFfmpeg(env) ?? 'ffmpeg';
         await execFileAsync(ffmpeg, ['-version']).catch(() => {
@@ -70,11 +79,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
         });
         scratch = await mkdtemp(join(tmpdir(), 'replays-video-'));
       }
-      browser = await chromium.launch({
-        headless: options.headless ?? true,
-        ...(executablePath ? { executablePath } : {}),
-        args: (options.noSandbox ?? process.env.CHROMIUM_NO_SANDBOX === '1') ? ['--no-sandbox'] : [],
-      });
+      browser = await launchChromium(options);
       context = await browser.newContext({
         viewport: launch.viewport,
         // why: bodies are only embedded when the capture asked for them; they are cut and redacted before storage.
@@ -91,16 +96,18 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
       const target = current();
       switch (step.kind) {
         case 'click':
-          await target.click(step.selector, { timeout: STEP_TIMEOUT });
+          await onFirstVisible(target, step.selector, STEP_TIMEOUT, (match) => match.click({ timeout: STEP_TIMEOUT }));
           break;
         case 'hover':
-          await target.hover(step.selector, { timeout: STEP_TIMEOUT });
+          await onFirstVisible(target, step.selector, STEP_TIMEOUT, (match) => match.hover({ timeout: STEP_TIMEOUT }));
           break;
         case 'type':
-          await target.locator(step.selector).first().pressSequentially(step.text, { delay: TYPE_DELAY_MS, timeout: STEP_TIMEOUT });
+          await onFirstVisible(target, step.selector, STEP_TIMEOUT, (match) =>
+            match.pressSequentially(step.text, { delay: TYPE_DELAY_MS, timeout: STEP_TIMEOUT }),
+          );
           break;
         case 'fill':
-          await target.fill(step.selector, step.text, { timeout: STEP_TIMEOUT });
+          await onFirstVisible(target, step.selector, STEP_TIMEOUT, (match) => match.fill(step.text, { timeout: STEP_TIMEOUT }));
           break;
         case 'press':
           await target.keyboard.press(step.key);

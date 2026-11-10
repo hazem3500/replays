@@ -87,6 +87,9 @@ replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--i
                    [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed]
 ```
 
+A selector in a step acts on its first visible match. Test one before recording with
+`replays probe --url <url> --selector <selector> [--json]`, which lists every match with visibility and bounding box.
+
 `replays` is the package's `bin` (`bin/replays.mjs`); from a checkout, `pnpm cli <command>` or
 `pnpm capture` run the TypeScript sources directly. The package is **not published**; see
 [docs/releasing.md](docs/releasing.md).
