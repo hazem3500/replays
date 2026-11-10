@@ -5,12 +5,13 @@ import { boxOf, openReplay, origin } from './support.ts';
 
 const LONG_LABEL = `Clicked “asdadasd, 10:00 AM–1:15 PM, 3h 15m ${'asdadasd asdasd '.repeat(10)}…”`;
 
+// why: a person-written label (auto: false) keeps its full length; generated click names are capped (step-names.ts).
 async function openLongCaption(page: Page) {
   await page.route('**/api/replays/demo-shop', async (route) => {
     const response = await route.fetch();
     const bundle: unknown = await response.json();
     if (!isRecord(bundle)) throw new Error('the demo replay is not a bundle');
-    await route.fulfill({ response, json: { ...bundle, steps: [{ at: 0, kind: 'click', label: LONG_LABEL }] } });
+    await route.fulfill({ response, json: { ...bundle, steps: [{ at: 0, kind: 'click', label: LONG_LABEL, auto: false }] } });
   });
   await page.addInitScript(() => localStorage.setItem('replays-captions', '1'));
   await openReplay(page, `${origin()}/r/demo-shop`);

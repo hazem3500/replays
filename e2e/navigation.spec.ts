@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 
 import { expectSuiteHandoff, type HandoffCapture, hoverSuiteCard } from './suite-handoff.ts';
-import { origin, gotoHydrated, serveApp } from './support.ts';
+import { origin, gotoHydrated, serveApp, compareSuiteEnv } from './support.ts';
 import { deferred } from '../src/client/lib/deferred.ts';
 
 test.describe('server-rendered index', () => {
-  const server = serveApp({ REPLAYS_SSR: '1' });
+  const server = serveApp(() => ({ REPLAYS_SSR: '1', ...compareSuiteEnv() }));
   test('the list is visible when JavaScript is disabled', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     try {

@@ -149,7 +149,7 @@ test('a suite never shows the comparison strip: its sidebar or title menu switch
     { id: 'one', label: 'Run 1', status: 'passed', replayId: uniqueId('views-one') },
     { id: 'two', label: 'Run 2', status: 'failed', replayId: uniqueId('views-two') },
   ]);
-  await openReplay(page, `${origin()}/s/${suite}`);
+  await openReplay(page, `${origin()}/s/${suite}?view=compare`);
   await expect(shell(page)).toHaveAttribute('data-view', 'compare');
   await page.getByRole('button', { name: 'Collapse runs sidebar' }).click();
   await expect(page.locator('.suite-workspace')).toHaveAttribute('data-rail', 'true');

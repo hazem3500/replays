@@ -85,10 +85,13 @@ test('For me keeps the rows I am on (by email, then by a linked GitHub handle) a
   await gotoHydrated(page, `${base()}/`);
   const row = (id: string) => page.locator(`[data-entry-id="session:${id}"]`);
   // why: a viewer with matching replays lands on For you; this check starts from All and picks For me itself.
-  await page.getByRole('radiogroup', { name: 'Profile' }).getByText('All', { exact: true }).click();
+  const tabs = page.getByRole('radiogroup', { name: 'Profile' });
+  await expect(tabs.getByRole('radio', { name: 'For you' })).toBeChecked();
+  await tabs.locator('label', { hasText: 'All' }).click();
+  await expect(tabs.getByRole('radio', { name: 'All' })).toBeChecked();
   await expect(row(other)).toBeVisible();
 
-  await page.getByRole('button', { name: 'Filter' }).click();
+  await page.getByRole('button', { name: 'Filter', exact: true }).click();
   await page.getByRole('switch', { name: 'For me' }).click();
   await expect(page).toHaveURL(/[?&]for=me/);
   await expect(row(mine)).toBeVisible();

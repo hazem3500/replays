@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
-import { createSuite, gotoHydrated, serveApp, uniqueId } from './support.ts';
+import { createSuite, gotoHydrated, serveApp, uniqueId, COMPARE_SUITE_PROFILE, compareSuiteEnv } from './support.ts';
 
 interface Box {
   x: number;
@@ -135,6 +135,7 @@ async function suiteCard(page: Page, base: string, layout: string) {
       status: 'passed' as const,
       replayId,
     })),
+    undefined, { profile: COMPARE_SUITE_PROFILE },
   );
   await page.route(`**/api/replays/${suiteId}-*/poster?*`, (route) =>
     route.fulfill({
@@ -171,7 +172,7 @@ function expectIdentityPairs(capture: Capture, ids: string[]) {
 }
 
 test.describe('suite recording navigation', () => {
-  const server = serveApp({ REPLAYS_SSR: '1' });
+  const server = serveApp(() => ({ REPLAYS_SSR: '1', ...compareSuiteEnv() }));
   for (const layout of ['List', 'Grid']) {
     test(`${layout} sends every stack sheet to its own recording and returns it to its original depth`, async ({ page }) => {
       const { card, link, ids } = await suiteCard(page, server().origin, layout);

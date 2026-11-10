@@ -93,10 +93,9 @@ test('at 390 px the sidebar becomes a run switcher in the topbar title', async (
   await page.goto(`${server().origin}/s/${suite}/r/${one}`);
   await expect(page.getByRole('complementary', { name: 'Review suite' })).toHaveCount(0);
   await expect(page.getByRole('tablist', { name: 'Replay diagnostics' })).toBeInViewport({ ratio: 1 });
-  await expect(page.getByRole('heading', { level: 1, name: longOne, exact: true })).toBeVisible();
-  await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'single');
-  await expect(page.locator('.ct-label')).toHaveCount(0);
-  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(new RegExp(longOne.slice(0, 24)));
+  // why: the phone title is the run switcher, named with the run's position ahead of its label.
+  await expect(page.getByRole('heading', { level: 1, name: new RegExp(`${longOne}$`) })).toBeVisible();
+  await expect(page.getByTestId('compare-stage')).toHaveCount(0);
   await expect(page.getByTestId('phone-switch')).toHaveCount(0);
   await page.getByTestId('title-menu').click();
   const selected = page.getByRole('menuitemradio', { checked: true });
@@ -115,8 +114,7 @@ test('at 390 px the sidebar becomes a run switcher in the topbar title', async (
     .toBeLessThan(4);
   await page.getByRole('menuitemradio', { name: new RegExp(longTwo.slice(0, 24)) }).click();
   await expect(page).toHaveURL(new RegExp(`/r/${two}$`));
-  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(new RegExp(longTwo.slice(0, 24)));
-  await expect(page.locator('.ct-label')).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1, name: new RegExp(`${longTwo}$`) })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
 });
 
@@ -322,7 +320,7 @@ test.describe('Add a recording', () => {
     await page.keyboard.press('Escape');
 
     const { suite } = await threeRuns(page.request);
-    await openReplay(page, `${server().origin}/s/${suite}`);
+    await openReplay(page, `${server().origin}/s/${suite}?view=compare`);
     await expect(page.getByTestId('compare-stage')).toBeVisible();
     await more.click();
     await expect(page.getByTestId('delete-replay')).toBeVisible();

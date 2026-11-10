@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-import { createSuite, gotoHydrated, uniqueId } from './support.ts';
+import { createSuite, gotoHydrated, uniqueId, COMPARE_SUITE_PROFILE } from './support.ts';
 
 /** One shared picture's layers on one frame of a page transition. */
 export interface LayerFrame {
@@ -162,6 +162,7 @@ export async function suiteLibrary(page: Page, base: string) {
     base,
     suiteId,
     ids.map((replayId, index) => ({ id: `run-${index}`, label: `Browser ${index + 1}`, status: 'passed' as const, replayId })),
+    undefined, { profile: COMPARE_SUITE_PROFILE },
   );
   await routePosters(page, suiteId);
   await gotoHydrated(page, base);

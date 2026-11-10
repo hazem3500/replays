@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-import { createSuite, gotoHydrated, uniqueId } from './support.ts';
+import { createSuite, gotoHydrated, uniqueId, COMPARE_SUITE_PROFILE } from './support.ts';
 
 declare global {
   interface Window {
@@ -34,7 +34,7 @@ export async function hoverSuiteCard(page: Page, origin: string, warm: boolean) 
     status: 'passed' as const,
     replayId: `${suiteId}-${index}`,
   }));
-  await createSuite(page.request, origin, suiteId, runs);
+  await createSuite(page.request, origin, suiteId, runs, undefined, { profile: COMPARE_SUITE_PROFILE });
   await page.route(`**/api/replays/${suiteId}-*/poster?*`, async (route) => {
     await route.fulfill({
       contentType: 'image/svg+xml',

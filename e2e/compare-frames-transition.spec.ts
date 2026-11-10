@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
-import { gotoHydrated, serveApp } from './support.ts';
+import { gotoHydrated, serveApp, compareSuiteEnv } from './support.ts';
 import { landed, suiteLibrary } from './transition-frames.ts';
 
 interface TileFrame {
@@ -73,7 +73,7 @@ const ringOf = (ring: Locator) =>
     shadow: getComputedStyle(tile, '::after').boxShadow,
   }));
 
-const server = serveApp({ REPLAYS_SSR: '1' });
+const server = serveApp(() => ({ REPLAYS_SSR: '1', ...compareSuiteEnv() }));
 
 test.describe('comparison tile frames during page transitions', () => {
   test('stay hidden while the sheets fly into their tiles, then fade in once they have landed', async ({ page }) => {

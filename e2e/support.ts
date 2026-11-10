@@ -1,3 +1,7 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { expect, type APIRequestContext, type Locator, type Page, test } from '@playwright/test';
 
 import { startServer } from '../scripts/test-server.mjs';
@@ -29,6 +33,17 @@ export function serveApp(env: Record<string, string> | (() => Record<string, str
     if (!server) throw new Error('the server starts in beforeAll');
     return server;
   };
+}
+
+/** A suite profile whose view is Compare: only such suites (or `?view=compare`) open their runs side by side. */
+export const COMPARE_SUITE_PROFILE = 'compare-review';
+
+/** Server env with a config declaring COMPARE_SUITE_PROFILE, for specs whose suites open as comparisons. */
+export function compareSuiteEnv(): Record<string, string> {
+  const dir = mkdtempSync(join(tmpdir(), 'replays-e2e-compare-'));
+  const config = join(dir, 'config.json');
+  writeFileSync(config, JSON.stringify({ profiles: [{ id: COMPARE_SUITE_PROFILE, label: 'Compare review', view: 'compare' }] }));
+  return { REPLAYS_CONFIG: config };
 }
 
 /** A unique, valid replay id for a test. */
@@ -99,13 +114,21 @@ export async function createSuite(
     url: 'https://github.com/example-org/shop-demo/pull/9',
     label: 'Example change',
   },
+  { profile }: { profile?: string } = {},
 ) {
   const now = new Date().toISOString();
   const put = async (path: string, data: unknown) => {
     const response = await request.put(`${base}/api/${path}`, { data });
     expect(response.ok(), `${path}: ${await response.text()}`).toBe(true);
   };
-  await put(`suites/${suiteId}`, { version: 1, id: suiteId, title: `Review ${suiteId}`, createdAt: now, ...(subject ? { subject } : {}) });
+  await put(`suites/${suiteId}`, {
+    version: 1,
+    id: suiteId,
+    title: `Review ${suiteId}`,
+    createdAt: now,
+    ...(subject ? { subject } : {}),
+    ...(profile ? { profile } : {}),
+  });
   for (const [index, run] of runs.entries()) {
     await put(`suites/${suiteId}/runs/${run.id}`, {
       id: run.id,
