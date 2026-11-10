@@ -25,8 +25,6 @@ let element: typeof createElement;
 let icon: typeof createIcon;
 
 const MODES: readonly RecorderPrivacyMode[] = ['visible', 'inputs-masked', 'text-masked', 'interface-visible', 'masked'];
-/** Modes a staff menu lists even when the host does not allow them, disabled with a reason. */
-const STAFF_MODES: readonly RecorderPrivacyMode[] = ['visible', 'inputs-masked', 'interface-visible', 'masked'];
 const MENU_ID = 'recorder-options-menu';
 const STEPS: Record<string, (index: number, count: number) => number> = {
   ArrowDown: (index, count) => (index + 1) % count,
@@ -61,37 +59,26 @@ function groupNode(group: Group, name: string, items: HTMLElement[]): HTMLElemen
 }
 
 /**
- * Each mode with what it records. A customer sees only the allowed modes, in the offer's order; staff see every mode,
- * one the host's privacy does not allow disabled with the reason.
+ * Each allowed mode with what it records, in the offer's order. The offer holds only modes the host lists and its
+ * privacy cap permits; a mode it does not allow is not shown at all. With one mode left there is nothing to pick, so
+ * the Privacy group is dropped.
  */
 function privacyItems(offer: RecordingChoiceOffer, messages: RecorderMessages) {
-  if (!offer.privacy.length) return [];
-  const offeredModes = offer.privacy.map((entry) => entry.mode);
-  const order = offer.by === 'customer' ? offeredModes : MODES.filter((mode) => STAFF_MODES.includes(mode) || offeredModes.includes(mode));
-  return order.map((mode) => {
-    const offered = offer.privacy.find((entry) => entry.mode === mode);
-    return itemNode({
+  if (offer.privacy.length < 2) return [];
+  return offer.privacy.map(({ mode, facts }) =>
+    itemNode({
       group: 'privacy',
       value: mode,
       label: messages.privacyMode({ mode }),
-      detail: offered ? messages.privacyHint({ mode, privacy: offered.facts }) : messages.privacyUnavailable,
-      disabled: !offered,
-    });
-  });
+      detail: messages.privacyHint({ mode, privacy: facts }),
+    }),
+  );
 }
 
-/** The body option, disabled with the reason when the host's capture reads no body. */
+/** The body option, only when the host's capture reads bodies. */
 function networkItems(offer: RecordingChoiceOffer, messages: RecorderMessages) {
-  if (!offer.networkBodies) return [];
-  const { allowed } = offer.networkBodies;
-  return [
-    itemNode({
-      group: 'network',
-      value: 'bodies',
-      label: messages.networkBodies,
-      ...(allowed ? {} : { detail: messages.privacyUnavailable, disabled: true }),
-    }),
-  ];
+  if (!offer.networkBodies?.allowed) return [];
+  return [itemNode({ group: 'network', value: 'bodies', label: messages.networkBodies })];
 }
 
 function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {

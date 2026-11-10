@@ -60,14 +60,14 @@ export const OptionsMenuOpen: Story = {
   },
 };
 
-/** A host that keeps media blocked: Visible is capped to its privacy, and Inputs hidden is disabled. */
+/** A host that keeps media blocked: Visible is capped to its privacy, and Inputs hidden is not listed. */
 export const OptionsCapped: Story = {
   args: { state: 'options-capped' },
   play: async () => {
     await openMenu();
-    const inputsHidden = await inRecorderUi(() => recorderUi.item('Inputs hidden'));
-    await expect(inputsHidden).toHaveAttribute('aria-disabled', 'true');
-    await visible(defaultRecorderMessages.privacyUnavailable);
+    await inRecorderUi(() => recorderUi.item('Fully masked'));
+    await expect(recorderUi.item('Inputs hidden')).toBeUndefined();
+    await expect(recorderUi.text('Not allowed here')).toBeUndefined();
   },
 };
 
