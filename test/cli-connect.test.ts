@@ -81,7 +81,7 @@ describe('installed CLI server setup', { timeout: 30_000 }, () => {
     await writeFile(headerPath, JSON.stringify({ authorization: 'Bearer test-only' }), { mode: 0o600 });
     const upload = await run(['upload', replayPath, '--header-file', headerPath], env);
     expect(upload.code).toBe(0);
-    expect(JSON.parse(upload.stdout)).toEqual({ success: true, id: 'saved-target' });
+    expect(JSON.parse(upload.stdout)).toEqual({ success: true, id: 'saved-target', url: `${local.base}/workspace/r/saved-target` });
     expect(received.map((item) => item.path)).toEqual([
       '/workspace/api/cli/auth/capabilities',
       '/workspace/api/cli/auth/capabilities',
