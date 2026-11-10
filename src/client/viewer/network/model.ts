@@ -187,6 +187,8 @@ export function medianMeasured(rows: readonly NetworkRow[]) {
 
 /** One equal slice of the recording: how many requests start in it, and the ones worth naming. */
 export interface RequestBucket {
+  /** Which slice this is, counting from the start of the recording. */
+  bin: number;
   count: number;
   failed: NetworkRow[];
   slowest: NetworkRow | undefined;
@@ -196,7 +198,7 @@ const durationOf = (row: NetworkRow) => row.measured ?? row.end - row.at;
 
 /** The requests starting in each of `bins` equal slices of the recording, with each slice's failures and slowest request. */
 export function bucketRequests(rows: readonly NetworkRow[], duration: number, bins: number): RequestBucket[] {
-  const buckets = Array.from({ length: bins }, (): RequestBucket => ({ count: 0, failed: [], slowest: undefined }));
+  const buckets = Array.from({ length: bins }, (_, bin): RequestBucket => ({ bin, count: 0, failed: [], slowest: undefined }));
   const span = Math.max(1, duration);
   for (const row of rows) {
     const bucket = buckets[Math.min(bins - 1, Math.max(0, Math.floor((row.at / span) * bins)))];

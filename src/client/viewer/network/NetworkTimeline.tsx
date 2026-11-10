@@ -1,4 +1,4 @@
-import { type PointerEvent, useMemo, useRef, useState } from 'react';
+import { type PointerEvent, useRef, useState } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
 import { useElementWidth } from '../../hooks/use-element-width.ts';
@@ -38,6 +38,8 @@ function bucketUnder(event: PointerEvent<HTMLElement>, bins: number) {
   return Math.min(bins - 1, Math.max(0, Math.floor(((event.clientX - box.left) / Math.max(1, box.width)) * bins)));
 }
 
+const noop = () => {};
+
 const name = (row: NetworkRow) => `${row.entry.method} ${row.name.path}`;
 
 function BucketTip({ bucket, bin, bins, span }: { bucket: RequestBucket; bin: number; bins: number; span: number }) {
@@ -61,6 +63,30 @@ function BucketTip({ bucket, bin, bins, span }: { bucket: RequestBucket; bin: nu
         </span>
       ) : null}
     </span>
+  );
+}
+
+function DensityLane({ buckets, total, hot }: { buckets: readonly RequestBucket[]; total: number; hot: number | undefined }) {
+  const most = Math.max(1, ...buckets.map((bucket) => bucket.count));
+  return (
+    <div className="pt-lane" data-lane="density" role="img" aria-label={`${NETWORK_LANE_NAMES.requests}: ${total} over the recording`}>
+      <svg className="nt-density" viewBox={`0 0 ${buckets.length} 100`} preserveAspectRatio="none" focusable="false" aria-hidden="true">
+        {buckets.map((bucket) => {
+          // why: a square-root scale keeps one request visible next to a burst of sixty.
+          const height = Math.max(8, Math.sqrt(bucket.count / most) * 100);
+          return bucket.count ? (
+            <rect
+              key={bucket.bin}
+              data-hot={bucket.bin === hot || undefined}
+              x={bucket.bin + 0.1}
+              width={0.8}
+              y={100 - height}
+              height={height}
+            />
+          ) : null;
+        })}
+      </svg>
+    </div>
   );
 }
 
@@ -90,13 +116,12 @@ export function NetworkTimeline({
   const plot = useRef<HTMLDivElement>(null);
   const width = useElementWidth(plot, FIRST_WIDTH);
   const collapsed = useRibbonCollapsed('network');
-  const [hover, setHover] = useState<number>();
-  const [hoverBin, setHoverBin] = useState<number>();
+  const [pointer, setPointer] = useState<{ at: number; bin: number | undefined } | null>(null);
   const { brush, handlers } = useRibbonBrush(span, (time) => player.seek(time), onRange);
   usePlayheadProgress(plot, span);
   const bins = Math.min(MAX_BINS, Math.max(MIN_BINS, Math.round(width / BIN_PX)));
-  const buckets = useMemo(() => bucketRequests(rows, span, bins), [rows, span, bins]);
-  const lanes = useMemo(() => buildNetworkLanes(rows), [rows]);
+  const buckets = bucketRequests(rows, span, bins);
+  const lanes = buildNetworkLanes(rows);
   if (collapsed) {
     return (
       <div className="pt nt" data-collapsed data-testid="network-timeline">
@@ -108,15 +133,10 @@ export function NetworkTimeline({
     handlers.onPointerMove(event);
     if (event.pointerType === 'touch') return;
     const box = event.currentTarget.getBoundingClientRect();
-    setHover(Math.min(1, Math.max(0, (event.clientX - box.left) / Math.max(1, box.width))));
-    setHoverBin(bucketUnder(event, bins));
+    setPointer({ at: Math.min(1, Math.max(0, (event.clientX - box.left) / Math.max(1, box.width))), bin: bucketUnder(event, bins) });
   };
-  const leave = () => {
-    setHover(undefined);
-    setHoverBin(undefined);
-  };
+  const hoverBin = pointer?.bin;
   const tipped = hoverBin === undefined ? undefined : buckets[hoverBin];
-  const most = Math.max(1, ...buckets.map((bucket) => bucket.count));
   return (
     <div className="pt nt" data-testid="network-timeline">
       <div className="pt-body">
@@ -129,35 +149,14 @@ export function NetworkTimeline({
           aria-description={NETWORK_TIMELINE_STRINGS.hint}
           {...handlers}
           onPointerMove={track}
-          onPointerLeave={leave}
+          onPointerLeave={() => setPointer(null)}
         >
           <TimeAxis span={span} width={width} hint={NETWORK_TIMELINE_STRINGS.hint} />
-          <LaneRows lanes={lanes} span={span} width={width} lit={lit} focusable onLight={onLight} onPick={() => undefined}>
-            <div
-              className="pt-lane"
-              data-lane="density"
-              role="img"
-              aria-label={`${NETWORK_LANE_NAMES.requests}: ${rows.length} over the recording`}
-            >
-              <svg className="nt-density" viewBox={`0 0 ${bins} 100`} preserveAspectRatio="none" focusable="false" aria-hidden="true">
-                {buckets.map((bucket, bin) =>
-                  bucket.count ? (
-                    // why: a square-root scale keeps one request visible next to a burst of sixty.
-                    <rect
-                      key={bin}
-                      data-hot={bin === hoverBin || undefined}
-                      x={bin + 0.1}
-                      width={0.8}
-                      y={100 - Math.max(8, Math.sqrt(bucket.count / most) * 100)}
-                      height={Math.max(8, Math.sqrt(bucket.count / most) * 100)}
-                    />
-                  ) : null,
-                )}
-              </svg>
-            </div>
+          <LaneRows lanes={lanes} span={span} width={width} lit={lit} focusable onLight={onLight} onPick={noop}>
+            <DensityLane buckets={buckets} total={rows.length} hot={hoverBin} />
           </LaneRows>
           <RangeAndLit lanes={lanes} lit={lit} span={span} shown={brush ?? range} brushing={Boolean(brush)} />
-          <Crosshair hover={hover} frames={[]} span={span} collapsed={false} />
+          <Crosshair hover={pointer?.at} frames={[]} span={span} collapsed={false} />
           {tipped?.count && hoverBin !== undefined ? <BucketTip bucket={tipped} bin={hoverBin} bins={bins} span={span} /> : null}
           <Playhead span={span} plot={plot} collapsed={false} />
         </div>

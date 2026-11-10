@@ -1,5 +1,4 @@
-import { requestItem, type Lane, type LaneItem } from '../performance/timeline-model.ts';
-import { LANE_LABELS } from '../performance/timeline-model.ts';
+import { LANE_LABELS, requestItem, type Lane, type LaneItem } from '../performance/timeline-model.ts';
 import type { GutterLane } from '../performance/PerfTimelineParts.tsx';
 import { formatDuration, type NetworkRow } from './model.ts';
 
