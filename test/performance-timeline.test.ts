@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildNetworkRows } from '../src/client/viewer/network/model.ts';
 import { buildPerformance } from '../src/client/viewer/performance.ts';
+import { summarizeBands } from '../src/client/viewer/performance/frames.ts';
 import { BUDGETS, buildMoments, buildVitals } from '../src/client/viewer/performance/model.ts';
 import { cadenceStats, groupNote, shiftScore, shiftVerdict, vitalStat } from '../src/client/viewer/performance/stats.ts';
 import { buildLanes, clockLabel, clusterMarks, type LaneItem, niceTicks } from '../src/client/viewer/performance/timeline-model.ts';
@@ -199,5 +200,21 @@ describe('stats', () => {
     const shift = cadenceStats(model.track, model.shifts).find((stat) => stat.id === 'shift');
     expect(shift?.value).toBeUndefined();
     expect(shift?.missing).toBe('Layout shift: not available in this browser.');
+  });
+});
+
+describe('summarizeBands', () => {
+  const bands = [10, 30, 60, 60].map((fps, index) => ({
+    at: index * 1000,
+    end: (index + 1) * 1000,
+    fps,
+    dropped: index,
+    verdict: 'good' as const,
+  }));
+
+  it('summarizes every second without a range, and only the overlapping ones with one', () => {
+    expect(summarizeBands(bands)).toMatchObject({ min: 10, seconds: 4, dropped: 6, slowestAt: 0 });
+    expect(summarizeBands(bands, { from: 1500, to: 4000 })).toMatchObject({ min: 30, seconds: 3, slowestAt: 1000 });
+    expect(summarizeBands(bands, { from: 9000, to: 10000 })).toBeUndefined();
   });
 });

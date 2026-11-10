@@ -135,6 +135,8 @@ test('dragging the bottom splitter on Performance resizes the panel, keeps the h
   const resizer = page.getByTestId('inspector-resizer');
   const panelHeight = async () => (await page.locator('.inspector').first().boundingBox())!.height;
   await expect(resizer).toBeVisible();
+  // why: the panel may still be growing to fit its content (about 220 ms); the drag starts from where it settles.
+  await page.waitForTimeout(600);
   const before = await panelHeight();
   const seam = (await resizer.boundingBox())!;
   const x = seam.x + 300;
@@ -150,4 +152,40 @@ test('dragging the bottom splitter on Performance resizes the panel, keeps the h
   expect(Number(await resizer.getAttribute('aria-valuenow'))).toBe(dragged);
   await page.reload();
   await expect(page.getByTestId('inspector-resizer')).toHaveAttribute('aria-valuenow', String(dragged));
+});
+
+test('a stat in the strip jumps to its moment, and blocking time narrows the table', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openPerformance(page, uniqueId('performance-strip-click'));
+  const longest = page.getByRole('button', { name: /Longest task/ });
+  await expect(longest).toHaveAttribute('aria-pressed', 'false').catch(() => undefined);
+  await longest.click();
+  await expect(page.locator('.pp-row[aria-selected="true"], .pp-row[data-selected]').first()).toBeVisible();
+  const rowsBefore = await page.locator('.pp-row:not(.pp-head)').count();
+  const blocking = page.getByRole('button', { name: /Blocking time/ });
+  await blocking.click();
+  await expect(blocking).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Show all moments' })).toBeVisible();
+  const rowsAfter = await page.locator('.pp-row:not(.pp-head)').count();
+  expect(rowsAfter).toBeLessThanOrEqual(rowsBefore);
+  await page.getByRole('button', { name: 'Show all moments' }).click();
+  await expect(blocking).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('dragging a range on the timeline scopes the strip to it, and clearing it brings everything back', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openPerformance(page, uniqueId('performance-strip-range'));
+  const longest = page.getByRole('button', { name: /Longest task/ });
+  await expect(longest).toContainText('120');
+  const box = (await page.locator('.pt-plot').boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.62, box.y + 8);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.98, box.y + 8, { steps: 6 });
+  await page.mouse.up();
+  const clear = page.getByRole('button', { name: 'Clear the time range' });
+  await expect(clear).toBeVisible();
+  await expect(page.getByTestId('performance-vitals')).toContainText(/in [\d:.]+ to [\d:.]+/);
+  await expect(page.getByRole('button', { name: /Longest task/ })).not.toContainText('120');
+  await clear.click();
+  await expect(page.getByRole('button', { name: /Longest task/ })).toContainText('120');
 });

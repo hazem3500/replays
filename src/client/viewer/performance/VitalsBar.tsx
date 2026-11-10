@@ -55,10 +55,10 @@ export function VitalsBar({
   cadence?: readonly Stat[];
   onPick: (vital: Vital) => void;
   /** A stat that points at one moment in time (the slowest second, the biggest layout shift). */
-  onSeek: (at: number) => void;
+  onSeek?: (at: number) => void;
   /** Whether the table is narrowed to the long tasks that make up blocking time. */
   blocking?: boolean;
-  onBlocking: () => void;
+  onBlocking?: () => void;
   /** What the strip is scoped to, each with the way to clear it: a time range, the blocking filter. */
   scopes?: readonly { text: string; label: string; onClear: () => void }[];
   /** The strip shows a time range, so a stat with nothing in it is left out rather than explained. */
@@ -84,7 +84,7 @@ export function VitalsBar({
   const actionOf = (stat: Stat, vital: Vital | undefined) => {
     if (vital?.id === 'tbt') return onBlocking;
     if (vital) return vital.moment || vital.at !== undefined ? () => onPick(vital) : undefined;
-    return stat.at === undefined ? undefined : () => onSeek(stat.at ?? 0);
+    return stat.at === undefined || !onSeek ? undefined : () => onSeek(stat.at ?? 0);
   };
   const builtins = groups.flatMap(({ group, shown, note }, position) => {
     const base = (position + 1) * 1000;
