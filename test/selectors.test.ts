@@ -1,5 +1,5 @@
 import { readdirSync } from 'node:fs';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -30,6 +30,8 @@ const PAGE = `<!doctype html><body>
 <button class="buy" onclick="document.title='second'">Buy later</button>
 <input class="name" style="display:none"><input class="name" id="real">
 <div class="ghost" style="display:none">a</div><div class="ghost" style="display:none">b</div>
+<script>setTimeout(()=>{const b=document.createElement('button');b.id='late';b.textContent='Late';document.body.append(b)},800)</script>
+<style>#narrow{display:none}@media (max-width:500px){#narrow{display:block}}</style><p id="narrow">narrow</p>
 </body>`;
 
 class TestBrowser {
@@ -52,7 +54,11 @@ function useBrowser(): TestBrowser {
   beforeAll(async () => {
     process.env.CHROME_PATH = CHROME;
     process.env.CHROMIUM_NO_SANDBOX ??= '1';
-    server = createServer((_, response) => response.writeHead(200, { 'content-type': 'text/html' }).end(PAGE));
+    server = createServer((request, response) =>
+      response
+        .writeHead(200, { 'content-type': 'text/html' })
+        .end(`${PAGE}${request.headers.cookie?.includes('session=1') ? '<a id="account">Account</a>' : ''}`),
+    );
     await new Promise<void>((resolve) => server?.listen(0, '127.0.0.1', resolve));
     const address = server.address();
     env.url = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}/`;
@@ -118,6 +124,35 @@ describe.skipIf(!CHROME)('probe and drivers', () => {
     expect(result.matches[2]?.box?.width).toBeGreaterThan(0);
     expect(result.matches[0]?.box).toBeNull();
   });
+
+  it('probes with a storage state and a viewport', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'replays-probe-'));
+    const state = join(dir, 'state.json');
+    const cookie = {
+      name: 'session',
+      value: '1',
+      domain: '127.0.0.1',
+      path: '/',
+      expires: -1,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'Lax',
+    };
+    await writeFile(state, JSON.stringify({ cookies: [cookie], origins: [] }));
+    const selector = '#account';
+    expect((await probeSelector(env.url, selector)).count).toBe(0);
+    expect((await probeSelector(env.url, selector, { state })).count).toBe(1);
+    expect((await probeSelector(env.url, '#narrow', { viewport: { width: 400, height: 700 } })).visibleCount).toBe(1);
+    expect((await probeSelector(env.url, '#narrow')).visibleCount).toBe(0);
+  }, 30_000);
+
+  it('waits for an element that renders after load', async () => {
+    expect((await probeSelector(env.url, '#late', { wait: 0 })).count).toBe(0);
+    expect((await probeSelector(env.url, '#late')).count).toBe(1);
+    expect((await probeSelector(env.url, '#nothing-here', { wait: 200 })).count).toBe(0);
+    const viaOther = await probeSelector(env.url, '.buy', { wait: 3000, waitFor: '#late' });
+    expect(viaOther.count).toBe(4);
+  }, 30_000);
 
   it('runs a Playwright driver step on the first visible match', async () => {
     const driver = playwrightDriver();

@@ -61,6 +61,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
   let launched: LaunchOptions | undefined;
   let scratch: string | undefined;
   let finished = false;
+  let closedSignal: Promise<void> | undefined;
 
   const current = () => {
     if (!page) throw new Error('the browser is not launched');
@@ -88,6 +89,14 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
       });
       page = await context.newPage();
       return cdpLike(await context.newCDPSession(page));
+    },
+    closed() {
+      const open = current();
+      closedSignal ??= new Promise<void>((resolve) => {
+        open.once('close', () => resolve());
+        browser?.once('disconnected', () => resolve());
+      });
+      return closedSignal;
     },
     async open(url) {
       await current().goto(url, { waitUntil: 'load', timeout: 30_000 });

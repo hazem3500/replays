@@ -2,9 +2,10 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import type { ReplayConsoleEntry, ReplayPerformanceEntry, ReplayPerformanceTrack } from '../shared/replay.ts';
+import type { ReplayConsoleEntry, ReplayPerformanceEntry, ReplayPerformanceTrack, ReplayStep } from '../shared/replay.ts';
 import { MAX_PERFORMANCE_ENTRIES } from '../shared/replay.ts';
 import { compileRedaction, type RedactionRules } from '../shared/redaction.ts';
+import { deriveManualSteps, type PageLoad } from './manual-steps.ts';
 import { redactConsoleMessage, redactEvents, sanitizeEmbeddedUrls, sanitizeUrl, sanitizeUrlFields } from './sanitize.ts';
 
 /** What the recorder needs from a Chrome DevTools Protocol connection: a Playwright `CDPSession` fits, and so does `CdpClient`. */
@@ -19,6 +20,7 @@ export interface RecorderChunk {
   console?: Array<{ at: number; level: string; message: string; url?: string }>;
   performance?: Array<{ at: number; kind: string; value: number; eventType?: string }>;
   performanceSupported?: string[];
+  steps?: ReplayStep[];
 }
 
 const BINDING = '__replaysNavigationFlush';
@@ -93,9 +95,13 @@ export function normalizeConsole(entries: RecorderChunk['console'], origin: numb
  * The page script with the host's mask selectors set before it runs (rrweb `maskTextSelector`). The selector list is a
  * JSON string literal, never code.
  */
-export function recorderScript(source: string, redaction?: RedactionRules) {
+export function recorderScript(source: string, redaction?: RedactionRules, options: { steps?: boolean } = {}) {
   const selectors = compileRedaction(redaction).maskSelectors;
-  return selectors.length ? `window.__REPLAYS_MASK_TEXT__=${JSON.stringify(selectors.join(', '))};\n${source}` : source;
+  const settings = [
+    ...(selectors.length ? [`window.__REPLAYS_MASK_TEXT__=${JSON.stringify(selectors.join(', '))};`] : []),
+    ...(options.steps ? ['window.__REPLAYS_STEPS__=true;'] : []),
+  ];
+  return settings.length ? `${settings.join('\n')}\n${source}` : source;
 }
 
 const performanceKinds = new Set<ReplayPerformanceEntry['kind']>([
@@ -138,6 +144,8 @@ export interface RecordedTracks {
   /** The epoch (ms) of the first rrweb event: every other track is relative to it. */
   origin: number;
   duration: number;
+  /** Steps the page showed (manual recordings only), `at` an epoch like the console and performance inputs. */
+  steps: ReplayStep[];
 }
 
 /**
@@ -154,6 +162,10 @@ export class RecorderSession {
   private readonly consoleEntries: NonNullable<RecorderChunk['console']> = [];
   private readonly performanceEntries: NonNullable<RecorderChunk['performance']> = [];
   private readonly performanceSupported = new Set<string>();
+  private readonly pageSteps: ReplayStep[] = [];
+  private readonly loads: PageLoad[] = [];
+  private readonly stepsWanted: boolean;
+  private opened = false;
   private readonly pull: (final?: boolean) => Promise<void>;
   private timer: NodeJS.Timeout | undefined;
   private readonly onBinding = (params: Record<string, unknown>) => {
@@ -165,11 +177,19 @@ export class RecorderSession {
     }
   };
 
+  private readonly onFrame = (params: Record<string, unknown>) => {
+    const frame = params.frame as { parentId?: string; url?: string } | undefined;
+    if (!frame || frame.parentId || !frame.url || frame.url === 'about:blank') return;
+    if (!this.opened) this.opened = true;
+    else this.loads.push({ at: Date.now(), url: frame.url });
+  };
+
   private readonly cdp: CdpLike;
   private readonly redaction: RedactionRules | undefined;
 
-  private constructor(cdp: CdpLike, redaction?: RedactionRules) {
+  private constructor(cdp: CdpLike, redaction?: RedactionRules, steps = false) {
     this.cdp = cdp;
+    this.stepsWanted = steps;
     this.redaction = redaction;
     this.pull = createPullGate(async (final) => {
       try {
@@ -188,14 +208,17 @@ export class RecorderSession {
    * `redaction`: the host's rules (src/shared/redaction.ts). Mask selectors go to the recorder in the page; the other
    * rules apply to the events and console entries as they are collected.
    */
-  static async start(cdp: CdpLike, options: { pullIntervalMs?: number; redaction?: RedactionRules } = {}) {
+  static async start(cdp: CdpLike, options: { pullIntervalMs?: number; redaction?: RedactionRules; steps?: boolean } = {}) {
     if (options.redaction) compileRedaction(options.redaction);
-    const session = new RecorderSession(cdp, options.redaction);
+    const session = new RecorderSession(cdp, options.redaction, options.steps === true);
     cdp.on('Runtime.bindingCalled', session.onBinding);
+    if (session.stepsWanted) cdp.on('Page.frameNavigated', session.onFrame);
     await cdp.send('Runtime.enable');
     await cdp.send('Page.enable');
     await cdp.send('Runtime.addBinding', { name: BINDING });
-    await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: recorderScript(await recorderSource(), options.redaction) });
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: recorderScript(await recorderSource(), options.redaction, { steps: session.stepsWanted }),
+    });
     session.timer = setInterval(() => void session.pull(), options.pullIntervalMs ?? 1000);
     return session;
   }
@@ -207,6 +230,7 @@ export class RecorderSession {
     this.consoleEntries.push(...(chunk.console ?? []));
     const remaining = Math.max(0, MAX_PERFORMANCE_ENTRIES - this.performanceEntries.length);
     this.performanceEntries.push(...(chunk.performance ?? []).slice(0, remaining));
+    if (this.stepsWanted) this.pageSteps.push(...(chunk.steps ?? []));
     for (const type of chunk.performanceSupported ?? []) if (performanceTypes.has(type)) this.performanceSupported.add(type);
   }
 
@@ -221,6 +245,7 @@ export class RecorderSession {
     this.timer = undefined;
     await this.pull(true);
     this.cdp.off('Runtime.bindingCalled', this.onBinding);
+    this.cdp.off('Page.frameNavigated', this.onFrame);
     this.events.sort((a, b) => a.timestamp - b.timestamp);
     if (this.events.length < 2) {
       const probe = (await this.cdp
@@ -240,6 +265,7 @@ export class RecorderSession {
         supported: [...this.performanceSupported].sort(),
         entries: normalizePerformance(this.performanceEntries, origin),
       },
+      steps: this.stepsWanted ? deriveManualSteps(this.pageSteps, this.loads) : [],
       origin,
       duration: Math.max(1, this.events.at(-1)!.timestamp - origin),
     };
@@ -249,5 +275,6 @@ export class RecorderSession {
   dispose() {
     if (this.timer) clearInterval(this.timer);
     this.cdp.off('Runtime.bindingCalled', this.onBinding);
+    this.cdp.off('Page.frameNavigated', this.onFrame);
   }
 }

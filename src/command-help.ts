@@ -19,15 +19,24 @@ interface CommandDefinition {
 
 /** Every command, once: the help screens, `--help` per command and `agent-guide` are all generated from this list. */
 export const COMMANDS: readonly CommandDefinition[] = [
-  { name: 'capture', summary: 'record a page with scripted steps into replay.json', captureOnly: true, details: CAPTURE_USAGE },
+  {
+    name: 'capture',
+    summary: 'record a page into replay.json, with scripted steps or by hand (--manual)',
+    captureOnly: true,
+    details: CAPTURE_USAGE,
+  },
   {
     name: 'probe',
     summary: 'open a page headless and list what a selector matches (visibility, boxes)',
     captureOnly: true,
-    help: `usage: ${p} probe --url <url> --selector <selector> [--json]
+    help: `usage: ${p} probe --url <url> --selector <selector> [--state <storageState.json>] [--viewport <WxH>] [--wait <ms>] [--wait-for <selector>] [--json]
 
 Opens the page headless and reports every match (up to 20) with its tag, text, visibility and bounding box.
-Capture steps act on the first visible match, marked with * . Use it to test a selector before recording.`,
+Capture steps act on the first visible match, marked with * . Use it to test a selector before recording.
+  --state <file>      Playwright storage state (cookies and local storage) to probe a signed-in page
+  --viewport <WxH>    window size, default 1280x800
+  --wait <ms>         longest wait for a visible match after load, default 3000; 0 reports right after load
+  --wait-for <sel>    wait for this selector instead of the probed one`,
   },
   {
     name: 'import',
