@@ -68,6 +68,8 @@ export const StepRail = memo(function StepRail() {
   // While playing, the count steps with the caption on the player (no roll that would lag it).
   const { status } = usePlayerState();
   const filled = useFilledAfterTransition();
+  const shown = steps.filter((step) => !step.folded);
+  const position = steps.slice(0, active + 1).filter((step) => !step.folded).length;
   return (
     <aside className="timeline-panel" aria-label="Steps">
       <div className="section-heading">
@@ -75,10 +77,10 @@ export const StepRail = memo(function StepRail() {
         <span className="section-count" data-testid="step-count">
           {/* "Steps" is the heading beside it, so the count is just "7 of 11"; assistive tech hears "Step 7 of 11". */}
           <span aria-hidden="true">
-            <AnimatedNumber value={active + 1} instant={status === 'playing'} /> of {steps.length}
+            <AnimatedNumber value={position} instant={status === 'playing'} /> of {shown.length}
           </span>
           <span className="visually-hidden">
-            Step {active + 1} of {steps.length}
+            Step {position} of {shown.length}
           </span>
         </span>
       </div>
@@ -112,7 +114,13 @@ export const StepList = memo(function StepList() {
   useEffect(() => () => window.clearTimeout(targetTimer.current), []);
   // The step under the scrubber's pointer (hover or drag): a faint background, and an edge hint when off-screen.
   const stepTimes = useMemo(() => steps.map((step) => step.at), [steps]);
-  const preview = usePreviewStepIndex(stepTimes);
+  const numbers = useMemo(() => {
+    let count = 0;
+    return steps.map((step) => (step.folded ? count : ++count));
+  }, [steps]);
+  const total = numbers.at(-1) ?? 0;
+  const hovered = usePreviewStepIndex(stepTimes);
+  const preview = hovered < 0 ? hovered : steps.findLastIndex((step, index) => index <= hovered && !step.folded);
   const [edge, setEdge] = useState<'above' | 'below'>();
   useLayoutEffect(() => {
     const container = list.current;
@@ -193,6 +201,7 @@ export const StepList = memo(function StepList() {
             <HoverGlide container={list} itemSelector=".step" />
             <div ref={highlight} className="sliding-highlight" aria-hidden="true" />
             {steps.map((step, index) => {
+              if (step.folded) return null;
               const state = index === active ? 'active' : index < active ? 'complete' : 'upcoming';
               // Older bundles can omit the kind.
               const kind = STEP_ICONS[step.kind]?.label ?? step.kind ?? '';
@@ -219,7 +228,7 @@ export const StepList = memo(function StepList() {
                   data-step-index={index}
                   className={`step ${state} ${step.kind === 'wait' ? 'wait' : ''} ${index === preview && index !== active ? 'previewed' : ''}`}
                   aria-current={index === active ? 'step' : undefined}
-                  aria-label={`Step ${index + 1} of ${steps.length}, ${step.label}, ${where}, ${clock}`}
+                  aria-label={`Step ${numbers[index]} of ${total}, ${step.label}, ${where}, ${clock}`}
                   onClick={() => goToStep(index)}
                   onDoubleClick={canRename ? () => renaming?.start(index, 'rail', step.label) : undefined}
                   onKeyDown={
@@ -261,7 +270,7 @@ export const StepList = memo(function StepList() {
         {edge && previewed ? (
           <>
             {edge === 'above' ? <ArrowUpIcon /> : <ArrowDownIcon />}
-            <span>Step {preview + 1}</span>
+            <span>Step {numbers[preview]}</span>
             <span className="step-edge-label">{previewed.label}</span>
           </>
         ) : null}

@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { commentCounts, countsFor, increases, runLint } from './lib/lint-report.mjs';
+import { commentCounts, countsFor, fileRiseLimit, increases, ruleRiseLimit, runLint } from './lib/lint-report.mjs';
 
+const ruleLimit = () => ruleRiseLimit;
+const fileLimit = () => fileRiseLimit;
 const update = process.argv.includes('--write-baseline');
 if (!existsSync('dist/types/index.d.ts'))
   throw new Error('Build package declarations with pnpm build:cli on Boat before the type-aware audit.');
@@ -24,10 +26,11 @@ if (update) {
 } else {
   const baseline = JSON.parse(readFileSync(budgetPath, 'utf8'));
   const commentBaseline = JSON.parse(readFileSync(commentPath, 'utf8'));
+  // why: lint debt is for awareness; only a rise of more than ruleRiseLimit in one rule or fileRiseLimit in one file blocks.
   const failures = Object.entries(counts).flatMap(([name, values]) =>
-    increases(values, baseline.counts[name] ?? {}).map((row) => `${name}/${row}`),
+    increases(values, baseline.counts[name] ?? {}, ruleLimit).map((row) => `${name}/${row}`),
   );
-  failures.push(...increases(comments, commentBaseline.counts).map((row) => `comments/${row}`));
+  failures.push(...increases(comments, commentBaseline.counts, fileLimit).map((row) => `comments/${row}`));
   for (const row of failures) console.error(`Lint baseline increased: ${row}`);
   if (failures.length) process.exitCode = 1;
   const decreased = Object.entries(baseline.counts).flatMap(([name, values]) =>

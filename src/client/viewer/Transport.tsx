@@ -30,6 +30,7 @@ import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/compone
 import { Slider, SliderControl, SliderIndicator, SliderThumb, SliderTrack } from '@/components/ui/slider.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 import { useViewer } from './context.ts';
+import { bandAt, type FrameBand } from './performance/frames.ts';
 import { freshPoster } from '../transitions/open-hint.ts';
 import { Scrubber } from './Scrubber.tsx';
 import { APP_PLAYBACK_SPEEDS } from './playback-speeds.ts';
@@ -41,6 +42,7 @@ export { activeStepIndex };
 
 /** How long a click on the stage waits for a second click (double click = fullscreen) before flipping playback. */
 const DOUBLE_CLICK_MS = 220;
+const NO_FRAMES: readonly FrameBand[] = [];
 
 export function PlayerStage() {
   const player = usePlayer();
@@ -179,7 +181,10 @@ export function Transport() {
   return (
     <div className="transport" role="group" aria-label="Playback controls">
       <PlayButton />
-      <TimeReadout />
+      <div className="transport-readouts">
+        <TimeReadout />
+        <FpsReadout />
+      </div>
       <Scrubber steps={steps} errors={errors} />
       {steps.length > 0 || editCaptions ? <CaptionControls edited={editCaptions === true} /> : null}
       <PlaybackOptions />
@@ -229,6 +234,28 @@ function TimeReadout() {
     <Hint label={`Duration ${formatClock(player.duration)}`} align="start">
       <span className="transport-time" data-testid="elapsed">
         <strong data-testid="playhead">{clock}</strong>
+      </span>
+    </Hint>
+  );
+}
+
+function fpsHint(recorded: boolean, band: FrameBand | undefined) {
+  if (!recorded) return 'Frame timing not recorded';
+  if (!band) return 'No frame sample at this moment';
+  return `About ${Math.round(band.fps)} frames per second this second; about ${band.dropped} missed against 60 Hz`;
+}
+
+/** Frame rate at the playhead, for performance-focused replays: from the recorded one-second samples, never made up. */
+function FpsReadout() {
+  const { performanceFocused, frames = NO_FRAMES } = useViewer();
+  const band = usePlayhead((time) => bandAt(frames, time));
+  if (!performanceFocused) return null;
+  const recorded = frames.length > 0;
+  return (
+    <Hint label={fpsHint(recorded, band)} align="start">
+      <span className="transport-fps" data-testid="fps-readout" data-verdict={band?.verdict} data-recorded={recorded || undefined}>
+        <i aria-hidden="true" />
+        {band ? <strong>{Math.round(band.fps)}</strong> : 'n/a'} FPS
       </span>
     </Hint>
   );

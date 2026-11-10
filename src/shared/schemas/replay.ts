@@ -1,5 +1,6 @@
 import * as z from 'zod/mini';
 
+import type { ReplayPerfSummary } from '../frame-timing.ts';
 import type { ReplayPersonSummary } from '../people.ts';
 import type { ReplaySourceLink, ReplaySummary, ReplayTimelineSummary, SummaryFieldValue } from '../replay.ts';
 import type { ReviewSuiteIndexEntry, ReviewSuiteIndexRun } from '../review-suite.ts';
@@ -26,6 +27,7 @@ export const replaySummarySchema = z.looseObject({
   summaryVersion: z.exactOptional(z.number()),
   viewport: z.exactOptional(z.object({ width: z.number(), height: z.number() })),
   timeline: z.exactOptional(z.custom<ReplayTimelineSummary>()),
+  perf: z.exactOptional(z.custom<ReplayPerfSummary>()),
   tags: z.exactOptional(z.array(z.string())),
   sources: z.exactOptional(z.array(z.custom<ReplaySourceLink>())),
   suiteRun: z.exactOptional(z.object({ suiteId: z.string(), runId: z.string() })),

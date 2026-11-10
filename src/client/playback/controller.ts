@@ -2,12 +2,11 @@ import { Replayer } from 'rrweb';
 import { type PlayerState, type Viewport, type Speed, type Listener } from './types.ts';
 import { TargetOutline } from './target-outline.ts';
 import { rrwebEvents } from './rrweb-wire.ts';
+import { settleAnimations } from './settle-animations.ts';
 
 import { withDottedMasks } from '../../shared/mask-display.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import { NO_EFFECTS, type PlaybackEffects } from '../../shared/effects.ts';
-import { captionEdge, type CaptionEdge } from '../caption-placement.ts';
-import { cursorInput, type CursorInput } from '../cursor-motion.ts';
 import { EffectsLayer } from '../effects-layer.ts';
 import { ReplayCursor } from '../replay-cursor.ts';
 import { renderOffset, type SnapshotGroup, snapshotGroups } from '../snapshots.ts';
@@ -58,9 +57,7 @@ export class ReplayController {
   private readonly seekListeners = new Set<Listener>();
   private readonly stateListeners = new Set<Listener>();
   private readonly viewportListeners = new Set<Listener>();
-  private pointer: CursorInput | undefined;
   /** The recorded viewport's height, the page the export places captions against (render/main.ts). */
-  private readonly pageHeight: number;
 
   constructor(bundle: ReplayBundle, options: { effects?: PlaybackEffects } = {}) {
     this.effects = options.effects ?? NO_EFFECTS;
@@ -76,7 +73,6 @@ export class ReplayController {
       })),
     );
     this.viewport = { ...bundle.meta.viewport };
-    this.pageHeight = bundle.meta.viewport.height;
   }
 
   /** Mounts an rrweb Replayer into `root`; returns the cleanup. */
@@ -102,7 +98,7 @@ export class ReplayController {
       if (this.state.status === 'playing') this.finish();
     });
     this.replayer = replayer;
-    replayer.pause(this.offsetFor(this.time));
+    this.pauseAt(this.time);
     const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, {
       settings: this.effects.cursor,
       source: this.source,
@@ -216,7 +212,7 @@ export class ReplayController {
     if (this.state.status === 'playing') {
       this.replayer?.play(this.offsetFor(at));
     } else {
-      this.replayer?.pause(this.offsetFor(at));
+      this.pauseAt(at);
       if (this.state.status === 'ended') this.setState({ status: 'paused' });
     }
   };
@@ -277,12 +273,6 @@ export class ReplayController {
   readonly getState = () => this.state;
   readonly getViewport = () => this.viewport;
 
-  /** The edge of the frame a caption up from `from` to `to` (replay ms) sits on, as the video export places it. */
-  readonly captionEdge = (from: number, to: number): CaptionEdge => {
-    this.pointer ??= cursorInput(this.events);
-    return captionEdge({ input: this.pointer, first: this.events[0]?.timestamp ?? 0, height: this.pageHeight }, { from, to });
-  };
-
   readonly subscribeTime = (listener: Listener) => subscribe(this.timeListeners, listener);
   /** Explicit jumps (keys, steps, errors, scrubbing), not the playback clock. */
   readonly subscribeSeek = (listener: Listener) => subscribe(this.seekListeners, listener);
@@ -317,9 +307,16 @@ export class ReplayController {
     this.scrubTimer = 0;
   }
 
+  private pauseAt(time: number) {
+    const replayer = this.replayer;
+    if (!replayer) return;
+    replayer.pause(this.offsetFor(time));
+    settleAnimations(replayer.iframe.contentDocument);
+  }
+
   private renderAt(time: number) {
     const started = performance.now();
-    this.replayer?.pause(this.offsetFor(time));
+    this.pauseAt(time);
     this.scrubRenderedAt = performance.now();
     this.scrubRenderCost = this.scrubRenderedAt - started;
     if (this.state.status === 'ended') this.setState({ status: 'paused' });

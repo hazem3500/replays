@@ -31,10 +31,15 @@ test('a suite opens on its first failed run; J and Back move between runs', asyn
   await expect(sidebar.locator('[aria-disabled="true"]')).toContainText('No recording');
 
   await page.getByTestId('network-tab').click();
+  // Scrub past zero so a sticky shared playhead would fail the assertion after the run switch.
+  const seek = page.getByRole('slider', { name: 'Seek' });
+  const box = (await seek.boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.4, box.y + box.height / 2);
+  await expect(page.getByTestId('playhead')).not.toHaveText('0:00.0');
   await page.keyboard.press('Shift+J');
   await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
   await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
-  // The inspector tab carries over; the playhead starts again at zero.
+  // The inspector tab carries over; Single restarts the playhead (Grid/Spotlight keep the shared time).
   await expect(page.getByTestId('network-tab')).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByTestId('playhead')).toHaveText('0:00.0');
 
@@ -73,20 +78,44 @@ test('the runs sidebar opens expanded on every visit; collapsing only lasts for 
 });
 
 test('at 390 px the sidebar becomes a run switcher in the topbar title', async ({ page }) => {
-  const { suite, one, two } = await threeRuns(page.request);
+  // Long labels wrap in the phone title sheet so the selected check/status centering is real geometry.
+  const longOne = 'Turning the mock on from a review link, so the phone run sheet wraps this label onto a second line';
+  const longTwo = 'A second wrapped run label for switching away from the selected two-line row';
+  const suite = uniqueId('suite');
+  const one = `${suite}-one`;
+  const two = `${suite}-two`;
+  await createSuite(page.request, server().origin, suite, [
+    { id: 'attempt-1', label: longOne, status: 'passed', replayId: one },
+    { id: 'attempt-2', label: longTwo, status: 'failed', replayId: two },
+    { id: 'attempt-3', label: 'Desktop: run 3', status: 'passed' },
+  ]);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${server().origin}/s/${suite}/r/${one}`);
   await expect(page.getByRole('complementary', { name: 'Review suite' })).toHaveCount(0);
   await expect(page.getByRole('tablist', { name: 'Replay diagnostics' })).toBeInViewport({ ratio: 1 });
-  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: longOne, exact: true })).toBeVisible();
   await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'single');
   await expect(page.locator('.ct-label')).toHaveCount(0);
-  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(/Desktop: run 1/);
+  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(new RegExp(longOne.slice(0, 24)));
   await expect(page.getByTestId('phone-switch')).toHaveCount(0);
   await page.getByTestId('title-menu').click();
-  await page.getByRole('menuitemradio', { name: /Desktop: run 2/ }).click();
+  const selected = page.getByRole('menuitemradio', { checked: true });
+  await expect(selected).toContainText(longOne.slice(0, 24));
+  const label = selected.locator('.run-picker-label');
+  await expect.poll(async () => (await label.boundingBox())?.height ?? 0).toBeGreaterThan(20);
+  await expect
+    .poll(async () => {
+      const check = await selected.locator('[data-slot="dropdown-menu-radio-item-indicator"]').boundingBox();
+      const status = await selected.locator('.status-dot').boundingBox();
+      if (!check || !status) return Number.POSITIVE_INFINITY;
+      const checkMid = check.y + check.height / 2;
+      const statusMid = status.y + status.height / 2;
+      return Math.abs(checkMid - statusMid);
+    })
+    .toBeLessThan(4);
+  await page.getByRole('menuitemradio', { name: new RegExp(longTwo.slice(0, 24)) }).click();
   await expect(page).toHaveURL(new RegExp(`/r/${two}$`));
-  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(/Desktop: run 2/);
+  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(new RegExp(longTwo.slice(0, 24)));
   await expect(page.locator('.ct-label')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
 });
@@ -108,10 +137,10 @@ test('the index nests a suite’s runs, and a run whose replay expired is skippe
   await expect(menu.getByRole('menuitem', { name: /Desktop: run 2, Expired/ })).toHaveAttribute('aria-disabled', 'true');
 });
 
-test('a suite opens single and retains grid switching and layout history', async ({ page }) => {
+test('a comparison suite opens single and retains grid switching and layout history', async ({ page }) => {
   const { suite, one } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/s/${suite}`);
+  await openReplay(page, `${server().origin}/s/${suite}?view=compare&layout=single`);
   const tiles = page.getByTestId('compare-stage').locator('.ct-tile');
   await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'single');
   await expect(tiles.locator('.ct-label')).toHaveCount(0);
@@ -124,10 +153,10 @@ test('a suite opens single and retains grid switching and layout history', async
     for (const frame of frames) frame.setAttribute('data-marked', '');
   });
   await page.getByRole('complementary', { name: 'Review suite' }).locator(`[data-replay-id="${one}"]`).click();
-  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?layout=grid$`));
+  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?view=compare$`));
   await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
   await page.getByTestId('layout-switch').getByRole('radio', { name: 'Single' }).click();
-  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?view=compare&layout=single$`));
   await expect(tiles.locator('.ct-label')).toHaveCount(0);
   await page.goBack();
   await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'grid');
@@ -141,7 +170,7 @@ test('a suite opens single and retains grid switching and layout history', async
 test('each grid tile retains its sidebar colour and hover identity', async ({ page }) => {
   const { suite, one, two } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/s/${suite}?layout=grid`);
+  await openReplay(page, `${server().origin}/s/${suite}?view=compare`);
   const sidebar = page.getByRole('complementary', { name: 'Review suite' });
   const stage = page.getByTestId('compare-stage');
   for (const id of [one, two]) {
@@ -161,18 +190,19 @@ test('each grid tile retains its sidebar colour and hover identity', async ({ pa
   await expect(label).toBeHidden();
 });
 
-test('a named suite run opens single and keeps its accessible identity', async ({ page }) => {
-  const { suite, two } = await threeRuns(page.request);
+test('a suite that is not a comparison has no layout switcher and swaps runs in place', async ({ page }) => {
+  const { suite, one, two } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/s/${suite}/r/${two}`);
-  const tile = page.locator('.ct-tile[data-role="single"]');
-  await expect(tile).toHaveAttribute('data-tile-id', two);
-  await expect(tile).toHaveAccessibleName(/Desktop: run 2/);
-  await expect(page.locator('.ct-label')).toHaveCount(0);
-  await expect(page.getByTestId('layout-switch').getByRole('radio', { checked: true })).toHaveAttribute('data-layout', 'single');
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 2' })).toBeVisible();
+  await expect(page.getByTestId('layout-switch')).toHaveCount(0);
+  await expect(page.getByTestId('compare-stage')).toHaveCount(0);
+  await page.getByRole('complementary', { name: 'Review suite' }).locator(`[data-replay-id="${one}"]`).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
+  await expect(page.getByTestId('layout-switch')).toHaveCount(0);
 });
 
-for (const search of ['?layout=grid', '?layout=spotlight', '?view=compare', '?view=compare&layout=single']) {
+for (const search of ['?view=compare&layout=grid', '?view=compare&layout=spotlight', '?view=compare', '?view=compare&layout=single']) {
   test(`a suite honors explicit layout intent ${search}`, async ({ page }) => {
     const { suite, two } = await threeRuns(page.request);
     await openReplay(page, `${server().origin}/s/${suite}/r/${two}${search}`);
@@ -287,6 +317,7 @@ test.describe('Add a recording', () => {
 
     await openReplay(page, `${server().origin}/r/demo-shop`);
     await more.click();
+    await page.getByTestId('view-submenu-trigger').click();
     await expect(page.getByTestId('compare-with')).toHaveText('Compare with…');
     await page.keyboard.press('Escape');
 

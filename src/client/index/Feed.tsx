@@ -21,6 +21,7 @@ import { useHydrated } from '../hooks/use-hydrated.ts';
 import { useReplayDeletion } from '../hooks/use-replay-deletion.tsx';
 import { useRowMenu } from '../hooks/use-row-menu.ts';
 import { PeopleStack } from './People.tsx';
+import { displayTitle } from '../display-title.ts';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
 import { Poster } from './Poster.tsx';
@@ -232,7 +233,7 @@ function SessionItem({
       <div className="feed-body">
         <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
           <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
-            {summary.title}
+            {displayTitle(summary)}
           </a>
           <RowMenu title={summary.title} actions={replayRowActions(summary.id)} menu={menu} onDelete={deletion.requestDelete} />
           {deletion.dialog}
@@ -474,7 +475,7 @@ function SuiteItem({
         <div className="feed-body">
           <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
             <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
-              {suite.title}
+              {displayTitle({ title: suite.title, sources })}
             </a>
             <RowMenu title={suite.title} actions={suiteRowActions(href, suite.id, recordings)} menu={menu} />
           </div>

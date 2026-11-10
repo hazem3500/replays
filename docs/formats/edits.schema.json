@@ -79,8 +79,10 @@
         ],
         "properties": {
           "rate": {
-            "description": "Playback rate of the stretch. 1.5 was added later; older edit lists hold only 2, 4 or 8.",
-            "enum": [1.5, 2, 4, 8]
+            "description": "Playback rate of the stretch, 1 to 16. The editor offers 0.25 steps up to 4, 0.5 up to 8 and whole numbers above; older edit lists hold only 1.5, 2, 4 or 8.",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 16
           }
         },
         "required": ["rate"]

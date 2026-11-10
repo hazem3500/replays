@@ -1,4 +1,18 @@
-import { playheadX, REST_FILLED, SEGMENTS } from '../index/mark-burst.ts';
+/** The mark's five segments on its 24-unit grid: [x, width]; y 10, height 4.2, fully rounded. */
+export const SEGMENTS: ReadonlyArray<readonly [number, number]> = [
+  [3, 3.6],
+  [7.6, 2.6],
+  [11.2, 3.8],
+  [16, 2.2],
+  [19.2, 1.8],
+];
+/** At rest two segments are filled and the playhead sits after the second. */
+export const REST_FILLED = 2;
+
+/** Where the playhead stands after segment `index` (-1: before the first). */
+export function playheadX(index: number) {
+  return index < 0 ? SEGMENTS[0]![0] - 0.2 : SEGMENTS[index]![0] + SEGMENTS[index]![1] + 0.5;
+}
 
 /**
  * The built-in mark: a timeline of rounded segments, the played ones in the accent, and the accent playhead (a stem

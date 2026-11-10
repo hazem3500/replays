@@ -4,8 +4,8 @@ import { readStorage, removeStorage, writeStorage } from '../storage.ts';
 export const STANDARD_VIEW = 'standard';
 
 /** What the viewer remembers per view, per browser. */
-export type ViewSetting = 'dock-height' | 'dock-collapsed' | 'rail-collapsed' | 'tab' | 'captions';
-const SETTINGS: readonly ViewSetting[] = ['dock-height', 'dock-collapsed', 'rail-collapsed', 'tab', 'captions'];
+export type ViewSetting = 'dock-height' | 'dock-collapsed' | 'rail-collapsed' | 'tab';
+const SETTINGS: readonly ViewSetting[] = ['dock-height', 'dock-collapsed', 'rail-collapsed', 'tab'];
 
 /** The storage key of one view's setting: `replays-view:debug:tab`. */
 export function viewSettingKey(view: string, setting: ViewSetting) {
@@ -29,6 +29,19 @@ export function readViewFlag(view: string, setting: ViewSetting) {
 
 export function writeViewFlag(view: string, setting: ViewSetting, value: boolean) {
   writeViewSetting(view, setting, value ? '1' : '0');
+}
+
+const CAPTIONS_KEY = 'replays-captions';
+
+/** Step captions on or off, one choice for every replay; undefined until the person first picks. */
+export function readCaptionsPreference() {
+  const saved = readStorage(CAPTIONS_KEY);
+  if (saved !== '1' && saved !== '0') return;
+  return saved === '1';
+}
+
+export function writeCaptionsPreference(value: boolean) {
+  writeStorage(CAPTIONS_KEY, value ? '1' : '0');
 }
 
 /** "Reset this view": forget everything remembered for it, so it opens as its preset says. */

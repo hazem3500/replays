@@ -57,9 +57,15 @@ export class CompareSession {
     return () => void this.failureListeners.delete(listener);
   };
 
-  /** The viewer's chrome follows the focused recording once it has loaded. */
-  focus(id: string) {
+  /**
+   * The viewer's chrome follows the focused recording once it has loaded. `restart` is for Single: browsing one run
+   * at a time should open at zero, not keep the shared compare playhead from the previous run.
+   */
+  focus(id: string, restart = false) {
     const known = this.controllers.get(id);
     if (known) this.player.focus(known.controller);
+    if (!restart) return;
+    this.clock.pause();
+    this.clock.seek(0);
   }
 }

@@ -12,7 +12,7 @@
 .np-chip[data-status="failed"] .np-chip-count { color: var(--danger); }
 .np-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--text-tertiary); }
 .np-dot[data-status="failed"] { background: var(--danger); }
-.np-dot[data-status="slow"] { background: var(--warning); }
+.np-dot[data-status="slow"] { background: var(--warning-fill); }
 .np-dot[data-status="pending"] { border: 1.5px solid var(--text-tertiary); background: transparent; }
 .np-range { gap: 4px; border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: var(--accent-soft); color: var(--text); font-variant-numeric: tabular-nums; }
 .np-range svg, .np-icon svg, .np-search > svg { width: 14px; height: 14px; }
@@ -25,9 +25,13 @@
 .np-type:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 .np-type svg { width: 14px; height: 14px; color: var(--text-tertiary); }
 .np-type-count { margin-left: auto; padding-left: 16px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
-.np-search { width: min(280px, 48%); min-width: 100px; flex: 0 1 280px; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 2px 0 8px; border-radius: var(--radius); background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-tertiary); }
-.np-search:focus-within { box-shadow: inset 0 0 0 1px var(--ring); }
+.np-search { width: min(280px, 48%); min-width: 100px; flex: 0 1 280px; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 3px 0 8px; border-radius: var(--radius); background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-tertiary); }
+.np-search:focus-within { box-shadow: inset 0 0 0 1px var(--ring), 0 0 0 var(--focus-ring-width) var(--page), 0 0 0 calc(var(--focus-ring-width) * 2) var(--ring); }
 .np-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: var(--text-xs); }
+.np-search input:focus, .np-search input:focus-visible { outline: 0; box-shadow: none; }
+.np-search .np-icon { width: 22px; height: 22px; border-radius: 50%; }
+.np-search .np-icon svg { width: 12px; height: 12px; }
+.np-search .np-icon:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
 .np-search input::-webkit-search-cancel-button { display: none; }
 
 .np-body { min-height: 0; flex: 1; display: flex; }
@@ -65,7 +69,7 @@
 .np-ms[data-tone="bad"] { color: var(--text-secondary); }
 .np-bar { position: relative; width: var(--np-duration-bar-width); height: 4px; flex: none; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, var(--line-strong) 45%, transparent); }
 .np-bar > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px; background: var(--text-tertiary); }
-.np-bar > span[data-tone="slow"] { background: var(--warning); }
+.np-bar > span[data-tone="slow"] { background: var(--warning-fill); }
 .np-bar > span[data-tone="bad"] { background: var(--danger); }
 .np-step { overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
 .np-row[data-future] .np-path, .np-row[data-future] .np-code, .np-row[data-future] .method { color: var(--text-tertiary); }
@@ -75,6 +79,19 @@
 @container network (max-width: 879px) {
   .np-table { --np-cols: 60px minmax(0, 1fr) 52px 116px; }
   .np-step { display: none; }
+}
+@container network (min-width: 880px) {
+  .np-table[data-resized] { --np-cols: var(--np-user-cols); }
+  .np-head > [role="columnheader"] { position: relative; }
+  .np-grip { position: absolute; top: 0; bottom: 0; width: 10px; cursor: col-resize; touch-action: none; }
+  .np-grip[data-side="start"] { inset-inline-start: -10px; }
+  .np-grip[data-side="end"] { inset-inline-end: -10px; }
+  .np-grip::after { content: ""; position: absolute; top: 6px; bottom: 6px; inset-inline-start: 4px; width: 1px; background: var(--line); }
+  .np-grip:is(:hover, :focus-visible)::after { background: var(--accent); width: 2px; }
+  .np-grip:focus-visible { outline: none; }
+}
+@container network (max-width: 879px) {
+  .np-grip { display: none; }
 }
 /* Phones and narrow panels: two lines. Request and status on top; time, step and duration below. */
 @container network (max-width: 559px) {

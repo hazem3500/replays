@@ -62,7 +62,7 @@
               "additionalProperties": false,
               "properties": {
                 "by": { "const": "customer" },
-                "mode": { "enum": ["masked", "interface-visible", "text-masked", "visible"] },
+                "mode": { "enum": ["masked", "interface-visible", "text-masked", "inputs-masked", "visible"] },
                 "inputs": { "enum": ["masked", "visible"] },
                 "text": { "enum": ["masked", "visible"] },
                 "bodies": { "type": "boolean" }
@@ -145,6 +145,7 @@
           "at": { "type": "number" },
           "kind": { "type": "string" },
           "label": { "type": "string" },
+          "auto": { "const": true },
           "selector": { "type": "string" },
           "url": { "type": "string" }
         }

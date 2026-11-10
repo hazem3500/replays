@@ -4,7 +4,7 @@
 .ribbon-ticks, .ribbon-key { display: flex; justify-content: space-between; gap: 12px; padding: 4px 10px; color: var(--text-secondary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
 .ribbon-key { justify-content: flex-start; }
 .ribbon-key > span { display: inline-flex; align-items: center; gap: 4px; }
-.ribbon-key i { width: 7px; height: 7px; background: var(--warning); }
+.ribbon-key i { width: 7px; height: 7px; background: var(--warning-fill); }
 .ribbon-key i[data-tone="danger"] { background: var(--danger); }
 button.ribbon-mark { padding: 0; border: 0; cursor: pointer; }
 button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; z-index: 5; }
@@ -29,7 +29,7 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
 .ribbon-mark[data-lane="top"] { top: 4px; bottom: 52%; }
 .ribbon-mark[data-lane="bottom"] { top: 52%; bottom: 4px; }
 .ribbon-mark[data-tone="danger"] { background: var(--danger); }
-.ribbon-mark[data-tone="warning"] { background: var(--warning); }
+.ribbon-mark[data-tone="warning"] { background: var(--warning-fill); }
 .ribbon-mark[data-tone="success"] { background: var(--success); }
 .ribbon-range { position: absolute; top: 0; bottom: 0; border-inline: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none; }
 .ribbon-range[data-live] { background: color-mix(in srgb, var(--accent) 24%, transparent); }
@@ -37,6 +37,9 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
 .ribbon-future, .ribbon-now { position: absolute; inset: 0; pointer-events: none; will-change: transform; }
 .ribbon-future { transform-origin: right center; transform: scaleX(calc(1 - var(--progress, 0))); background: color-mix(in srgb, var(--surface) 45%, transparent); }
 .ribbon-now { transform: translateX(calc(var(--progress, 0) * 100%)); }
+.ribbon-handle { position: absolute; top: 0; bottom: 0; left: 0; width: 10px; translate: -50% 0; cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; }
+.ribbon-handle::after { content: ""; position: absolute; top: 0; left: 50%; width: 8px; height: 8px; translate: -50% 0; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface-raised), 0 1px 3px 2px rgb(0 0 0 / 0.14); }
+.ribbon-handle:focus-visible::after { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--accent); }
 .ribbon-now::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 1.5px; translate: -50% 0; background: var(--accent); }
 /* why: while the seek bar is dragged, positions arrive every frame; a short glide keeps up with the pointer. */
 :root:has(.scrubber[data-scrubbing]) .time-ribbon { --ribbon-glide: 60ms; }
@@ -64,7 +67,7 @@ button.lt-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2
 .lt-track { position: relative; height: 8px; border-radius: 2px; background: repeating-linear-gradient(to right, color-mix(in srgb, var(--line) 70%, transparent) 0 1px, transparent 1px 20%); }
 .lt-bar { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 2px; background: var(--text-tertiary); }
 .lt-bar[data-tone="danger"] { background: var(--danger); }
-.lt-bar[data-tone="warning"] { background: var(--warning); }
+.lt-bar[data-tone="warning"] { background: var(--warning-fill); }
 .lt-bar[data-tone="success"] { background: var(--success); }
 .lt-bar[data-tone="current"] { background: var(--accent); }
 .lt-value { color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
@@ -73,3 +76,12 @@ button.lt-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2
 @container local-timeline (max-width: 480px) {
   .lt-ruler span:not(:first-child, :last-child) { color: transparent; }
 }
+
+/* The frame-rate lane under the ribbon: bars per recorded second in the good, needs-work and poor colours. */
+.ribbon-key i[data-tone="success"] { background: var(--success); }
+.fps-lane-wrap { flex: none; border-bottom: 1px solid var(--line); }
+.fps-lane { display: block; width: 100%; padding: 0; border-inline: 0; border-top: 0; position: relative; height: 24px; overflow: hidden; border-bottom: 1px solid var(--line); background: var(--surface); cursor: crosshair; }
+.fps-lane > span[data-verdict] { position: absolute; bottom: 0; background: var(--text-tertiary); }
+.fps-lane > span[data-verdict="good"] { background: var(--success); }
+.fps-lane > span[data-verdict="needs-work"] { background: var(--warning); }
+.fps-lane > span[data-verdict="poor"] { background: var(--danger); }

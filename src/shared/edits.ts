@@ -2,7 +2,7 @@ import { normalizeCursor } from './cursor.ts';
 import { type EditTimeline, editTimeline } from './edit-timeline.ts';
 import { NO_EFFECTS, type PlaybackEffects, playbackEffects } from './effects.ts';
 import { separateSpans } from './effect-room.ts';
-import { renameSteps } from './step-names.ts';
+import { renameSteps } from './step-rename-names.ts';
 import type { ReplayBundle, ReplayConsoleEntry, ReplayNetworkEntry, ReplayPerformanceEntry, ReplayStep } from './replay.ts';
 import {
   changesTime,
@@ -32,7 +32,7 @@ export {
   type ReplayPointHighlight,
   type StoredReplayEdits,
 } from './edit-list.ts';
-export { MAX_STEP_NAMES, renameSteps, stepNameKeys, withoutStepNames, withStepName } from './step-names.ts';
+export { MAX_STEP_NAMES, renameSteps, stepNameKeys, withoutStepNames, withStepName } from './step-rename-names.ts';
 export { type EditTimeline, editTimeline, mergeRanges } from './edit-timeline.ts';
 export { assertReplayEdits, assertStoredReplayEdits } from './edit-validation.ts';
 

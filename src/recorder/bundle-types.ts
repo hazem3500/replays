@@ -51,7 +51,7 @@ export type ReplayCaptured = {
   choice?: {
     by: 'customer';
     /** The picked mode, so the server knows which text rules applied. */
-    mode: 'masked' | 'interface-visible' | 'text-masked' | 'visible';
+    mode: 'masked' | 'interface-visible' | 'text-masked' | 'inputs-masked' | 'visible';
     inputs: 'masked' | 'visible';
     text: 'masked' | 'visible';
     bodies: boolean;
@@ -81,6 +81,8 @@ export type ReplayStep = {
   at: number;
   kind: string;
   label: string;
+  /** Set when the label was generated, not written by a person. */
+  auto?: true;
   selector?: string;
   url?: string;
 };

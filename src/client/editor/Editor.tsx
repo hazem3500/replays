@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { EMPTY_EDITS, editListOf, editTimeline, isEmptyEdits, type ReplayEdits, type StoredReplayEdits } from '../../shared/edits.ts';
 import { clicksOf, IDENTITY_TIME, playbackEffects, proposeStepCaptions, proposeZoomRegions } from '../../shared/effects.ts';
 import { EditCaption } from '../edit-caption.tsx';
-import type { Speed } from '../player.ts';
+import { previewSpeed } from '../../shared/rate-scale.ts';
 import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
 import { Durations } from './Durations.tsx';
@@ -180,7 +180,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         const { timeline: current } = live.current;
         if (player.getState().status !== 'playing' || player.isScrubbing()) return;
         const time = player.getTime();
-        const rate = (speedsRef.current?.find((item) => time >= item.from && time < item.to)?.rate ?? 1) as Speed;
+        const rate = previewSpeed(speedsRef.current?.find((item) => time >= item.from && time < item.to)?.rate ?? 1);
         if (player.getState().speed !== rate) player.setSpeed(rate);
         const range = current.removed.find((item) => time >= item.from && time < item.to);
         if (!range) return;
