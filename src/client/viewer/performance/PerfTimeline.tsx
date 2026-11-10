@@ -8,7 +8,16 @@ import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import type { RibbonRange } from '../TimeRibbon.tsx';
 import { FpsPlot } from './FpsPlot.tsx';
 import type { FrameBand } from './frames.ts';
-import { Crosshair, LaneGutter, LaneRows, Playhead, RangeAndLit, TIMELINE_STRINGS, TimelineToggle, TimeAxis } from './PerfTimelineParts.tsx';
+import {
+  Crosshair,
+  LaneGutter,
+  LaneRows,
+  Playhead,
+  RangeAndLit,
+  TIMELINE_STRINGS,
+  TimelineToggle,
+  TimeAxis,
+} from './PerfTimelineParts.tsx';
 import type { Lane, LaneMark } from './timeline-model.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the timeline reuses the ribbon's playhead, veil and range styles, loaded with the lazy inspector.
 import '../time-ribbon.css';

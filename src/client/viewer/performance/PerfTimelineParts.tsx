@@ -139,13 +139,25 @@ export function RangeAndLit({
           style={{ left: percent(shown.from, span), width: percent(shown.to - shown.from, span) }}
         />
       ) : null}
-      {items.length ? <span className="ribbon-lit" style={{ left: percent(from, span), width: `max(3px, ${percent(to - from, span)})` }} /> : null}
+      {items.length ? (
+        <span className="ribbon-lit" style={{ left: percent(from, span), width: `max(3px, ${percent(to - from, span)})` }} />
+      ) : null}
     </>
   );
 }
 
 /** The crosshair under the pointer and its clock and frame-rate readout, drawn in the same column as the lanes. */
-export function Crosshair({ hover, frames, span, collapsed }: { hover: number | undefined; frames: readonly FrameBand[]; span: number; collapsed: boolean }) {
+export function Crosshair({
+  hover,
+  frames,
+  span,
+  collapsed,
+}: {
+  hover: number | undefined;
+  frames: readonly FrameBand[];
+  span: number;
+  collapsed: boolean;
+}) {
   if (hover === undefined) return null;
   const reading = collapsed ? undefined : readingAt(frames, hover, span);
   return (
