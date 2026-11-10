@@ -2,13 +2,37 @@
 // outside the repository, and starts a server there from replays.config.mjs through the subpath exports.
 // Needs `pnpm build && pnpm build:cli` first (it checks that dist/ is complete). Network: npm fetches the dependencies.
 import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const work = await mkdtemp(join(tmpdir(), 'replays-pack-'));
 const run = (command, args, cwd) => execFileSync(command, args, { cwd, stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' });
+
+/** Starts `replays serve` from an install that lacks the viewer's dependencies, returns its output once it is listening. */
+async function bootViewer(cli, cache) {
+  const child = spawn(cli, ['serve'], {
+    env: { ...process.env, PORT: '0', DATA_DIR: join(work, 'serve-data'), REPLAYS_VIEWER_CACHE: cache, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let output = '';
+  child.stdout.on('data', (chunk) => (output += chunk));
+  child.stderr.on('data', (chunk) => (output += chunk));
+  const deadline = Date.now() + 600_000;
+  try {
+    while (!/listening|http:\/\/(localhost|127\.0\.0\.1)/i.test(output)) {
+      if (child.exitCode !== null) throw new Error(`serve exited early:\n${output}`);
+      if (Date.now() > deadline) throw new Error(`serve did not start:\n${output}`);
+      await new Promise((done) => setTimeout(done, 500));
+    }
+  } finally {
+    child.kill('SIGINT');
+  }
+  return output;
+}
 
 try {
   const out = join(work, 'tarball');
@@ -76,7 +100,13 @@ await server.close();
 console.log('pack smoke ok');
 `,
   );
+  const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
+  const viewer = Object.keys(manifest.peerDependencies).map((name) => `${name}@${manifest.devDependencies[name]}`);
   run('npm', ['install', '--no-audit', '--no-fund', '--silent', join(out, tarball)], app);
+  const cli = join(app, 'node_modules/.bin/replays');
+  const first = await bootViewer(cli, join(work, 'cache'));
+  assert.ok(first.includes('Viewer ready') || first.includes('Setting up the viewer'), 'serve installs the viewer on first use');
+  run('npm', ['install', '--no-audit', '--no-fund', '--silent', ...viewer], app);
   console.log(run(process.execPath, ['check.mjs'], app).trim());
   console.log(run(process.execPath, [resolve(root, 'scripts/pack-browser-smoke.mjs')], app).trim());
 } finally {
