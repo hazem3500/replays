@@ -4,7 +4,8 @@ import { cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './suppo
 
 const server = serveApp();
 
-async function openPerformance(page: Page, id: string) {
+async function openPerformance(page: Page, id: string, options: { details?: boolean; entries?: number } = {}) {
+  if (options.details) await page.addInitScript(() => localStorage.setItem('replays:performance-details', '1'));
   const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'Performance grid fixture');
   bundle.performance = {
     supported: ['paint', 'longtask', 'event', 'layout-shift', 'animation-frame'],
@@ -13,6 +14,7 @@ async function openPerformance(page: Page, id: string) {
       { at: 500, kind: 'first-contentful-paint', value: 500 },
       { at: 3000, kind: 'long-task', value: 120 },
       { at: 5000, kind: 'long-task', value: 90 },
+      ...Array.from({ length: options.entries ?? 4 }, (_, index) => ({ at: 6000 + index * 400, kind: 'long-task' as const, value: 70 + index })),
     ],
     frames: Array.from({ length: 9 }, (_, index) => ({ at: index * 1000, frames: 100 + index, elapsed: 1000, dropped: 1 })),
   };
@@ -24,7 +26,7 @@ async function openPerformance(page: Page, id: string) {
 
 test('the timeline plot, stat cells and notes start at one x, and lane labels sit inside their lanes', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await openPerformance(page, uniqueId('performance-grid'));
+  await openPerformance(page, uniqueId('performance-grid'), { details: true });
   const left = (selector: string) => page.locator(selector).evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
   const [plot] = await left('.pt-plot');
   const cells = await left('.pp-stat');
@@ -63,4 +65,75 @@ test('the timeline plot, stat cells and notes start at one x, and lane labels si
   expect(Math.abs(fpsLabel - (band[0]! + band[1]!) / 2)).toBeLessThanOrEqual(2);
   const guides = await page.locator('.pt-fps-axis').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
   expect(guides[1]! - guides[0]!).toBeGreaterThanOrEqual(12);
+});
+
+test('at 1280x800 the table shows four rows under a one-line headline and stats strip, and the panel grew to fit', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openPerformance(page, uniqueId('performance-compact'));
+  const resizer = page.getByTestId('inspector-resizer');
+  // why: the default panel is 42 % of the window (336 px); Performance declares it needs more and grows.
+  await expect.poll(async () => Number(await resizer.getAttribute('aria-valuenow'))).toBeGreaterThan(336);
+  await expect(page.locator('.pp-chip').first()).toBeVisible();
+  const lead = await page.locator('.pp-lead').evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    const jump = node.querySelector('.pp-lead-jump')?.getBoundingClientRect();
+    return { height: box.height, jumpMiddle: jump ? (jump.top + jump.bottom) / 2 : undefined, middle: (box.top + box.bottom) / 2 };
+  });
+  expect(lead.height).toBe(32);
+  if (lead.jumpMiddle !== undefined) expect(Math.abs(lead.jumpMiddle - lead.middle)).toBeLessThanOrEqual(1);
+  const strip = await page.getByTestId('performance-vitals').boundingBox();
+  expect(strip!.height).toBeLessThanOrEqual(32);
+  await expect.poll(async () => {
+    const region = await page.locator('.inspector-panel:not([hidden])').first().boundingBox();
+    return page.locator('.pp-row:not(.pp-head)').evaluateAll((rows, bottom) => rows.filter((row) => row.getBoundingClientRect().bottom <= bottom).length, region!.y + region!.height);
+  }).toBeGreaterThanOrEqual(4);
+  const head = await page.locator('.pp-head').evaluate((node) => getComputedStyle(node).position);
+  expect(head).toBe('sticky');
+});
+
+test('the Details toggle opens the grouped grid and the choice is remembered', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openPerformance(page, uniqueId('performance-details'));
+  await expect(page.locator('.pp-stat')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Details' }).click();
+  await expect(page.locator('.pp-stat').first()).toBeVisible();
+  await page.reload();
+  await page.getByTestId('performance-tab').click();
+  await expect(page.locator('.pp-stat').first()).toBeVisible();
+});
+
+test('a collapsed timeline is one slim header row with no chart and no marks', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openPerformance(page, uniqueId('performance-collapsed'));
+  await expect(page.locator('.pt-mark').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Timeline' }).click();
+  const timeline = page.getByTestId('performance-timeline');
+  await expect(timeline).toHaveAttribute('data-collapsed', '');
+  await expect(page.locator('.pt-mark, .pt-plot, .fps-line, .pt-lane')).toHaveCount(0);
+  expect((await timeline.boundingBox())!.height).toBeLessThanOrEqual(24);
+  await page.getByRole('button', { name: 'Timeline' }).click();
+  await expect(page.locator('.pt-mark').first()).toBeVisible();
+});
+
+test('dragging the bottom splitter on Performance resizes the panel, keeps the height, and stops auto-grow', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openPerformance(page, uniqueId('performance-splitter'));
+  const resizer = page.getByTestId('inspector-resizer');
+  const panelHeight = async () => (await page.locator('.inspector').first().boundingBox())!.height;
+  await expect(resizer).toBeVisible();
+  const before = await panelHeight();
+  const seam = (await resizer.boundingBox())!;
+  const x = seam.x + 300;
+  const y = seam.y + seam.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 80, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(panelHeight).toBeLessThan(before - 40);
+  const dragged = Number(await resizer.getAttribute('aria-valuenow'));
+  await page.getByRole('tab', { name: 'Network' }).click();
+  await page.getByTestId('performance-tab').click();
+  expect(Number(await resizer.getAttribute('aria-valuenow'))).toBe(dragged);
+  await page.reload();
+  await expect(page.getByTestId('inspector-resizer')).toHaveAttribute('aria-valuenow', String(dragged));
 });
