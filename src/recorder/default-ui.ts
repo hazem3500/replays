@@ -339,7 +339,8 @@ export function createDefaultUi(
       } else {
         current.label.className = 'message';
         updateText(current.label, text);
-        const restingIcon = icon(receipt ? 'check' : 'alert', 'status-icon');
+        const restingIcon = icon(receipt ? 'check' : error?.notice ? 'lock' : 'alert', 'status-icon');
+        if (error?.notice) current.shell.dataset.tone = 'notice';
         let spinner: ReturnType<typeof createStatusSpinner> | undefined;
         current.content.append(restingIcon, current.label);
         if (receipt) {

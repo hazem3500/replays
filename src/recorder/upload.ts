@@ -44,6 +44,8 @@ export type IssueUploadErrorLink = { label: string; url: string };
  */
 export type IssueUploadErrorDetails = {
   userMessage?: string;
+  /** Not a failure the person should worry about (for example, a sign-in is needed): the default UI uses a neutral lock instead of the red alert. */
+  notice?: boolean;
   link?: IssueUploadErrorLink;
   /** User-triggered recovery; respect cancellation and resolve only when retry is safe. */
   action?: {

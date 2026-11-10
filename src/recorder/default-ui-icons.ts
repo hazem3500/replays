@@ -4,6 +4,7 @@ const NS = 'http://www.w3.org/2000/svg';
 const PATHS = {
   check: ['M20 6 9 17l-5-5'],
   alert: ['M12 8v4', 'M12 16h.01', 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
+  lock: ['M5 11h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z', 'M8 11V7a4 4 0 0 1 8 0v4'],
   close: ['M18 6 6 18', 'm6 6 12 12'],
   open: ['M7 17 17 7', 'M7 7h10v10'],
   shield: [

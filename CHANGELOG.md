@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Recorder: an upload error may set `notice`, so the default UI shows a neutral lock in the muted colour instead of the red alert.
+
 - Recorder: an upload error action may set `pendingMessage` (shown with a spinner while the action runs) and `failedLabel` (the button's label after a failed run).
 
 - Recorder: an upload error's `action` may set `replacesRetry`, so the default UI shows that action alone (plus dismiss) instead of beside Retry.
