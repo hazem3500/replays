@@ -22,7 +22,7 @@ describe('upload recovery', () => {
     document.body.innerHTML = '';
   });
 
-  it('prefers recovery over a legacy link while preserving link-only errors', () => {
+  it('shows a link beside a recovery action, and a link-only error on its own', () => {
     const ui = createDefaultUi();
     const link = { label: 'Sign in', url: 'https://example.com/sign-in' };
     ui.showResult({
@@ -33,7 +33,8 @@ describe('upload recovery', () => {
       }),
     });
     expect(control('recover').textContent).toBe('Sign in');
-    expect(document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a')).toBeNull();
+    const beside = document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a');
+    expect(beside?.href).toBe(link.url);
     ui.showResult({ status: 'error', error: Object.assign(new Error('private'), { link }) });
     const anchor = document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a');
     expect(anchor?.textContent).toBe('Sign in');
