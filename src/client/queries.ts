@@ -128,9 +128,7 @@ export const meQuery = queryOptions({
 
 /** Warms a bundle at low network priority (a hover or keyboard visit on a suite run). */
 export function prefetchReplay(client: QueryClient, id: string) {
-  return client
-    .query({ ...replayQuery(id), queryFn: ({ signal }) => fetchReplay(id, signal, 'low') })
-    .catch(() => undefined);
+  return client.query({ ...replayQuery(id), queryFn: ({ signal }) => fetchReplay(id, signal, 'low') }).catch(() => undefined);
 }
 
 /** Whether a bundle is loaded or loading, so a preload does not repeat it. */
