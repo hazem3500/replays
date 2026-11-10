@@ -67,11 +67,11 @@ describe('the Network timeline', () => {
     setRibbonCollapsed(true, 'network');
     await render();
     expect(host.querySelector('.pt-body, .pt-plot, .pt-mark, .nt-density, .pt-axis, .ribbon-handle')).toBeNull();
-    const toggle = host.querySelector('.ribbon-toggle');
+    const toggle = host.querySelector<HTMLElement>('.ribbon-toggle');
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(localStorage.getItem('replays-network-timeline-collapsed')).toBe('1');
     expect(localStorage.getItem('replays-ribbon-collapsed')).toBeNull();
-    await act(async () => (toggle as HTMLElement).click());
+    await act(async () => toggle?.click());
     expect(host.querySelector('.nt-density')).not.toBeNull();
   });
 });
