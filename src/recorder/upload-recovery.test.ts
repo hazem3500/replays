@@ -6,6 +6,7 @@ import { createFakeRrweb } from './testing/fakes.ts';
 import type { IssueReportUpload } from './upload.ts';
 import { must } from './testing.ts';
 
+const root = () => must(document.querySelector('[data-recorder-ui]')?.shadowRoot);
 const control = (name: string) =>
   must(document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector<HTMLButtonElement>(`[data-recorder-action=${name}]`));
 const deferred = () => {
@@ -17,7 +18,7 @@ const deferred = () => {
   });
   return { promise, resolve, reject };
 };
-const failure = (replacesRetry: boolean) =>
+const failing = (replacesRetry: boolean) =>
   Object.assign(new Error('private'), { action: { label: 'Sign in and upload', replacesRetry, run: async () => {} } });
 
 describe('upload recovery', () => {
@@ -47,9 +48,9 @@ describe('upload recovery', () => {
 
   it('shows Retry beside an action unless the action replaces it', () => {
     const ui = createDefaultUi();
-    ui.showResult({ status: 'error', error: failure(false), retry() {} });
+    ui.showResult({ status: 'error', error: failing(false), retry() {} });
     expect(control('retry')).toBeTruthy();
-    ui.showResult({ status: 'error', error: failure(true), retry() {} });
+    ui.showResult({ status: 'error', error: failing(true), retry() {} });
     expect(control('recover').textContent).toBe('Sign in and upload');
     expect(document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('[data-recorder-action=retry]')).toBeNull();
     expect(control('dismiss')).toBeTruthy();
@@ -79,6 +80,45 @@ describe('upload recovery', () => {
     expect(retry).toHaveBeenCalledOnce();
     button.dispatchEvent(new MouseEvent('click'));
     expect(run).toHaveBeenCalledOnce();
+    ui.dismiss();
+  });
+});
+
+describe('recovery pending state', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('shows a spinner and the pending message while pending, then the guidance and the failed label', async () => {
+    const wait = deferred();
+    const ui = createDefaultUi();
+    const failure = Object.assign(new Error('closed'), { userMessage: 'The window was closed.' });
+    ui.showResult({
+      status: 'error',
+      error: Object.assign(new Error('secret'), {
+        userMessage: 'Sign in to upload this recording.',
+        action: {
+          label: 'Sign in and upload',
+          pendingMessage: 'Waiting for you to sign in',
+          failedLabel: 'Open sign-in again',
+          run: () => wait.promise,
+        },
+      }),
+      retry() {},
+    });
+    expect(root().textContent).toContain('Sign in to upload this recording.');
+    expect(root().querySelector('.status-spinner')).toBeNull();
+    control('recover').click();
+    expect(root().textContent).toContain('Waiting for you to sign in');
+    expect(root().querySelector('.status-spinner')).not.toBeNull();
+    expect(control('recover').disabled).toBe(true);
+    wait.reject(failure);
+    await wait.promise.catch(() => {});
+    await Promise.resolve();
+    expect(root().querySelector('.status-spinner')).toBeNull();
+    expect(root().textContent).toContain('The window was closed.');
+    expect(control('recover').textContent).toBe('Open sign-in again');
+    expect(control('recover').disabled).toBe(false);
     ui.dismiss();
   });
 });
