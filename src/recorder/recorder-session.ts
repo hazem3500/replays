@@ -1,5 +1,7 @@
 import { captureFramePacing } from './frame-pacing.ts';
 import { capturePerformance } from './diagnostics.ts';
+import { captureLongFrames } from './long-frames.ts';
+import { captureInteractions, linkInteractions } from './slow-interactions.ts';
 import type { ReplayPerformanceTrack } from '../shared/replay.ts';
 import type { ReplayContext } from '../shared/context.ts';
 import { captureInteractionSteps } from './interaction-steps.ts';
@@ -169,7 +171,18 @@ export function wireSession(current: Session, wiring: SessionWiring): void {
       grow(JSON.stringify(entry).length);
     }, grow);
     current.performance = diagnostic.track;
-    current.cleanups.push(diagnostic.stop, captureFramePacing(diagnostic.track, grow));
+    const { track } = diagnostic;
+    const stepAt = (time: number) => {
+      const index = current.steps.findLastIndex((step) => step.at <= time);
+      return index < 0 ? undefined : index;
+    };
+    current.cleanups.push(
+      diagnostic.stop,
+      captureFramePacing(track, grow),
+      captureLongFrames(track, grow, () => linkInteractions(track)),
+      captureInteractions(track, grow, wiring.privacy, stepAt),
+      () => linkInteractions(track),
+    );
   }
   if (wiring.capture.consoleLevels.length) {
     current.cleanups.push(

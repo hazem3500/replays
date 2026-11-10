@@ -6,7 +6,7 @@ import { tidyStepName } from './step-label.ts';
 
 const MAX_STEPS = 500;
 const REPEAT_MS = 350;
-const CONTROL =
+export const CONTROL =
   'button, a[href], input, select, textarea, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"]';
 
 function eventElement(event: Event): Element | undefined {
@@ -70,7 +70,7 @@ function innerName(control: Element, privacy: RecorderPrivacy, blocked: string):
  * invariant: a masked or blocked control names nothing, whichever source it would come from. A field is named by its
  * labels, never its value. The accessible name (aria-label, aria-labelledby, label, title) comes before visible text.
  */
-function controlName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
+export function controlName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
   const field = control.matches(FIELD);
   // why: rrweb never unmasks a field's own text, so a field is named by what surrounds it, under the same policy.
   if (privacy.textMasked(field ? (control.parentElement ?? undefined) : control) || control.closest(blocked)) return '';

@@ -18,7 +18,7 @@ The host app owns prompts such as “Record the problem?”. `@hazem3500/replays
 
 ## Diagnostic capture
 
-`capture.performance` and `capture.debugging` are independent opt-in booleans. `choices.diagnostics: true` offers combinable Performance and Debugging toggles capped by those capture options. Performance retains supported observer timings and bounded foreground frame-pacing estimates; these are not CPU profiles. Debugging permits bounded redacted Error stacks only in visible recordings. Privacy settings remain authoritative.
+`capture.performance` and `capture.debugging` are independent opt-in booleans. `choices.diagnostics: true` offers combinable Performance and Debugging toggles capped by those capture options. Performance retains supported observer timings, bounded foreground frame-pacing estimates, Long Animation Frames (Chromium) with their heaviest scripts, and interactions with an input delay, processing and presentation breakdown; these are not CPU profiles. Script sources are origin and path only, and an interaction's target keeps its name only where the privacy mode shows text (see [replay format](formats/README.md)). Debugging permits bounded redacted Error stacks only in visible recordings. Privacy settings remain authoritative.
 
 ## Built-in flow
 

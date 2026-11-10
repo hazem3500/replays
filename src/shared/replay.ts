@@ -1,5 +1,6 @@
 import { assertReplayContext, type ReplayContext, type SourceAttrs, sourceAttrs } from './context.ts';
 import { assertCaptured } from './capture-profile.ts';
+import { assertWhyTracks } from './interaction-timing.ts';
 import { type ReplayPerfSummary, summarizePerformanceTrack } from './frame-timing.ts';
 import type { ReplayCaptured, ReplayNetworkBody } from './network-bodies.ts';
 import { type AliasedProfile, isProfileId, profileOf, readAliased } from './profiles.ts';
@@ -67,6 +68,59 @@ export interface ReplayPerformanceTrack {
   layoutShifts?: { at: number; value: number; hadRecentInput: boolean }[];
   /** Foreground frame pacing estimates, not CPU or GPU profiling. */
   frames?: { at: number; elapsed: number; frames: number; dropped: number }[];
+  /** Long Animation Frames over 50 ms with their heaviest scripts; Chromium only, absent elsewhere. */
+  longFrames?: ReplayLongFrame[];
+  /** Interactions with the INP-style breakdown; absent when Event Timing was unavailable. */
+  interactions?: ReplayInteraction[];
+}
+
+/** One script that ran inside a long animation frame. invariant: `sourceURL` is origin and path only, never a query or hash. */
+export interface ReplayLongFrameScript {
+  sourceURL: string;
+  sourceFunctionName: string;
+  /** What started the script, for example `BUTTON#save.onclick` or `Window.requestAnimationFrame`. */
+  invoker: string;
+  invokerType: string;
+  duration: number;
+  forcedStyleAndLayoutDuration: number;
+}
+
+export interface ReplayLongFrame {
+  /** Start of the frame, like every other `at` on the track. */
+  at: number;
+  duration: number;
+  blockingDuration: number;
+  /** Milliseconds after `at` that rendering started; 0 when the browser reported none. */
+  renderStart: number;
+  /** Milliseconds after `at` that style and layout started. */
+  styleAndLayoutStart: number;
+  /** At most three, longest first. */
+  scripts: ReplayLongFrameScript[];
+}
+
+/** What an interaction target looked like, as safe as the privacy mode allows: masked modes keep only `tag` and `role`. */
+export interface ReplayInteractionTarget {
+  tag: string;
+  role?: string;
+  /** Accessible name or text, at most 40 characters; absent when the text is masked. */
+  name?: string;
+}
+
+export interface ReplayInteraction {
+  at: number;
+  interactionId: number;
+  /** The event that took longest in the group (`click`, `keydown`, `pointerdown`...). */
+  eventType: string;
+  /** Total duration from the browser, rounded to 8 ms. Equals inputDelay + processing + presentation. */
+  duration: number;
+  inputDelay: number;
+  processing: number;
+  presentation: number;
+  target?: ReplayInteractionTarget;
+  /** Index into `steps` of the step the interaction falls in. */
+  step?: number;
+  /** Index into `longFrames` of the overlapping long animation frame. */
+  frame?: number;
 }
 
 export type { ReplayContext, ReplaySourceInput, ReplaySourceRef } from './context.ts';
@@ -132,7 +186,7 @@ export interface ReplayBundle {
 
 export const MAX_PERFORMANCE_ENTRIES = 500;
 const ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
-const PERFORMANCE_TYPES = new Set(['paint', 'largest-contentful-paint', 'longtask', 'event', 'layout-shift', 'animation-frame']);
+const PERFORMANCE_TYPES = new Set(['paint', 'largest-contentful-paint', 'longtask', 'event', 'layout-shift', 'animation-frame', 'long-animation-frame']);
 const PERFORMANCE_KINDS = new Set<ReplayPerformanceKind>([
   'first-contentful-paint',
   'largest-contentful-paint',
@@ -235,6 +289,7 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
         ))
     )
       throw new Error('Invalid frame pacing track');
+    assertWhyTracks(track);
     for (const entry of track.entries) {
       if (
         !entry ||

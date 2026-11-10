@@ -39,6 +39,8 @@ export function finishSessionExtras(bundle: ReplayBundle, session: Session): Rep
             ...track,
             entries: track.entries.map(relative),
             ...(track.frames ? { frames: track.frames.map(relative) } : {}),
+            ...(track.longFrames ? { longFrames: track.longFrames.map(relative) } : {}),
+            ...(track.interactions ? { interactions: track.interactions.map(relative) } : {}),
             ...(track.layoutShifts ? { layoutShifts: track.layoutShifts.map(relative) } : {}),
           },
         }
