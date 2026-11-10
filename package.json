@@ -211,6 +211,7 @@
       "default": "./dist/lib/plugins-gcs.mjs"
     },
     "./package.json": "./package.json",
+    "./recorder/early": "./dist/lib/recorder-early.js",
     "./recorder/kit": {
       "types": "./dist/types/recorder/kit/index.d.ts",
       "default": "./dist/lib/recorder-kit.mjs"

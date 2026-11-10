@@ -55,4 +55,13 @@ describe('the time ribbon collapse choice', () => {
     setRibbonCollapsed(true);
     expect(ribbonCollapsed()).toBe(true);
   });
+
+  it('remembers each tab on its own key', async () => {
+    const first = await load();
+    first.setRibbonCollapsed(true, 'network');
+    expect(localStorage.getItem('replays-network-timeline-collapsed')).toBe('1');
+    expect(first.ribbonCollapsed('performance')).toBe(false);
+    expect(localStorage.getItem(KEY)).toBeNull();
+    expect((await load()).ribbonCollapsed('network')).toBe(true);
+  });
 });

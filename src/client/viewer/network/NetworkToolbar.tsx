@@ -1,4 +1,5 @@
 import { usePanelSearchMotion } from '../../hooks/use-panel-search-motion.ts';
+import { ChartColumnIcon } from 'lucide-react';
 import { type KeyboardEvent as ReactKeyboardEvent, useRef, useState } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
@@ -10,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 
+import { toggleRibbonCollapsed, useRibbonCollapsed } from '../ribbon-collapse.ts';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { type NetworkFilter, REQUEST_TYPES, type RequestType, type StatusFilter } from './model.ts';
 
@@ -35,6 +37,8 @@ const STRINGS = {
   status: 'Show requests',
   type: 'Request type',
   search: 'Search requests',
+  showTimeline: 'Show timeline',
+  hideTimeline: 'Hide timeline',
   closeSearch: 'Close search',
   placeholder: 'URL, method or status',
   clearRange: (from: number, to: number) => `Show all times, not only ${formatClock(from)} to ${formatClock(to)}`,
@@ -98,6 +102,7 @@ export function NetworkToolbar({
         </span>
       )}
       <TypeMenu types={types} value={filter.type} onChange={(type) => onFilter({ ...filter, type })} />
+      <TimelineButton />
       {searching ? (
         <SearchField text={filter.text} onText={(text) => onFilter({ ...filter, text })} onClose={closeSearch} />
       ) : (
@@ -115,6 +120,27 @@ export function NetworkToolbar({
         </button>
       )}
     </div>
+  );
+}
+
+/** Shows or hides the timeline above the table, remembered for this tab. */
+function TimelineButton() {
+  const hidden = useRibbonCollapsed('network');
+  const label = hidden ? STRINGS.showTimeline : STRINGS.hideTimeline;
+  return (
+    <button
+      type="button"
+      className="np-icon"
+      aria-label={label}
+      title={label}
+      aria-pressed={!hidden}
+      aria-controls="network-timeline-plot"
+      data-testid="network-timeline-toggle"
+      onClick={() => toggleRibbonCollapsed('network')}
+      onKeyDown={keepKeys}
+    >
+      <ChartColumnIcon aria-hidden="true" />
+    </button>
   );
 }
 

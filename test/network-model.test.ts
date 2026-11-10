@@ -11,7 +11,7 @@ import {
   networkBadge,
   NO_FILTER,
   requestType,
-  startDensity,
+  bucketRequests,
   statusCounts,
   stepAt,
 } from '../src/client/viewer/network/model.ts';
@@ -120,7 +120,7 @@ describe('network scales', () => {
   });
 
   it('bins request starts over the recording', () => {
-    expect(startDensity(buildNetworkRows(busy()), 10000, 10)).toEqual([2, 1, 0, 0, 0, 1, 1, 1, 0, 0]);
+    expect(bucketRequests(buildNetworkRows(busy()), 10000, 10).map((bucket) => bucket.count)).toEqual([2, 1, 0, 0, 0, 1, 1, 1, 0, 0]);
   });
 });
 

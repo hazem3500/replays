@@ -43,6 +43,8 @@ export interface ReplayCaptured {
   choice?: CapturedChoice;
   /** Present when Performance (and Debugging) was turned on on purpose; see `CapturedDiagnostics`. */
   diagnostics?: CapturedDiagnostics;
+  /** The page was reloaded to record from its start, so the load metrics are complete rather than from the moment recording began. */
+  fromLoad?: true;
 }
 
 /** What a captured body is replaced with, wherever a secret was found. */

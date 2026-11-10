@@ -1,5 +1,6 @@
 import { MAX_LONG_FRAMES } from './interaction-math.ts';
 import type { ReplayLongFrame, ReplayLongFrameScript, ReplayPerformanceTrack } from '../shared/replay.ts';
+import { observeType } from './observe.ts';
 import { redactText } from './redact.ts';
 
 const MIN_DURATION_MS = 50;
@@ -90,16 +91,15 @@ export function captureLongFrames(
   track: ReplayPerformanceTrack,
   grow: (bytes: number) => void,
   onFrame: () => void = () => {},
+  fromLoad = false,
 ): () => void {
-  if (typeof PerformanceObserver === 'undefined' || !PerformanceObserver.supportedEntryTypes.includes('long-animation-frame')) {
-    return () => {};
-  }
   const keep = createLongFrameFilter();
   let active = true;
-  try {
-    const observer = new PerformanceObserver((list) => {
+  const observer = observeType(
+    'long-animation-frame',
+    (entries) => {
       if (!active) return;
-      for (const entry of list.getEntries()) {
+      for (const entry of entries) {
         if (!keep(entry)) continue;
         const frame = longFrame(entry);
         const frames = track.longFrames ?? [];
@@ -108,15 +108,13 @@ export function captureLongFrames(
         grow(JSON.stringify(frame).length);
       }
       onFrame();
-    });
-    observer.observe({ type: 'long-animation-frame', buffered: false });
-    track.supported.push('long-animation-frame');
-    return () => {
-      active = false;
-      observer.disconnect();
-    };
-  } catch {
-    // why: advertised observer types may still be unavailable under browser policy.
-    return () => {};
-  }
+    },
+    fromLoad,
+  );
+  if (!observer) return () => {};
+  track.supported.push('long-animation-frame');
+  return () => {
+    active = false;
+    observer.disconnect();
+  };
 }

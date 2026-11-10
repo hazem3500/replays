@@ -1,25 +1,29 @@
 import { useSyncExternalStore } from 'react';
 
-import { readRibbonCollapsed, writeRibbonCollapsed } from '../views/settings.ts';
+import { readTimelineCollapsed, type TimelineTab, writeTimelineCollapsed } from '../views/settings.ts';
 
 const listeners = new Set<() => void>();
-let collapsed: boolean | undefined;
+const collapsed = new Map<TimelineTab, boolean>();
 
-/** Whether the time ribbon is the slim strip. Remembered across replays; the first read comes from storage. */
-export function ribbonCollapsed() {
-  collapsed ??= readRibbonCollapsed();
-  return collapsed;
+/** Whether a tab's timeline is collapsed. Remembered across replays, per tab; the first read comes from storage. */
+export function ribbonCollapsed(tab: TimelineTab = 'performance') {
+  let value = collapsed.get(tab);
+  if (value === undefined) {
+    value = readTimelineCollapsed(tab);
+    collapsed.set(tab, value);
+  }
+  return value;
 }
 
-export function setRibbonCollapsed(value: boolean) {
-  if (value === ribbonCollapsed()) return;
-  collapsed = value;
-  writeRibbonCollapsed(value);
+export function setRibbonCollapsed(value: boolean, tab: TimelineTab = 'performance') {
+  if (value === ribbonCollapsed(tab)) return;
+  collapsed.set(tab, value);
+  writeTimelineCollapsed(tab, value);
   for (const listener of listeners) listener();
 }
 
-export function toggleRibbonCollapsed() {
-  setRibbonCollapsed(!ribbonCollapsed());
+export function toggleRibbonCollapsed(tab: TimelineTab = 'performance') {
+  setRibbonCollapsed(!ribbonCollapsed(tab), tab);
 }
 
 export function subscribe(listener: () => void) {
@@ -29,7 +33,11 @@ export function subscribe(listener: () => void) {
   };
 }
 
-/** The Performance and Network ribbons share one choice, so collapsing in one tab holds in the other. */
-export function useRibbonCollapsed() {
-  return useSyncExternalStore(subscribe, ribbonCollapsed, () => false);
+/** Each tab keeps its own choice, so collapsing the Network timeline leaves the Performance one as it was. */
+export function useRibbonCollapsed(tab: TimelineTab = 'performance') {
+  return useSyncExternalStore(
+    subscribe,
+    () => ribbonCollapsed(tab),
+    () => false,
+  );
 }

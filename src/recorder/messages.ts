@@ -84,6 +84,8 @@ export type RecorderMessages = {
   networkLabel: string;
   diagnosticsLabel: string;
   performanceLabel: string;
+  /** Options step: the Performance option that reloads the page and records from its start. */
+  fromLoadLabel: string;
   debuggingLabel: string;
   /** Options step: the option that adds request and response content to the recording. */
   networkBodies: string;
@@ -198,6 +200,7 @@ export const defaultRecorderMessages: RecorderMessages = {
   networkLabel: 'Network',
   diagnosticsLabel: 'Diagnostics',
   performanceLabel: 'Performance',
+  fromLoadLabel: 'Start from a fresh page load',
   debuggingLabel: 'Debugging',
   networkBodies: 'Include request/response content',
   record: 'Record',

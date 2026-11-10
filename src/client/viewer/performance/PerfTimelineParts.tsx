@@ -1,5 +1,14 @@
-import { ChartNoAxesGanttIcon, GaugeIcon, GlobeIcon, HourglassIcon, LayoutPanelLeftIcon, MousePointerClickIcon } from 'lucide-react';
-import { type RefObject, useRef } from 'react';
+import {
+  ChartNoAxesGanttIcon,
+  CircleAlertIcon,
+  GaugeIcon,
+  GlobeIcon,
+  HourglassIcon,
+  LayoutPanelLeftIcon,
+  MousePointerClickIcon,
+  TimerIcon,
+} from 'lucide-react';
+import { type ReactNode, type RefObject, useRef } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
 import { IconButton } from '@/components/icon-button.tsx';
@@ -19,7 +28,19 @@ const ICONS = {
   request: GlobeIcon,
   shift: LayoutPanelLeftIcon,
   fps: GaugeIcon,
+  failed: CircleAlertIcon,
+  /** The Network timeline's request-density lane. */
+  density: GlobeIcon,
+  /** The Network timeline's lane of slow requests, named by its icon since the lane says only "Slow". */
+  slow: TimerIcon,
 } as const;
+
+/** A name in the shared gutter: a lane that is drawn, or the frame-rate plot. */
+export type GutterId = LaneId | keyof typeof ICONS;
+export interface GutterLane {
+  id: GutterId;
+  label: string;
+}
 
 export const TIMELINE_STRINGS = {
   hint: 'Click to seek. Drag the playhead to scrub. Drag across the timeline to filter the moments.',
@@ -33,7 +54,7 @@ const NARROW_TICKS = 4;
 
 const percent = (at: number, span: number) => `${(at / span) * 100}%`;
 
-function LaneLabel({ id, text }: { id: LaneId | 'fps'; text: string }) {
+function LaneLabel({ id, text }: { id: GutterId; text: string }) {
   const Icon = ICONS[id];
   return (
     <span className="pt-label" data-lane={id} title={text} aria-hidden="true">
@@ -60,7 +81,7 @@ function FpsGutter({ frames }: { frames: readonly FrameBand[] }) {
   );
 }
 
-export function LaneGutter({ lanes, frames }: { lanes: readonly Lane[]; frames: readonly FrameBand[] }) {
+export function LaneGutter({ lanes, frames = [] }: { lanes: readonly GutterLane[]; frames?: readonly FrameBand[] }) {
   return (
     <div className="pt-gutter">
       <span className="pt-axis-gap" />
@@ -73,11 +94,11 @@ export function LaneGutter({ lanes, frames }: { lanes: readonly Lane[]; frames: 
 }
 
 /** The clock labels along the top and the gridlines behind the lanes, on the same ticks. */
-export function TimeAxis({ span, width }: { span: number; width: number }) {
+export function TimeAxis({ span, width, hint = TIMELINE_STRINGS.hint }: { span: number; width: number; hint?: string }) {
   const ticks = niceTicks(span, width < NARROW_PX ? NARROW_TICKS : MAX_TICKS);
   return (
     <>
-      <div className="pt-axis" title={TIMELINE_STRINGS.hint} aria-hidden="true">
+      <div className="pt-axis" title={hint} aria-hidden="true">
         {ticks.map((at) => (
           <span key={at} className="pt-tick" data-first={at === 0 || undefined} style={{ left: percent(at, span) }}>
             {clockLabel(at)}
@@ -99,21 +120,34 @@ export function LaneRows({
   width,
   lit,
   focusable,
+  pointerOnly = false,
   onLight,
   onPick,
+  children,
 }: {
+  children?: ReactNode;
   lanes: readonly Lane[];
   span: number;
   width: number;
   lit: readonly string[];
   focusable: boolean;
+  /** Marks are for the pointer only: hidden from assistive tech and the tab order, since the page has another way to each one. */
+  pointerOnly?: boolean;
   onLight: (ids: readonly string[]) => void;
   onPick: (mark: LaneMark) => void;
 }) {
   return (
     <div className="pt-lanes">
+      {children}
       {lanes.map((lane) => (
-        <div key={lane.id} className="pt-lane" data-lane={lane.id} role="group" aria-label={lane.label}>
+        <div
+          key={lane.id}
+          className="pt-lane"
+          data-lane={lane.id}
+          role={pointerOnly ? undefined : 'group'}
+          aria-label={pointerOnly ? undefined : lane.label}
+          aria-hidden={pointerOnly || undefined}
+        >
           {clusterMarks(lane.items, span, width).map((mark) => (
             <LaneMarkButton
               key={mark.id}
@@ -121,7 +155,8 @@ export function LaneRows({
               span={span}
               width={width}
               lit={mark.items.some((item) => item.momentId && lit.includes(item.momentId))}
-              focusable={focusable}
+              focusable={focusable && !pointerOnly}
+              pointerOnly={pointerOnly}
               onLight={onLight}
               onPick={onPick}
             />
@@ -229,7 +264,7 @@ export function TimelineToggle() {
       className="pp-timeline-toggle"
       aria-pressed={!collapsed}
       aria-controls={collapsed ? undefined : 'performance-timeline-plot'}
-      onClick={toggleRibbonCollapsed}
+      onClick={() => toggleRibbonCollapsed()}
     >
       <ChartNoAxesGanttIcon aria-hidden="true" />
     </IconButton>

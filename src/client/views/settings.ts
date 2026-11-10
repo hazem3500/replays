@@ -44,15 +44,21 @@ export function writeCaptionsPreference(value: boolean) {
   writeStorage(CAPTIONS_KEY, value ? '1' : '0');
 }
 
-const RIBBON_COLLAPSED_KEY = 'replays-ribbon-collapsed';
+export type TimelineTab = 'performance' | 'network';
 
-/** Whether the time ribbon is a slim strip, one choice for every replay; false until the person first collapses it. */
-export function readRibbonCollapsed() {
-  return readStorage(RIBBON_COLLAPSED_KEY) === '1';
+/** The Performance key predates the per-tab choice, so a person's earlier collapse still holds there. */
+const TIMELINE_COLLAPSED_KEYS: Readonly<Record<TimelineTab, string>> = {
+  performance: 'replays-ribbon-collapsed',
+  network: 'replays-network-timeline-collapsed',
+};
+
+/** Whether a tab's timeline is collapsed to its toggle, one choice per tab for every replay; false until first collapsed. */
+export function readTimelineCollapsed(tab: TimelineTab) {
+  return readStorage(TIMELINE_COLLAPSED_KEYS[tab]) === '1';
 }
 
-export function writeRibbonCollapsed(value: boolean) {
-  writeStorage(RIBBON_COLLAPSED_KEY, value ? '1' : '0');
+export function writeTimelineCollapsed(tab: TimelineTab, value: boolean) {
+  writeStorage(TIMELINE_COLLAPSED_KEYS[tab], value ? '1' : '0');
 }
 
 /** "Reset this view": forget everything remembered for it, so it opens as its preset says. */

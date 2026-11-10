@@ -63,6 +63,7 @@ export function capturedRecord(
   bodiesRead: boolean,
   inputsVisible: boolean,
   customerMode?: RecorderPrivacyMode,
+  fromLoad = false,
 ): ReplayCaptured {
   const network = capture.network === 'bodies' && !bodiesRead ? 'headers' : capture.network;
   return {
@@ -71,6 +72,7 @@ export function capturedRecord(
     performance: capture.performance,
     video: false,
     ...(capture.performance ? { diagnostics: { performance: true, debugging: capture.debugging, chosen: true as const } } : {}),
+    ...(fromLoad && capture.performance ? { fromLoad: true as const } : {}),
     ...(inputsVisible ? { inputs: 'visible' as const } : {}),
     ...(customerMode
       ? {

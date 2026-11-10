@@ -102,7 +102,7 @@ test('arrow keys move through requests and carry the open detail along', async (
   await expect(first).toBeFocused();
 });
 
-test('a busy recording draws request density on the ribbon, and a drag across it narrows the list to that stretch', async ({ page }) => {
+test('a busy recording draws request density on the timeline, and a drag across it narrows the list to that stretch', async ({ page }) => {
   const id = uniqueId('network-ribbon');
   const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'Busy network fixture');
   bundle.network = Array.from({ length: 40 }, (_, index) => ({
@@ -122,7 +122,8 @@ test('a busy recording draws request density on the ribbon, and a drag across it
   await page.getByTestId('network-tab').click();
   const ribbon = page.getByTestId('network-ribbon');
   await expect(ribbon).toBeVisible();
-  await expect(ribbon.locator('.ribbon-mark[data-tone="danger"]')).toHaveCount(1);
+  await expect(ribbon.locator('.pt-mark[data-lane="failed"]')).toHaveCount(1);
+  await expect(ribbon.locator('.nt-density rect').first()).toBeVisible();
   const box = (await ribbon.boundingBox())!;
   await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2);
   await page.mouse.down();
@@ -137,19 +138,32 @@ test('a busy recording draws request density on the ribbon, and a drag across it
   await expect(range).toBeHidden();
 });
 
-test('a sparse recording gets one tick per request on the ribbon, and the row under the pointer lights its mark', async ({ page }) => {
+test('the row under the pointer lights its mark on the timeline', async ({ page }) => {
   const id = uniqueId('network-ticks');
   await seedNetworkFixture(page, id);
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/r/${id}`);
   await page.getByTestId('network-tab').click();
   const ribbon = page.getByTestId('network-ribbon');
-  await expect(ribbon.locator('.ribbon-density')).toHaveCount(0);
-  await expect(ribbon.locator('.ribbon-mark')).toHaveCount(2);
-  await expect(ribbon.locator('.ribbon-mark[data-lit]')).toHaveCount(0);
+  await expect(ribbon.locator('.pt-mark[data-lit]')).toHaveCount(0);
   await page.getByRole('button', { name: /POST \/api\/checkout/ }).hover();
-  await expect(ribbon.locator('.ribbon-mark[data-lit]')).toHaveAttribute('data-tone', 'danger');
+  await expect(ribbon.locator('.pt-mark[data-lit]')).toHaveAttribute('data-lane', 'failed');
   await expect(ribbon.locator('.ribbon-lit')).toHaveCount(1);
+});
+
+test('the Network timeline hides from the toolbar button and stays hidden', async ({ page }) => {
+  const id = uniqueId('network-collapse');
+  await seedNetworkFixture(page, id);
+  await openReplay(page, `${server().origin}/r/${id}`);
+  await page.getByTestId('network-tab').click();
+  await expect(page.getByTestId('network-ribbon')).toBeVisible();
+  await page.getByTestId('network-timeline-toggle').click();
+  await expect(page.getByTestId('network-ribbon')).toHaveCount(0);
+  await expect(page.locator('.pt-mark')).toHaveCount(0);
+  await page.reload();
+  await page.getByTestId('network-tab').click();
+  await expect(page.getByTestId('network-timeline-toggle')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('network-timeline')).toHaveCount(0);
 });
 
 test('the ribbon playhead follows the clock by transform without a lagging transition', async ({ page }) => {
