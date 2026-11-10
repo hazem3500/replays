@@ -1,5 +1,5 @@
 import { Replayer } from 'rrweb';
-import { type PlayerState, type Viewport, type Speed, type Listener } from './types.ts';
+import { type PlayerState, type PlayHold, type Viewport, type Speed, type Listener } from './types.ts';
 import { TargetOutline } from './target-outline.ts';
 import { rrwebEvents } from './rrweb-wire.ts';
 import { settleAnimations } from './settle-animations.ts';
@@ -48,6 +48,10 @@ export class ReplayController {
   private viewport: Viewport;
   private frame = 0;
   private resumeAfterScrub = false;
+  /** Play was asked for before the renderer was mounted: it starts as soon as `mount` lands. */
+  private startOnMount = false;
+  /** While a run switch is pending (suite workspace), play requests belong to the run being switched to. */
+  private hold: PlayHold | undefined;
   /** While the scrubber is dragged: the rrweb render runs throttled, the playhead updates on every move. */
   private scrubbing = false;
   private scrubTimer = 0;
@@ -110,6 +114,10 @@ export class ReplayController {
     layer.set(this.effects, this.time);
     this.layer = layer;
     const unsubscribeLayer = this.subscribeTime(() => layer.update(this.time));
+    if (this.startOnMount) {
+      this.startOnMount = false;
+      this.play();
+    }
     return () => {
       if (this.replayer !== replayer) return;
       unsubscribeLayer();
@@ -176,15 +184,40 @@ export class ReplayController {
     this.targetOutline.clear();
   };
 
+  /**
+   * Starts playback. Before the renderer is mounted (a run that is still loading its frame) the request is kept and
+   * `state.starting` is set, so the play button can show it; it starts the moment `mount` lands. While a run switch
+   * is pending, the request is handed to the switch's owner instead (`setPlayHold`) and nothing starts here.
+   */
   readonly play = () => {
-    if (!this.replayer) return;
+    if (this.hold) {
+      this.hold.request();
+      this.setState({ starting: true });
+      return;
+    }
+    if (!this.replayer) {
+      this.startOnMount = true;
+      this.setState({ starting: true });
+      return;
+    }
     if (this.state.status === 'ended' || this.time >= this.duration) this.setTime(0);
     this.replayer.play(this.offsetFor(this.time));
-    this.setState({ status: 'playing' });
+    this.setState({ status: 'playing', starting: false });
     this.startLoop();
   };
 
+  /** Hands play requests to `hold` (a pending run switch), or takes them back with `undefined`. */
+  readonly setPlayHold = (hold: PlayHold | undefined) => {
+    this.hold = hold;
+    if (!hold && this.state.starting && !this.startOnMount) this.setState({ starting: false });
+  };
+
   readonly pause = () => {
+    this.hold?.cancel();
+    if (this.state.starting) {
+      this.startOnMount = false;
+      this.setState({ starting: false });
+    }
     if (this.state.status !== 'playing') return;
     this.stopLoop();
     this.replayer?.pause();
@@ -193,7 +226,7 @@ export class ReplayController {
   };
 
   readonly playPause = () => {
-    if (this.state.status === 'playing') this.pause();
+    if (this.state.status === 'playing' || this.state.starting) this.pause();
     else this.play();
   };
 

@@ -1,6 +1,7 @@
 import { useReplayFirstPaint } from '../hooks/use-replay-first-paint.ts';
 import { useTileCoverMotion } from '../hooks/use-tile-cover-motion.ts';
 import { IconSwap } from '../components/icon-swap.tsx';
+import { PlaySpinner } from '../components/play-spinner.tsx';
 import { useStageFlashMotion } from '../hooks/use-stage-flash-motion.ts';
 import { MotionLabel } from '../components/entry-motion.tsx';
 import {
@@ -203,24 +204,29 @@ function StageFlash({ kind, children }: { kind: 'play' | 'pause'; children: Reac
 
 function PlayButton() {
   const player = usePlayer();
-  const { status } = usePlayerState();
-  const label = status === 'playing' ? 'Pause' : status === 'ended' ? 'Replay from start' : 'Play';
+  const { status, starting } = usePlayerState();
+  const label = starting ? 'Cancel play' : status === 'playing' ? 'Pause' : status === 'ended' ? 'Replay from start' : 'Play';
   return (
     <IconButton
       label={label}
       shortcut={shortcutLabel('play-pause')}
       tooltipAlign="start"
       className="play-button text-foreground"
+      aria-busy={starting || undefined}
       onClick={() => player.playPause()}
     >
-      <IconSwap state={status === 'playing' ? 'b' : 'a'}>
-        {status === 'ended' ? (
-          <AnimatedIcon name="rotate-ccw" className="icon-a" />
-        ) : (
-          <AnimatedIcon name="play" className="icon-a filled-icon" trigger="state" play={status === 'playing' ? false : status} />
-        )}
-        <AnimatedIcon name="pause" className="icon-b filled-icon" trigger="state" play={status === 'playing' ? 'playing' : false} />
-      </IconSwap>
+      {starting ? (
+        <PlaySpinner />
+      ) : (
+        <IconSwap state={status === 'playing' ? 'b' : 'a'}>
+          {status === 'ended' ? (
+            <AnimatedIcon name="rotate-ccw" className="icon-a" />
+          ) : (
+            <AnimatedIcon name="play" className="icon-a filled-icon" trigger="state" play={status === 'playing' ? false : status} />
+          )}
+          <AnimatedIcon name="pause" className="icon-b filled-icon" trigger="state" play={status === 'playing' ? 'playing' : false} />
+        </IconSwap>
+      )}
     </IconButton>
   );
 }

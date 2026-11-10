@@ -128,7 +128,19 @@ export const meQuery = queryOptions({
 
 /** Warms a bundle at low network priority (a hover or keyboard visit on a suite run). */
 export function prefetchReplay(client: QueryClient, id: string) {
-  return client.prefetchQuery({ ...replayQuery(id), queryFn: ({ signal }) => fetchReplay(id, signal, 'low') });
+  return client.query({ ...replayQuery(id), queryFn: ({ signal }) => fetchReplay(id, signal, 'low') }).catch(() => undefined);
+}
+
+/** Whether a bundle is loaded or loading, so a preload does not repeat it. */
+export function replayCached(client: QueryClient, id: string) {
+  const query = client.getQueryCache().find({ queryKey: ['replay', id] });
+  return query !== undefined && (query.state.data !== undefined || query.state.fetchStatus === 'fetching');
+}
+
+/** Stops a preload that nothing is showing: one a viewer has picked up since is left to finish. */
+export function cancelReplayPrefetch(client: QueryClient, id: string) {
+  const query = client.getQueryCache().find({ queryKey: ['replay', id] });
+  if (query && query.getObserversCount() === 0 && query.state.fetchStatus === 'fetching') void query.cancel({ revert: true });
 }
 
 export interface CacheLimits {
@@ -139,7 +151,7 @@ export interface CacheLimits {
 }
 
 /** A bundle is up to ~20 MB of JSON (several times that once parsed): keep the last few, not every one opened. */
-export const REPLAY_CACHE_LIMITS: CacheLimits = { maxEntries: 3, maxBytes: 60 * 1024 * 1024 };
+export const REPLAY_CACHE_LIMITS: CacheLimits = { maxEntries: 5, maxBytes: 60 * 1024 * 1024 };
 
 export interface CachedBundle {
   hash: string;

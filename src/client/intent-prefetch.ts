@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 
 import type { ReviewSuiteIndexRun } from '../shared/review-suite.ts';
 import { previewHover } from './index/preview.ts';
+import { prefetchAllowed } from './prefetch-allowed.ts';
 import { prefetchReplay, queryClient, suiteQuery } from './queries.ts';
 import { clientRouter } from './routing/client.ts';
 import { isAppPage } from './routing/links.ts';
@@ -40,12 +41,6 @@ export function targetForHref(href: string, landing: (suiteId: string) => string
   if (page.kind === 'replay' && page.replayId) return { kind: 'replay', id: page.replayId };
   if (page.kind === 'suite' && page.suiteId) return { kind: 'suite', id: page.suiteId, landing: page.replayId ?? landing(page.suiteId) };
   return undefined;
-}
-
-/** Metered or very slow connections get no speculative downloads. */
-export function prefetchAllowed() {
-  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
-  return !connection?.saveData && !['slow-2g', '2g'].includes(connection?.effectiveType ?? '');
 }
 
 export function prefetchTarget(target: IntentTarget | undefined) {
