@@ -162,7 +162,8 @@ export async function suiteLibrary(page: Page, base: string) {
     base,
     suiteId,
     ids.map((replayId, index) => ({ id: `run-${index}`, label: `Browser ${index + 1}`, status: 'passed' as const, replayId })),
-    undefined, { profile: COMPARE_SUITE_PROFILE },
+    undefined,
+    { profile: COMPARE_SUITE_PROFILE },
   );
   await routePosters(page, suiteId);
   await gotoHydrated(page, base);

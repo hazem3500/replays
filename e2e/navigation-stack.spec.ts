@@ -135,7 +135,8 @@ async function suiteCard(page: Page, base: string, layout: string) {
       status: 'passed' as const,
       replayId,
     })),
-    undefined, { profile: COMPARE_SUITE_PROFILE },
+    undefined,
+    { profile: COMPARE_SUITE_PROFILE },
   );
   await page.route(`**/api/replays/${suiteId}-*/poster?*`, (route) =>
     route.fulfill({
