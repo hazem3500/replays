@@ -81,15 +81,21 @@ export function VitalsBar({
         render: () => (
           <>
             {details ? null : (
-              <StripStat stat={stat} pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false} onPick={() => vital && onPick(vital)} />
+              <StripStat
+                stat={stat}
+                pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
+                onPick={() => vital && onPick(vital)}
+              />
             )}
-            {details ? <StatTile
-              stat={stat}
-              pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
-              onPick={() => vital && onPick(vital)}
-            >
-              {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
-            </StatTile> : null}
+            {details ? (
+              <StatTile
+                stat={stat}
+                pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
+                onPick={() => vital && onPick(vital)}
+              >
+                {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
+              </StatTile>
+            ) : null}
             {vital && peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
           </>
         ),

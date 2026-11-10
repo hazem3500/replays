@@ -14,7 +14,11 @@ async function openPerformance(page: Page, id: string, options: { details?: bool
       { at: 500, kind: 'first-contentful-paint', value: 500 },
       { at: 3000, kind: 'long-task', value: 120 },
       { at: 5000, kind: 'long-task', value: 90 },
-      ...Array.from({ length: options.entries ?? 4 }, (_, index) => ({ at: 6000 + index * 400, kind: 'long-task' as const, value: 70 + index })),
+      ...Array.from({ length: options.entries ?? 4 }, (_, index) => ({
+        at: 6000 + index * 400,
+        kind: 'long-task' as const,
+        value: 70 + index,
+      })),
     ],
     frames: Array.from({ length: 9 }, (_, index) => ({ at: index * 1000, frames: 100 + index, elapsed: 1000, dropped: 1 })),
   };
@@ -83,10 +87,17 @@ test('at 1280x800 the table shows four rows under a one-line headline and stats 
   if (lead.jumpMiddle !== undefined) expect(Math.abs(lead.jumpMiddle - lead.middle)).toBeLessThanOrEqual(1);
   const strip = await page.getByTestId('performance-vitals').boundingBox();
   expect(strip!.height).toBeLessThanOrEqual(56);
-  await expect.poll(async () => {
-    const region = await page.locator('.inspector-panel:not([hidden])').first().boundingBox();
-    return page.locator('.pp-row:not(.pp-head)').evaluateAll((rows, bottom) => rows.filter((row) => row.getBoundingClientRect().bottom <= bottom).length, region!.y + region!.height);
-  }).toBeGreaterThanOrEqual(4);
+  await expect
+    .poll(async () => {
+      const region = await page.locator('.inspector-panel:not([hidden])').first().boundingBox();
+      return page
+        .locator('.pp-row:not(.pp-head)')
+        .evaluateAll(
+          (rows, bottom) => rows.filter((row) => row.getBoundingClientRect().bottom <= bottom).length,
+          region!.y + region!.height,
+        );
+    })
+    .toBeGreaterThanOrEqual(4);
   const head = await page.locator('.pp-head').evaluate((node) => getComputedStyle(node).position);
   expect(head).toBe('sticky');
 });
@@ -102,7 +113,9 @@ test('the Details toggle opens the grouped grid and the choice is remembered', a
   await expect(page.locator('.pp-stat').first()).toBeVisible();
 });
 
-test('a collapsed timeline removes its row entirely, with no chart and no marks; the toggle stays in the headline row', async ({ page }) => {
+test('a collapsed timeline removes its row entirely, with no chart and no marks; the toggle stays in the headline row', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await openPerformance(page, uniqueId('performance-collapsed'));
   await expect(page.locator('.pt-mark').first()).toBeVisible();

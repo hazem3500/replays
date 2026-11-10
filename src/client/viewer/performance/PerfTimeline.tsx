@@ -8,15 +8,7 @@ import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import type { RibbonRange } from '../TimeRibbon.tsx';
 import { FpsPlot } from './FpsPlot.tsx';
 import type { FrameBand } from './frames.ts';
-import {
-  Crosshair,
-  LaneGutter,
-  LaneRows,
-  Playhead,
-  RangeAndLit,
-  TIMELINE_STRINGS,
-  TimeAxis,
-} from './PerfTimelineParts.tsx';
+import { Crosshair, LaneGutter, LaneRows, Playhead, RangeAndLit, TIMELINE_STRINGS, TimeAxis } from './PerfTimelineParts.tsx';
 import type { Lane, LaneMark } from './timeline-model.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the timeline reuses the ribbon's playhead, veil and range styles, loaded with the lazy inspector.
 import '../time-ribbon.css';
@@ -49,16 +41,7 @@ export function PerfTimeline(props: TimelineProps) {
   return useRibbonCollapsed() ? null : <TimelinePlot {...props} />;
 }
 
-function TimelinePlot({
-  duration,
-  lanes,
-  frames,
-  range,
-  onRange,
-  lit,
-  onLight,
-  onPick,
-}: TimelineProps) {
+function TimelinePlot({ duration, lanes, frames, range, onRange, lit, onLight, onPick }: TimelineProps) {
   const player = usePlayer();
   const span = Math.max(1, duration);
   const plot = useRef<HTMLDivElement>(null);

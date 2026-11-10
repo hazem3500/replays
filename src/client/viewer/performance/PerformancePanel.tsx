@@ -99,7 +99,10 @@ export function PerformancePanel({
   const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
   const open = moments.find((item) => item.id === selected);
   const timelineCollapsed = useRibbonCollapsed();
-  const timelineHeight = lanes.length || model.frames.length ? (timelineCollapsed ? 0 : AXIS + lanes.length * LANE + (model.frames.length ? FPS : 0)) + (timelineCollapsed ? 0 : 8) : 0;
+  const timelineHeight =
+    lanes.length || model.frames.length
+      ? (timelineCollapsed ? 0 : AXIS + lanes.length * LANE + (model.frames.length ? FPS : 0)) + (timelineCollapsed ? 0 : 8)
+      : 0;
   useMinContentHeight(LEAD + timelineHeight + STRIP + TABLE_HEAD + MIN_TABLE_ROWS * ROW);
   const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
     id: peer.id,

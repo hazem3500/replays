@@ -31,7 +31,11 @@ export function StripStat({ stat, pickable, onPick }: { stat: Stat; pickable: bo
           {stat.unit ? <span className="pp-unit"> {stat.unit}</span> : null}
         </span>
         {stat.verdict ? <span className="pp-dot" data-verdict={stat.verdict} aria-hidden="true" /> : null}
-        {word ? <span className="pp-stat-word" data-verdict={stat.verdict}>{word}</span> : null}
+        {word ? (
+          <span className="pp-stat-word" data-verdict={stat.verdict}>
+            {word}
+          </span>
+        ) : null}
       </TooltipTrigger>
       <TooltipContent side="bottom">
         <span className="pp-stat-tip">{tip}</span>
@@ -49,4 +53,3 @@ export function DetailsToggle({ open }: { open: boolean }) {
     </button>
   );
 }
-
