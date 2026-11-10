@@ -172,7 +172,7 @@ describe('steps of a manual recording', () => {
   });
 
   it('asks the page for steps only in a manual recording', () => {
-    expect(recorderScript('x();', undefined, { steps: true })).toContain('__REPLAYS_STEPS__=true');
+    expect(recorderScript('x();', {}, { steps: true })).toContain('__REPLAYS_STEPS__=true');
     expect(recorderScript('x();')).not.toContain('__REPLAYS_STEPS__');
   });
 });
