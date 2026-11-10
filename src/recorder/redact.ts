@@ -4,6 +4,8 @@
  * must still run its own `sanitizeReplayBundle` pass and never trust this one.
  */
 
+import { traceOnlyServerTiming } from './trace.ts';
+
 // why: exact names plus any `*_token` / `*-secret` / `*_password` / `*-signature` suffix.
 const SENSITIVE_QUERY =
   /^(access[-_]?token|api[-_]?key|api[-_]?token|auth|authorization|client[-_]?secret|code|e[-_]?mail|id[-_]?token|jwt|password|refresh[-_]?token|secret|session|signature|token)$|[-_](token|secret|password|signature)$/i;
@@ -26,7 +28,10 @@ export const DEFAULT_ALLOWED_HEADERS: readonly string[] = [
   'content-length',
   'content-type',
   'retry-after',
+  'server-timing',
+  'traceparent',
   'x-request-id',
+  'x-trace-id',
 ];
 
 function redactParameters(value: string) {
@@ -98,8 +103,12 @@ export function filterHeaders(
       !/^(authorization|proxy-authorization|cookie|set-cookie|x-api-key)$|(?:^|[-_])(token|secret|password|credential|session|api[-_]?key)(?:$|[-_])/i.test(
         name,
       )
-    )
-      result.push({ name: name.toLowerCase(), value });
+    ) {
+      const lower = name.toLowerCase();
+      // why: Server-Timing metrics can name internals; only its trace metrics are kept.
+      const kept = lower === 'server-timing' ? traceOnlyServerTiming(value) : value;
+      if (kept !== undefined) result.push({ name: lower, value: kept });
+    }
   }
   return result;
 }

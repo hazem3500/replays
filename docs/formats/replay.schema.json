@@ -147,6 +147,11 @@
           "mimeType": { "type": "string" },
           "requestHeaders": { "$ref": "#/$defs/headers" },
           "responseHeaders": { "$ref": "#/$defs/headers" },
+          "traceId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$",
+            "description": "Backend trace ID from the trace headers the capture kept."
+          },
           "requestBody": { "$ref": "#/$defs/body" },
           "responseBody": { "$ref": "#/$defs/body" }
         }

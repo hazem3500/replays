@@ -1,3 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
+import { traceIdFromHeaders, traceUrl } from '../../../shared/trace.ts';
+import { configQuery } from '../../queries.ts';
 import { formatClock, type ReplayCaptured, type ReplayStep } from '../../../shared/replay.ts';
 import { copyText } from '../../clipboard.ts';
 import { CopyButton } from '@/components/copy-button.tsx';
@@ -37,6 +40,10 @@ const STRINGS = {
   before: (ms: number) => `${formatDuration(ms)} before it began`,
   type: 'Type',
   size: 'Size',
+  trace: 'Trace',
+  openTrace: 'Open trace',
+  openTraceLabel: (id: string) => `Open trace ${id} (opens in a new tab)`,
+  copyTrace: 'Copy trace ID',
   notRecorded: 'Not recorded',
   around: 'Around this request',
   more: (count: number) => `${count} more in flight`,
@@ -143,6 +150,8 @@ function Facts({ row, rows, steps }: { row: NetworkRow; rows: readonly NetworkRo
   const step = stepAt(steps, row.at);
   const size = entrySize(row.entry);
   const edited = Math.abs(row.entry.at - row.at) >= 1;
+  const traceId = row.entry.traceId ?? traceIdFromHeaders(row.entry.requestHeaders, row.entry.responseHeaders);
+  const href = traceUrl(useQuery(configQuery).data?.integrations?.traceUrlTemplate, traceId);
   return (
     <dl className="np-facts">
       <dt>{STRINGS.took}</dt>
@@ -170,6 +179,26 @@ function Facts({ row, rows, steps }: { row: NetworkRow; rows: readonly NetworkRo
       <dd>{row.entry.mimeType ?? STRINGS.notRecorded}</dd>
       <dt>{STRINGS.size}</dt>
       <dd>{size === undefined ? STRINGS.notRecorded : formatBytes(size)}</dd>
+      {traceId ? (
+        <>
+          <dt>{STRINGS.trace}</dt>
+          <dd className="np-trace" data-testid="request-trace">
+            <code>{traceId}</code>
+            <CopyButton value={traceId} label={STRINGS.copyTrace} />
+            {href ? (
+              <a
+                className="np-trace-link"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={STRINGS.openTraceLabel(traceId)}
+              >
+                {STRINGS.openTrace}
+              </a>
+            ) : null}
+          </dd>
+        </>
+      ) : null}
     </dl>
   );
 }

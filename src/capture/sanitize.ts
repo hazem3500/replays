@@ -6,12 +6,23 @@ import { isRecord } from '../shared/validate.ts';
 import { harEntryBodies } from './har-bodies.ts';
 import { maskCapturedInputs } from './mask-inputs.ts';
 import { choiceKept, inputsMasked, type Kept, keptFields, type SanitizeReplayOptions } from './privacy-claims.ts';
+import { normalizeTraceId, traceIdFromHeaders, traceOnlyServerTiming } from '../shared/trace.ts';
 import { compileMaskSelectors, compoundMatches } from './mask-selectors.ts';
 
 /* why: exact auth headers plus any `*-token` / `*-secret` / `*-jwt` / `*-assertion` (X-CSRF-Token, X-Amz-Security-Token,
    signed-identity headers set by proxies, ...). */
 const SENSITIVE_HEADER =
   /^(authorization|cookie|proxy-authorization|set-cookie|x-api-key|x-auth-token|x-forwarded-access-token|x-amz-security-token)$|[-_](token|secret|jwt|assertion)$/i;
+/** invariant: a stored trace ID is a well-formed 32-hex ID, kept or derived from the trace headers before Server-Timing is trimmed. */
+function traceIdOf(entry: { traceId?: unknown; requestHeaders?: HarHeader[]; responseHeaders?: HarHeader[] }) {
+  const traceId =
+    normalizeTraceId(typeof entry.traceId === 'string' ? entry.traceId : undefined) ??
+    traceIdFromHeaders(
+      Array.isArray(entry.requestHeaders) ? entry.requestHeaders : undefined,
+      Array.isArray(entry.responseHeaders) ? entry.responseHeaders : undefined,
+    );
+  return traceId ? { traceId } : {};
+}
 const URL_HEADER = /^(content-location|location|origin|referer|referrer)$/i;
 const URL_FIELD = /^(action|currentSrc|formAction|href|poster|src|url|xlink:href)$/i;
 /** Absolute URLs inside free text: srcset, ping, style/CSS url(), meta content, console messages, labels. */
@@ -33,6 +44,7 @@ const NETWORK_FIELDS = new Set([
   'mimeType',
   'requestHeaders',
   'responseHeaders',
+  'traceId',
   'requestBody',
   'responseBody',
 ]);
@@ -95,7 +107,14 @@ export function sanitizeHeaders(headers: HarHeader[] = [], redaction?: Redaction
 function headersWith(headers: HarHeader[], rules: CompiledRedaction) {
   return headers
     .filter((header) => !SENSITIVE_HEADER.test(header.name) && !rules.header(header.name))
-    .map((header) => (URL_HEADER.test(header.name) ? { ...header, value: urlWith(header.value, rules) } : header));
+    .flatMap((header) => {
+      // why: Server-Timing metrics can name internals; only its trace metrics are kept.
+      if (/^server-timing$/i.test(header.name)) {
+        const value = traceOnlyServerTiming(header.value);
+        return value === undefined ? [] : [{ ...header, value }];
+      }
+      return [URL_HEADER.test(header.name) ? { ...header, value: urlWith(header.value, rules) } : header];
+    });
 }
 
 export function sanitizeUrl(value: string, redaction?: RedactionRules) {
@@ -391,9 +410,12 @@ function defaultPass(bundle: ReplayBundle, rules: CompiledRedaction, kept: Kept)
   sanitized.meta = choiceKept(sanitized.meta, kept);
   // invariant: only the viewer's fields survive; raw HAR leftovers (request.postData, cookies, content) are dropped.
   sanitized.network = sanitized.network.map((entry) => ({
-    ...(Object.fromEntries(Object.entries(entry).filter(([key]) => NETWORK_FIELDS.has(key) && !BODY_FIELDS.has(key))) as typeof entry),
+    ...(Object.fromEntries(
+      Object.entries(entry).filter(([key]) => NETWORK_FIELDS.has(key) && key !== 'traceId' && !BODY_FIELDS.has(key)),
+    ) as typeof entry),
     ...(Array.isArray(entry.requestHeaders) ? { requestHeaders: headersWith(entry.requestHeaders, rules) } : {}),
     ...(Array.isArray(entry.responseHeaders) ? { responseHeaders: headersWith(entry.responseHeaders, rules) } : {}),
+    ...traceIdOf(entry),
     ...(kept.bodies ? bodiesWith(entry, rules) : {}),
   }));
   return sanitized;
