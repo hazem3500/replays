@@ -16,6 +16,9 @@ else
     case 'capture':
       await (await import('./capture.ts')).runCaptureCli(args, process.env);
       break;
+    case 'probe':
+      await (await import('./probe.ts')).runProbeCli(args, process.env);
+      break;
     case 'import':
       await (await import('./import.ts')).runImportCli(args);
       break;

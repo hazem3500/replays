@@ -3,6 +3,7 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --url <url>              page to open (https, or http on localhost)
   --output <dir>           empty directory for replay.json (and session.mp4)
   --steps <json|@file>     closed list of steps: click, hover, type, fill, press, wait, scroll, goto
+                           a selector acts on its first visible match; test one with replays probe
   --step-pause <ms>        hold after non-wait actions, 0..10000 (config.capture.stepPauseMs, else 0)
   --title <text>           title shown in the viewer (default: the host name)
   --id <id>                replay id (default: <host>-<timestamp>-<random>)

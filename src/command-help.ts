@@ -19,6 +19,15 @@ interface CommandDefinition {
 export const COMMANDS: readonly CommandDefinition[] = [
   { name: 'capture', summary: 'record a page with scripted steps into replay.json', captureOnly: true, details: CAPTURE_USAGE },
   {
+    name: 'probe',
+    summary: 'open a page headless and list what a selector matches (visibility, boxes)',
+    captureOnly: true,
+    help: `usage: ${p} probe --url <url> --selector <selector> [--json]
+
+Opens the page headless and reports every match (up to 20) with its tag, text, visibility and bounding box.
+Capture steps act on the first visible match, marked with * . Use it to test a selector before recording.`,
+  },
+  {
     name: 'import',
     summary: 'convert a plain rrweb recording into a replay',
     captureOnly: true,

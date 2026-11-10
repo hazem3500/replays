@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- CLI selectors: capture steps act on the first visible match of a selector (Playwright `.filter({ visible: true }).first()`, and the same through CDP for `agent-browser`) instead of failing on a hidden duplicate. A step that times out lists up to five candidates with tag, text and visible or hidden. New `replays probe --url <url> --selector <selector> [--json]` opens the page headless and reports every match with visibility and bounding box.
+
 - CLI: `capture --json` reports `networkRequested` and `networkMode`, so `--network bodies` on the `agent-browser` driver (which records headers only) no longer degrades silently; the human summary has a Network line saying so. `--profile triage`, `design-review`, `walkthrough` and `support` are accepted without a declaration; only an unknown id warns, naming `replays.config.*` and the ids to use. `doctor` splits the Node check into `capture/upload` and `serve` (`needs Node 22.22+` is a warning that blocks `serve` only).
 
 - CLI upload: a video that cannot be read or sent no longer fails the command once the replay JSON is saved. Human output reads "Replay uploaded · video skipped: <reason>" and `--json` carries `"video":{"uploaded":false,"error":"..."}`. The result also carries `url`, the viewer link (the server's own receipt `url`, else `<server>/r/<id>`), for `upload` and `capture --upload`.
