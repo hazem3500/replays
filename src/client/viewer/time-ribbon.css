@@ -74,7 +74,9 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
 }
 
 /* The local timeline: a moment's own scale. Label | track | value on one grid; a light ruler of round offsets. */
-.local-timeline { --lt-label: minmax(40%, 55%); container: local-timeline / inline-size; display: grid; grid-template-columns: var(--lt-label) minmax(0, 1fr) 56px; column-gap: 10px; font-size: var(--text-xs); }
+/* --lt-label is set inline from the (resizable) label width. */
+.local-timeline { --lt-label: 45%; position: relative; container: local-timeline / inline-size; display: grid; grid-template-columns: var(--lt-label) minmax(0, 1fr) 56px; column-gap: 10px; font-size: var(--text-xs); }
+.lt-seam { position: absolute; top: 0; bottom: 0; z-index: 3; display: flex; }
 .lt-ruler { position: relative; grid-column: 2; height: 24px; margin-bottom: 2px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
 /* why: the scale's words sit on their own line above the tick marks, so no tick is drawn through a label. */
 .lt-ruler > span { position: absolute; top: 16px; height: 6px; border-left: 1px solid var(--line-strong); }

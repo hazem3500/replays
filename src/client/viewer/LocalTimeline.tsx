@@ -1,3 +1,8 @@
+import { type CSSProperties, useRef, useState } from 'react';
+
+import { Splitter } from '../components/ui/splitter.tsx';
+import { useElementWidth } from '../hooks/use-element-width.ts';
+import { readStorage } from '../storage.ts';
 import { RequestLabel } from './network/RequestLabel.tsx';
 import type { RibbonTone } from './TimeRibbon.tsx';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the chart's styles load with the lazy inspector chunk, not with every page.
@@ -15,6 +20,17 @@ export interface LocalItem {
   current?: boolean;
   /** Right-hand figure, for example "96 ms". */
   value: string;
+}
+
+/** Where the label column's width is kept, per browser (px). */
+export const LABEL_WIDTH_KEY = 'replays-view:local-timeline:label-width';
+const LABEL_SHARE = { min: 0.25, max: 0.75, initial: 0.45 };
+/** Used before the chart has been measured. */
+const UNMEASURED = 480;
+
+function savedWidth() {
+  const saved = Number(readStorage(LABEL_WIDTH_KEY));
+  return Number.isFinite(saved) && saved > 0 ? saved : undefined;
 }
 
 const STEPS = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000];
@@ -65,10 +81,43 @@ export function LocalTimeline({
   onPick?: ((id: string) => void) | undefined;
 }) {
   const span = Math.max(1, to - from);
+  const box = useRef<HTMLDivElement>(null);
+  const measured = useElementWidth(box, 0) || UNMEASURED;
+  const [saved, setSaved] = useState(savedWidth);
+  const [preview, setPreview] = useState<number | undefined>(undefined);
+  const min = Math.round(measured * LABEL_SHARE.min);
+  const max = Math.round(measured * LABEL_SHARE.max);
+  const initial = Math.round(measured * LABEL_SHARE.initial);
+  const labelWidth = Math.min(max, Math.max(min, preview ?? saved ?? initial));
   const left = (at: number) => `${(Math.max(0, at - from) / span) * 100}%`;
   const width = (item: LocalItem) => `${((Math.min(to, item.end) - Math.max(from, item.at)) / span) * 100}%`;
   return (
-    <div className="local-timeline" role="group" aria-label={label}>
+    <div
+      ref={box}
+      className="local-timeline"
+      role="group"
+      aria-label={label}
+      style={{ '--lt-label': `${labelWidth}px` } as CSSProperties}
+    >
+      <div className="lt-seam" style={{ left: `${labelWidth + 5}px` }}>
+        <Splitter
+          orientation="vertical"
+          side="start"
+          value={labelWidth}
+          min={min}
+          max={max}
+          defaultValue={initial}
+          step={16}
+          label="Resize the label column"
+          storageKey={LABEL_WIDTH_KEY}
+          onPreview={(size) => setPreview(size)}
+          onChange={(size) => {
+            setSaved(size);
+            setPreview(undefined);
+          }}
+          testId="lt-label-seam"
+        />
+      </div>
       <div className="lt-ruler" aria-hidden="true">
         {labelledTicks(localTicks(origin, to).map((offset) => ({ offset, position: (origin - from + offset) / span }))).map((item) => (
           <span key={item.offset} style={{ left: `${item.position * 100}%` }}>
