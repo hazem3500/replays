@@ -348,7 +348,7 @@ export function createDefaultUi(
           const href = receipt.url ? safeHref(receipt.url) : undefined;
           appendCompletionControls(controls, completion?.actions, { resolveValue, copy, context, href, messages });
         } else {
-          if (error?.action && result.status === 'error')
+          if (error?.action && result.status === 'error') {
             const stopRecovery = uploadRecovery(controls, error.action, result.retry, {
               failure: (message) => {
                 updateText(current.label, message);
@@ -371,6 +371,7 @@ export function createDefaultUi(
               spinner?.stop();
               spinner = undefined;
             };
+          }
           if (error?.link) {
             const control = link(error.link.label, error.link.url);
             if (control) controls.append(control);
