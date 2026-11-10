@@ -27,7 +27,6 @@ export interface EnsuredSuite {
   created: boolean;
 }
 
-
 function registrationOf(input: SuiteInput, createdAt: string): ReviewSuiteRegistration {
   if (input.summary !== undefined) assertSummary(input.summary, 'summary');
   return {
