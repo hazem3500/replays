@@ -60,7 +60,8 @@ function validateLinks(input: unknown): LinksConfig | undefined {
     if (!(LINK_KEYS as readonly string[]).includes(key)) throw new Error(`links.${key} is not a link (${LINK_KEYS.join(', ')})`);
     if (value === undefined) continue;
     const url = typeof value === 'string' ? value.trim() : value;
-    if (url !== false && (typeof url !== 'string' || !/^https:\/\/\S+$/i.test(url))) throw new Error(`links.${key} must be an https URL or false`);
+    if (url !== false && (typeof url !== 'string' || !/^https:\/\/\S+$/i.test(url)))
+      throw new Error(`links.${key} must be an https URL or false`);
     out[key as LinkKey] = url;
   }
   return Object.keys(out).length ? out : undefined;

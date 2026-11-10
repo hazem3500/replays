@@ -98,7 +98,13 @@ export function CliSection() {
         <CommandField
           label={strings.cli.uploadCommand}
           command={host.upload ?? `replays upload replay.json${anonymous || deviceLogin ? '' : ' --header-file headers.json'}`}
-          hint={host.upload ? host.uploadHint : mode === 'managed' ? (MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther) : UPLOAD_HINTS[mode]}
+          hint={
+            host.upload
+              ? host.uploadHint
+              : mode === 'managed'
+                ? (MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther)
+                : UPLOAD_HINTS[mode]
+          }
         />
       </SettingsGroup>
       <Disclosure className="settings-group settings-credentials" summary={strings.cli.agentsAdvanced}>

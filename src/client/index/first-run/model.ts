@@ -99,9 +99,7 @@ export const coreWays: ReadonlyArray<SlotDescriptor<FirstRunContext, FirstRunWay
       description: firstRunStrings.record.description,
       icon: 'record',
       command: { label: firstRunStrings.record.commandLabel, text: RECORDER_SNIPPET },
-      ...(context.recorderGuide
-        ? { action: { label: firstRunStrings.record.guide, href: context.recorderGuide } }
-        : {}),
+      ...(context.recorderGuide ? { action: { label: firstRunStrings.record.guide, href: context.recorderGuide } } : {}),
     }),
   },
   {
