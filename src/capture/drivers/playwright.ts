@@ -9,11 +9,10 @@ import { chromium, type Browser, type BrowserContext, type CDPSession, type Page
 import type { CdpLike } from '../session.ts';
 import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
 import { findFfmpeg, findSystemBrowser, hasPlaywrightBrowser, NO_BROWSER_MESSAGE, NO_FFMPEG_MESSAGE } from './system-tools.ts';
-import { onFirstVisible } from './locate.ts';
+import { onFirstVisible, STEP_TIMEOUT, waitForSelector } from './locate.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
 
 const execFileAsync = promisify(execFile);
-const STEP_TIMEOUT = 15_000;
 
 export interface PlaywrightDriverOptions {
   /** A Chrome/Chromium binary; default `CHROME_PATH`, else an installed Chrome/Chromium/Edge, else Playwright's own browser (`npx playwright install chromium`). */
@@ -86,6 +85,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
         // why: bodies are only embedded when the capture asked for them; they are cut and redacted before storage.
         recordHar: { path: launch.harPath, content: launch.bodies ? 'embed' : 'omit', mode: 'full' },
         ...(scratch ? { recordVideo: { dir: scratch, size: launch.viewport } } : {}),
+        ...(launch.state ? { storageState: launch.state } : {}),
       });
       page = await context.newPage();
       return cdpLike(await context.newCDPSession(page));
@@ -122,9 +122,14 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
           await target.keyboard.press(step.key);
           break;
         case 'wait':
-          await target.waitForTimeout(step.ms);
+          if ('selector' in step) await waitForSelector(target, step.selector, step.state ?? 'visible', step.timeout ?? STEP_TIMEOUT);
+          else await target.waitForTimeout(step.ms);
           break;
         case 'scroll': {
+          if ('selector' in step) {
+            await onFirstVisible(target, step.selector, STEP_TIMEOUT, (match) => match.scrollIntoViewIfNeeded({ timeout: STEP_TIMEOUT }));
+            break;
+          }
           const pixels = step.pixels ?? 720;
           const dx = step.direction === 'left' ? -pixels : step.direction === 'right' ? pixels : 0;
           const dy = step.direction === 'up' ? -pixels : step.direction === 'down' ? pixels : 0;
@@ -134,7 +139,12 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
         case 'goto':
           await target.goto(step.url, { waitUntil: 'load', timeout: 30_000 });
           break;
+        case 'shot':
+          throw new Error('a shot step is saved with screenshot(), not step()');
       }
+    },
+    async screenshot(path) {
+      await current().screenshot({ path, type: 'png' });
     },
     async wait(ms) {
       await current().waitForTimeout(ms);

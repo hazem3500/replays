@@ -3,8 +3,17 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
 
   --url <url>              page to open (https, or http on localhost)
   --output <dir>           empty directory for replay.json (and session.mp4)
-  --steps <json|@file>     closed list of steps: click, hover, type, fill, press, wait, scroll, goto
+  --steps <json|@file>     closed list of steps: click, hover, type, fill, press, wait, scroll, goto, shot
                            a selector acts on its first visible match; test one with replays probe
+                           wait: {"kind":"wait","ms":500}, or until a selector reaches a state:
+                           {"kind":"wait","selector":"#done","state":"visible|attached|hidden","timeout":15000}
+                           (state defaults to visible, timeout to 15000 ms, at most 300000)
+                           scroll: {"kind":"scroll","direction":"down","pixels":720}, or
+                           {"kind":"scroll","selector":"#pricing"} to bring it into view
+                           shot: {"kind":"shot","name":"after-save"} saves <output>/shots/after-save.png (a
+                           lowercase name, unique in the run) and is listed under "shots" in the --json result
+  --state <file>           Playwright storage state (cookies, local storage) to start signed in; the same file
+                           works with --driver agent-browser. replays probe --state reads it too
   --step-pause <ms>        hold after non-wait actions, 0..10000 (config.capture.stepPauseMs, else 0)
   --title <text>           title shown in the viewer (default: the host name)
   --id <id>                replay id (default: <host>-<timestamp>-<random>)

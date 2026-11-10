@@ -87,7 +87,7 @@
       "type": "object",
       "required": ["kind"],
       "properties": {
-        "kind": { "enum": ["click", "hover", "type", "fill", "press", "wait", "scroll", "goto"] },
+        "kind": { "enum": ["click", "hover", "type", "fill", "press", "wait", "scroll", "goto", "shot"] },
         "label": { "type": "string", "minLength": 1 },
         "selector": { "type": "string", "minLength": 1 },
         "text": { "type": "string" },
@@ -95,14 +95,29 @@
         "ms": { "type": "number", "minimum": 0 },
         "direction": { "enum": ["up", "down", "left", "right"] },
         "pixels": { "type": "number", "minimum": 0 },
+        "state": { "enum": ["visible", "attached", "hidden"], "description": "A selector wait: what to wait for (default visible)." },
+        "timeout": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 300000,
+          "description": "A selector wait: longest wait in ms (default 15000)."
+        },
+        "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$", "description": "A shot: the PNG name, unique in the run." },
         "url": { "type": "string" }
       },
       "allOf": [
         { "if": { "properties": { "kind": { "enum": ["click", "hover", "type", "fill"] } } }, "then": { "required": ["selector"] } },
         { "if": { "properties": { "kind": { "enum": ["type", "fill"] } } }, "then": { "required": ["text"] } },
         { "if": { "properties": { "kind": { "const": "press" } } }, "then": { "required": ["key"] } },
-        { "if": { "properties": { "kind": { "const": "wait" } } }, "then": { "required": ["ms"] } },
-        { "if": { "properties": { "kind": { "const": "scroll" } } }, "then": { "required": ["direction"] } },
+        {
+          "if": { "properties": { "kind": { "const": "wait" } } },
+          "then": { "oneOf": [{ "required": ["ms"] }, { "required": ["selector"] }] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "scroll" } } },
+          "then": { "oneOf": [{ "required": ["direction"] }, { "required": ["selector"] }] }
+        },
+        { "if": { "properties": { "kind": { "const": "shot" } } }, "then": { "required": ["name"] } },
         { "if": { "properties": { "kind": { "const": "goto" } } }, "then": { "required": ["url"] } }
       ]
     }

@@ -24,11 +24,13 @@ import { uploadConfigured } from './upload.ts';
 import { uploadSummary } from './upload-report.ts';
 import { buildReplayContext, readContextFile } from './context.ts';
 import { agentBrowserDriver } from './drivers/agent-browser.ts';
+import { readStateFile } from './drivers/storage-state.ts';
 import { playwrightDriver } from './drivers/playwright.ts';
 import type { CaptureDriver, RawStep } from './drivers/types.ts';
 import { networkEntries, sanitizeReplayBundle, sanitizeUrl } from './sanitize.ts';
 import { RecorderSession } from './session.ts';
 import { assertCaptureUrl, readSteps } from './capture-steps.ts';
+import { saveShot, type CapturedShot } from './capture-shots.ts';
 import { labelFor } from './step-labels.ts';
 import { waitForManualStop, type ManualStopOptions, type ManualStopReason } from './manual.ts';
 import { DEFAULT_MAX_DURATION_MS, MAX_DURATION_CEILING_MS } from '../recorder/recorder-limits.ts';
@@ -37,6 +39,7 @@ export type { RawStep } from './drivers/types.ts';
 export { createPullGate, normalizeConsole, normalizePerformance } from './session.ts';
 export { defaultId, prepareOutputDirectory } from './bundle-io.ts';
 export { validateSteps } from './capture-steps.ts';
+export type { CapturedShot } from './capture-shots.ts';
 export { labelFor, selectorName } from './step-labels.ts';
 
 export type DriverName = 'playwright' | 'agent-browser';
@@ -50,6 +53,8 @@ export interface CaptureArgs extends CapturePacingOptions {
   video: boolean;
   driver: DriverName;
   viewport: { width: number; height: number };
+  /** A Playwright storage state file (`--state`) the browser starts with, to record pages behind a sign-in. */
+  state?: string;
   uploadUrl?: string;
   headerFile?: string;
   upload?: boolean;
@@ -183,6 +188,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   const pause = stepPauseMs(
     values['step-pause'] === undefined ? (own?.stepPauseMs ?? loaded.pacing?.stepPauseMs) : Number(values['step-pause']),
   );
+  const state = values.state ? await readStateFile(values.state) : undefined;
   const args = {
     url: values.url,
     output: resolve(values.output ?? id),
@@ -193,6 +199,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     headed: booleans.has('headed'),
     driver,
     viewport: values.viewport === undefined && own?.viewport ? own.viewport : parseViewport(values.viewport),
+    ...(state ? { state } : {}),
     network: settings.network,
     ...(settings.bodies ? { bodies: settings.bodies } : {}),
     performance: settings.performance,
@@ -247,6 +254,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
   const harPath = join(scratch, 'session.har');
   const rawVideoPath = join(scratch, 'session.mp4');
   const rawSteps: Array<ReplayStep & { epoch: number }> = [];
+  const shotFiles: Array<{ name: string; file: string; step: number }> = [];
   let session: RecorderSession | undefined;
   let release: (() => void) | undefined;
   try {
@@ -259,6 +267,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     const cdp = await driver.launch({
       viewport: args.viewport,
       harPath,
+      ...(args.state ? { state: args.state } : {}),
       ...(bodiesRecorded ? { bodies: true } : {}),
       ...(args.video ? { videoPath: rawVideoPath } : {}),
     });
@@ -291,7 +300,9 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
           ...('selector' in step ? { selector: step.selector } : {}),
           ...('url' in step ? { url: sanitizeUrl(step.url) } : {}),
         });
-      await driver.step(step);
+      if (step.kind === 'shot')
+        shotFiles.push({ name: step.name, file: await saveShot(driver, args.output, step.name), step: rawSteps.length });
+      else await driver.step(step);
       if (step.kind !== 'wait' && pause > 0) await driver.wait(pause);
       await session.flush();
     }
@@ -320,6 +331,12 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       ...tracks.steps.map((step) => ({ ...step, at: Math.max(0, step.at - origin) })),
     ].sort((a, b) => a.at - b.at);
     const { duration } = tracks;
+    const shots: CapturedShot[] = shotFiles.map(({ step, ...shot }) => ({
+      ...shot,
+      label: rawSteps[step - 1]!.label,
+      step,
+      at: Math.max(0, rawSteps[step - 1]!.epoch - origin),
+    }));
     const context = buildContext(args, new Date(origin).toISOString());
     const profile = profileOf(args);
     let bundle: ReplayBundle = {
@@ -382,6 +399,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       performanceCount: bundle.performance?.entries.length ?? 0,
       duration,
       video: args.video ? join(args.output, 'session.mp4') : undefined,
+      ...(shots.length ? { shots } : {}),
       ...(stoppedBy ? { stoppedBy } : {}),
       networkRequested: args.network ?? 'headers',
       networkMode: args.network === 'off' ? 'off' : bodiesRecorded ? 'bodies' : 'headers',
@@ -443,6 +461,7 @@ export async function runCaptureCli(argv: string[], env: NodeJS.ProcessEnv = {})
             : `${result.networkMode} (${result.networkRequested} was requested but this driver cannot record it)`,
         ],
         ...(result.video ? ([['Video', result.video]] as Array<[string, string]>) : []),
+        ...(result.shots ? ([['Shots', `${result.shots.length} in ${join(args.output, 'shots')}`]] as Array<[string, string]>) : []),
       ];
       const receipt = result.upload ? `\n\n${uploadSummary(out, result.upload)}` : '';
       process.stdout.write(
