@@ -9,18 +9,11 @@ import {
 } from './handoff-protocol.ts';
 import type { IssueReportReceipt } from './upload.ts';
 
-/** Why a handoff did not produce a receipt. */
-export type HandoffFailureKind =
-  /** The browser refused the window (no user gesture, or a blocker). */
-  | 'blocked'
-  /** The person closed the window before the upload finished. */
-  | 'closed'
-  /** No ready message or no receipt within the time allowed. */
-  | 'timeout'
-  | 'too-large'
-  | 'aborted'
-  /** Replays answered the upload with an error status. */
-  | 'rejected';
+/**
+ * Why a handoff did not produce a receipt: `blocked` (the browser refused the window), `closed` (the person closed it),
+ * `timeout`, `too-large`, `aborted`, or `rejected` (Replays answered with an error status).
+ */
+export type HandoffFailureKind = 'blocked' | 'closed' | 'timeout' | 'too-large' | 'aborted' | 'rejected';
 
 export class HandoffUploadError extends Error {
   readonly kind: HandoffFailureKind;
@@ -37,10 +30,16 @@ export class HandoffUploadError extends Error {
 
 /** The browser pieces the handoff uses; tests pass fakes. */
 export type HandoffHost = {
-  open: (url: string, name: string, features: string) => WindowProxy | null;
-  addEventListener: (type: 'message', listener: (event: MessageEvent) => void) => void;
-  removeEventListener: (type: 'message', listener: (event: MessageEvent) => void) => void;
+  open: (url: string, name: string, features: string) => HandoffWindow | null;
+  addEventListener: (type: 'message', listener: (event: HandoffEvent) => void) => void;
+  removeEventListener: (type: 'message', listener: (event: HandoffEvent) => void) => void;
 };
+
+/** The part of a `message` event the handoff reads. */
+export type HandoffEvent = { data: unknown; origin: string; source: unknown };
+
+/** The part of the opened window the handoff uses. */
+export type HandoffWindow = { closed: boolean; postMessage: (message: unknown, targetOrigin: string) => void; close: () => void };
 
 export type HandoffUploadOptions = {
   /** Toggl Replays, without a trailing slash. */
@@ -92,7 +91,7 @@ export function handoffUpload(options: HandoffUploadOptions): Promise<IssueRepor
   const opened = host.open(`${base}${HANDOFF_PATH}`, WINDOW_NAME, WINDOW_FEATURES);
   if (!opened) return Promise.reject(new HandoffUploadError('blocked', 'The browser did not open the Replays window.'));
 
-  const popup: WindowProxy = opened;
+  const popup = opened;
   const id = newHandoffId();
   const readyMs = options.readyTimeoutMs ?? DEFAULT_HANDOFF_READY_TIMEOUT_MS;
   const uploadMs = Math.max(
@@ -117,7 +116,7 @@ export function handoffUpload(options: HandoffUploadOptions): Promise<IssueRepor
         try {
           popup.close();
         } catch {
-          // The window is already gone.
+          // why: a window that is already gone has nothing left to close.
         }
       }
       outcome();
@@ -133,10 +132,10 @@ export function handoffUpload(options: HandoffUploadOptions): Promise<IssueRepor
       );
     };
 
-    function onMessage(event: MessageEvent) {
+    function onMessage(event: HandoffEvent) {
       if (event.source !== popup || event.origin !== replaysOrigin) return;
       if (!sent) {
-        if (!parseHandoffMessage(event.data, ['ready'])) return;
+        if (parseHandoffMessage(event.data)?.type !== 'ready') return;
         sent = true;
         const message: HandoffBundle = {
           channel: HANDOFF_CHANNEL,
@@ -149,8 +148,8 @@ export function handoffUpload(options: HandoffUploadOptions): Promise<IssueRepor
         arm(uploadMs);
         return;
       }
-      const receipt = parseHandoffMessage(event.data, ['receipt']);
-      if (receipt?.id !== id) return;
+      const receipt = parseHandoffMessage(event.data);
+      if (receipt?.type !== 'receipt' || receipt.id !== id) return;
       if (!receipt.ok) {
         fail('rejected', `Toggl Replays refused the upload (${String(receipt.status)}).`, receipt.status);
         return;

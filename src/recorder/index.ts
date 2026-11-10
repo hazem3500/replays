@@ -31,7 +31,9 @@ export {
   DEFAULT_HANDOFF_UPLOAD_TIMEOUT_MS,
   HandoffUploadError,
   handoffUpload,
+  type HandoffEvent,
   type HandoffFailureKind,
   type HandoffHost,
+  type HandoffWindow,
   type HandoffUploadOptions,
 } from './handoff-upload.ts';

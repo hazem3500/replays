@@ -18,29 +18,31 @@ export type HandoffMessage = HandoffReady | HandoffBundle | HandoffReceipt | Han
 
 const REPLAY_ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const HANDOFF_ID = /^[A-Za-z0-9-]{16,64}$/;
+const envelope = { channel: HANDOFF_CHANNEL, version: HANDOFF_VERSION } as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const validBundle = (data: Record<string, unknown>) =>
-  typeof data.payload === 'string' && data.payload.length > 0 && data.payload.length <= MAX_HANDOFF_CHARS;
-
-function validReceipt(data: Record<string, unknown>) {
-  if (data.ok === false) return Number.isInteger(data.status);
-  if (data.ok !== true || typeof data.replayId !== 'string' || !REPLAY_ID.test(data.replayId)) return false;
-  return data.url === undefined || (typeof data.url === 'string' && data.url.startsWith('/'));
+function parseReceipt(data: Record<string, unknown>, id: string): HandoffReceipt | HandoffFailure | undefined {
+  if (data.ok === false)
+    return typeof data.status === 'number' && Number.isInteger(data.status)
+      ? { ...envelope, type: 'receipt', id, ok: false, status: data.status }
+      : undefined;
+  if (data.ok !== true || typeof data.replayId !== 'string' || !REPLAY_ID.test(data.replayId)) return undefined;
+  if (data.url === undefined) return { ...envelope, type: 'receipt', id, ok: true, replayId: data.replayId };
+  return typeof data.url === 'string' && data.url.startsWith('/')
+    ? { ...envelope, type: 'receipt', id, ok: true, replayId: data.replayId, url: data.url }
+    : undefined;
 }
 
-/** A well-formed handoff message of one of `types`, or undefined. It checks shape only; the caller checks the origin first. */
-export function parseHandoffMessage<Type extends HandoffMessage['type']>(
-  data: unknown,
-  types: readonly Type[],
-): Extract<HandoffMessage, { type: Type }> | undefined {
+/** A well-formed handoff message, or undefined. It checks shape only; the caller checks the origin first. */
+export function parseHandoffMessage(data: unknown): HandoffMessage | undefined {
   if (!isRecord(data) || data.channel !== HANDOFF_CHANNEL || data.version !== HANDOFF_VERSION) return undefined;
-  if (!types.includes(data.type as Type)) return undefined;
-  const shape =
-    data.type === 'ready' ||
-    (typeof data.id === 'string' && HANDOFF_ID.test(data.id) && (data.type === 'bundle' ? validBundle(data) : validReceipt(data)));
-  return shape ? (data as Extract<HandoffMessage, { type: Type }>) : undefined;
+  if (data.type === 'ready') return { ...envelope, type: 'ready' };
+  if (typeof data.id !== 'string' || !HANDOFF_ID.test(data.id)) return undefined;
+  if (data.type === 'receipt') return parseReceipt(data, data.id);
+  if (data.type !== 'bundle' || typeof data.payload !== 'string') return undefined;
+  const size = data.payload.length;
+  return size > 0 && size <= MAX_HANDOFF_CHARS ? { ...envelope, type: 'bundle', id: data.id, payload: data.payload } : undefined;
 }
 
 export const newHandoffId = () =>

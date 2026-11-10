@@ -54,9 +54,9 @@ describe('upload handoff page', () => {
     expect(page.openerWindow.postMessage).toHaveBeenCalledWith({ ...base, type: 'ready' }, '*');
     page.deliver(bundleMessage);
     await page.flush();
-    const [url, init] = page.fetchFn.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('api/replays');
-    expect(init).toMatchObject({ method: 'POST', credentials: 'same-origin', body: '{"meta":{}}' });
+    const call = page.fetchFn.mock.calls[0];
+    expect(call?.[0]).toBe('api/replays');
+    expect(call?.[1]).toMatchObject({ method: 'POST', credentials: 'same-origin', body: '{"meta":{}}' });
     expect(page.openerWindow.postMessage).toHaveBeenLastCalledWith(
       { ...base, type: 'receipt', id, ok: true, replayId: 'issue-1', url: '/r/issue-1' },
       APP,
@@ -114,15 +114,14 @@ describe('upload handoff page', () => {
 
 describe('handoff messages', () => {
   it('parses only well-formed messages of the wanted types', () => {
-    expect(protocol.parseHandoffMessage({ ...base, type: 'ready' }, ['ready'])).toBeDefined();
-    expect(protocol.parseHandoffMessage({ ...base, type: 'ready' }, ['receipt'])).toBeUndefined();
-    expect(protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: 'x1' }, ['receipt'])).toBeDefined();
-    expect(protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: '../x' }, ['receipt'])).toBeUndefined();
+    expect(protocol.parseHandoffMessage({ ...base, type: 'ready' })?.type).toBe('ready');
+    expect(protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: 'x1' })?.type).toBe('receipt');
+    expect(protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: '../x' })).toBeUndefined();
     expect(
-      protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: 'x1', url: 'https://evil.example' }, ['receipt']),
+      protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: 'x1', url: 'https://evil.example' }),
     ).toBeUndefined();
-    expect(protocol.parseHandoffMessage({ ...base, version: 2, type: 'ready' }, ['ready'])).toBeUndefined();
-    expect(protocol.parseHandoffMessage('ready', ['ready'])).toBeUndefined();
+    expect(protocol.parseHandoffMessage({ ...base, version: 2, type: 'ready' })).toBeUndefined();
+    expect(protocol.parseHandoffMessage('ready')).toBeUndefined();
   });
 
   it('keeps the recorder and server halves of the protocol in step', () => {

@@ -1,26 +1,29 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { HANDOFF_CHANNEL, HANDOFF_VERSION } from './handoff-protocol.ts';
-import { handoffUpload, HandoffUploadError, type HandoffHost } from './handoff-upload.ts';
+import { HANDOFF_CHANNEL, HANDOFF_VERSION, parseHandoffMessage } from './handoff-protocol.ts';
+import { handoffUpload, HandoffUploadError, type HandoffEvent, type HandoffHost } from './handoff-upload.ts';
 
 const REPLAYS = 'https://replays.dev.toggl.com';
 const base = { channel: HANDOFF_CHANNEL, version: HANDOFF_VERSION };
 
 function setup() {
-  let listener: ((event: MessageEvent) => void) | undefined;
+  let listener: ((event: HandoffEvent) => void) | undefined;
   const popup = {
     closed: false,
     postMessage: vi.fn<(message: unknown, origin: string) => void>(),
     close: vi.fn<() => void>(() => void (popup.closed = true)),
   };
   const host: HandoffHost = {
-    open: vi.fn<HandoffHost['open']>(() => popup as unknown as WindowProxy),
+    open: vi.fn<HandoffHost['open']>(() => popup),
     addEventListener: (_type, fn) => (listener = fn),
     removeEventListener: () => (listener = undefined),
   };
-  const send = (data: unknown, origin = REPLAYS, source: unknown = popup) => listener?.({ data, origin, source } as never);
-  const sentId = () => (popup.postMessage.mock.calls[0]![0] as { id: string }).id;
+  const send = (data: unknown, origin = REPLAYS, source: unknown = popup) => listener?.({ data, origin, source });
+  const sentId = () => {
+    const sent = parseHandoffMessage(popup.postMessage.mock.calls[0]?.[0]);
+    return sent?.type === 'bundle' ? sent.id : '';
+  };
   return { host, popup, send, sentId, listening: () => listener !== undefined };
 }
 
@@ -34,9 +37,7 @@ describe('handoffUpload', () => {
     expect(t.host.open).toHaveBeenCalledWith(`${REPLAYS}/upload`, expect.any(String), expect.not.stringContaining('noopener'));
     t.send({ ...base, type: 'ready' });
     expect(t.popup.postMessage).toHaveBeenCalledTimes(1);
-    const [message, target] = t.popup.postMessage.mock.calls[0] as [Record<string, unknown>, string];
-    expect(target).toBe(REPLAYS);
-    expect(message).toMatchObject({ ...base, type: 'bundle', payload: '{"a":1}' });
+    expect(t.popup.postMessage).toHaveBeenCalledWith({ ...base, type: 'bundle', id: t.sentId(), payload: '{"a":1}' }, REPLAYS);
     t.send({ ...base, type: 'receipt', id: t.sentId(), ok: true, replayId: 'issue-1', url: '/r/issue-1' });
     await expect(result).resolves.toEqual({ replayId: 'issue-1', url: `${REPLAYS}/r/issue-1` });
     expect(t.popup.close).toHaveBeenCalled();
@@ -92,7 +93,7 @@ describe('handoffUpload', () => {
     const first = setup();
     const waiting = handoffUpload({ replaysUrl: REPLAYS, payload: 'x', host: first.host, readyTimeoutMs: 500 });
     const ready = waiting.catch((error: unknown) => error);
-    const matcher_ready = { kind: 'timeout', message: expect.stringContaining('get ready') };
+    const matcher_ready = { kind: 'timeout', message: 'The Replays window did not get ready in time.' };
     await vi.advanceTimersByTimeAsync(501);
     expect(await ready).toMatchObject(matcher_ready);
     expect(first.popup.close).toHaveBeenCalled();
@@ -101,7 +102,7 @@ describe('handoffUpload', () => {
     const sending = handoffUpload({ replaysUrl: REPLAYS, payload: 'x', host: second.host, uploadTimeoutMs: 500 });
     second.send({ ...base, type: 'ready' });
     const answer = sending.catch((error: unknown) => error);
-    const matcher_answer = { kind: 'timeout', message: expect.stringContaining('answer') };
+    const matcher_answer = { kind: 'timeout', message: 'Toggl Replays did not answer in time.' };
     await vi.advanceTimersByTimeAsync(501);
     expect(await answer).toMatchObject(matcher_answer);
   });
