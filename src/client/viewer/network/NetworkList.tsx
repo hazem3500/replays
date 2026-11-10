@@ -20,6 +20,7 @@ import { countAtOrBefore } from '../../timeline.ts';
 import { useWindowedRows } from '../../windowing.ts';
 import { HEADER_HEIGHT, SeekTime, TrackList } from '../TrackList.tsx';
 import { durationShare, formatDuration, type NetworkRow, playheadHorizon, stepAt } from './model.ts';
+import { RequestLabel } from './RequestLabel.tsx';
 import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
 import { ListSpacer } from '../ListSpacer.tsx';
 import { cssVars } from '../../lib/css-vars.ts';
@@ -353,9 +354,10 @@ function RequestRow({
           }
         >
           <span className="method">{row.entry.method}</span>
-          <span className="np-name" title={row.entry.url}>
-            <span className="np-path">{row.name.path}</span>
-            {row.name.query ? <span className="np-query">{row.name.query}</span> : null}
+          <span className="np-name">
+            <span className="np-path">
+              <RequestLabel method={row.entry.method} path={row.name.path} url={row.entry.url} showMethod={false} />
+            </span>
             {row.name.host ? <span className="np-host">{row.name.host}</span> : null}
           </span>
         </TooltipTrigger>

@@ -47,6 +47,7 @@ export function VitalsBar({
   onBlocking,
   scopes = [],
   ranged = false,
+  fromLoad = false,
   children,
 }: {
   vitals: readonly Vital[];
@@ -63,6 +64,8 @@ export function VitalsBar({
   scopes?: readonly { text: string; label: string; onClear: () => void }[];
   /** The strip shows a time range, so a stat with nothing in it is left out rather than explained. */
   ranged?: boolean;
+  /** The page was reloaded to record, so the load metrics cover the whole load. */
+  fromLoad?: boolean;
   /** Controls at the bar's end. */
   children?: ReactNode;
 }) {
@@ -116,6 +119,16 @@ export function VitalsBar({
         : []),
     ];
   });
+  if (fromLoad)
+    builtins.push({
+      id: 'core:note:capture',
+      order: NOTES_LAST + 100,
+      render: () => (
+        <p className="pp-group-note" data-testid="performance-from-load" title="The page was reloaded to record, so the load metrics cover the whole load.">
+          Recorded from page load
+        </p>
+      ),
+    });
   if (groups.every(({ shown }) => !shown.length))
     return (
       <div className="pp-vitals" data-testid="performance-vitals">

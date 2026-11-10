@@ -1,8 +1,10 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 
 import { formatClock } from '../../../shared/replay.ts';
+import { formatDuration } from '../network/model.ts';
 import { usePlayer } from '../../player.ts';
 import { VERDICT_WORDS } from './model.ts';
+import { BREAKDOWN_LABELS, BREAKDOWN_PARTS } from './why.ts';
 import { LANE_LABELS, type LaneItem, type LaneMark, TASK_FLOOR_MS } from './timeline-model.ts';
 
 const SHIFT_MIN_PX = 6;
@@ -59,6 +61,11 @@ function Described({ mark }: { mark: LaneMark }) {
         </span>
         <span>{formatClock(single.at)}</span>
         {single.note ? <span>{single.note}</span> : null}
+        {single.breakdown ? (
+          <span className="pt-tip-breakdown">
+            {BREAKDOWN_PARTS.map((part) => `${BREAKDOWN_LABELS[part]} ${formatDuration(single.breakdown?.[part] ?? 0)}`).join(' · ')}
+          </span>
+        ) : null}
       </>
     );
   }

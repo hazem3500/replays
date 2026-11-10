@@ -61,3 +61,4 @@
   .pt-label-text { display: none; }
   .pt-fps-axes { right: 4px; }
 }
+.pt-tip-breakdown { color: var(--text-tertiary); }

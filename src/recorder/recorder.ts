@@ -12,7 +12,7 @@ import type { Recorder, RecorderOptions, RecorderState, RecordingChoice, Recordi
 import type { IssueReport, IssueReportReceipt } from './upload.ts';
 import { createUploadProgress } from './upload-progress.ts';
 import { toUpload } from './http-upload.ts';
-import { armReload, takeReload } from './reload-flag.ts';
+import { armReload, fromLoadAllowed, takeReload } from './reload-flag.ts';
 import { annotateSession, finishSessionExtras, snapshotContext } from './session-extras.ts';
 
 export {
@@ -491,8 +491,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
     },
   };
 
-  // invariant: consent was given before the reload; the indicator shows at once and the flag is single-use and 30 s old at most.
-  const resume = ui && typeof sessionStorage !== 'undefined' ? takeReload() : undefined;
+  // invariant: consent was given before the reload, to a recorder that offers it (a flag armed for another recorder is left alone); the indicator shows at once and the flag is single-use and 30 s old at most.
+  const resume = ui && fromLoadAllowed(options) && typeof sessionStorage !== 'undefined' ? takeReload() : undefined;
   if (resume) {
     queueMicrotask(() => {
       if (destroyed) return;

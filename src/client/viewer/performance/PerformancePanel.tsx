@@ -80,7 +80,7 @@ export function PerformancePanel({
   duration: number;
   peers?: readonly PerformancePeer[] | undefined;
   /** Whose source and page say how to capture performance when this recording has none. */
-  meta: Pick<ReplayMeta, 'source' | 'url'>;
+  meta: Pick<ReplayMeta, 'source' | 'url'> & { captured?: Pick<NonNullable<ReplayMeta['captured']>, 'fromLoad'> | undefined };
   /** Shown under the vitals (compare mode's own summary). */
   extra?: ReactNode;
   onOpenRequest: (id: string) => void;
@@ -95,7 +95,7 @@ export function PerformancePanel({
   const [hovered, setHovered] = useState<readonly string[]>([]);
   // why: the verdict's jump lights its marks until the person picks something else.
   const [pinned, setPinned] = useState<readonly string[]>([]);
-  const moments = buildMoments(model.signals);
+  const moments = buildMoments(model.signals, model.why);
   const vitals = buildVitals(model.signals, moments, model.track);
   const inRange = (at: number, end = at) => !range || (end >= range.from && at <= range.to);
   const scopedMoments = moments.filter((item) => inRange(item.at, item.end));
@@ -178,6 +178,7 @@ export function PerformancePanel({
         peers={range ? [] : vitalPeers}
         cadence={cadenceStats(model.track, model.shifts, model.frames, range)}
         ranged={range !== undefined}
+        fromLoad={Boolean(meta.captured?.fromLoad)}
         blocking={blocking}
         onBlocking={() => setBlocking(!blocking)}
         scopes={[

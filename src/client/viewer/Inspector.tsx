@@ -211,7 +211,7 @@ export const Inspector = memo(function Inspector({
       badges: {
         console: consoleBadge(consoleTrack.entries),
         network: networkBadge(networkRows),
-        performance: performanceBadge(buildMoments(performanceModel.signals)),
+        performance: performanceBadge(buildMoments(performanceModel.signals, performanceModel.why)),
       },
       features: features.map(({ id, featureTab }) => ({
         id,

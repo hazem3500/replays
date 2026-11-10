@@ -2,6 +2,7 @@ import { formatDuration, type NetworkRow } from '../network/model.ts';
 import type { LayoutShift } from '../performance.ts';
 import type { Moment, Verdict } from './model.ts';
 import { shiftVerdict } from './stats.ts';
+import { frameNote, type BreakdownPart } from './why.ts';
 
 export type LaneId = 'interaction' | 'task' | 'request' | 'shift' | 'failed';
 
@@ -23,6 +24,8 @@ export interface LaneItem {
   /** Drawn quietly: a shift that followed an input is expected and not counted. */
   quiet?: boolean;
   note?: string;
+  /** An interaction's phases in ms, shown in its tooltip. */
+  breakdown?: Readonly<Record<BreakdownPart, number>>;
 }
 
 export interface Lane {
@@ -62,7 +65,23 @@ const RANK: Readonly<Record<Verdict, number>> = { good: 0, 'needs-work': 1, poor
 export const worstOf = (items: readonly { verdict: Verdict }[]): Verdict =>
   items.reduce<Verdict>((worst, item) => (RANK[item.verdict] > RANK[worst] ? item.verdict : worst), 'good');
 
+/** A long task, or the long animation frame that explains it: the frame's own span and blocking time, the task's rating. */
 function momentItem(moment: Moment): LaneItem {
+  const { frame, interaction } = moment;
+  if (moment.kind === 'task' && frame) {
+    const note = frameNote(frame);
+    return {
+      id: moment.id,
+      lane: 'task',
+      at: frame.at,
+      end: frame.at + frame.duration,
+      verdict: moment.verdict,
+      title: 'Long animation frame',
+      value: formatDuration(frame.duration),
+      momentId: moment.id,
+      ...(note ? { note } : {}),
+    };
+  }
   return {
     id: moment.id,
     lane: moment.kind,
@@ -72,6 +91,9 @@ function momentItem(moment: Moment): LaneItem {
     title: moment.kind === 'task' ? 'Long task' : moment.label,
     value: formatDuration(moment.value),
     momentId: moment.id,
+    ...(interaction
+      ? { breakdown: { inputDelay: interaction.inputDelay, processing: interaction.processing, presentation: interaction.presentation } }
+      : {}),
   };
 }
 

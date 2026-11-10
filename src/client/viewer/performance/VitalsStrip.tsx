@@ -15,6 +15,7 @@ export function StripStat({ stat, onPick, pressed }: { stat: Stat; onPick?: (() 
       <TooltipTrigger
         render={
           onPick ? (
+            // oxlint-disable-next-line jsx-a11y/control-has-associated-label -- why: the trigger supplies the label, value and rating as its children.
             <button type="button" onClick={onPick} aria-pressed={pressed} />
           ) : (
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: a stat that cannot be picked is still read by keyboard, so its tooltip is reachable.

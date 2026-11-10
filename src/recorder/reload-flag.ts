@@ -1,9 +1,20 @@
-import type { RecorderPrivacyMode, RecordingChoice } from './types.ts';
+import type { RecorderOptions, RecorderPrivacyMode, RecordingChoice } from './types.ts';
 
 /** sessionStorage key shared with the early entry, which cannot import anything. */
 export const RELOAD_FLAG_KEY = 'replays-record-after-reload';
 /** How long a reload may take before the flag is stale and ignored. */
 export const RELOAD_FLAG_TTL_MS = 30_000;
+
+/**
+ * Whether this recorder may record from a page load: staff by default, a customer only when the host sets it, and only
+ * with Performance on offer. invariant: resuming skips the consent prompt, so a recorder that does not offer the choice
+ * never consumes a flag another recorder on the page armed.
+ */
+export function fromLoadAllowed(host: Pick<RecorderOptions, 'choices' | 'capture'>): boolean {
+  return (
+    host.choices?.diagnostics === true && host.capture?.performance === true && (host.choices.fromLoad ?? host.choices.by !== 'customer')
+  );
+}
 
 type Stored = { exp: number; choice: RecordingChoice };
 
