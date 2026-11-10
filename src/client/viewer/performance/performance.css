@@ -112,8 +112,9 @@ button.pp-stat { cursor: pointer; border-radius: var(--radius-sm); }
 .pp-link { padding: 0; border: 0; background: none; color: var(--text); font: inherit; min-height: 24px; text-align: left; text-decoration: underline; text-decoration-color: var(--r-border); text-underline-offset: 3px; cursor: pointer; }
 .pp-link:hover { text-decoration-color: currentColor; }
 .pp-inflight { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 2px; }
-.pp-inflight li { display: flex; gap: 8px; min-width: 0; }
-.pp-inflight .pp-link { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-inflight li { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.pp-inflight li .np-aside { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+.pp-inflight .pp-link { min-width: 0; flex: 1 1 0; overflow: hidden; text-align: left; white-space: nowrap; }
 .pp-detail .np-detail-status { gap: 8px; color: var(--text); }
 .pp-pending .pp-pending-vitals { width: 60%; margin: auto 14px; }
 .pp-lead { flex: none; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 12px 14px 4px; color: var(--text); font-size: var(--text-sm); line-height: 20px; }

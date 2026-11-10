@@ -2,6 +2,7 @@ import { formatClock, type ReplayStep } from '../../../shared/replay.ts';
 import { usePlayer } from '../../player.ts';
 import { type LocalItem, LocalTimeline } from '../LocalTimeline.tsx';
 import { DetailHead } from '../network/DetailHead.tsx';
+import { RequestLabel } from '../network/RequestLabel.tsx';
 import { formatDuration, type NetworkRow, stepAt } from '../network/model.ts';
 import type { RibbonTone } from '../TimeRibbon.tsx';
 import { BlockingScripts } from './BlockingScripts.tsx';
@@ -192,7 +193,7 @@ function MomentFacts({
               {cause.requests.slice(0, WHY_MAX_REQUESTS).map((row) => (
                 <li key={row.id}>
                   <button type="button" className="pp-link" onClick={() => onOpenRequest(row.id)}>
-                    {row.entry.method} {row.name.path}
+                    <RequestLabel method={row.entry.method} path={row.name.path} url={row.entry.url} />
                   </button>
                   <span className="np-aside">{row.measured === undefined ? '' : formatDuration(row.measured)}</span>
                 </li>

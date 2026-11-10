@@ -188,3 +188,7 @@
 
 .np-table[data-custom-columns] .np-row > .np-duration { display: flex; }
 .np-table[data-custom-columns] .np-request button { align-items: center; padding: 0; }
+
+.pp-detail .np-detail-head { flex-wrap: wrap; }
+.pp-detail .np-detail-status { flex-wrap: wrap; row-gap: 0; overflow: visible; white-space: normal; }
+.pp-detail .pp-verdict { flex: none; white-space: nowrap; }
