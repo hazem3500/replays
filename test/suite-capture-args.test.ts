@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseArgs } from '../src/capture/capture.ts';
-import { captureArgv } from '../src/suite/record-capture.ts';
 import { parsePlan } from '../src/suite/plan.ts';
+import { captureArgv } from '../src/suite/record-capture.ts';
 
 const plan = parsePlan({
   id: 'review-1',
@@ -22,8 +22,10 @@ const plan = parsePlan({
 
 describe('capture arguments for a plan run', () => {
   it('are the ones the capture command itself accepts, attached to the suite run', async () => {
-    const run = plan.runs[0]!;
-    const args = await parseArgs(captureArgv(plan, run, '/tmp/out/Phone-1', 'review-1-phone-1', { tags: ['nightly'], video: true }));
+    const [run] = plan.runs;
+    if (!run) throw new Error('the plan has a run');
+    const target = { plan, run, outputDir: '/tmp/out/Phone-1', replayId: 'review-1-phone-1' };
+    const args = await parseArgs(captureArgv(target, { tags: ['nightly'], video: true }));
     expect(args).toMatchObject({
       url: 'https://example.com/shop',
       output: '/tmp/out/Phone-1',

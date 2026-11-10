@@ -1,5 +1,4 @@
-import type { ReviewSuiteAdapter } from '../capture/review-suite.ts';
-import { ReviewSuiteHttpError } from '../capture/review-suite.ts';
+import { ReviewSuiteHttpError, type ReviewSuiteApi } from '../capture/review-suite.ts';
 import type { ReplayPerson } from '../shared/people.ts';
 import {
   assertSummary,
@@ -28,7 +27,6 @@ export interface EnsuredSuite {
   created: boolean;
 }
 
-export const FAILURE_SUMMARY_NOTE = 'Recording failed';
 
 function registrationOf(input: SuiteInput, createdAt: string): ReviewSuiteRegistration {
   if (input.summary !== undefined) assertSummary(input.summary, 'summary');
@@ -49,7 +47,7 @@ function registrationOf(input: SuiteInput, createdAt: string): ReviewSuiteRegist
  * time), so a repeat call has to reuse the stored creation time; when the stored suite matches what was asked for, that
  * is success, and any people or summary given replace the stored ones.
  */
-export async function ensureSuite(api: ReviewSuiteAdapter, input: SuiteInput, now: () => Date = () => new Date()): Promise<EnsuredSuite> {
+export async function ensureSuite(api: ReviewSuiteApi, input: SuiteInput, now: () => Date = () => new Date()): Promise<EnsuredSuite> {
   try {
     const suite = await api.registerSuite(registrationOf(input, input.createdAt ?? now().toISOString()));
     return { suite, created: true };
@@ -70,7 +68,7 @@ export async function ensureSuite(api: ReviewSuiteAdapter, input: SuiteInput, no
   }
 }
 
-async function loadSuite(api: ReviewSuiteAdapter, id: string): Promise<ReviewSuite> {
+async function loadSuite(api: ReviewSuiteApi, id: string): Promise<ReviewSuite> {
   const suite = await api.getSuite(id);
   if (!suite) throw new Error(`suite ${id} was not found; create it first with \`replays suite create --id ${id} --title "…"\``);
   return suite;
@@ -83,47 +81,50 @@ export interface RunUpdate {
   summary?: string | undefined;
 }
 
-/** Registers a run or moves an existing one on, keeping the sequence, label and start the server pinned. */
-export async function putRun(api: ReviewSuiteAdapter, suite: ReviewSuite, update: RunUpdate, now: () => Date = () => new Date()) {
+function registrationFor(suite: ReviewSuite, update: RunUpdate, now: () => Date): ReviewRunRegistration {
   const existing: ReviewSuiteRun | undefined = suite.runs.find((run) => run.id === update.id);
   assertTransition(update.id, existing?.status, update.status);
-  if (update.summary !== undefined) assertSummary(update.summary, 'summary');
-  if (!existing && !update.title) throw new Error(`run ${update.id} is new; give it a --title`);
-  const registration: ReviewRunRegistration = {
+  const label = existing?.label ?? update.title;
+  if (!label) throw new Error(`run ${update.id} is new; give it a --title`);
+  return {
     id: update.id,
     sequence: existing?.sequence ?? nextSequence(suite.runs),
-    label: existing?.label ?? update.title!,
+    label,
     status: update.status,
     startedAt: existing?.startedAt ?? now().toISOString(),
     ...(isTerminal(update.status) ? { finishedAt: existing?.finishedAt ?? now().toISOString() } : {}),
     ...(update.summary ? { summary: update.summary } : {}),
   };
-  const next = await api.registerRun(suite.id, registration);
-  return { suite: next, run: next.runs.find((run) => run.id === update.id) ?? { ...registration } };
 }
 
-export async function addRun(api: ReviewSuiteAdapter, suiteId: string, update: RunUpdate) {
+/** Registers a run or moves an existing one on, keeping the sequence, label and start the server pinned. */
+export async function putRun(api: ReviewSuiteApi, suite: ReviewSuite, update: RunUpdate, now: () => Date = () => new Date()) {
+  if (update.summary !== undefined) assertSummary(update.summary, 'summary');
+  const registration = registrationFor(suite, update, now);
+  const next = await api.registerRun(suite.id, registration);
+  return { suite: next, run: next.runs.find((run) => run.id === update.id) ?? registration };
+}
+
+export async function addRun(api: ReviewSuiteApi, suiteId: string, update: RunUpdate) {
   return putRun(api, await loadSuite(api, suiteId), update);
 }
 
-export async function setRunStatus(api: ReviewSuiteAdapter, suiteId: string, runId: string, status: ReviewRunStatus, summary?: string) {
+/** `status` and `summary` are each optional but not both absent; the summary alone keeps the run's status. */
+export async function updateRun(
+  api: ReviewSuiteApi,
+  suiteId: string,
+  update: Omit<RunUpdate, 'status'> & { status?: ReviewRunStatus | undefined },
+) {
   const suite = await loadSuite(api, suiteId);
-  if (!suite.runs.some((run) => run.id === runId))
-    throw new Error(`run ${runId} is not in suite ${suiteId}; add it with \`replays suite run add\``);
-  return putRun(api, suite, { id: runId, status, summary });
-}
-
-export async function setRunSummary(api: ReviewSuiteAdapter, suiteId: string, runId: string, summary: string) {
-  const suite = await loadSuite(api, suiteId);
-  const run = suite.runs.find((item) => item.id === runId);
-  if (!run) throw new Error(`run ${runId} is not in suite ${suiteId}`);
-  return putRun(api, suite, { id: runId, status: run.status, summary });
+  const run = suite.runs.find((item) => item.id === update.id);
+  if (!run) throw new Error(`run ${update.id} is not in suite ${suiteId}; add it with \`replays suite run add\``);
+  return putRun(api, suite, { ...update, status: update.status ?? run.status });
 }
 
 /** Re-registers the stored suite with a new summary; everything that is identity is repeated as stored. */
-export async function setSuiteSummary(api: ReviewSuiteAdapter, suiteId: string, summary: string) {
+export async function setSuiteSummary(api: ReviewSuiteApi, suiteId: string, summary: string) {
   assertSummary(summary, 'summary');
-  const { runs: _runs, ...stored } = await loadSuite(api, suiteId);
-  const { people: _people, ...identity } = stored;
-  return api.registerSuite({ ...identity, summary } as ReviewSuiteRegistration);
+  const { runs: _runs, people: _people, ...identity } = await loadSuite(api, suiteId);
+  const registration: ReviewSuiteRegistration = { ...identity, summary };
+  return api.registerSuite(registration);
 }

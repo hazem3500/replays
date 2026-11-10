@@ -1,4 +1,19 @@
-import type { ReviewRunRegistration, ReviewSuite, ReviewSuiteRegistration, ReviewSuiteSummary } from '../shared/review-suite.ts';
+import {
+  assertReviewSuite,
+  type ReviewRunRegistration,
+  type ReviewSuite,
+  type ReviewSuiteRegistration,
+  type ReviewSuiteSummary,
+} from '../shared/review-suite.ts';
+
+export type SuiteListEntry = ReviewSuiteSummary & { reason?: string };
+
+const isSuiteList = (value: unknown): value is SuiteListEntry[] => Array.isArray(value);
+
+function stored(value: unknown): ReviewSuite {
+  assertReviewSuite(value);
+  return value;
+}
 
 /** A suite request the server refused or that never arrived; `status` is 0 when there was no response. */
 export class ReviewSuiteHttpError extends Error {
@@ -30,18 +45,18 @@ export class ReviewSuiteAdapter {
     this.apiBase = apiBase;
   }
 
-  registerSuite(suite: ReviewSuiteRegistration) {
-    return this.request<ReviewSuite>('PUT', `suites/${encodeURIComponent(suite.id)}`, suite);
+  async registerSuite(suite: ReviewSuiteRegistration) {
+    return stored(await this.request('PUT', `suites/${encodeURIComponent(suite.id)}`, suite));
   }
 
-  registerRun(suiteId: string, run: ReviewRunRegistration) {
-    return this.request<ReviewSuite>('PUT', `suites/${encodeURIComponent(suiteId)}/runs/${encodeURIComponent(run.id)}`, run);
+  async registerRun(suiteId: string, run: ReviewRunRegistration) {
+    return stored(await this.request('PUT', `suites/${encodeURIComponent(suiteId)}/runs/${encodeURIComponent(run.id)}`, run));
   }
 
   /** The stored suite with its runs, or undefined when the server has none by that id. */
   async getSuite(id: string): Promise<ReviewSuite | undefined> {
     try {
-      return await this.request<ReviewSuite>('GET', `suites/${encodeURIComponent(id)}`);
+      return stored(await this.request('GET', `suites/${encodeURIComponent(id)}`));
     } catch (error) {
       if (error instanceof ReviewSuiteHttpError && error.status === 404) return undefined;
       throw error;
@@ -49,15 +64,17 @@ export class ReviewSuiteAdapter {
   }
 
   /** The newest suites; `mine` keeps those the signed-in person is named on. */
-  listSuites(options: { mine?: boolean; limit?: number } = {}) {
+  async listSuites(options: { mine?: boolean; limit?: number } = {}): Promise<SuiteListEntry[]> {
     const query = new URLSearchParams();
     if (options.mine) query.set('for', 'me');
     if (options.limit) query.set('limit', String(options.limit));
     const suffix = query.size ? `?${query}` : '';
-    return this.request<Array<ReviewSuiteSummary & { reason?: string }>>('GET', `suites${suffix}`);
+    const body = await this.request('GET', `suites${suffix}`);
+    if (!isSuiteList(body)) throw new ReviewSuiteHttpError(200, 'the suite list was not an array');
+    return body;
   }
 
-  private async request<T>(method: 'GET' | 'PUT', path: string, body?: unknown): Promise<T> {
+  private async request(method: 'GET' | 'PUT', path: string, body?: unknown): Promise<unknown> {
     const url = new URL(path, this.apiBase);
     let response: Response;
     try {
@@ -74,6 +91,10 @@ export class ReviewSuiteAdapter {
     if (response.status >= 300 && response.status < 400)
       throw new ReviewSuiteHttpError(response.status, 'redirected; check the server URL and sign-in setup');
     if (!response.ok) throw new ReviewSuiteHttpError(response.status, (await response.text().catch(() => '')).trim().slice(0, 300));
-    return response.json() as Promise<T>;
+    const data: unknown = await response.json();
+    return data;
   }
 }
+
+/** What the suite commands need from the adapter, so tests can stand in for the server. */
+export type ReviewSuiteApi = Pick<ReviewSuiteAdapter, 'registerSuite' | 'registerRun' | 'getSuite' | 'listSuites'>;

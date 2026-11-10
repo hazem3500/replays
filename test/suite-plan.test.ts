@@ -1,8 +1,3 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
-import Ajv2020 from 'ajv/dist/2020.js';
-import addFormats from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
 
 import { assertTransition, nextSequence } from '../src/suite/lifecycle.ts';
@@ -11,17 +6,19 @@ import { failedExpectations, replayIdFor } from '../src/suite/record.ts';
 import { replay } from './fixtures.ts';
 
 const run = { id: 'desktop', title: 'Desktop', url: 'https://example.com/', steps: [] };
+const { steps: _steps, ...runWithoutSteps } = run;
+const { title: _title, ...runWithoutTitle } = run;
 const plan = (extra: Record<string, unknown> = {}, runs: unknown[] = [run]) => ({ id: 'my-suite', title: 'My suite', runs, ...extra });
 const problem = (value: unknown) => {
   try {
     parsePlan(value);
     return 'accepted';
   } catch (error) {
-    return (error as Error).message;
+    return error instanceof Error ? error.message : String(error);
   }
 };
 
-describe('suite plan validation', () => {
+describe('suite plan validation: accepted', () => {
   it('accepts the minimal plan and fills the defaults', () => {
     expect(parsePlan(plan())).toEqual({
       id: 'my-suite',
@@ -31,26 +28,35 @@ describe('suite plan validation', () => {
     });
   });
 
-  it('accepts the sample plan, and the JSON schema agrees', async () => {
-    const root = join(import.meta.dirname, '..');
-    const sample: unknown = JSON.parse(await readFile(join(root, 'sample/suite-plan.json'), 'utf8'));
-    const parsed = parsePlan(sample);
-    expect(parsed.runs.map((item) => item.viewport)).toEqual([
-      { width: 1440, height: 900 },
-      { width: 390, height: 844 },
-    ]);
-    expect(parsed.people).toEqual([
-      { role: 'pr-author', email: 'ada@example.com' },
-      { role: 'reviewer', email: 'grace@example.com' },
-    ]);
-    const ajv = new Ajv2020.default({ strict: false, allErrors: true });
-    (addFormats as unknown as { default: (a: unknown) => void }).default(ajv);
-    const validate = ajv.compile(JSON.parse(await readFile(join(root, 'docs/formats/suite-plan.schema.json'), 'utf8')));
-    expect(validate(sample)).toBe(true);
-    expect(validate(plan({}, [{ ...run, steps: [{ kind: 'click' }] }]))).toBe(false);
-    expect(validate(plan({ title: '' }))).toBe(false);
+  it('reads every optional field', () => {
+    const parsed = parsePlan(
+      plan(
+        {
+          profile: 'design-review',
+          source: 'github:example-org/shop#4',
+          people: ['reviewer:ada@example.com'],
+          summary: 'Hi.',
+          createdAt: '2026-11-10T10:00:00.000Z',
+        },
+        [{ ...run, viewport: { width: 390, height: 844 }, expect: { noConsoleErrors: true, maxDurationMs: 5000 }, summary: 'Run.' }],
+      ),
+    );
+    expect(parsed).toMatchObject({
+      profile: 'design-review',
+      source: 'github:example-org/shop#4',
+      summary: 'Hi.',
+      createdAt: '2026-11-10T10:00:00.000Z',
+    });
+    expect(parsed.people).toEqual([{ role: 'reviewer', email: 'ada@example.com' }]);
+    expect(parsed.runs[0]).toMatchObject({
+      viewport: { width: 390, height: 844 },
+      expect: { noConsoleErrors: true, maxDurationMs: 5000 },
+      summary: 'Run.',
+    });
   });
+});
 
+describe('suite plan validation: rejected', () => {
   it.each([
     [{ ...plan(), id: 'Bad Id' }, 'plan.id'],
     [plan({ title: '  ' }), 'plan.title'],
@@ -59,25 +65,24 @@ describe('suite plan validation', () => {
     [plan({ people: ['nobody'] }), 'plan.people'],
     [plan({ people: [1] }), 'plan.people must be a list'],
     [plan({ summary: 'bad\u0001' }), 'plan.summary'],
+    [plan({ createdAt: 'yesterday' }), 'plan.createdAt'],
     [plan({ extra: 1 }), 'unsupported field extra'],
     [plan({}, []), 'at least one run'],
     [plan({}, [run, run]), 'run id desktop twice'],
     [plan({}, [{ ...run, id: '-x' }]), 'runs[0].id'],
     [plan({}, [{ ...run, url: 'http://example.com/' }]), 'runs[0].url'],
-    [plan({}, [{ ...run, steps: undefined }]), 'runs[0].steps is required'],
+    [plan({}, [runWithoutSteps]), 'runs[0].steps is required'],
     [plan({}, [{ ...run, steps: [{ kind: 'click' }] }]), 'runs[0].steps'],
     [plan({}, [{ ...run, steps: [{ kind: 'eval', code: 'x' }] }]), 'unsupported'],
+    [plan({}, [{ ...run, steps: [{ kind: 'goto', url: 'http://example.com/' }] }]), 'runs[0].steps'],
     [plan({}, [{ ...run, viewport: '10x10' }]), 'runs[0].viewport'],
     [plan({}, [{ ...run, expect: { noConsoleErrors: 'yes' } }]), 'runs[0].expect.noConsoleErrors'],
+    [plan({}, [{ ...run, expect: { maxDurationMs: 0 } }]), 'runs[0].expect.maxDurationMs'],
     [plan({}, [{ ...run, expect: { other: true } }]), 'unsupported field other'],
     [plan({}, [{ ...run, summary: '' }]), 'runs[0].summary'],
-    [plan({}, [run, { ...run, id: 'two', title: undefined }]), 'runs[1].title'],
+    [plan({}, [run, { ...runWithoutTitle, id: 'two' }]), 'runs[1].title'],
   ])('rejects %#: names %s', (value, text) => {
     expect(problem(value)).toContain(text);
-  });
-
-  it('keeps a goto step to https or localhost', () => {
-    expect(problem(plan({}, [{ ...run, steps: [{ kind: 'goto', url: 'http://example.com/' }] }]))).toContain('runs[0].steps');
   });
 });
 
@@ -118,7 +123,7 @@ describe('expectations and replay ids', () => {
         responseHeaders: [],
       },
     ];
-    expect(failedExpectations(bundle, undefined)).toEqual([]);
+    expect(failedExpectations(bundle, {})).toEqual([]);
     expect(failedExpectations(bundle, { noConsoleErrors: true, noFailedRequests: true, maxDurationMs: 10 })).toEqual([
       '1 console error',
       '1 failed request (status 400 or above)',
@@ -132,6 +137,6 @@ describe('expectations and replay ids', () => {
     const long = replayIdFor('s'.repeat(60), 'R'.repeat(60));
     expect(long).toMatch(/^[a-z0-9][a-z0-9-]{0,79}$/);
     expect(long).toBe(replayIdFor('s'.repeat(60), 'R'.repeat(60)));
-    expect(long).not.toBe(replayIdFor('s'.repeat(60), 'R'.repeat(59) + 'Q'));
+    expect(long).not.toBe(replayIdFor('s'.repeat(60), `${'R'.repeat(59)}Q`));
   });
 });

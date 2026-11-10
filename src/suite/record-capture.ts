@@ -25,7 +25,15 @@ const exists = (path: string) =>
     () => false,
   );
 
-export function captureArgv(plan: SuitePlan, run: SuitePlanRun, outputDir: string, replayId: string, flags: CaptureFlags): string[] {
+export interface RunTarget {
+  plan: SuitePlan;
+  run: SuitePlanRun;
+  replayId: string;
+  outputDir: string;
+}
+
+export function captureArgv(target: RunTarget, flags: CaptureFlags): string[] {
+  const { plan, run, outputDir, replayId } = target;
   const { width, height } = run.viewport;
   return [
     '--url',
@@ -62,28 +70,24 @@ export function captureArgv(plan: SuitePlan, run: SuitePlanRun, outputDir: strin
  * Records one run with the capture command's own code, into `<output>/<run>`. A finished recording already on disk is
  * used as it is (the retry after a failed upload) unless `rerecord` clears it; a half-written folder is cleared.
  */
-export async function recordRunWithCapture(
-  plan: SuitePlan,
-  run: SuitePlanRun,
-  replayId: string,
-  outputDir: string,
-  flags: CaptureFlags,
-  rerecord: boolean,
-): Promise<RecordedRun> {
+export async function recordRunWithCapture(target: RunTarget, flags: CaptureFlags, rerecord: boolean): Promise<RecordedRun> {
+  const { plan, run, outputDir } = target;
   const file = join(outputDir, 'replay.json');
   if (!rerecord && (await exists(file))) {
-    const bundle: unknown = JSON.parse(await readFile(file, 'utf8'));
-    assertReplayBundle(bundle);
-    const attached = bundle.suiteRun?.suiteId === plan.id && bundle.suiteRun.runId === run.id;
-    if (attached) return { bundle: bundle as ReplayBundle, reused: true };
+    const kept = await readBundle(file);
+    if (kept.suiteRun?.suiteId === plan.id && kept.suiteRun.runId === run.id) return { bundle: kept, reused: true };
   }
   await rm(outputDir, { recursive: true, force: true });
-  const args = await parseArgs(captureArgv(plan, run, outputDir, replayId, flags));
+  const args = await parseArgs(captureArgv(target, flags));
   const result = await capture(
     { ...args, ...(plan.people.length ? { people: plan.people } : {}) },
     createDriver(args.driver, { headed: args.headed }),
   );
-  const bundle: unknown = JSON.parse(await readFile(result.replayPath, 'utf8'));
+  return { bundle: await readBundle(result.replayPath), reused: false };
+}
+
+async function readBundle(file: string): Promise<ReplayBundle> {
+  const bundle: unknown = JSON.parse(await readFile(file, 'utf8'));
   assertReplayBundle(bundle);
-  return { bundle: bundle as ReplayBundle, reused: false };
+  return bundle;
 }

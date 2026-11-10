@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import { ReviewSuiteAdapter } from '../capture/review-suite.ts';
+import { ReviewSuiteAdapter, type ReviewSuiteApi } from '../capture/review-suite.ts';
 import { CliAuthError, fetchCliAuthCapability } from '../capture/device-auth.ts';
 import { loadCliToken } from '../capture/credentials.ts';
 import { resolveServerUrl, resolveUploadEndpoint, uploadEndpoint } from '../capture/server-config.ts';
@@ -16,16 +16,21 @@ export interface ConnectionFlags {
 export interface SuiteConnection {
   /** The server's base URL, without a trailing slash; links are `<server>/s/<suite>`. */
   server: string;
-  api: ReviewSuiteAdapter;
+  api: ReviewSuiteApi;
 }
 
 const API_SUFFIX = '/api/replays';
 
+function isHeaders(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === 'object' && value !== null && !Array.isArray(value) && Object.values(value).every((item) => typeof item === 'string')
+  );
+}
+
 async function headerFile(file: string): Promise<Record<string, string>> {
   const parsed: unknown = JSON.parse(await readFile(resolve(file), 'utf8'));
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || Object.values(parsed).some((value) => typeof value !== 'string'))
-    throw new Error('--header-file must contain a JSON object with string header values');
-  return parsed as Record<string, string>;
+  if (!isHeaders(parsed)) throw new Error('--header-file must contain a JSON object with string header values');
+  return parsed;
 }
 
 /** A saved sign-in is only sent to the server it was saved for: the one `--server` or the default names, never an arbitrary URL. */

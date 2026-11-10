@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import type { ReplayBundle } from '../shared/replay.ts';
 import { assertReplayId } from '../shared/replay.ts';
-import { MAX_SUMMARY_LENGTH, type ReviewSuite } from '../shared/review-suite.ts';
+import { MAX_SUMMARY_LENGTH, type ReviewRunStatus, type ReviewSuite } from '../shared/review-suite.ts';
 import { isTerminal } from './lifecycle.ts';
 import type { RunExpectations, SuitePlan, SuitePlanRun } from './plan.ts';
 import { ensureSuite, putRun } from './service.ts';
@@ -80,7 +80,7 @@ export function failedExpectations(bundle: ReplayBundle, expect: RunExpectations
   return problems;
 }
 
-// oxlint-disable-next-line no-control-regex
+// oxlint-disable-next-line no-control-regex -- why: the server refuses control characters in a summary, so they are replaced here.
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 
 function composeSummary(run: SuitePlanRun, problems: string[], heading: string): string | undefined {
@@ -92,19 +92,38 @@ function composeSummary(run: SuitePlanRun, problems: string[], heading: string):
 }
 
 /** One line: a driver's call log is useful in a terminal, not in a run's summary. */
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0]!.trim().slice(0, 300);
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0]?.trim().slice(0, 300) ?? '';
 
-/**
- * Runs the plan: each run is registered as running, recorded, uploaded to its suite run and marked passed or failed. A run
- * that fails does not stop the ones after it. A recording that could not be uploaded stays on disk and its run stays
- * running, so `--only <run>` can finish it; a capture that failed, or an expectation that did not hold, ends it failed.
- */
-export async function recordSuite(plan: SuitePlan, runs: readonly SuitePlanRun[], deps: RecordDeps): Promise<RecordResult> {
-  const now = deps.now ?? (() => new Date());
-  const { connection } = deps;
-  let suite: ReviewSuite | undefined;
-  if (connection)
-    suite = (
+interface Attempt {
+  run: SuitePlanRun;
+  bundle: ReplayBundle;
+  base: RunOutcome;
+  problems: string[];
+}
+
+interface Linked {
+  connection: SuiteConnection;
+  suite: ReviewSuite;
+}
+
+/** Records one plan: the suite is held here as the server last answered, so each call repeats what it pinned. */
+class SuiteRecorder {
+  private suite: ReviewSuite | undefined;
+  private readonly plan: SuitePlan;
+  private readonly deps: RecordDeps;
+  private readonly now: () => Date;
+
+  constructor(plan: SuitePlan, deps: RecordDeps) {
+    this.plan = plan;
+    this.deps = deps;
+    this.now = () => deps.now?.() ?? new Date();
+  }
+
+  async register() {
+    const { connection } = this.deps;
+    if (!connection) return;
+    const { plan } = this;
+    this.suite = (
       await ensureSuite(
         connection.api,
         {
@@ -116,113 +135,128 @@ export async function recordSuite(plan: SuitePlan, runs: readonly SuitePlanRun[]
           summary: plan.summary,
           createdAt: plan.createdAt,
         },
-        now,
+        this.now,
       )
     ).suite;
-  const link = connection ? suiteUrl(connection.server, plan.id) : undefined;
-  const outcomes: RunOutcome[] = [];
+  }
 
-  const finish = (outcome: RunOutcome) => {
-    outcomes.push(outcome);
-    deps.onResult?.(outcome);
-  };
+  private linked(): Linked | undefined {
+    const { connection } = this.deps;
+    return connection && this.suite ? { connection, suite: this.suite } : undefined;
+  }
 
-  for (const run of runs) {
-    deps.onStart?.(run);
-    const outputDir = deps.outputDirFor(run);
-    const replayId = replayIdFor(plan.id, run.id);
-    const retry = deps.retryCommand(run);
-    const known = suite?.runs.find((item) => item.id === run.id);
-    if (known && isTerminal(known.status)) {
-      finish({
-        id: run.id,
-        title: run.title,
-        status: known.status === 'passed' ? 'skipped' : 'failed',
-        uploaded: Boolean(known.replayId),
-        ...(known.replayId ? { replayId: known.replayId } : {}),
-        ...(known.replayId && connection ? { replayUrl: replayUrl(connection.server, plan.id, known.replayId) } : {}),
-        ...(known.status === 'passed'
-          ? { note: 'already passed on the server; skipped' }
-          : {
-              error: `already finished as ${known.status} on the server; finished runs keep their status, so use a new run id to record it again`,
-            }),
-      });
-      continue;
-    }
+  private async mark(run: SuitePlanRun, update: { status: ReviewRunStatus; summary?: string | undefined; title?: string }) {
+    const link = this.linked();
+    if (!link) return;
+    this.suite = (await putRun(link.connection.api, link.suite, { id: run.id, ...update }, this.now)).suite;
+  }
 
-    try {
-      if (connection && suite)
-        suite = (await putRun(connection.api, suite, { id: run.id, title: run.title, status: 'running', summary: run.summary }, now)).suite;
-    } catch (error) {
-      finish({ id: run.id, title: run.title, status: 'failed', uploaded: false, error: `could not register the run: ${message(error)}` });
-      continue;
-    }
-
-    let recorded: RecordedRun;
-    try {
-      recorded = await deps.recordRun(run, replayId, outputDir);
-    } catch (error) {
-      const reason = message(error);
-      let registered = '';
-      try {
-        if (connection && suite)
-          suite = (
-            await putRun(
-              connection.api,
-              suite,
-              { id: run.id, status: 'failed', summary: composeSummary(run, [reason], 'Recording failed:') },
-              now,
-            )
-          ).suite;
-      } catch (putError) {
-        registered = `; could not mark the run failed: ${message(putError)}`;
-      }
-      finish({ id: run.id, title: run.title, status: 'failed', uploaded: false, error: `recording failed: ${reason}${registered}` });
-      continue;
-    }
-
-    const { bundle } = recorded;
-    const problems = failedExpectations(bundle, run.expect);
-    const verdict = problems.length ? 'failed' : 'passed';
-    const base = {
+  private finishedOutcome(run: SuitePlanRun): RunOutcome | undefined {
+    const known = this.suite?.runs.find((item) => item.id === run.id);
+    if (!known || !isTerminal(known.status)) return undefined;
+    const server = this.deps.connection?.server;
+    return {
       id: run.id,
       title: run.title,
-      replayId: bundle.meta.id,
-      duration: bundle.meta.duration,
-      outputDir,
-      ...(problems.length ? { error: `expectations not met: ${problems.join('; ')}` } : {}),
+      status: known.status === 'passed' ? 'skipped' : 'failed',
+      uploaded: Boolean(known.replayId),
+      ...(known.replayId ? { replayId: known.replayId } : {}),
+      ...(known.replayId && server ? { replayUrl: replayUrl(server, this.plan.id, known.replayId) } : {}),
+      ...(known.status === 'passed'
+        ? { note: 'already passed on the server; skipped' }
+        : {
+            error: `already finished as ${known.status} on the server; finished runs keep their status, so use a new run id to record it again`,
+          }),
     };
-    if (!connection || !suite) {
-      finish({ ...base, status: verdict, uploaded: false });
-      continue;
-    }
+  }
 
-    const attached = suite.runs.find((item) => item.id === run.id)?.replayId === bundle.meta.id;
-    let uploadedUrl = replayUrl(connection.server, plan.id, bundle.meta.id);
+  private async captureFailed(run: SuitePlanRun, error: unknown): Promise<RunOutcome> {
+    const reason = message(error);
+    let registered = '';
     try {
-      if (!attached) uploadedUrl = (await deps.uploadRun(bundle, outputDir)).url;
-    } catch (error) {
-      finish({ ...base, status: 'upload-failed', uploaded: false, error: `upload failed: ${message(error)}`, retry });
-      continue;
+      await this.mark(run, { status: 'failed', summary: composeSummary(run, [reason], 'Recording failed:') });
+    } catch (putError) {
+      registered = `; could not mark the run failed: ${message(putError)}`;
     }
+    return { id: run.id, title: run.title, status: 'failed', uploaded: false, error: `recording failed: ${reason}${registered}` };
+  }
+
+  private async upload(attempt: Attempt, link: Linked): Promise<RunOutcome> {
+    const { run, bundle, base, problems } = attempt;
+    const retry = this.deps.retryCommand(run);
+    const verdict = base.status === 'failed' ? 'failed' : 'passed';
+    const attached = link.suite.runs.find((item) => item.id === run.id)?.replayId === bundle.meta.id;
+    let url = replayUrl(link.connection.server, this.plan.id, bundle.meta.id);
     try {
-      const summary = composeSummary(run, problems, 'Expectations not met:');
-      suite = (await putRun(connection.api, suite, { id: run.id, status: verdict, summary }, now)).suite;
-      finish({ ...base, status: verdict, uploaded: true, replayUrl: uploadedUrl, ...(summary ? { summary } : {}) });
+      if (!attached) url = (await this.deps.uploadRun(bundle, base.outputDir ?? '')).url;
     } catch (error) {
-      finish({
+      return { ...base, status: 'upload-failed', uploaded: false, error: `upload failed: ${message(error)}`, retry };
+    }
+    const summary = composeSummary(run, problems, 'Expectations not met:');
+    try {
+      await this.mark(run, { status: verdict, summary });
+      return { ...base, uploaded: true, replayUrl: url, ...(summary ? { summary } : {}) };
+    } catch (error) {
+      return {
         ...base,
         status: 'upload-failed',
         uploaded: true,
-        replayUrl: uploadedUrl,
+        replayUrl: url,
         error: `uploaded, but could not mark the run ${verdict}: ${message(error)}`,
         retry,
-      });
+      };
     }
   }
 
+  async recordOne(run: SuitePlanRun): Promise<RunOutcome> {
+    const finished = this.finishedOutcome(run);
+    if (finished) return finished;
+    try {
+      await this.mark(run, { title: run.title, status: 'running', summary: run.summary });
+    } catch (error) {
+      return { id: run.id, title: run.title, status: 'failed', uploaded: false, error: `could not register the run: ${message(error)}` };
+    }
+    const outputDir = this.deps.outputDirFor(run);
+    let recorded: RecordedRun;
+    try {
+      recorded = await this.deps.recordRun(run, replayIdFor(this.plan.id, run.id), outputDir);
+    } catch (error) {
+      return this.captureFailed(run, error);
+    }
+    const problems = failedExpectations(recorded.bundle, run.expect);
+    const base: RunOutcome = {
+      id: run.id,
+      title: run.title,
+      status: problems.length ? 'failed' : 'passed',
+      uploaded: false,
+      replayId: recorded.bundle.meta.id,
+      duration: recorded.bundle.meta.duration,
+      outputDir,
+      ...(problems.length ? { error: `expectations not met: ${problems.join('; ')}` } : {}),
+    };
+    const link = this.linked();
+    return link ? this.upload({ run, bundle: recorded.bundle, base, problems }, link) : base;
+  }
+}
+
+/**
+ * Runs the plan: each run is registered as running, recorded, uploaded to its suite run and marked passed or failed. A run
+ * that fails does not stop the ones after it. A recording that could not be uploaded stays on disk and its run stays
+ * running, so `--only <run>` can finish it; a capture that failed, or an expectation that did not hold, ends it failed.
+ */
+export async function recordSuite(plan: SuitePlan, runs: readonly SuitePlanRun[], deps: RecordDeps): Promise<RecordResult> {
+  const recorder = new SuiteRecorder(plan, deps);
+  await recorder.register();
+  const outcomes: RunOutcome[] = [];
+  for (const run of runs) {
+    deps.onStart?.(run);
+    const outcome = await recorder.recordOne(run);
+    outcomes.push(outcome);
+    deps.onResult?.(outcome);
+  }
+  const { connection } = deps;
   return {
-    suite: { id: plan.id, title: plan.title, ...(link ? { url: link } : {}) },
+    suite: { id: plan.id, title: plan.title, ...(connection ? { url: suiteUrl(connection.server, plan.id) } : {}) },
     runs: outcomes,
     failed: outcomes.filter((outcome) => outcome.status !== 'passed' && outcome.status !== 'skipped').length,
   };
