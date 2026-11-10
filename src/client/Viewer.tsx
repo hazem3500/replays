@@ -187,6 +187,7 @@ export function Viewer({
     view: page.view.id,
     profiles: [profile, suiteProfile ? pageProfiles().find((candidate) => candidate.id === suiteProfile) : undefined],
     tags: bundle.meta.tags,
+    captured: bundle.meta.captured,
   });
   // why: a performance-focused replay opens on Performance unless the person named a view (`?view=`) or has a stored tab (useViewState).
   const defaults = performanceFocused && page.source !== 'url' ? { ...viewerDefaults, tab: 'performance' } : viewerDefaults;

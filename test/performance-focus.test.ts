@@ -20,6 +20,16 @@ describe('performance-focused replays', () => {
     expect(isPerformanceFocused({ profiles: BUILT_IN_PROFILES.filter((profile) => profile.id === 'performance') })).toBe(true);
   });
 
+  it('follows an explicit Performance choice recorded in the bundle', () => {
+    const chosen = { diagnostics: { performance: true, debugging: false, chosen: true as const } };
+    expect(isPerformanceFocused({ captured: chosen })).toBe(true);
+    expect(isPerformanceFocused({ captured: { diagnostics: { performance: false, chosen: true } } })).toBe(false);
+  });
+
+  it('does not follow the capture default, which says nothing about why it was recorded', () => {
+    expect(isPerformanceFocused({ captured: {} })).toBe(false);
+  });
+
   it('follows a performance tag', () => {
     expect(isPerformanceFocused({ tags: ['checkout', 'performance'] })).toBe(true);
   });
