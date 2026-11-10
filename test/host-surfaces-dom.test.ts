@@ -9,6 +9,7 @@ import { HostSurfaceSlot } from '../src/client/plugins/HostSurface.tsx';
 import { EditorHostSurface, EditorTopbarActions } from '../src/client/editor/EditorHostSurface.tsx';
 import { PhoneLanes } from '../src/client/editor/PhoneLanes.tsx';
 import { EditorInspector } from '../src/client/editor/EditorInspector.tsx';
+import { setDetailsOpen } from '../src/client/viewer/performance/details-pref.ts';
 import { VitalsBar } from '../src/client/viewer/performance/VitalsBar.tsx';
 import { NetworkList } from '../src/client/viewer/network/NetworkList.tsx';
 import { buildNetworkRows } from '../src/client/viewer/network/model.ts';
@@ -118,6 +119,15 @@ describe('host diagnostic surfaces', () => {
     expect(host.textContent).toContain('Within the team budget');
     expect(host.textContent).toContain('Largest paint');
     expect(host.textContent).not.toContain('First paint');
+  });
+
+  it('names only the groups that have a stat when details are open', async () => {
+    setDetailsOpen(true);
+    await render(createElement(VitalsBar, { vitals: [{ id: 'lcp', value: 200, at: 200, verdict: 'good' }], peers: [], onPick: noop }));
+    setDetailsOpen(false);
+    expect([...host.querySelectorAll<HTMLElement>('li[data-slot-item^="core:group:"]')].map((item) => item.dataset.slotItem)).toEqual([
+      'core:group:loading',
+    ]);
   });
 });
 

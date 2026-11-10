@@ -96,7 +96,7 @@ export function VitalsBar({
     const notes: GroupNote[] =
       ranged || !shown.length ? [] : [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []));
     return [
-      ...(details ? [{ id: `core:group:${group}`, order: base - 10, render: () => <GroupName group={group} /> }] : []),
+      ...(details && shown.length ? [{ id: `core:group:${group}`, order: base - 10, render: () => <GroupName group={group} /> }] : []),
       ...shown.map(({ stat, vital }, index) => ({
         id: `core:${stat.id}`,
         order: base + index * 10,
