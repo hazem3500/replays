@@ -6,6 +6,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 ## [Unreleased]
 
 - Connect GitHub: an optional built-in plugin, on when `REPLAYS_GITHUB_CLIENT_ID` and `REPLAYS_GITHUB_CLIENT_SECRET` are set. A signed-in person verifies their GitHub login once from the account menu (OAuth with PKCE, no scopes, token discarded and revoked); the link is stored under `_identity/github/` and counts like a verified `api.identity` handle for avatars, `?for=me` and `/api/me`. Disconnect is in the same menu. The account menu now also shows for sign-ins without a sign-out URL when it has GitHub actions.
+- Recorder: an upload error may set `notice`, so the default UI shows a neutral lock in the muted colour instead of the red alert.
 
 - Recorder: an upload error action may set `pendingMessage` (shown with a spinner while the action runs) and `failedLabel` (the button's label after a failed run).
 
