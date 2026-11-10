@@ -41,6 +41,7 @@ button.primary:active, a.primary:active { background: color-mix(in srgb, var(--r
 .status-icon { flex: 0 0 auto; width: 16px; height: 16px; margin-inline-end: -2px; }
 .pill[data-phase=complete] .status-icon { color: var(--r-primary); }
 .pill[data-phase=error] .status-icon { color: var(--r-danger); }
+.pill[data-phase=error][data-tone=notice] .status-icon { color: var(--r-secondary); }
 .recording-label { white-space: nowrap; }
 .dot { position: relative; flex: 0 0 8px; height: 8px; margin-inline-end: 2px; border-radius: 50%; background: var(--r-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--r-danger) 22%, transparent); }
 .upload-activity { position: relative; display: inline-flex; align-items: center; flex: 0 0 28px; margin-inline-start: 4px; }

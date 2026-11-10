@@ -6,6 +6,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 ## [Unreleased]
 
 - Viewer: in a suite, pressing play (the button, Space or K) right after switching runs now starts the new run as soon as it is ready, with a small spinner in the play button meanwhile; a run that was playing keeps playing across a switch, and a quick A, B, C switch only starts C. Once the run on screen is loaded, the suite's other runs are preloaded at low priority (next and previous first, two at a time, skipped on data saver or a 2g link) and the viewer keeps up to five parsed runs.
+- Recorder: an upload error may set `notice`, so the default UI shows a neutral lock in the muted colour instead of the red alert.
+
 - Recorder: an upload error action may set `pendingMessage` (shown with a spinner while the action runs) and `failedLabel` (the button's label after a failed run).
 
 - Recorder: an upload error's `action` may set `replacesRetry`, so the default UI shows that action alone (plus dismiss) instead of beside Retry.

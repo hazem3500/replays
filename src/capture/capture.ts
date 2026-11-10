@@ -443,7 +443,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       requestCount: bundle.network.length,
       consoleCount: bundle.console.length,
       performanceCount: bundle.performance?.entries.length ?? 0,
-      duration,
+      duration: bundle.meta.duration,
       video: args.video ? join(args.output, 'session.mp4') : undefined,
       ...(shots.length ? { shots } : {}),
       ...(stoppedBy ? { stoppedBy } : {}),
