@@ -106,7 +106,7 @@ export function PerformancePanel({
   ) : (
     <Empty title={STRINGS.calmTitle}>{STRINGS.calm}</Empty>
   );
-  const lit = hovered.length ? hovered : pinned.length ? pinned : selected ? [selected] : [];
+  const lit = [hovered, pinned, selected ? [selected] : []].find((ids) => ids.length) ?? [];
   const select = (id?: string) => {
     setPinned([]);
     setSelected(id);
