@@ -31,7 +31,7 @@ import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/compone
 import { Slider, SliderControl, SliderIndicator, SliderThumb, SliderTrack } from '@/components/ui/slider.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 import { useViewer } from './context.ts';
-import { bandAt, type FrameBand } from './performance/frames.ts';
+import { bandAt, type FrameBand, nearestBand } from './performance/frames.ts';
 import { freshPoster } from '../transitions/open-hint.ts';
 import { Scrubber } from './Scrubber.tsx';
 import { APP_PLAYBACK_SPEEDS } from './playback-speeds.ts';
@@ -254,9 +254,10 @@ function fpsHint(recorded: boolean, band: FrameBand | undefined) {
 /** Frame rate at the playhead, for performance-focused replays: from the recorded one-second samples, never made up. */
 function FpsReadout() {
   const { performanceFocused, frames = NO_FRAMES } = useViewer();
-  const band = usePlayhead((time) => bandAt(frames, time));
+  const band = usePlayhead((time) => bandAt(frames, time) ?? nearestBand(frames, time));
   if (!performanceFocused) return null;
   const recorded = frames.length > 0;
+  if (recorded && !band) return null;
   return (
     <Hint label={fpsHint(recorded, band)} align="start">
       <span className="transport-fps" data-testid="fps-readout" data-verdict={band?.verdict} data-recorded={recorded || undefined}>

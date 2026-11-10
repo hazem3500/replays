@@ -11,6 +11,7 @@ import {
 import {
   areaPath,
   bandAt,
+  nearestBand,
   fpsCeiling,
   frameBands,
   dipPath,
@@ -63,6 +64,12 @@ describe('frame bands on the player clock', () => {
     ]);
     expect(bandAt(bands, 1500)?.fps).toBe(20);
     expect(bandAt(bands, 3000)).toBeUndefined();
+  });
+
+  it('reads the closing second just past the last sample, and nothing far from any', () => {
+    const bands = frameBands(samples);
+    expect(nearestBand(bands, 3400)?.fps).toBe(45);
+    expect(nearestBand(bands, 9000)).toBeUndefined();
   });
 
   it('drops a sample inside a cut and shifts later ones', () => {

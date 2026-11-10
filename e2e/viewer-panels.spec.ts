@@ -23,7 +23,7 @@ test('performance leads with verdicts, ranks slow moments worst first, and opens
   const vitals = page.getByTestId('performance-vitals');
   await expect(vitals).toContainText('First paint500 msGood');
   await expect(vitals).toContainText('Slowest interaction620 msPoor');
-  await expect(vitals).toContainText('Largest paint—Not captured');
+  await expect(vitals).not.toContainText('Largest paint');
   const events = page.getByTestId('performance-events');
   const rows = events.locator('[data-performance-id]');
   await expect(rows).toHaveCount(2);

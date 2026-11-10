@@ -121,13 +121,6 @@ export function PerformancePanel({
           setPinned(jump.ids);
         }}
       />
-      <VitalsBar
-        vitals={vitals}
-        peers={vitalPeers}
-        cadence={cadenceStats(model.track, model.shifts)}
-        onPick={(vital) => (vital.moment ? select(vital.moment.id) : player.seek(vital.at ?? 0))}
-      />
-      {extra}
       {lanes.length || model.frames.length ? (
         <PerfTimeline
           duration={duration}
@@ -143,6 +136,13 @@ export function PerformancePanel({
           }}
         />
       ) : null}
+      <VitalsBar
+        vitals={vitals}
+        peers={vitalPeers}
+        cadence={cadenceStats(model.track, model.shifts)}
+        onPick={(vital) => (vital.moment ? select(vital.moment.id) : player.seek(vital.at ?? 0))}
+      />
+      {extra}
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
           <MomentList
