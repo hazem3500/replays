@@ -192,10 +192,11 @@ describe('trusted request policy', () => {
   });
 });
 
+const from = (origin: string) => ({ origin, 'sec-fetch-site': 'cross-site' });
+
 describe('origin patterns', () => {
   const preview = 'https://12-web.pull.example.com';
   const patterned: RequestPolicy = { ...policy, origins: [trusted], originPatterns: ['^https://[0-9]+-web\\.pull\\.example\\.com$'] };
-  const from = (origin: string) => ({ origin, 'sec-fetch-site': 'cross-site' });
 
   it('allows a matching origin on preflight and upload, and still allows exact origins', async () => {
     const { request } = await start((api) => api.requestPolicy(patterned));
@@ -246,7 +247,7 @@ describe('origin patterns', () => {
 
   it('accepts a patterns-only policy and freezes the registration', async () => {
     const registry = await register((api) => api.requestPolicy({ ...patterned, origins: [] }));
-    const [{ value }] = registry.requestPolicies;
+    const { value } = registry.requestPolicies[0]!;
     expect(value.origins).toEqual([]);
     expect(Object.isFrozen(value.originPatterns)).toBe(true);
   });

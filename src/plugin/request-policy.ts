@@ -39,23 +39,22 @@ const ENDPOINT_HOOKS = ['prepare', 'authenticate', 'rateLimit', 'normalize', 're
  * escaped dots and a short list of bounded character classes, and it must end in a literal registrable suffix
  * (at least two literal labels), so no pattern can match a host outside the named domain.
  */
+const badPattern = (): never =>
+  invalid('requestPolicy originPatterns must be anchored ^https://...$ host patterns with escaped dots and a literal registrable suffix');
 function assertOriginPattern(pattern: unknown): asserts pattern is string {
-  const fail = (): never =>
-    invalid('requestPolicy originPatterns must be anchored ^https://...$ host patterns with escaped dots and a literal registrable suffix');
-  if (typeof pattern !== 'string' || pattern.length > 200 || !pattern.startsWith('^https://') || !pattern.endsWith('$')) fail();
+  if (typeof pattern !== 'string' || pattern.length > 200 || !pattern.startsWith('^https://') || !pattern.endsWith('$')) badPattern();
   let rest = (pattern as string).slice('^https://'.length, -1);
   let literal = '';
   while (rest) {
     const token = PATTERN_TOKEN.exec(rest);
-    if (!token) return fail();
+    if (!token) return badPattern();
     if (token[1]) {
-      if (!PATTERN_CLASSES.has(token[1])) fail();
+      if (!PATTERN_CLASSES.has(token[1])) badPattern();
       literal = '';
     } else literal += token[0] === '\\.' ? '.' : token[0];
     rest = rest.slice(token[0].length);
   }
-  if (!PATTERN_TAIL.test(literal)) fail();
-  new RegExp(pattern as string);
+  if (!PATTERN_TAIL.test(literal)) badPattern();
 }
 
 const compiled = new WeakMap<object, RegExp[]>();
