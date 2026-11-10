@@ -1,13 +1,10 @@
-import { createWriteStream } from 'node:fs';
-import { rename, rm } from 'node:fs/promises';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
+import { open, rename, rm } from 'node:fs/promises';
 
 import { CliAuthError } from '../capture/device-auth.ts';
 import { assertStoredReplayEdits, type ReplayEdits, type StoredReplayEdits } from '../shared/edits.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
 import { renderQuery } from '../shared/render-variant.ts';
-import { EditError } from './errors.ts';
+import { EditError, isRecord, messageOf } from './errors.ts';
 
 export type Headers = Record<string, string>;
 
@@ -48,12 +45,29 @@ async function errorText(response: Response): Promise<string> {
   const text = await response.text().catch(() => '');
   try {
     const body: unknown = JSON.parse(text);
-    if (typeof body === 'object' && body !== null && 'error' in body && typeof body.error === 'string') return body.error;
+    if (isRecord(body) && typeof body.error === 'string') return body.error;
   } catch {
     // why: plain-text bodies (the app's own 403s) are the message as they are.
   }
   return text.trim().slice(0, 200);
 }
+
+/** The JSON body, or null when there is none or it is not JSON. */
+async function jsonBody(response: Response): Promise<unknown> {
+  try {
+    const body: unknown = await response.json();
+    return body;
+  } catch {
+    return null;
+  }
+}
+
+const isBundle = (value: unknown): value is ReplayBundle =>
+  isRecord(value) && isRecord(value.meta) && Array.isArray(value.steps) && Array.isArray(value.events);
+
+const JOB_STATUSES = ['queued', 'rendering', 'done', 'failed', 'none', 'unavailable', 'refused'];
+const isJob = (value: unknown): value is RenderJob =>
+  isRecord(value) && typeof value.status === 'string' && JOB_STATUSES.includes(value.status);
 
 export class EditClient implements EditsApi {
   readonly server: string;
@@ -84,7 +98,7 @@ export class EditClient implements EditsApi {
     try {
       response = await this.#fetch(url, {
         ...rest,
-        headers: { accept: 'application/json', ...(await this.#headers()), ...(rest.headers as Headers | undefined) },
+        headers: { accept: 'application/json', ...(await this.#headers()), ...Object.fromEntries(new globalThis.Headers(rest.headers)) },
         redirect: 'manual',
         signal: AbortSignal.timeout(timeout),
       });
@@ -133,9 +147,8 @@ export class EditClient implements EditsApi {
       throw new EditError(`no replay ${this.id} on ${this.server}`);
     }
     if (!response.ok) return this.#fail(response, 'read');
-    const bundle = (await response.json().catch(() => undefined)) as ReplayBundle | undefined;
-    if (!bundle?.meta || !Array.isArray(bundle.steps) || !Array.isArray(bundle.events))
-      throw new EditError(`${this.server} did not return a replay for ${this.id}`);
+    const bundle = await jsonBody(response);
+    if (!isBundle(bundle)) throw new EditError(`${this.server} did not return a replay for ${this.id}`);
     return bundle;
   }
 
@@ -146,11 +159,11 @@ export class EditClient implements EditsApi {
   }
 
   async #readEdits(response: Response, body?: unknown): Promise<EditsRead> {
-    const value = body ?? (await response.json().catch(() => undefined));
+    const value = body ?? (await jsonBody(response));
     try {
       assertStoredReplayEdits(value);
     } catch (error) {
-      throw new EditError(`the server returned an edit list this CLI cannot read (${(error as Error).message}); update the CLI`);
+      throw new EditError(`the server returned an edit list this CLI cannot read (${messageOf(error)}); update the CLI`);
     }
     const etag = response.headers.get('etag');
     if (!etag) throw new EditError('the server returned edits without an ETag, so they cannot be saved safely');
@@ -164,8 +177,8 @@ export class EditClient implements EditsApi {
       body: JSON.stringify(edits),
     });
     if (response.status === 409) {
-      const body: unknown = await response.json().catch(() => undefined);
-      const current = typeof body === 'object' && body !== null && 'current' in body ? body.current : undefined;
+      const body = await jsonBody(response);
+      const current = isRecord(body) ? body.current : null;
       if (!current) throw new EditError('the server reported a conflict without the current edits; run pull and try again');
       return { status: 'conflict', current: await this.#readEdits(response, current) };
     }
@@ -200,8 +213,8 @@ export class EditClient implements EditsApi {
 
   async #job(response: Response): Promise<RenderJob> {
     if (response.status === 503) {
-      const body: unknown = await response.json().catch(() => ({}));
-      const reason = typeof body === 'object' && body !== null && 'reason' in body ? String(body.reason) : '';
+      const body = await jsonBody(response);
+      const reason = isRecord(body) && body.reason !== undefined ? String(body.reason) : '';
       throw new EditError(`${this.server} cannot render videos${reason ? ` (${reason})` : ''}; it needs Chromium and ffmpeg`);
     }
     if (response.status === 409)
@@ -209,11 +222,13 @@ export class EditClient implements EditsApi {
     if (response.status === 422 || response.status === 429 || response.status === 400)
       throw new EditError((await errorText(response)) || `the server refused the export (${response.status})`);
     if (response.status === 403) {
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
-      throw new EditError(`the server refused this export${body.error ? `: ${body.error}` : ''}`);
+      const detail = await errorText(response);
+      throw new EditError(`the server refused this export${detail ? `: ${detail}` : ''}`);
     }
     if (!response.ok) return this.#fail(response, 'exported');
-    return (await response.json()) as RenderJob;
+    const job = await jsonBody(response);
+    if (!isJob(job)) throw new EditError('the server answered the export request in a form this CLI cannot read; update the CLI');
+    return job;
   }
 
   /** Streams the finished video to `file` (written next to it first, then moved into place). Returns its size in bytes. */
@@ -222,13 +237,25 @@ export class EditClient implements EditsApi {
     if (response.status === 404) throw new EditError('the server has no finished video for these options; run the export again');
     if (!response.ok || !response.body) return this.#fail(response, 'exported');
     const partial = `${file}.part`;
+    let bytes = 0;
     try {
-      await pipeline(Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]), createWriteStream(partial));
+      const handle = await open(partial, 'w');
+      try {
+        const reader = response.body.getReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          bytes += value.byteLength;
+          await handle.write(value);
+        }
+      } finally {
+        await handle.close();
+      }
       await rename(partial, file);
     } catch (error) {
       await rm(partial, { force: true });
       throw error;
     }
-    return Number(response.headers.get('content-length')) || 0;
+    return bytes;
   }
 }

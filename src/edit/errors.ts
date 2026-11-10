@@ -15,3 +15,8 @@ export function must<T>(value: T | undefined): T {
 }
 
 export const usageError = (message: string) => new EditError(message, 2);
+
+export const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);

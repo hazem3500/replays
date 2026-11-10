@@ -51,7 +51,7 @@ const steps = [
 ];
 
 describe('step targeting', () => {
-  const rows = stepRows(steps, undefined);
+  const rows = stepRows(steps);
 
   it('numbers steps from 1 and keys renames by start time, with #n for steps in the same ms', () => {
     expect(rows.map((row) => row.key)).toEqual(['0', '4000', '4000#1', '12300', '20000']);
@@ -102,7 +102,7 @@ describe('edit operations', () => {
   });
 
   it('keeps empty effect lists out of the edit list', () => {
-    const withSpeed = ops.addSpeed(empty, 1000, 2000, 4);
+    const withSpeed = ops.addSpeed(empty, { from: 1000, to: 2000 }, 4);
     expect(ops.removeItem(withSpeed, 'speeds', 'speed-1')).toEqual(empty);
   });
 
@@ -116,8 +116,8 @@ describe('edit operations', () => {
 
   it('adds remove regions as the redact style and blurs without a style', () => {
     const rect = { x: 0.1, y: 0.1, width: 0.2, height: 0.2 };
-    expect(ops.addBlur(empty, 0, 1000, rect, 'redact').blurs?.[0]?.style).toBe('redact');
-    expect(ops.addBlur(empty, 0, 1000, rect, 'blur').blurs?.[0]).not.toHaveProperty('style');
+    expect(ops.addBlur(empty, { from: 0, to: 1000, rect, style: 'redact' }).blurs?.[0]?.style).toBe('redact');
+    expect(ops.addBlur(empty, { from: 0, to: 1000, rect, style: 'blur' }).blurs?.[0]).not.toHaveProperty('style');
   });
 
   it('cuts only the waits long enough for --min and does not cut one twice', () => {
@@ -136,7 +136,9 @@ describe('edit operations', () => {
 
   it('summarizes a change by item', () => {
     const before = normalizeEdits(ops.addCut(empty, 1000, 2000));
-    const after = normalizeEdits(ops.setStepName(ops.addSpeed(ops.removeItem(before, 'cuts', 'cut-1'), 5000, 9000, 4), '0', 'Start'));
+    const after = normalizeEdits(
+      ops.setStepName(ops.addSpeed(ops.removeItem(before, 'cuts', 'cut-1'), { from: 5000, to: 9000 }, 4), '0', 'Start'),
+    );
     expect(diffEdits(before, after)).toEqual({
       added: ['speed range 5.0s–9.0s at 4×', 'step name at 0 ms “Start”'],
       removed: ['cut 1.0s–2.0s'],
@@ -181,18 +183,18 @@ function fakeApi(initial: StoredReplayEdits) {
   let current = initial;
   let version = initial.revision;
   const puts: ReplayEdits[] = [];
-  const hooks: { beforeFirstSave?: (() => void) | undefined } = {};
+  const hooks: { beforeFirstSave?: () => void } = {};
   const read = (): EditsRead => ({ edits: current, etag: `"e.${version}"` });
   const api: EditsApi = {
-    getEdits: async () => read(),
-    putEdits: async (edits, etag): Promise<SaveResult> => {
+    getEdits: () => Promise.resolve(read()),
+    putEdits: (edits, etag): Promise<SaveResult> => {
       hooks.beforeFirstSave?.();
-      hooks.beforeFirstSave = undefined;
+      delete hooks.beforeFirstSave;
       puts.push(edits);
-      if (etag !== `"e.${version}"`) return { status: 'conflict', current: read() };
+      if (etag !== `"e.${version}"`) return Promise.resolve({ status: 'conflict', current: read() });
       version += 1;
       current = { ...edits, revision: current.revision + 1 };
-      return { status: 'saved', ...read() };
+      return Promise.resolve({ status: 'saved', ...read() });
     },
   };
   const steal = (next: ReplayEdits) => {
@@ -231,8 +233,8 @@ describe('read-modify-write', () => {
 
   it('gives up with the pull-again message when the retry also conflicts', async () => {
     const api: EditsApi = {
-      getEdits: async () => ({ edits: stored(0), etag: '"e.none"' }),
-      putEdits: async () => ({ status: 'conflict', current: { edits: stored(1), etag: '"e.1"' } }),
+      getEdits: () => Promise.resolve({ edits: stored(0), etag: '"e.none"' }),
+      putEdits: () => Promise.resolve({ status: 'conflict', current: { edits: stored(1), etag: '"e.1"' } }),
     };
     await expect(modifyEdits(api, addCut(1000))).rejects.toThrow(CONFLICT_MESSAGE);
     await expect(modifyEdits(api, addCut(1000), { retries: 0 })).rejects.toBeInstanceOf(EditError);

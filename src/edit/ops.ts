@@ -1,7 +1,14 @@
-import { type BlurStyle, DEFAULT_ZOOM_SCALE, MAX_ZOOM_SCALE, MIN_ZOOM_SCALE } from '../shared/effects.ts';
-import type { ReplayBlur, ReplayCaption, ReplaySpeedRange, ReplayZoomRegion } from '../shared/effects.ts';
-import { type ReplayCut, type ReplayEdits, type ReplayHighlight, proposeWaitCuts, withStepName } from '../shared/edits.ts';
-import { WAIT_PAD_MS } from '../shared/edits.ts';
+import {
+  type BlurStyle,
+  DEFAULT_ZOOM_SCALE,
+  MAX_ZOOM_SCALE,
+  MIN_ZOOM_SCALE,
+  type ReplayBlur,
+  type ReplayCaption,
+  type ReplaySpeedRange,
+  type ReplayZoomRegion,
+} from '../shared/effects.ts';
+import { proposeWaitCuts, type ReplayCut, type ReplayEdits, type ReplayHighlight, WAIT_PAD_MS, withStepName } from '../shared/edits.ts';
 import type { ReplayStep } from '../shared/replay.ts';
 import { EditError, must, usageError } from './errors.ts';
 
@@ -13,15 +20,8 @@ export interface EditContext {
   steps: readonly ReplayStep[];
 }
 
-interface Lists {
-  cuts: ReplayCut;
-  speeds: ReplaySpeedRange;
-  zooms: ReplayZoomRegion;
-  blurs: ReplayBlur;
-  captions: ReplayCaption;
-  highlights: ReplayHighlight;
-}
-export type ListKey = keyof Lists;
+export type EditItem = ReplayCut | ReplaySpeedRange | ReplayZoomRegion | ReplayBlur | ReplayCaption | ReplayHighlight;
+export type ListKey = 'cuts' | 'speeds' | 'zooms' | 'blurs' | 'captions' | 'highlights';
 export const LIST_KEYS: readonly ListKey[] = ['cuts', 'speeds', 'zooms', 'blurs', 'captions', 'highlights'];
 
 /** The word a list's items go by in messages. */
@@ -34,49 +34,49 @@ export const ITEM_NAME: Record<ListKey, string> = {
   highlights: 'highlight',
 };
 
-export const itemsOf = <K extends ListKey>(edits: ReplayEdits, key: K): Lists[K][] => (edits[key] ?? []) as Lists[K][];
+export const itemsOf = (edits: ReplayEdits, key: ListKey): readonly EditItem[] => edits[key] ?? [];
 
-function withItems<K extends ListKey>(edits: ReplayEdits, key: K, items: Lists[K][]): ReplayEdits {
-  const next: Record<string, unknown> = { ...edits };
-  if (key === 'cuts' || items.length) next[key] = items;
-  else delete next[key];
-  // why: only the one list under `key` changed, so the object still has ReplayEdits' shape.
-  return next as unknown as ReplayEdits;
+/** The edit list without empty optional lists (the stored form leaves them out). */
+function tidy(edits: ReplayEdits): ReplayEdits {
+  const { zooms, speeds, blurs, captions, highlights, ...rest } = edits;
+  return {
+    ...rest,
+    ...(zooms?.length ? { zooms } : {}),
+    ...(speeds?.length ? { speeds } : {}),
+    ...(blurs?.length ? { blurs } : {}),
+    ...(captions?.length ? { captions } : {}),
+    ...(highlights?.length ? { highlights } : {}),
+  };
 }
 
-function nextId(prefix: string, items: ReadonlyArray<{ id: string }>) {
+function nextId(prefix: string, items: ReadonlyArray<{ id: string }> = []) {
   const used = new Set(items.map((item) => item.id));
   for (let n = items.length + 1; ; n++) if (!used.has(`${prefix}-${n}`)) return `${prefix}-${n}`;
 }
 
-const ID_PREFIX: Record<ListKey, string> = {
-  cuts: 'cut',
-  speeds: 'speed',
-  zooms: 'zoom',
-  blurs: 'blur',
-  captions: 'caption',
-  highlights: 'highlight',
-};
-
-export function addItem<K extends ListKey>(edits: ReplayEdits, key: K, make: (id: string) => Lists[K]): ReplayEdits {
-  const items = itemsOf(edits, key);
-  return withItems(edits, key, [...items, make(nextId(ID_PREFIX[key], items))]);
-}
-
 export function removeItem(edits: ReplayEdits, key: ListKey, id: string): ReplayEdits {
-  return withItems(
-    edits,
-    key,
-    itemsOf(edits, key).filter((item) => item.id !== id),
-  );
+  const keep = (item: { id: string }) => item.id !== id;
+  switch (key) {
+    case 'cuts':
+      return tidy({ ...edits, cuts: edits.cuts.filter(keep) });
+    case 'speeds':
+      return tidy({ ...edits, ...(edits.speeds ? { speeds: edits.speeds.filter(keep) } : {}) });
+    case 'zooms':
+      return tidy({ ...edits, ...(edits.zooms ? { zooms: edits.zooms.filter(keep) } : {}) });
+    case 'blurs':
+      return tidy({ ...edits, ...(edits.blurs ? { blurs: edits.blurs.filter(keep) } : {}) });
+    case 'captions':
+      return tidy({ ...edits, ...(edits.captions ? { captions: edits.captions.filter(keep) } : {}) });
+    case 'highlights':
+      return tidy({ ...edits, ...(edits.highlights ? { highlights: edits.highlights.filter(keep) } : {}) });
+  }
 }
 
-export function updateItem<K extends ListKey>(edits: ReplayEdits, key: K, id: string, change: (item: Lists[K]) => Lists[K]): ReplayEdits {
-  return withItems(
-    edits,
-    key,
-    itemsOf(edits, key).map((item) => (item.id === id ? change(item) : item)),
-  );
+export function updateCaption(edits: ReplayEdits, id: string, change: Partial<Pick<ReplayCaption, 'from' | 'to' | 'text'>>): ReplayEdits {
+  return tidy({
+    ...edits,
+    ...(edits.captions ? { captions: edits.captions.map((caption) => (caption.id === id ? { ...caption, ...change } : caption)) } : {}),
+  });
 }
 
 /**
@@ -119,62 +119,74 @@ function fractionOf(part: string, total: number, name: string): number {
   return round4(value);
 }
 
+type Viewport = { width: number; height: number };
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 /** `x,y,w,h` as fractions of the recorded frame; each part is `0.25`, `25%` or `320px` (pixels of the recorded viewport). */
-export function parseRect(text: string, viewport: { width: number; height: number }) {
+export function parseRect(text: string, viewport: Viewport): Rect {
   const parts = text.split(',');
   if (parts.length !== 4) throw usageError('--rect takes four values: x,y,w,h (for example 0.1,0.2,0.5,0.1 or 10%,20%,50%,10%)');
-  const [x, y, width, height] = parts as [string, string, string, string];
+  const [x, y, width, height] = parts.map((part) => must(part));
   return {
-    x: fractionOf(x, viewport.width, 'x'),
-    y: fractionOf(y, viewport.height, 'y'),
-    width: fractionOf(width, viewport.width, 'width'),
-    height: fractionOf(height, viewport.height, 'height'),
+    x: fractionOf(must(x), viewport.width, 'x'),
+    y: fractionOf(must(y), viewport.height, 'y'),
+    width: fractionOf(must(width), viewport.width, 'width'),
+    height: fractionOf(must(height), viewport.height, 'height'),
   };
 }
 
-export function parsePoint(text: string, viewport: { width: number; height: number }) {
+export function parsePoint(text: string, viewport: Viewport) {
   const parts = text.split(',');
   if (parts.length !== 2) throw usageError('--at takes two values: x,y (for example 0.5,0.4 or 50%,40%)');
   return { x: fractionOf(must(parts[0]), viewport.width, 'x'), y: fractionOf(must(parts[1]), viewport.height, 'y') };
 }
 
 export function addCut(edits: ReplayEdits, from: number, to: number, label?: string): ReplayEdits {
-  return addItem(edits, 'cuts', (id) => ({ id, from, to, ...(label ? { label } : {}) }));
+  return { ...edits, cuts: [...edits.cuts, { id: nextId('cut', edits.cuts), from, to, ...(label ? { label } : {}) }] };
 }
 
 export function addWaitCuts(edits: ReplayEdits, ctx: EditContext, minWait: number): ReplayEdits {
   const proposed = proposeWaitCuts(ctx.steps, ctx.duration, edits.cuts).filter((cut) => cut.to - cut.from + 2 * WAIT_PAD_MS >= minWait);
   if (proposed.length === 0) throw new EditError('no wait is long enough to cut (or every long wait is already cut)');
   const taken = new Set(edits.cuts.map((cut) => cut.id));
-  return proposed.reduce((next, cut) => addItem(next, 'cuts', (id) => ({ ...cut, id: taken.has(cut.id) ? id : cut.id })), edits);
+  const fresh = proposed.map((cut) => (taken.has(cut.id) ? { ...cut, id: nextId('cut', [...edits.cuts, ...proposed]) } : cut));
+  return { ...edits, cuts: [...edits.cuts, ...fresh] };
 }
 
-export const addSpeed = (edits: ReplayEdits, from: number, to: number, rate: number) =>
-  addItem(edits, 'speeds', (id) => ({ id, from, to, rate }));
+export const addSpeed = (edits: ReplayEdits, range: { from: number; to: number }, rate: number): ReplayEdits =>
+  tidy({ ...edits, speeds: [...(edits.speeds ?? []), { id: nextId('speed', edits.speeds), ...range, rate }] });
 
 export function addZoom(
   edits: ReplayEdits,
-  options: { from: number; to: number; rect?: ReturnType<typeof parseRect>; scale?: number; at?: { x: number; y: number } },
+  options: { from: number; to: number; rect?: Rect; scale?: number; at?: { x: number; y: number } },
 ) {
   const { rect } = options;
   const centre = rect ? { x: round4(rect.x + rect.width / 2), y: round4(rect.y + rect.height / 2) } : options.at;
   const fit = rect && rect.width > 0 && rect.height > 0 ? Math.round(Math.min(1 / rect.width, 1 / rect.height) * 100) / 100 : undefined;
   const scale = options.scale ?? (fit === undefined ? DEFAULT_ZOOM_SCALE : Math.min(MAX_ZOOM_SCALE, Math.max(MIN_ZOOM_SCALE, fit)));
-  return addItem(edits, 'zooms', (id) => ({ id, from: options.from, to: options.to, scale, ...centre }));
+  const zoom = { id: nextId('zoom', edits.zooms), from: options.from, to: options.to, scale, ...centre };
+  return tidy({ ...edits, zooms: [...(edits.zooms ?? []), zoom] });
 }
 
-export function addBlur(edits: ReplayEdits, from: number, to: number, rect: ReturnType<typeof parseRect>, style: BlurStyle) {
-  return addItem(edits, 'blurs', (id) => ({ id, from, to, ...rect, ...(style === 'blur' ? {} : { style }) }));
+export function addBlur(edits: ReplayEdits, region: { from: number; to: number; rect: Rect; style: BlurStyle }): ReplayEdits {
+  const { from, to, rect, style } = region;
+  const blur = { id: nextId('blur', edits.blurs), from, to, ...rect, ...(style === 'blur' ? {} : { style }) };
+  return tidy({ ...edits, blurs: [...(edits.blurs ?? []), blur] });
 }
 
-export const addCaption = (edits: ReplayEdits, from: number, to: number, text: string) =>
-  addItem(edits, 'captions', (id) => ({ id, from, to, text }));
+export const addCaption = (edits: ReplayEdits, range: { from: number; to: number }, text: string): ReplayEdits =>
+  tidy({ ...edits, captions: [...(edits.captions ?? []), { id: nextId('caption', edits.captions), ...range, text }] });
 
 export function addHighlight(edits: ReplayEdits, when: { at: number } | { from: number; to: number }, label?: string): ReplayEdits {
   const note = label ? { label } : {};
-  return addItem(edits, 'highlights', (id) =>
-    'at' in when ? { id, kind: 'point', at: when.at, ...note } : { id, kind: 'period', from: when.from, to: when.to, ...note },
-  );
+  const id = nextId('highlight', edits.highlights);
+  const highlight: ReplayHighlight = 'at' in when ? { id, kind: 'point', at: when.at, ...note } : { id, kind: 'period', ...when, ...note };
+  return tidy({ ...edits, highlights: [...(edits.highlights ?? []), highlight] });
 }
 
 export function setStepName(edits: ReplayEdits, key: string, name: string): ReplayEdits {

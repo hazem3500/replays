@@ -5,7 +5,7 @@ import { refreshIfNeeded, identityLabel } from '../capture/upload.ts';
 import { beginDeviceLogin, CliAuthError, fetchCliAuthCapability, tokenFromResponse } from '../capture/device-auth.ts';
 import { loadCliToken, saveCliToken } from '../capture/credentials.ts';
 import { normalizeServerUrl, resolveServerUrl } from '../capture/server-config.ts';
-import { EditError, must, usageError } from './errors.ts';
+import { EditError, isRecord, messageOf, must, usageError } from './errors.ts';
 import type { Headers } from './client.ts';
 
 const REPLAY_ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
@@ -39,9 +39,13 @@ async function readHeaderFile(path: string): Promise<Headers> {
   } catch {
     throw usageError('--header-file must be a readable JSON file');
   }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || Object.values(parsed).some((value) => typeof value !== 'string'))
-    throw usageError('--header-file must contain a JSON object with string header values');
-  return parsed as Headers;
+  if (!isRecord(parsed)) throw usageError('--header-file must contain a JSON object with string header values');
+  const headers: Headers = {};
+  for (const [name, value] of Object.entries(parsed)) {
+    if (typeof value !== 'string') throw usageError('--header-file must contain a JSON object with string header values');
+    headers[name] = value;
+  }
+  return headers;
 }
 
 async function bearerHeaders(server: string, options: TargetOptions): Promise<Headers> {
@@ -82,7 +86,7 @@ export async function resolveTarget(raw: string, options: TargetOptions): Promis
         ...(options.configPath ? { path: options.configPath } : {}),
       });
     } catch (error) {
-      if (options.serverName || options.env.REPLAYS_SERVER_URL || !/no server named/.test((error as Error).message)) throw error;
+      if (options.serverName || options.env.REPLAYS_SERVER_URL || !/no server named/.test(messageOf(error))) throw error;
       return;
     }
   };

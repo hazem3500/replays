@@ -20,7 +20,7 @@ export interface StepRow {
 }
 
 /** The recording's steps as the viewer labels them, numbered from 1 in recorded order. */
-export function stepRows(steps: readonly ReplayStep[], names: Readonly<Record<string, string>> | undefined): StepRow[] {
+export function stepRows(steps: readonly ReplayStep[], names?: Readonly<Record<string, string>>): StepRow[] {
   const keys = stepNameKeys(steps);
   const labelled = normalizeSteps(renameSteps(steps, names));
   return labelled.map((step, index) => {
