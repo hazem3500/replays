@@ -155,7 +155,8 @@ it('uses 80ms per character in the Playwright driver, leaving fill immediate', a
   const pressSequentially = vi.fn<() => void>();
   const fill = vi.fn<() => void>();
   const close = vi.fn<() => Promise<void>>(async () => {});
-  const page = { locator: () => ({ first: () => ({ pressSequentially }) }), fill };
+  const match = { pressSequentially, fill };
+  const page = { locator: () => ({ filter: () => ({ first: () => match }) }) };
   const context = { newPage: async () => page, newCDPSession: async () => ({}), close };
   vi.spyOn(chromium, 'launch').mockResolvedValue({ newContext: async () => context, close } as never);
   const driver = playwrightDriver();
@@ -163,7 +164,7 @@ it('uses 80ms per character in the Playwright driver, leaving fill immediate', a
   await driver.step({ kind: 'type', selector: '#field', text: 'demo' });
   expect(pressSequentially).toHaveBeenCalledWith('demo', { delay: 80, timeout: 15000 });
   await driver.step({ kind: 'fill', selector: '#field', text: 'demo' });
-  expect(fill).toHaveBeenCalledWith('#field', 'demo', { timeout: 15000 });
+  expect(fill).toHaveBeenCalledWith('demo', { timeout: 15000 });
   await driver.close();
 });
 
