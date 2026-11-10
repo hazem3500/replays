@@ -28,7 +28,7 @@ async function reached(cdp: CdpLike, selector: string, state: WaitState): Promis
       expression: `(${SELECTOR_STATE_SOURCE})(${JSON.stringify(selector)}, ${JSON.stringify(state)})`,
       returnByValue: true,
     })
-    .catch(() => undefined);
+    .catch(() => ({}));
   const value = isRecord(answer) && isRecord(answer.result) ? answer.result.value : undefined;
   if (value === 'invalid')
     throw new Error(

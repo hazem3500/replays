@@ -11,7 +11,6 @@ import { readStateFile } from '../src/capture/drivers/storage-state.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from '../src/capture/drivers/types.ts';
 import { waitForSelectorOverCdp } from '../src/capture/drivers/wait-selector.ts';
 import { RecorderSession } from '../src/capture/session.ts';
-import type { ReplayBundle } from '../src/shared/replay.ts';
 
 const roots: string[] = [];
 async function directory() {
@@ -19,21 +18,26 @@ async function directory() {
   roots.push(root);
   return root;
 }
-afterEach(async () => {
-  vi.restoreAllMocks();
-  vi.unstubAllEnvs();
-  await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
-});
+/** Restores mocks and removes the temporary directories after each test of the describe that calls it. */
+function useCleanup() {
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  });
+}
 
 const argv = ['--url', 'https://example.com', '--output', '/tmp/replays-unused'];
 
+function isSession(value: unknown): value is RecorderSession {
+  return typeof value === 'object' && value !== null && 'stop' in value && 'flush' in value && 'dispose' in value;
+}
+
 function stubSession() {
   const tracks = { origin: 1000, duration: 1000, events: [{ type: 2, timestamp: 1000 }], console: [], performance: undefined, steps: [] };
-  vi.spyOn(RecorderSession, 'start').mockResolvedValue({
-    flush: async () => {},
-    stop: async () => tracks,
-    dispose: () => {},
-  } as unknown as RecorderSession);
+  const session: unknown = { flush: () => Promise.resolve(), stop: () => Promise.resolve(tracks), dispose: () => {} };
+  if (!isSession(session)) throw new Error('the session stub is incomplete');
+  vi.spyOn(RecorderSession, 'start').mockResolvedValue(session);
 }
 
 function recordingDriver(log: { steps: RawStep[]; launches: LaunchOptions[] }, screenshot?: CaptureDriver['screenshot']): CaptureDriver {
@@ -42,11 +46,12 @@ function recordingDriver(log: { steps: RawStep[]; launches: LaunchOptions[] }, s
     launch: async (options) => {
       log.launches.push(options);
       await writeFile(options.harPath, JSON.stringify({ log: { entries: [] } }));
-      return { send: async () => ({}), on: () => {}, off: () => {} };
+      return { send: () => Promise.resolve({}), on: () => {}, off: () => {} };
     },
     open: async () => {},
-    step: async (step) => {
+    step: (step) => {
       log.steps.push(step);
+      return Promise.resolve();
     },
     wait: async () => {},
     ...(screenshot ? { screenshot } : {}),
@@ -56,6 +61,8 @@ function recordingDriver(log: { steps: RawStep[]; launches: LaunchOptions[] }, s
 }
 
 describe('shot steps', () => {
+  useCleanup();
+
   it('saves a PNG per shot and lists each with its file, label, step number and time', async () => {
     stubSession();
     const output = join(await directory(), 'out');
@@ -77,16 +84,20 @@ describe('shot steps', () => {
       },
       driver,
     );
-    const bundle = JSON.parse(await readFile(result.replayPath, 'utf8')) as ReplayBundle;
+    const bundle: unknown = JSON.parse(await readFile(result.replayPath, 'utf8'));
 
     expect(saved).toEqual([join(output, 'shots', 'after-save.png'), join(output, 'shots', 'second.png')]);
-    expect((await stat(saved[0]!)).isFile()).toBe(true);
-    expect(result.shots).toEqual([
-      { name: 'after-save', file: saved[0], label: 'Saved banner shows', step: 3, at: expect.any(Number) },
-      { name: 'second', file: saved[1], label: 'Screenshot “second”', step: 4, at: expect.any(Number) },
+    const shots = result.shots ?? [];
+    expect((await stat(join(output, 'shots', 'after-save.png'))).isFile()).toBe(true);
+    expect(shots.map(({ at, ...rest }) => ({ ...rest, timed: Number.isFinite(at) }))).toEqual([
+      { name: 'after-save', file: join(output, 'shots', 'after-save.png'), label: 'Saved banner shows', step: 3, timed: true },
+      { name: 'second', file: join(output, 'shots', 'second.png'), label: 'Screenshot “second”', step: 4, timed: true },
     ]);
-    for (const shot of result.shots!) {
-      expect(bundle.steps[shot.step - 1]).toMatchObject({ kind: 'shot', label: shot.label, at: shot.at });
+    for (const shot of shots) {
+      const at = ['steps', shot.step - 1];
+      expect(bundle).toHaveProperty([...at, 'kind'], 'shot');
+      expect(bundle).toHaveProperty([...at, 'label'], shot.label);
+      expect(bundle).toHaveProperty([...at, 'at'], shot.at);
     }
     expect(log.steps.map((step) => step.kind)).toEqual(['click', 'wait']);
   });
@@ -114,6 +125,8 @@ describe('shot steps', () => {
 });
 
 describe('step captions', () => {
+  useCleanup();
+
   it('names selector waits, scrolls to a selector and shots without exposing selector syntax', () => {
     expect(labelFor({ kind: 'wait', selector: 'text=Export ready' })).toBe('Wait for “Export ready”');
     expect(labelFor({ kind: 'wait', selector: '#a > div.b' })).toBe('Wait for the control');
@@ -131,6 +144,8 @@ async function stateFile(content: string) {
 }
 
 describe('capture --state', () => {
+  useCleanup();
+
   it('hands the resolved storage state to the driver at launch', async () => {
     stubSession();
     const state = await stateFile(JSON.stringify({ cookies: [], origins: [] }));
@@ -167,6 +182,8 @@ async function fakeBinary() {
 }
 
 describe('agent-browser driver', () => {
+  useCleanup();
+
   it('applies the storage state on the launch command only, so later commands keep the page', async () => {
     const browser = new AgentBrowser('s', await fakeBinary());
     browser.loadState('/tmp/state.json');
@@ -196,11 +213,13 @@ describe('agent-browser driver', () => {
 });
 
 function pageAnswering(answers: unknown[]) {
-  const send = vi.fn<() => Promise<unknown>>(async () => ({ result: { value: answers.shift() ?? false } }));
+  const send = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ result: { value: answers.shift() ?? false } }));
   return { send, on: () => {}, off: () => {} };
 }
 
 describe('selector waits over CDP', () => {
+  useCleanup();
+
   it('polls until the page reports the state, riding out a replaced page', async () => {
     const send = vi
       .fn<() => Promise<unknown>>()
