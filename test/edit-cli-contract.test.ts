@@ -79,6 +79,10 @@ describe('replays edit: reading and changing', () => {
     await run(['cut', 'waits']);
     await expect(run(['cut', 'waits'])).rejects.toThrow('already cut');
   });
+});
+
+describe('replays edit: waits and captions', () => {
+  afterEach(closeServers);
 
   it('cuts waits above a threshold, as the editor does', async () => {
     const { run, store } = await boot();
@@ -140,7 +144,7 @@ describe('replays edit: push and conflicts', () => {
 
   it('answers a conflict with the pull-again message when the retry loses too', async () => {
     const { origin, link } = await boot();
-    const client = new EditClient({ server: origin, id: 'edit-me', headers: async () => ({}) });
+    const client = new EditClient({ server: origin, id: 'edit-me', headers: () => Promise.resolve({}) });
     const first = await client.getEdits();
     const saved = await client.putEdits({ version: 1, cuts: [{ id: 'c', from: 1000, to: 2000 }] }, first.etag);
     expect(saved.status).toBe('saved');
@@ -223,7 +227,9 @@ describe('replays edit: export', () => {
     const result = await run(['export', '--speed', '2', '--captions', '-o', file]);
     expect(result).toMatchObject({ success: true, file, speed: 2, captions: true, skipInactive: true, edited: true });
     expect(await readFile(file, 'utf8')).toBe('fake-mp4');
-    expect(runs).toEqual([{ speed: 2, captions: true, edits: expect.stringMatching(/^[a-z0-9]+$/) }]);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ speed: 2, captions: true });
+    expect(runs[0]?.edits).toMatch(/^[a-z0-9]+$/);
     await expect(run(['export', '-o', file])).rejects.toThrow('already exists');
     await expect(run(['export', '--speed', '3', '-o', join(dir, 'x.mp4')])).rejects.toThrow('--speed must be one of');
   });

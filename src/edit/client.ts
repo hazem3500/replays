@@ -214,7 +214,7 @@ export class EditClient implements EditsApi {
   async #job(response: Response): Promise<RenderJob> {
     if (response.status === 503) {
       const body = await jsonBody(response);
-      const reason = isRecord(body) && body.reason !== undefined ? String(body.reason) : '';
+      const reason = isRecord(body) && typeof body.reason === 'string' ? body.reason : '';
       throw new EditError(`${this.server} cannot render videos${reason ? ` (${reason})` : ''}; it needs Chromium and ffmpeg`);
     }
     if (response.status === 409)

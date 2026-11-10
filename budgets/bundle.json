@@ -12,6 +12,11 @@
       "gzip": 126695,
       "brotli": 103147
     },
+    "dist/cli/edit.mjs": {
+      "raw": 115200,
+      "gzip": 32500,
+      "brotli": 27700
+    },
     "dist/cli/recorder.iife.js": {
       "raw": 190449,
       "gzip": 60897,
@@ -2192,6 +2197,16 @@
       },
       "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
       "pr": "https://github.com/hazem3500/replays/pull/284"
+    },
+    {
+      "file": "dist/cli/edit.mjs",
+      "cap": {
+        "raw": 115200,
+        "gzip": 32500,
+        "brotli": 27700
+      },
+      "reason": "New on-demand bundle for the replay edit commands, kept out of cli.mjs so the other commands load without it.",
+      "pr": "https://github.com/hazem3500/replays/pull/310"
     }
   ]
 }

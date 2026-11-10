@@ -37,16 +37,11 @@ function removeNumbered(session: Session, args: ParsedArgs, key: 'captions' | 'h
 }
 
 export function caption(session: Session, args: ParsedArgs): Promise<EditOutput> {
-  switch (args.positionals[0]) {
-    case 'add':
-      return captionAdd(session, args);
-    case 'edit':
-      return captionEdit(session, args);
-    case 'rm':
-      return removeNumbered(session, args, 'captions', 'caption');
-    default:
-      throw usageError('usage: replays edit <id> caption add --from 3s --to 6s "text"  |  caption edit <n> ...  |  caption rm <n>');
-  }
+  const sub = args.positionals[0];
+  if (sub === 'add') return captionAdd(session, args);
+  if (sub === 'edit') return captionEdit(session, args);
+  if (sub === 'rm') return removeNumbered(session, args, 'captions', 'caption');
+  throw usageError('usage: replays edit <id> caption add --from 3s --to 6s "text"  |  caption edit <n> ...  |  caption rm <n>');
 }
 
 const HIGHLIGHT_USAGE =
@@ -70,12 +65,8 @@ async function highlightAdd(session: Session, args: ParsedArgs): Promise<EditOut
 }
 
 export function highlight(session: Session, args: ParsedArgs): Promise<EditOutput> {
-  switch (args.positionals[0]) {
-    case 'add':
-      return highlightAdd(session, args);
-    case 'rm':
-      return removeNumbered(session, args, 'highlights', 'highlight');
-    default:
-      throw usageError(HIGHLIGHT_USAGE);
-  }
+  const sub = args.positionals[0];
+  if (sub === 'add') return highlightAdd(session, args);
+  if (sub === 'rm') return removeNumbered(session, args, 'highlights', 'highlight');
+  throw usageError(HIGHLIGHT_USAGE);
 }

@@ -21,9 +21,29 @@ await build({
   logLevel: 'warning',
 });
 
+// why: the edit commands load on demand from their own file, so every other command starts without parsing them.
+const editOnDemand = {
+  name: 'edit-on-demand',
+  setup(builder) {
+    builder.onResolve({ filter: /^\.\/edit\/cli\.ts$/ }, () => ({ path: './edit.mjs', external: true }));
+  },
+};
+
+await build({
+  entryPoints: [join(root, 'src/edit/cli.ts')],
+  outfile: join(out, 'edit.mjs'),
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  target: 'node22',
+  packages: 'external',
+  logLevel: 'warning',
+});
+
 await build({
   entryPoints: [join(root, 'src/cli.ts')],
   outfile: join(out, 'cli.mjs'),
+  plugins: [editOnDemand],
   bundle: true,
   platform: 'node',
   format: 'esm',
