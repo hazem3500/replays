@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { cancelReplayPrefetch, replayCached, replayQuery } from '../src/client/queries.ts';
 import { prefetchOrder, RunPrefetcher } from '../src/client/suite/prefetch-runs.ts';
+import { replay } from './fixtures.ts';
 
 const never = () => new Promise<never>(() => undefined);
 const ids = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7'];
@@ -104,7 +105,7 @@ describe('replay prefetch cache', () => {
     cancelReplayPrefetch(client, 'a');
     await Promise.resolve();
     expect(client.getQueryCache().find({ queryKey: ['replay', 'a'] })?.state.fetchStatus).toBe('idle');
-    client.setQueryData(replayQuery('b').queryKey, { meta: { id: 'b' } } as never);
+    client.setQueryData(replayQuery('b').queryKey, replay());
     expect(replayCached(client, 'b')).toBe(true);
   });
 

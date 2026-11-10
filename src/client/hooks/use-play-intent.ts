@@ -4,14 +4,16 @@ import type { Playback } from '../playback/types.ts';
 import { shortcutFor } from '../shortcuts.ts';
 import type { IntentPlayer, PlayIntent } from '../suite/play-intent.ts';
 
+const holdsPlay = (player: Playback): player is Playback & IntentPlayer => 'setPlayHold' in player;
+
 /**
  * A suite run's viewer joins the workspace's play intent: it announces itself (so a switch away can carry "was
  * playing" and hold play presses meanwhile) and starts playing at once when this run is the one waiting to play.
  */
 export function useRunPlayIntent(intent: PlayIntent | undefined, run: string, player: Playback) {
   useEffect(() => {
-    if (!intent || !('setPlayHold' in player)) return;
-    const detach = intent.attach(run, player as IntentPlayer);
+    if (!intent || !holdsPlay(player)) return;
+    const detach = intent.attach(run, player);
     if (intent.take(run)) player.play();
     return detach;
   }, [intent, run, player]);
