@@ -102,7 +102,7 @@ describe.skipIf(!CHROME)('first visible selector matches', () => {
 
   it('caps the candidate list at five', () => {
     const matches = Array.from({ length: 5 }, (_, index) => ({ index, tag: 'li', text: String(index), visible: false, box: null }));
-    const message = timeoutMessage('li', 15, { count: 8, visibleCount: undefined, matches });
+    const message = timeoutMessage('li', 15, { count: 8, visibleCount: null, matches });
     expect(message.match(/<li>/g)).toHaveLength(5);
     expect(message).toContain('and 3 more');
   });

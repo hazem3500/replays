@@ -35,7 +35,7 @@ export async function describeMatches(page: Page, selector: string, limit = MAX_
     ]);
     matches.push({ index, tag, text: snippet(text), visible, box });
   }
-  const visibleCount = count > limit ? undefined : matches.filter((match) => match.visible).length;
+  const visibleCount = count > limit ? null : matches.filter((match) => match.visible).length;
   return { count, visibleCount, matches };
 }
 
@@ -50,7 +50,7 @@ export function timeoutMessage(selector: string, seconds: number, found: Awaited
   if (found.count === 0) return `${head}: the selector matched nothing`;
   const more = found.count > found.matches.length ? `\n  and ${found.count - found.matches.length} more` : '';
   return `${head}: it matched ${found.count} element${found.count === 1 ? '' : 's'}${
-    found.visibleCount === undefined ? '' : `, ${found.visibleCount} visible`
+    found.visibleCount === null ? '' : `, ${found.visibleCount} visible`
   }\n${found.matches.map((match) => `  ${candidateLine(match)}`).join('\n')}${more}`;
 }
 
