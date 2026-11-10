@@ -15,6 +15,7 @@ const NOUNS: Readonly<Record<LaneMark['lane'], string>> = {
   task: 'long tasks',
   request: 'slow requests',
   shift: 'layout shifts',
+  failed: 'failed requests',
 };
 
 const duration = (item: LaneItem) => item.end - item.at;

@@ -185,15 +185,27 @@ export function medianMeasured(rows: readonly NetworkRow[]) {
   return values.length % 2 ? values[middle] : ((values[middle - 1] ?? 0) + (values[middle] ?? 0)) / 2;
 }
 
-/** How many requests start in each of `bins` equal slices of the recording. */
-export function startDensity(rows: readonly NetworkRow[], duration: number, bins: number) {
-  const counts = Array.from({ length: bins }, () => 0);
+/** One equal slice of the recording: how many requests start in it, and the ones worth naming. */
+export interface RequestBucket {
+  count: number;
+  failed: NetworkRow[];
+  slowest: NetworkRow | undefined;
+}
+
+const durationOf = (row: NetworkRow) => row.measured ?? row.end - row.at;
+
+/** The requests starting in each of `bins` equal slices of the recording, with each slice's failures and slowest request. */
+export function bucketRequests(rows: readonly NetworkRow[], duration: number, bins: number): RequestBucket[] {
+  const buckets = Array.from({ length: bins }, (): RequestBucket => ({ count: 0, failed: [], slowest: undefined }));
   const span = Math.max(1, duration);
   for (const row of rows) {
-    const bin = Math.min(bins - 1, Math.max(0, Math.floor((row.at / span) * bins)));
-    counts[bin] = (counts[bin] ?? 0) + 1;
+    const bucket = buckets[Math.min(bins - 1, Math.max(0, Math.floor((row.at / span) * bins)))];
+    if (!bucket) continue;
+    bucket.count += 1;
+    if (row.failed) bucket.failed.push(row);
+    if (!bucket.slowest || durationOf(row) > durationOf(bucket.slowest)) bucket.slowest = row;
   }
-  return counts;
+  return buckets;
 }
 
 /**

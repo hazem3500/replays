@@ -3,7 +3,7 @@ import type { LayoutShift } from '../performance.ts';
 import type { Moment, Verdict } from './model.ts';
 import { shiftVerdict } from './stats.ts';
 
-export type LaneId = 'interaction' | 'task' | 'request' | 'shift';
+export type LaneId = 'interaction' | 'task' | 'request' | 'shift' | 'failed';
 
 /** One thing drawn on a lane, before nearby ones are merged. */
 export interface LaneItem {
@@ -46,6 +46,7 @@ export const LANE_LABELS: Readonly<Record<LaneId, string>> = {
   task: 'Long tasks',
   request: 'Slow requests',
   shift: 'Layout shifts',
+  failed: 'Failed requests',
 };
 
 /** The over-budget part of a long task starts here: every captured task is already past the 50 ms that makes it long. */
@@ -74,7 +75,7 @@ function momentItem(moment: Moment): LaneItem {
   };
 }
 
-function requestItem(row: NetworkRow): LaneItem {
+export function requestItem(row: NetworkRow): LaneItem {
   return {
     id: `request:${row.id}`,
     lane: 'request',
