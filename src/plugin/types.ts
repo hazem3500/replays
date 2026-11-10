@@ -353,8 +353,8 @@ export interface PeopleOptions {
 /** Enriches the signed-in identity after authentication (a display name and avatar from a directory). */
 export interface IdentityResolver {
   /**
-   * Return the identity to use, or nothing to keep it. Only `name`, `avatarUrl` (https) and, when the auth adapter
-   * gave none, `email` are taken; an identity with another `id` is refused (logged, and the request keeps the original).
+   * Return the identity to use, or nothing to keep it. Only `name`, `avatarUrl` (https), `handles` (verified accounts that
+   * match the deployment's handle patterns) and, when the auth adapter gave none, `email` are taken; an identity with another `id` is refused (logged, and the request keeps the original).
    * Runs once per request.
    */
   resolve(

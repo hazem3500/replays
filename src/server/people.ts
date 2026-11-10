@@ -126,7 +126,7 @@ export function decorateSuite<T extends ReviewSuiteSummary & Partial<Pick<Review
 export const MAX_LINKED_HANDLES = 8;
 
 /**
- * `?for=me`: the signed-in email plus the handles the person linked, sent as `handle.<id>=value`. Each value must
+ * `?for=me`: the signed-in email, the handles the server verified (`identity.handles`) and the handles the person linked, sent as `handle.<id>=value`. Each value must
  * match the deployment's pattern (or, without `api.people` handles, the generic shape); an unknown or invalid one is a
  * 400. Undefined unless `for=me`.
  */
@@ -146,7 +146,8 @@ export function forMeQuery(registry: PluginRegistry, params: URLSearchParams, id
       throw httpError(400, `${key} is not a valid ${handle?.label ?? 'handle'}`);
     handles[id] = value;
   }
-  return { ...(identity.email ? { email: identity.email } : {}), handles };
+  // invariant: a handle the server vouches for replaces the browser's claim for the same account.
+  return { ...(identity.email ? { email: identity.email } : {}), handles: { ...handles, ...identity.handles } };
 }
 
 /** What `GET /api/me` says about people: the roles in priority order and the handles a person can link. */
@@ -159,9 +160,25 @@ export function peopleConfig(registry: PluginRegistry) {
   };
 }
 
+/** The resolver's verified handles that pass the shape check and, for a known handle, its pattern; the rest are dropped. */
+function verifiedHandles(registry: PluginRegistry, value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const known = registry.people?.value.handles;
+  const handles: Record<string, string> = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (typeof raw !== 'string') continue;
+    const handle = known?.find((entry) => entry.id === id);
+    if (known && !handle) continue;
+    if (!HANDLE_ID.test(id) || !isHandleValue(raw) || (handle && !handleTest(handle).test(raw))) continue;
+    if (Object.keys(handles).length >= MAX_LINKED_HANDLES) break;
+    handles[id] = raw;
+  }
+  return handles;
+}
+
 /**
  * Runs the identity resolvers (plugin order, each on the previous result), once per request. Only `name`, an https
- * `avatarUrl` and a missing `email` are taken; a result with another `id` is refused and logged, as is a resolver that
+ * `avatarUrl`, a missing `email` and valid verified `handles` are taken; a result with another `id` is refused and logged, as is a resolver that
  * throws: the request goes on with what it had.
  */
 export function identityResolver(registry: PluginRegistry) {
@@ -184,7 +201,14 @@ export function identityResolver(registry: PluginRegistry) {
       const name = typeof next.name === 'string' && next.name.trim() ? next.name.trim().slice(0, 200) : undefined;
       const avatarUrl = httpsUrl(next.avatarUrl);
       const email = !current.email && isPersonEmail(next.email) ? next.email : undefined;
-      current = { ...current, ...(name ? { name } : {}), ...(avatarUrl ? { avatarUrl } : {}), ...(email ? { email } : {}) };
+      const handles = verifiedHandles(registry, next.handles);
+      current = {
+        ...current,
+        ...(name ? { name } : {}),
+        ...(avatarUrl ? { avatarUrl } : {}),
+        ...(email ? { email } : {}),
+        ...(Object.keys(handles).length ? { handles: { ...current.handles, ...handles } } : {}),
+      };
     }
     return current;
   }
