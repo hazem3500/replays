@@ -30,7 +30,13 @@ export function CommandField({ command, label, hint }: { command: string; label:
   }
 
   return (
-    <div className="settings-command">
+    <div
+      className="settings-command"
+      ref={(node) => {
+        // why: a pending reset must not fire after the field unmounts.
+        if (!node) clearTimeout(reset.current);
+      }}
+    >
       <div className="settings-command-field" data-state={state}>
         <input
           ref={input}
