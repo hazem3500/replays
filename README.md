@@ -84,8 +84,16 @@ replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--i
                    [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
                    [--source github:owner/repo#12]… [--profile id] [--network headers|off|bodies] [--no-performance]
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
-                   [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed]
+                   [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed [--manual [--max-duration 3m]]]
 ```
+
+`--headed --manual` records you instead: it opens the browser at `--url` and keeps everything you do until you close the
+window or page, press Enter in the terminal (only when stdin is a terminal), or send SIGINT or SIGTERM (a second SIGINT
+aborts). `--max-duration 90` (seconds, or `90s`, `2m`) caps it; the default is three minutes, the most ten. It cannot be
+combined with `--steps`, and `--output` may be left out (the replay goes to `./<id>`). The steps come from what the page
+shows of your actions, named the way the in-app recorder names them: `Clicked “Pricing”`, `Requested “Sign up”`, and
+`Opened Pricing` for a page change (a click that causes one is folded into it); typed values and selectors are never kept.
+Privacy, `--network`, `--viewport`, `--performance` and `--upload` apply as in any capture.
 
 A selector in a step acts on its first visible match. Test one before recording with
 `replays probe --url <url> --selector <selector> [--state <storageState.json>] [--viewport <WxH>] [--json]`, which lists every match with visibility and bounding box.

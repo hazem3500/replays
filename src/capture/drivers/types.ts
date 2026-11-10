@@ -29,6 +29,8 @@ export interface CaptureDriver {
   readonly recordsBodies?: boolean;
   /** Starts a browser on about:blank, begins the HAR (and video), and returns a CDP connection to the page. */
   launch(options: LaunchOptions): Promise<CdpLike>;
+  /** Resolves when the person closes the page or the browser window (manual recordings); drivers that cannot tell leave it out. */
+  closed?(): Promise<void>;
   open(url: string): Promise<void>;
   step(step: RawStep): Promise<void>;
   wait(ms: number): Promise<void>;

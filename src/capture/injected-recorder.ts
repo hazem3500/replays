@@ -1,5 +1,8 @@
 import { record } from 'rrweb';
 
+import { resolveCapture } from '../recorder/capture-options.ts';
+import { captureInteractionSteps } from '../recorder/interaction-steps.ts';
+import { recorderPrivacy } from '../recorder/recorder-privacy.ts';
 import { MASK_INPUT_OPTIONS } from './mask-inputs.ts';
 
 declare global {
@@ -10,6 +13,8 @@ declare global {
     __replaysNavigationFlush?: (payload: string) => void;
     /** The host's mask selectors (redaction `maskSelectors`), set by the capture session before this script runs. */
     __REPLAYS_MASK_TEXT__?: string;
+    /** Set by the capture session for a manual recording: the page names the person's clicks and route changes as steps. */
+    __REPLAYS_STEPS__?: boolean;
   }
 }
 
@@ -18,6 +23,7 @@ interface RecorderChunk {
   console: Array<{ at: number; level: string; message: string; url: string }>;
   performance: Array<{ at: number; kind: string; value: number; eventType?: string }>;
   performanceSupported: string[];
+  steps: Array<{ at: number; kind: string; label: string; auto: true }>;
 }
 
 try {
@@ -26,6 +32,7 @@ try {
     let events: RecorderChunk['events'] = [];
     let consoleEntries: RecorderChunk['console'] = [];
     let performanceEntries: RecorderChunk['performance'] = [];
+    let steps: RecorderChunk['steps'] = [];
     const supportedTypes = new Set<string>();
     const performanceObservers: PerformanceObserver[] = [];
     const maxPerformanceEntries = 300;
@@ -134,6 +141,17 @@ try {
       ...(maskTextSelector ? { maskTextSelector } : {}),
     });
 
+    if (window.__REPLAYS_STEPS__) {
+      delete window.__REPLAYS_STEPS__;
+      const privacy = recorderPrivacy(
+        maskTextSelector ? { maskTextSelector } : {},
+        resolveCapture({ privacy: { maskAllText: false, blockMedia: false } }),
+      );
+      captureInteractionSteps(privacy, (step) => {
+        steps.push({ at: step.at, kind: step.kind, label: step.label, auto: true });
+      });
+    }
+
     for (const level of ['debug', 'info', 'log', 'warn', 'error'] as const) {
       const original = console[level].bind(console);
       console[level] = (...args: unknown[]) => {
@@ -171,10 +189,12 @@ try {
         console: consoleEntries,
         performance: performanceEntries,
         performanceSupported: [...supportedTypes],
+        steps,
       };
       events = [];
       consoleEntries = [];
       performanceEntries = [];
+      steps = [];
       return chunk;
     };
 
@@ -182,7 +202,7 @@ try {
       'pagehide',
       () => {
         const chunk = window.__REPLAYS_FLUSH__?.(true);
-        if (chunk && (chunk.events.length || chunk.console.length || chunk.performance.length)) {
+        if (chunk && (chunk.events.length || chunk.console.length || chunk.performance.length || chunk.steps.length)) {
           window.__replaysNavigationFlush?.(JSON.stringify(chunk));
         }
       },

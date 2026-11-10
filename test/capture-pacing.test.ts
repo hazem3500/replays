@@ -108,7 +108,7 @@ describe('capture labels', () => {
 it.each([0, 1200])('holds non-wait actions for %sms and omits unlabelled waits from recorded steps', async (pause) => {
   const output = join(await directory(), 'out');
   const calls: unknown[] = [];
-  const tracks = { origin: 1000, duration: 1000, events: [{ type: 2, timestamp: 1000 }], console: [], performance: undefined };
+  const tracks = { origin: 1000, duration: 1000, events: [{ type: 2, timestamp: 1000 }], console: [], performance: undefined, steps: [] };
   vi.spyOn(RecorderSession, 'start').mockResolvedValue({
     flush: async () => {},
     stop: async () => tracks,
@@ -185,7 +185,7 @@ function networkDriver(recordsBodies?: true): CaptureDriver {
 }
 
 function stubSession() {
-  const tracks = { origin: 1000, duration: 1000, events: [{ type: 2, timestamp: 1000 }], console: [], performance: undefined };
+  const tracks = { origin: 1000, duration: 1000, events: [{ type: 2, timestamp: 1000 }], console: [], performance: undefined, steps: [] };
   vi.spyOn(RecorderSession, 'start').mockResolvedValue({
     flush: async () => {},
     stop: async () => tracks,

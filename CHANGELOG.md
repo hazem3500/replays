@@ -5,7 +5,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- CLI: `replays capture --headed --manual` records what a person does in a headed browser (`--output` optional, `--max-duration` caps it at up to ten minutes, default three). It stops when the window or page is closed, on Enter when stdin is a terminal, or on SIGINT/SIGTERM (a second SIGINT aborts), then saves and uploads like any capture. Steps are derived from the clicks, form submits and page changes the page showed, named by the in-app recorder's own code; no selectors or typed values are kept. `--manual` needs `--headed` and the playwright driver and cannot be combined with `--steps`.
+
 - CLI: `replays suite` creates and runs review suites end to end: `suite create`, `suite run add|set|summary`, `suite summary`, `suite show`, `suite list [--mine]` and `suite record --plan plan.json`, which registers the suite, then for each run registers it as running, captures it with the closed step vocabulary, uploads the replay to the run and marks it passed or failed (a failed run does not stop the next; `--only <run>` retries one, `--dry-run` checks the plan). The plan format is `docs/formats/suite-plan.schema.json`, with an example in `sample/suite-plan.json`. Every command takes `--json` and the usual `--server`, `--upload-url` and `--header-file`.
+
+- Identity resolvers (`api.identity`) can return `handles` (`{ github: 'octocat' }`): accounts the server vouches for. They match the viewer in **For me** and appear in `GET /api/me` without being linked by hand; handles a browser linked still only filter.
 
 - CLI selectors: capture steps act on the first visible match of a selector (Playwright `.filter({ visible: true }).first()`, and the same through CDP for `agent-browser`) instead of failing on a hidden duplicate. A step that times out lists up to five candidates with tag, text and visible or hidden. New `replays probe --url <url> --selector <selector> [--json]` opens the page headless and reports every match with visibility and bounding box.
 
