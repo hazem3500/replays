@@ -7,6 +7,7 @@ import { replayRoutes } from './replays.ts';
 import type { ApiServices } from './services.ts';
 import { sessionRoutes } from './session.ts';
 import { suiteRoutes } from './suites.ts';
+import { uploadHandoffRoutes } from './upload-handoff.ts';
 import { uploadRoutes } from './uploads.ts';
 
 export type { ApiServices } from './services.ts';
@@ -21,6 +22,7 @@ export function coreRoutes(services: ApiServices): RouteDefinition[] {
     ...expiredRoutes(services),
     ...replayMetaRoutes(services),
     ...uploadRoutes(services),
+    ...uploadHandoffRoutes(services),
     ...suiteRoutes(services),
   ];
 }

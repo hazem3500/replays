@@ -348,7 +348,7 @@ export function createDefaultUi(
               updateText(current.label, message);
               current.live.textContent = message;
             });
-          if (error?.link && !error.action) {
+          if (error?.link) {
             const control = link(error.link.label, error.link.url);
             if (control) controls.append(control);
           }

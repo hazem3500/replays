@@ -16,6 +16,7 @@ const RESERVED = [
   '/api/malleable',
   '/api/sign-in',
   '/auth',
+  '/upload',
   '/internal',
   '/_plugins',
   '/assets',
