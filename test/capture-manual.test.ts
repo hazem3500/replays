@@ -179,8 +179,11 @@ describe('steps of a manual recording', () => {
 
 class FakeCdp implements CdpLike {
   private served = false;
+  private readonly chunk: RecorderChunk;
 
-  constructor(private readonly chunk: RecorderChunk) {}
+  constructor(chunk: RecorderChunk) {
+    this.chunk = chunk;
+  }
 
   send(method: string, params?: Record<string, unknown>) {
     if (method !== 'Runtime.evaluate' || !String(params?.expression).includes('__REPLAYS_FLUSH__?.(')) return Promise.resolve({});
