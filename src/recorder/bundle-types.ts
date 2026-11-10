@@ -72,6 +72,7 @@ export type ReplayNetworkEntry = {
   mimeType?: string;
   requestHeaders: { name: string; value: string }[];
   responseHeaders: { name: string; value: string }[];
+  traceId?: string;
   /** Only with `capture.network: 'bodies'`, and only for requests that sent one. */
   requestBody?: ReplayNetworkBody;
   /** Only with `capture.network: 'bodies'`. */

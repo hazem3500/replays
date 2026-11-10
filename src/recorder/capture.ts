@@ -1,5 +1,6 @@
 import type { BodyCapture, PendingBody } from './body-capture.ts';
 import type { ReplayConsoleLevel, ReplayNetworkBody } from './bundle-types.ts';
+import { traceIdFromHeaders } from './trace.ts';
 import { filterHeaders, redactText, redactUrl } from './redact.ts';
 
 /**
@@ -27,6 +28,8 @@ export type RawNetworkEntry = {
   mimeType?: string;
   requestHeaders: { name: string; value: string }[];
   responseHeaders: { name: string; value: string }[];
+  /** Backend trace ID from the retained trace headers, when there is one. */
+  traceId?: string;
   requestBody?: ReplayNetworkBody;
   responseBody?: ReplayNetworkBody;
 };
@@ -212,6 +215,8 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
   ) => {
     const responseHeaders = filterHeaders(result.headers, options.allowedHeaders);
     const mimeType = mimeTypeOf(responseHeaders);
+    const sentHeaders = filterHeaders(requestHeaders, options.allowedHeaders);
+    const traceId = traceIdFromHeaders(sentHeaders, responseHeaders);
     return push({
       at: base.start,
       duration: Math.max(0, Math.round(performance.now() - base.startPerf)),
@@ -220,8 +225,9 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
       status: result.status,
       statusText: redactText(result.statusText, 200),
       ...(mimeType ? { mimeType } : {}),
-      requestHeaders: filterHeaders(requestHeaders, options.allowedHeaders),
+      requestHeaders: sentHeaders,
       responseHeaders,
+      ...(traceId ? { traceId } : {}),
     });
   };
 

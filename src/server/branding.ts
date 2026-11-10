@@ -14,6 +14,13 @@ export interface BrandingConfig {
   /** An absolute path under this app (`/assets/logo.svg` is not served; use an https URL or a data: image) or https URL. */
   logoUrl?: string;
   theme?: { dark?: ThemeTokens; light?: ThemeTokens };
+  /** Links out of the viewer to the deployment's other tools. */
+  integrations?: IntegrationsConfig;
+}
+
+export interface IntegrationsConfig {
+  /** An https URL with `{traceId}` where the backend trace ID goes (a Grafana Tempo explore link); enables "Open trace" on requests. */
+  traceUrlTemplate?: string;
 }
 
 /** Token values are plain CSS values: no braces, semicolons, comments, url() or expression(). */
@@ -38,7 +45,15 @@ export function validateBranding(input: Partial<BrandingConfig> | undefined): Br
   if (input?.theme) {
     for (const scheme of ['dark', 'light'] as const) if (input.theme[scheme]) assertThemeTokens(input.theme[scheme], `theme.${scheme}`);
   }
-  return { name, ...(logoUrl ? { logoUrl } : {}), ...(input?.theme ? { theme: input.theme } : {}) };
+  const traceUrlTemplate = input?.integrations?.traceUrlTemplate?.trim();
+  if (traceUrlTemplate && (!/^https:\/\//i.test(traceUrlTemplate) || !traceUrlTemplate.includes('{traceId}')))
+    throw new Error('TRACE_URL_TEMPLATE must be an https URL containing {traceId}');
+  return {
+    name,
+    ...(logoUrl ? { logoUrl } : {}),
+    ...(input?.theme ? { theme: input.theme } : {}),
+    ...(traceUrlTemplate ? { integrations: { traceUrlTemplate } } : {}),
+  };
 }
 
 function block(selector: string, tokens: ThemeTokens | undefined) {
@@ -103,6 +118,7 @@ export function publicConfig(
   return {
     name: branding.name,
     ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}),
+    ...(branding.integrations ? { integrations: branding.integrations } : {}),
     ...(extra.contextSchema ? { contextSchema: extra.contextSchema } : {}),
     sourceProviders: extra.sourceProviders,
     auth: extra.auth,

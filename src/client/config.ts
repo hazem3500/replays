@@ -37,6 +37,8 @@ export interface FieldSchema {
 export interface ClientConfig {
   name: string;
   logoUrl?: string;
+  /** Links to the deployment's other tools. */
+  integrations?: { traceUrlTemplate?: string };
   /** Schema of `context.fields`, when the deployment configured one. */
   contextSchema?: FieldSchema;
   sourceProviders: string[];

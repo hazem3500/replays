@@ -53,6 +53,21 @@ describe('captureNetwork', () => {
     expect(globalThis.fetch).toBe(fake);
   });
 
+  it('stores the backend trace ID from the retained trace headers', async () => {
+    const id = '4bf92f3577b34da6a3ce929d0e0e4736';
+    globalThis.fetch = vi.fn<typeof fetch>(() => Promise.resolve(new Response('', { headers: { 'x-trace-id': id } })));
+    const entries: RawNetworkEntry[] = [];
+    const restore = captureNetwork({
+      allowedHeaders: ['x-trace-id', 'traceparent'],
+      maxEntries: 10,
+      ignore: () => false,
+      onEntry: (entry) => entries.push(entry),
+    });
+    await fetch('https://api.example.com/me', { headers: { traceparent: `00-${'a'.repeat(32)}-00f067aa0ba902b7-01` } });
+    restore();
+    expect(entries[0]?.traceId).toBe(id);
+  });
+
   it('marks failed requests with status 0 and an error text', async () => {
     globalThis.fetch = vi.fn<typeof fetch>(() => Promise.reject(new TypeError('Failed to fetch')));
     const entries: RawNetworkEntry[] = [];

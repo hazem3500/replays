@@ -146,6 +146,11 @@
 .np-facts dt { color: var(--text-tertiary); }
 .np-facts dd { margin: 0; color: var(--text); overflow-wrap: anywhere; }
 .np-facts strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.np-trace { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.np-trace code { font-family: var(--mono); font-size: var(--text-xs); overflow-wrap: anywhere; }
+.np-trace-link { color: var(--accent); text-decoration: none; }
+.np-trace-link:hover { text-decoration: underline; }
+.np-trace-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: var(--radius-sm); }
 .np-aside { margin-left: 8px; color: var(--text-tertiary); font-weight: 400; }
 .np-section { padding: 10px 14px 12px; border-top: 1px solid var(--line); }
 .np-section h3 { display: flex; align-items: center; gap: 0; min-height: 20px; margin: 0 0 6px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; letter-spacing: 0.01em; }

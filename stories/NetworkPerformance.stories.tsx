@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 
+import { config } from './mocks/api.ts';
 import { buildNetworkRows } from '../src/client/viewer/network/model.ts';
 import { NetworkPanel, NetworkPending, type NetworkPeer } from '../src/client/viewer/network/NetworkPanel.tsx';
 import { buildPerformance } from '../src/client/viewer/performance.ts';
@@ -24,6 +25,12 @@ const before = storyBundle(
     { at: 9900, kind: 'slow-interaction', value: 120, eventType: 'click' },
   ],
 );
+
+const TRACE_ID = '4bf92f3577b34da6a3ce929d0e0e4736';
+const traced: ReplayBundle = {
+  ...sparse,
+  network: sparse.network.map((entry) => (entry.id === 'coupon' ? { ...entry, traceId: TRACE_ID } : entry)),
+};
 
 const withBodies: ReplayBundle = {
   ...sparse,
@@ -114,6 +121,28 @@ export const NetworkCompared: Story = {
   ),
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('region', { name: 'In the other recordings' })).toHaveTextContent('200');
+  },
+};
+
+export const NetworkTraceLink: Story = {
+  parameters: {
+    network: { handlers: [config({ integrations: { traceUrlTemplate: 'https://grafana.example.com/explore?q={traceId}' } })] },
+  },
+  render: () => <Network bundle={traced} open="coupon" />,
+  play: async ({ canvasElement }) => {
+    const detail = within(canvasElement).getByTestId('request-detail');
+    await expect(within(detail).getByText(TRACE_ID)).toBeVisible();
+    const link = await within(detail).findByRole('link', { name: /Open trace/ });
+    await expect(link).toHaveAttribute('href', `https://grafana.example.com/explore?q=${TRACE_ID}`);
+  },
+};
+
+export const NetworkTraceWithoutLink: Story = {
+  render: () => <Network bundle={traced} open="coupon" />,
+  play: async ({ canvasElement }) => {
+    const detail = within(canvasElement).getByTestId('request-detail');
+    await expect(within(detail).getByText(TRACE_ID)).toBeVisible();
+    await expect(within(detail).queryByRole('link', { name: /Open trace/ })).toBeNull();
   },
 };
 
