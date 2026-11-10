@@ -130,13 +130,19 @@ export function budgetDiff(baseline, next, allowances) {
 
 export const significance = { growthRatio: 0.1, growthGzipBytes: 5 * 1024, newArtifactGzipBytes: 20 * 1024 };
 
+// why: library chunk names carry a content hash, so a changed chunk is a new name; compare by name without it.
+const stable = (name) => name.replace(/-[0-9a-f]{12}\.mjs$/, '.mjs');
+const byStable = (record = {}) => new Map(Object.entries(record).map(([name, value]) => [stable(name), value]));
+
 // Awareness first: sizes are reported, and only a jump that is both large relative to main and large in bytes fails.
 export function significantGrowth(measured, mainMeasured, budget) {
   const failures = [];
+  const main = byStable(mainMeasured);
+  const budgeted = byStable(budget.files);
   for (const [name, sizes] of Object.entries(measured)) {
-    const before = mainMeasured?.[name]?.gzip;
+    const before = main.get(stable(name))?.gzip;
     if (before === undefined) {
-      if (!budget.files[name] && sizes.gzip > significance.newArtifactGzipBytes)
+      if (!budgeted.has(stable(name)) && sizes.gzip > significance.newArtifactGzipBytes)
         failures.push(`${name}: new artifact is ${sizes.gzip} B gzip (over ${significance.newArtifactGzipBytes} B)`);
       continue;
     }

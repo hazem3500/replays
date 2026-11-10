@@ -2,7 +2,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import type { NetworkSort } from './sort.ts';
 import { useViewerPresenceMotion } from '../../hooks/use-viewer-presence-motion.ts';
-import { use, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useRef } from 'react';
+import {
+  use,
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  useRef,
+  useState,
+} from 'react';
 
 import type { ReplayStep } from '../../../shared/replay.ts';
 import { useRevealRow } from '../../hooks/use-reveal-row.ts';
@@ -17,6 +25,7 @@ import { ListSpacer } from '../ListSpacer.tsx';
 import { cssVars } from '../../lib/css-vars.ts';
 import { PluginContexts, PluginMount, usePluginSnapshot } from '../../plugins/PluginUi.tsx';
 import type { HostSurfaceContext } from '../../plugins/surface-contracts.ts';
+import { COLUMN_LIMITS, type ColumnWidths, columnTemplate, type ResizableColumn, resizeColumn } from './column-widths.ts';
 import { defaultNetworkColumns, networkColumns, type NetworkColumn } from './columns.ts';
 
 export const REQUEST_DETAIL_ID = 'request-detail';
@@ -36,16 +45,17 @@ const ROW_SELECTOR = '.np-row:not(.np-head)';
 const FALLBACK_ROW_HEIGHT = 30;
 
 /** The network columns for this viewer, with plugins' columns, and the grid template they need when customised. */
-function useNetworkSurface() {
+function useNetworkSurface(widths: ColumnWidths) {
   usePluginSnapshot();
   const viewer = use(PluginContexts)?.('');
   const context: HostSurfaceContext = viewer ? { replay: viewer.replay, seek: viewer.seek.bind(viewer) } : {};
   const columns = networkColumns(context);
   const custom = !defaultNetworkColumns(columns);
-  const columnStyle: CSSProperties | undefined = custom
-    ? cssVars({ '--np-cols': columns.map((column) => column.width).join(' ') })
-    : undefined;
-  return { context, columns, custom, columnStyle };
+  const resized = !custom && Object.keys(widths).length > 0;
+  let columnStyle: CSSProperties | undefined;
+  if (custom) columnStyle = cssVars({ '--np-cols': columns.map((column) => column.width).join(' ') });
+  else if (resized) columnStyle = cssVars({ '--np-user-cols': columnTemplate(widths) });
+  return { context, columns, custom, resized, columnStyle };
 }
 
 /** Moves keyboard focus to the next request, selecting it too when one is already open or the move jumps to an end. */
@@ -116,7 +126,8 @@ export function NetworkList({
   highlight?: string | undefined;
   empty: ReactNode;
 }) {
-  const { context, columns, custom, columnStyle } = useNetworkSurface();
+  const [widths, setWidths] = useState<ColumnWidths>({});
+  const { context, columns, custom, resized, columnStyle } = useNetworkSurface(widths);
   const player = usePlayer();
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -152,9 +163,16 @@ export function NetworkList({
           aria-rowcount={rows.length + 1}
           data-slot="inspector.network.columns"
           data-custom-columns={custom || undefined}
+          data-resized={resized || undefined}
           style={columnStyle}
         >
-          <ListHead columns={columns} sort={sort} onSort={onSort} />
+          <ListHead
+            columns={columns}
+            sort={sort}
+            onSort={onSort}
+            widths={widths}
+            onResize={custom ? undefined : (key, delta) => setWidths((current) => resizeColumn(current, key, delta))}
+          />
           {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: delegated hover and focus only light the row's mark on the time ribbon; every row keeps its own button. */}
           <div
             ref={body}
@@ -190,10 +208,14 @@ function ListHead({
   columns,
   sort,
   onSort,
+  widths,
+  onResize,
 }: {
   columns: readonly NetworkColumn[];
   sort: NetworkSort;
   onSort: (sort: NetworkSort) => void;
+  widths: ColumnWidths;
+  onResize: ((key: ResizableColumn, delta: number) => void) | undefined;
 }) {
   return (
     <div className="np-row np-head" role="row" aria-rowindex={1}>
@@ -224,9 +246,66 @@ function ListHead({
           ) : (
             column.label
           )}
+          {onResize && column.key && column.key !== 'request' ? (
+            <ColumnGrip column={column.key} widths={widths} onResize={onResize} />
+          ) : null}
         </span>
       ))}
     </div>
+  );
+}
+
+const GRIP_STEP = 8;
+
+/**
+ * A drag handle on the edge of a fixed column that faces Request, which absorbs the change: Time's right edge, the
+ * others' left. Dragging toward Request widens the column; arrow keys move it by GRIP_STEP.
+ */
+function ColumnGrip({
+  column,
+  widths,
+  onResize,
+}: {
+  column: ResizableColumn;
+  widths: ColumnWidths;
+  onResize: (key: ResizableColumn, delta: number) => void;
+}) {
+  const sign = column === 'time' ? 1 : -1;
+  const drag = useRef<{ x: number; width: number } | undefined>(undefined);
+  const width = widths[column] ?? COLUMN_LIMITS[column].initial;
+  const move = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    if (!drag.current) return;
+    onResize(column, drag.current.width - width + sign * (event.clientX - drag.current.x));
+  };
+  return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions -- why: a focusable separator is the WAI-ARIA window splitter pattern.
+    <span
+      className="np-grip"
+      data-side={sign > 0 ? 'end' : 'start'}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={`Resize ${column} column`}
+      aria-valuenow={width}
+      aria-valuemin={COLUMN_LIMITS[column].min}
+      aria-valuemax={COLUMN_LIMITS[column].max}
+      tabIndex={0}
+      onPointerDown={(event) => {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        drag.current = { x: event.clientX, width };
+      }}
+      onPointerMove={move}
+      onPointerUp={() => {
+        drag.current = undefined;
+      }}
+      onPointerCancel={() => {
+        drag.current = undefined;
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        onResize(column, (event.key === 'ArrowRight' ? 1 : -1) * sign * GRIP_STEP);
+      }}
+    />
   );
 }
 

@@ -99,6 +99,7 @@
   .tl-region[data-selected] { z-index: 4; }
   .tl-region[data-kind][data-selected] .tl-region-body { box-shadow: var(--clip-lift); color: var(--text); }
   .tl-region[data-kind][data-selected]:not([data-kind="cut"]) .tl-region-body { background: var(--block-selected); }
+  .tl-region[data-kind="caption"][data-selected] .tl-region-body { box-shadow: inset 0 0 0 1.5px var(--accent); }
   .tl-region[data-kind="cut"][data-selected] .tl-region-body { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 45%, transparent) 0 1.5px, transparent 1.5px 6px), var(--clip-selected); }
   .tl-region[data-kind="caption"]:not([data-selected]) .tl-region-edge { pointer-events: none; }
   .tl-region-remove { position: absolute; z-index: 3; bottom: calc(100% + 6px); left: var(--bubble-x, 0px); display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px 0 6px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-raised); box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); color: var(--text-secondary); font: inherit; font-size: var(--text-2xs); font-weight: 600; white-space: nowrap; cursor: pointer; opacity: 0; pointer-events: none; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); -webkit-tap-highlight-color: transparent; }
@@ -158,7 +159,7 @@
   @media (hover: hover) and (pointer: fine) { .tl-highlight-grip:hover::after { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .tl-highlight-grip::after { transition: none; } }
   .tl-highlight[data-selected] .tl-highlight-band { background: color-mix(in srgb, var(--accent) 26%, transparent); }
-  .tl-highlight-marker { position: absolute; z-index: 7; top: 50%; display: grid; place-items: center; width: 24px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--accent); cursor: ew-resize; touch-action: none; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; }
+  .tl-highlight-marker { position: absolute; z-index: 7; top: 0; display: grid; place-items: center; width: 24px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--accent); cursor: ew-resize; touch-action: none; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; }
   .tl-highlight-glyph { width: 10px; height: 10px; background: var(--accent); box-shadow: 0 1px 2px rgb(0 0 0 / 0.3); transition: scale var(--motion-fast) var(--ease-out); }
   .tl-highlight-marker[data-kind="point"] .tl-highlight-glyph { border-radius: 2px; rotate: 45deg; }
   .tl-highlight-marker[data-kind="period"] .tl-highlight-glyph { width: 9px; height: 9px; border-radius: 50%; }

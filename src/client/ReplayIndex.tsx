@@ -803,7 +803,7 @@ export function ReplayIndex({
             ? {
                 phoneMenu: (
                   <IndexPhoneMenu
-                    signedIn={Boolean(account)}
+                    {...(account ? { account } : {})}
                     items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })}
                   />
                 ),

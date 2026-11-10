@@ -1,15 +1,13 @@
+import { summarizeFrames } from '../../../shared/frame-timing.ts';
 import type { ReplayPerformanceTrack } from '../../../shared/replay.ts';
 
 function frameSummary(track: ReplayPerformanceTrack): string {
-  if (!track.frames?.length) {
+  const summary = summarizeFrames(track.frames);
+  if (!summary) {
     if (track.supported.includes('animation-frame')) return 'No foreground frame samples captured.';
-    return 'Frame timing is unavailable in this browser.';
+    return 'Frame timing not recorded.';
   }
-  const totals = track.frames.reduce(
-    (sum, sample) => ({ elapsed: sum.elapsed + sample.elapsed, frames: sum.frames + sample.frames, dropped: sum.dropped + sample.dropped }),
-    { elapsed: 0, frames: 0, dropped: 0 },
-  );
-  return `Foreground cadence: ${((totals.frames * 1000) / totals.elapsed).toFixed(1)} FPS. Estimated missed frames at a 60 Hz reference: ${totals.dropped}.`;
+  return `Foreground cadence: median ${summary.p50.toFixed(1)} FPS, slowest second ${summary.min.toFixed(1)} FPS. Estimated missed frames at a 60 Hz reference: ${summary.dropped}.`;
 }
 
 export function CadenceSummary({ track }: { track: ReplayPerformanceTrack }) {

@@ -13,7 +13,7 @@ const STEPS = [
   { at: 7_000, kind: 'click', label: 'Place the order' },
 ];
 
-/** demo-shop with three steps far enough apart to stay three dots, and `edits` saved before the editor opens. */
+/** demo-shop with three steps far enough apart to stay three steps, and `edits` saved before the editor opens. */
 async function openEditor(page: Page, { steps = STEPS, ...edits }: Record<string, unknown> & { steps?: unknown[] } = {}) {
   const id = uniqueId('marks');
   const bundle = await cloneBundle(page.request, base(), 'demo-shop', id);
@@ -27,78 +27,12 @@ async function openEditor(page: Page, { steps = STEPS, ...edits }: Record<string
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
 }
 
-const tooltip = (page: Page) => page.locator('[data-slot="tooltip-content"]');
-
 /** Resolves once every animation on `element` and inside it has finished. */
 async function animationsDone(element: Element) {
   await Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished));
 }
 
-/** Whether a press just inside each edge of `element` lands on it rather than on something over or under it. */
-function edgesHit(element: Element) {
-  const { left, top, width, height } = element.getBoundingClientRect();
-  const points = [
-    [left + 1, top + height / 2],
-    [left + width - 1, top + height / 2],
-    [left + width / 2, top + 1],
-    [left + width / 2, top + height - 1],
-  ] as const;
-  return points.map(([x, y]) => element.contains(document.elementFromPoint(x, y)));
-}
-
-test.describe('editor timeline step dots', () => {
-  test('a step dot names its step on hover and seeks there on click', async ({ page }) => {
-    await openEditor(page);
-    const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
-    await expect(dots).toHaveCount(3);
-    const target = await dots.nth(2).boundingBox();
-    expect(Math.min(target?.width ?? 0, target?.height ?? 0)).toBeGreaterThanOrEqual(24);
-    await dots.nth(2).hover();
-    await expect(tooltip(page)).toContainText('Place the order');
-    await dots.nth(2).click();
-    await expect(page.getByTestId('editor-clock')).toHaveText('0:07.0');
-  });
-
-  test('the step dots are one tab stop whose arrows move between steps and whose Enter seeks', async ({ page }) => {
-    await openEditor(page);
-    const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
-    await expect(dots.nth(0)).toHaveAttribute('tabindex', '0');
-    await expect(dots.nth(1)).toHaveAttribute('tabindex', '-1');
-    await dots.nth(0).focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(dots.nth(1)).toBeFocused();
-    await expect(tooltip(page)).toContainText('Enter an email address');
-    await page.keyboard.press('Enter');
-    await expect(page.getByTestId('editor-clock')).toHaveText('0:04.0');
-  });
-
-  test('a filled dot names its action and time, a hollow one its wait and what it follows, and a load wait has none', async ({ page }) => {
-    const steps = [
-      ...STEPS,
-      { at: 7_400, kind: 'wait', label: 'Wait for the page' },
-      { at: 8_000, kind: 'wait', label: 'Read the receipt' },
-    ];
-    await openEditor(page, { steps });
-    const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
-    await expect(dots).toHaveCount(4);
-    await dots.nth(0).hover();
-    await expect(tooltip(page)).toContainText('Click, 0:02.0');
-    await dots.nth(3).hover();
-    await expect(tooltip(page)).toContainText(/Wait, \d+\.\d\s+s, after Place the order/);
-    await expect(dots.nth(3)).toHaveAccessibleName(/^Wait of \d+\.\d seconds after Place the order, from 0:08\.0$/);
-  });
-});
-
-test.describe('editor timeline dot targets and clip steps', () => {
-  test('each dot takes a press anywhere on its 24 px target, never the ruler under it', async ({ page }) => {
-    await openEditor(page);
-    const dot = page.getByRole('group', { name: 'Steps' }).getByRole('button').nth(1);
-    const box = await dot.boundingBox();
-    expect(Math.min(box?.width ?? 0, box?.height ?? 0)).toBeGreaterThanOrEqual(24);
-    const hits = await dot.evaluate(edgesHit);
-    expect(hits).toEqual([true, true, true, true]);
-  });
-
+test.describe('editor timeline clip steps', () => {
   test('the clip names each step quietly in whole words, never part of one', async ({ page }) => {
     await openEditor(page);
     const labels = await page.getByTestId('clip-step').allTextContents();
@@ -110,11 +44,8 @@ test.describe('editor timeline dot targets and clip steps', () => {
     }
   });
 
-  test('a step dot under a cut dims, and the clip draws no icons', async ({ page }) => {
+  test('the clip draws no icons', async ({ page }) => {
     await openEditor(page, { cuts: [{ id: 'cut-1', from: 1_000, to: 5_000 }] });
-    const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
-    await expect(dots.nth(1)).toHaveAttribute('data-removed', 'true');
-    await expect(dots.nth(2)).not.toHaveAttribute('data-removed');
     await expect(page.locator('.tl-clip svg')).toHaveCount(0);
   });
 });

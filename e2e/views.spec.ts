@@ -87,7 +87,8 @@ test('the viewer keeps recording details and appearance in More', async ({ page 
   await expect(header.getByTestId('download-video')).toBeVisible();
   await header.getByRole('button', { name: 'More actions', exact: true }).click();
   await expect(page.getByTestId('theme-menu-item')).toBeVisible();
-  await expect(page.getByRole('menuitem').first()).toHaveAttribute('data-testid', 'compare-with');
+  await expect(page.getByRole('menuitem').first()).toHaveAttribute('data-testid', 'replay-details');
+  await expect(page.getByRole('menuitem', { name: /^Compare with/ })).toHaveCount(0);
   const items = page.getByRole('menuitem');
   await expect(items.last()).toHaveAttribute('data-testid', 'delete-replay');
   await expect(items.nth((await items.count()) - 2)).toHaveAttribute('data-testid', 'view-reset');
@@ -141,7 +142,7 @@ test('a folded panel is remembered in the view it was folded in only', async ({ 
   await expect(shell(page)).toHaveAttribute('data-inspector-collapsed', 'true');
 });
 
-test('a suite never shows the comparison strip: its sidebar switches runs, and on a phone the swatch switcher does', async ({ page }) => {
+test('a suite never shows the comparison strip: its sidebar or title menu switches runs', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   const suite = uniqueId('views-suite');
   await createSuite(page.request, origin(), suite, [
@@ -154,8 +155,8 @@ test('a suite never shows the comparison strip: its sidebar switches runs, and o
   await expect(page.locator('.suite-workspace')).toHaveAttribute('data-rail', 'true');
   await expect(page.getByTestId('compare-summary')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByTestId('phone-switch').getByRole('radio')).toHaveCount(2);
   await expect(page.getByTestId('compare-summary')).toHaveCount(0);
+  await expect(page.getByTestId('title-menu')).toBeVisible();
 });
 
 test('switching suite runs keeps the export action while the next run is checked', async ({ page }) => {

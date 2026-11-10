@@ -4,7 +4,7 @@ import { openReplay, origin } from './support.ts';
 
 test.use({ viewport: { width: 390, height: 800 } });
 
-const menuNames = [/^Compare with/, /^Replay details$/, /^Theme/, /^Keyboard shortcuts/, /^Delete replay$/, /^Reset view$/];
+const menuNames = [/^Replay details$/, /^Theme/, /^Keyboard shortcuts/, /^Delete replay$/, /^Reset view$/];
 
 async function pointerGestures({ page }: { page: Page }) {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
