@@ -1,0 +1,17 @@
+/* The Network timeline (NetworkTimeline.tsx) on the Performance timeline's classes (perf-timeline.css): only what is its own. */
+.nt .pt-label[data-lane="density"], .nt .pt-lane[data-lane="density"] { height: 32px; }
+.nt-density { position: absolute; inset: 4px 0; width: 100%; height: calc(100% - 8px); overflow: visible; }
+.nt-density rect { fill: color-mix(in srgb, var(--text-tertiary) 55%, var(--surface)); }
+.nt-density rect[data-hot] { fill: var(--text-secondary); }
+.nt .pt-lane[data-lane="density"]::before { display: none; }
+.nt .pt-mark[data-lane="request"] { background: var(--rating-needs-work); }
+.nt .pt-mark[data-lane="failed"] { background: var(--rating-poor); }
+.nt-tip { position: absolute; top: 60px; z-index: 4; translate: -50% 0; display: flex; flex-direction: column; gap: 1px; max-width: 240px; padding: 5px 8px; border-radius: var(--radius-sm); background: var(--surface-raised); box-shadow: 0 0 0 1px var(--line); color: var(--text); font-size: var(--text-2xs); line-height: 14px; pointer-events: none; }
+.nt-tip strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.nt-tip [data-tone="failed"] { color: var(--rating-poor); }
+.nt-tip > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@container network (max-width: 559px) {
+  .nt { --pt-gutter: 40px; --pt-end: 10px; }
+  .nt .pt-label { justify-content: center; padding-left: 0; }
+  .nt .pt-label-text { display: none; }
+}

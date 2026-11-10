@@ -15,6 +15,7 @@ const NOUNS: Readonly<Record<LaneMark['lane'], string>> = {
   task: 'long tasks',
   request: 'slow requests',
   shift: 'layout shifts',
+  failed: 'failed requests',
 };
 
 const duration = (item: LaneItem) => item.end - item.at;
@@ -85,6 +86,7 @@ export function LaneMarkButton({
   width,
   lit,
   focusable,
+  pointerOnly,
   onLight,
   onPick,
 }: {
@@ -93,6 +95,7 @@ export function LaneMarkButton({
   width: number;
   lit: boolean;
   focusable: boolean;
+  pointerOnly?: boolean;
   onLight: (ids: readonly string[]) => void;
   onPick: (mark: LaneMark) => void;
 }) {
@@ -108,7 +111,8 @@ export function LaneMarkButton({
           <button
             type="button"
             tabIndex={focusable ? undefined : -1}
-            aria-label={markLabel(mark)}
+            aria-label={pointerOnly ? undefined : markLabel(mark)}
+            aria-hidden={pointerOnly || undefined}
             onPointerDown={(event) => event.stopPropagation()}
             onPointerEnter={() => onLight(ids)}
             onPointerLeave={() => onLight([])}

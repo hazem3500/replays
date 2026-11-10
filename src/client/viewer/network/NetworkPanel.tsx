@@ -7,18 +7,9 @@ import type { ReplayCaptured, ReplayStep } from '../../../shared/replay.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Empty } from '../Empty.tsx';
-import { type RibbonMark, TimeRibbon } from '../TimeRibbon.tsx';
-import {
-  filterRows,
-  NO_FILTER,
-  type NetworkFilter,
-  type NetworkRow,
-  slowestMeasured,
-  startDensity,
-  statusCounts,
-  typeCounts,
-} from './model.ts';
+import { filterRows, NO_FILTER, type NetworkFilter, type NetworkRow, slowestMeasured, statusCounts, typeCounts } from './model.ts';
 import { NetworkList } from './NetworkList.tsx';
+import { NetworkTimeline } from './NetworkTimeline.tsx';
 import { sortNetworkRows, type NetworkSort } from './sort.ts';
 import { NetworkToolbar } from './NetworkToolbar.tsx';
 import { type NetworkPeer, RequestDetail } from './RequestDetail.tsx';
@@ -27,11 +18,8 @@ import './network.css';
 
 export type { NetworkPeer } from './RequestDetail.tsx';
 
-/** Above this many requests the ribbon draws their density; at or below it, one tick per request. */
-const DENSE_ROWS = 12;
 /** Narrower than this, the detail takes the list's place instead of sitting beside it. */
 const SIDE_DETAIL_MIN_WIDTH = 760;
-const DENSITY_BINS = 160;
 const NO_PEERS: readonly NetworkPeer[] = [];
 const PENDING_ROWS = ['a', 'b', 'c', 'd', 'e', 'f'];
 
@@ -50,20 +38,8 @@ function emptyCopy(total: number, human: boolean) {
   return human ? { title: STRINGS.humanTitle, body: STRINGS.human } : { title: STRINGS.noneTitle, body: STRINGS.none };
 }
 
-function ribbonMarks(rows: readonly NetworkRow[], ticks: boolean): RibbonMark[] {
-  return rows.flatMap((row): RibbonMark[] => {
-    const label = `${row.entry.method} ${row.entry.url}`;
-    const base = { id: row.id, at: row.at, label };
-    if (row.failed) return [{ ...base, end: row.at, tone: 'danger', lane: 'full' }];
-    if (row.pending) return [{ ...base, end: row.at, tone: 'neutral', lane: 'full' }];
-    if (row.slow) return [{ ...base, end: row.end, tone: 'warning', lane: 'cap' }];
-    return ticks ? [{ ...base, end: row.end, tone: 'neutral', lane: 'tick' }] : [];
-  });
-}
-
 /**
- * The Network tab: what failed or was slow, and when. Status chips (the filters and the summary), a ribbon on the
- * seek bar's domain for "when" (hidden when the list already fits), the list for "how long", and the selected
+ * The Network tab: what failed or was slow, and when. Status chips (the filters and the summary), a timeline for "when" (collapsible), the list for "how long", and the selected
  * request's detail beside it or, on a narrow panel, in its place.
  */
 export function NetworkPanel({
@@ -93,9 +69,10 @@ export function NetworkPanel({
   const [filter, setFilter] = useState<NetworkFilter>(NO_FILTER);
   const [hovered, setHovered] = useState<string>();
   const [sort, setSort] = useState<NetworkSort>({ key: 'time', direction: 'ascending' });
-  const dense = rows.length > DENSE_ROWS;
   const unranged = filterRows(rows, { ...filter, range: undefined });
   const shown = filter.range ? filterRows(unranged, { ...NO_FILTER, range: filter.range }) : unranged;
+  const litId = hovered ?? selected;
+  const lit = litId ? [litId] : [];
   const open = selected ? rows.find((row) => row.id === selected) : undefined;
   const copy = emptyCopy(rows.length, human);
   const empty = (
@@ -122,15 +99,13 @@ export function NetworkPanel({
     >
       <NetworkToolbar counts={statusCounts(rows)} types={typeCounts(rows)} filter={filter} shown={shown.length} onFilter={setFilter} />
       {rows.length ? (
-        <TimeRibbon
-          testId="network-ribbon"
+        <NetworkTimeline
+          rows={unranged}
           duration={duration}
-          density={dense ? startDensity(unranged, duration, DENSITY_BINS) : undefined}
-          marks={ribbonMarks(unranged, !dense)}
-          onHighlight={setHovered}
           range={filter.range}
           onRange={(range) => setFilter({ ...filter, range })}
-          highlight={hovered ?? selected}
+          lit={lit}
+          onLight={(ids) => setHovered(ids[0])}
         />
       ) : null}
       <div className="np-body">
