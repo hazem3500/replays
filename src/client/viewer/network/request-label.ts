@@ -24,7 +24,7 @@ const join = (segments: readonly string[]) => `/${segments.join('/')}`;
 
 /**
  * The path to show in `maxChars` characters: ids as `:id`, short paths unchanged, otherwise the first segment and the
- * last two (then the last one) around an ellipsis, so `/api/…/workspaces/:id/search` keeps what names the endpoint.
+ * last three, two or one that fit around an ellipsis, so `/api/…/workspaces/:id/search` keeps what names the endpoint.
  * A budget that still cannot fit gets the tightest form; CSS clips the rest. Without a budget nothing is cut.
  */
 export function shortenPath(path: string, maxChars?: number) {
@@ -33,7 +33,7 @@ export function shortenPath(path: string, maxChars?: number) {
   if (maxChars === undefined || full.length <= maxChars || segments.length <= 2) return full;
   const [first = ''] = segments;
   const tail = (count: number) => join([first, ELLIPSIS, ...segments.slice(-count)]);
-  for (const count of [2, 1]) {
+  for (const count of [3, 2, 1]) {
     // why: cutting nothing but an ellipsis would only make it longer.
     if (count >= segments.length - 1) continue;
     const candidate = tail(count);

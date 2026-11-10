@@ -20,7 +20,7 @@ describe('request label', () => {
     expect(shortenPath('/api/workspaces/:id/search', 40)).toBe('/api/workspaces/:id/search');
   });
 
-  it('keeps the first segment and the last two when the path does not fit', () => {
+  it('keeps the first segment and the last three when the path does not fit', () => {
     expect(shortenPath(`/api/organizations/${UUID}/workspaces/12/search`, 30)).toBe('/api/…/workspaces/:id/search');
   });
 
