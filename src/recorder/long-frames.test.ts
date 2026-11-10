@@ -1,15 +1,17 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { interactionBreakdown } from '../shared/interaction-timing.ts';
+import { MAX_INTERACTIONS as SHARED_INTERACTIONS, MAX_LONG_FRAMES as SHARED_FRAMES } from '../shared/interaction-timing.ts';
+import { interactionBreakdown, MAX_INTERACTIONS, MAX_LONG_FRAMES } from './interaction-math.ts';
 import type { ReplayPerformanceTrack } from '../shared/replay.ts';
 import { captureLongFrames, createLongFrameFilter, scriptOrigin, trimScripts } from './long-frames.ts';
 
 function stubObserver(types: string[]) {
-  const state: { receive?: PerformanceObserverCallback } = {};
+  const state: { receive?: PerformanceObserverCallback; observer?: PerformanceObserver } = {};
   class Observer {
     static supportedEntryTypes = types;
     constructor(callback: PerformanceObserverCallback) {
       state.receive = callback;
+      state.observer = this;
     }
     observe() {}
     disconnect() {}
@@ -21,9 +23,22 @@ function stubObserver(types: string[]) {
   return state;
 }
 
-const frame = (startTime: number, duration = 120) => ({
+const timed = (startTime: number, duration: number): PerformanceEntry => ({
+  name: 'frame',
+  entryType: 'long-animation-frame',
   startTime,
   duration,
+  toJSON: () => ({}),
+});
+
+const listOf = (entries: PerformanceEntry[]): PerformanceObserverEntryList => ({
+  getEntries: () => entries,
+  getEntriesByName: () => entries,
+  getEntriesByType: () => entries,
+});
+
+const frame = (startTime: number, duration = 120) => ({
+  ...timed(startTime, duration),
   blockingDuration: 70,
   renderStart: startTime + 100,
   styleAndLayoutStart: startTime + 110,
@@ -44,7 +59,12 @@ describe('interaction breakdown', () => {
 
 describe('long animation frame scripts', () => {
   it('keeps the three longest scripts, longest first', () => {
-    const scripts = [10, 90, 40, 70, 20].map((duration) => ({ duration, sourceURL: 'https://a.test/x.js', invoker: 'i', invokerType: 't' }));
+    const scripts = [10, 90, 40, 70, 20].map((duration) => ({
+      duration,
+      sourceURL: 'https://a.test/x.js',
+      invoker: 'i',
+      invokerType: 't',
+    }));
     expect(trimScripts(scripts).map((script) => script.duration)).toEqual([90, 70, 40]);
   });
 
@@ -72,14 +92,14 @@ describe('long animation frame caps', () => {
 
   it('ignores frames at or under 50 ms', () => {
     const keep = createLongFrameFilter();
-    expect(keep({ startTime: 10, duration: 50 } as PerformanceEntry)).toBe(false);
+    expect(keep(timed(10, 50))).toBe(false);
   });
 
   it('keeps at most 30 frames in one minute and resumes the next minute', () => {
     const keep = createLongFrameFilter();
-    const kept = Array.from({ length: 40 }, (_, index) => keep({ startTime: index * 100, duration: 80 } as PerformanceEntry));
+    const kept = Array.from({ length: 40 }, (_, index) => keep(timed(index * 100, 80)));
     expect(kept.filter(Boolean)).toHaveLength(30);
-    expect(keep({ startTime: 61_000, duration: 80 } as PerformanceEntry)).toBe(true);
+    expect(keep(timed(61_000, 80))).toBe(true);
   });
 
   it('never stores more than 300 frames in total', () => {
@@ -87,7 +107,7 @@ describe('long animation frame caps', () => {
     const track: ReplayPerformanceTrack = { supported: [], entries: [] };
     captureLongFrames(track, () => {});
     const entries = Array.from({ length: 400 }, (_, index) => frame(index * 60_000));
-    state.receive?.({ getEntries: () => entries } as unknown as PerformanceObserverEntryList, {} as PerformanceObserver);
+    if (state.receive && state.observer) state.receive(listOf(entries), state.observer);
     expect(track.longFrames).toHaveLength(300);
     expect(track.supported).toContain('long-animation-frame');
   });
@@ -97,5 +117,11 @@ describe('long animation frame caps', () => {
     const track: ReplayPerformanceTrack = { supported: [], entries: [] };
     captureLongFrames(track, () => {});
     expect(track.longFrames).toBeUndefined();
+  });
+});
+
+describe('recorder and viewer caps', () => {
+  it('stay equal, because the recorder bundle cannot import the shared copy', () => {
+    expect([MAX_LONG_FRAMES, MAX_INTERACTIONS]).toEqual([SHARED_FRAMES, SHARED_INTERACTIONS]);
   });
 });

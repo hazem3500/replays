@@ -268,7 +268,9 @@
         },
         "supported": {
           "type": "array",
-          "items": { "enum": ["paint", "largest-contentful-paint", "longtask", "event", "layout-shift", "animation-frame", "long-animation-frame"] }
+          "items": {
+            "enum": ["paint", "largest-contentful-paint", "longtask", "event", "layout-shift", "animation-frame", "long-animation-frame"]
+          }
         },
         "entries": {
           "type": "array",

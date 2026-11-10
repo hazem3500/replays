@@ -1,4 +1,4 @@
-import { MAX_LONG_FRAMES } from '../shared/interaction-timing.ts';
+import { MAX_LONG_FRAMES } from './interaction-math.ts';
 import type { ReplayLongFrame, ReplayLongFrameScript, ReplayPerformanceTrack } from '../shared/replay.ts';
 import { redactText } from './redact.ts';
 
@@ -101,8 +101,10 @@ export function captureLongFrames(
       if (!active) return;
       for (const entry of list.getEntries()) {
         if (!keep(entry)) continue;
-        const frame = longFrame(entry as FrameEntry);
-        (track.longFrames ??= []).push(frame);
+        const frame = longFrame(entry);
+        const frames = track.longFrames ?? [];
+        if (!track.longFrames) Object.assign(track, { longFrames: frames });
+        frames.push(frame);
         grow(JSON.stringify(frame).length);
       }
       onFrame();

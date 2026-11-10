@@ -186,7 +186,15 @@ export interface ReplayBundle {
 
 export const MAX_PERFORMANCE_ENTRIES = 500;
 const ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
-const PERFORMANCE_TYPES = new Set(['paint', 'largest-contentful-paint', 'longtask', 'event', 'layout-shift', 'animation-frame', 'long-animation-frame']);
+const PERFORMANCE_TYPES = new Set([
+  'paint',
+  'largest-contentful-paint',
+  'longtask',
+  'event',
+  'layout-shift',
+  'animation-frame',
+  'long-animation-frame',
+]);
 const PERFORMANCE_KINDS = new Set<ReplayPerformanceKind>([
   'first-contentful-paint',
   'largest-contentful-paint',

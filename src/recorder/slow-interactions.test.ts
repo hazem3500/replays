@@ -4,19 +4,22 @@ import type { ReplayPerformanceTrack } from '../shared/replay.ts';
 import type { RecorderPrivacy } from './recorder-privacy.ts';
 import { captureInteractions, describeTarget, linkInteractions } from './slow-interactions.ts';
 
-const privacy = (maskAllText: boolean): RecorderPrivacy =>
-  ({
-    sanitize: true,
-    maskAllText,
-    textMasked: () => maskAllText,
-    checkSelectors: () => {},
-    rrwebOptions: () => ({ blockSelector: '[data-replay-block]' }),
-    facts: () => ({}) as never,
-  }) as RecorderPrivacy;
+const privacy = (maskAllText: boolean): RecorderPrivacy => ({
+  sanitize: true,
+  maskAllText,
+  textMasked: () => maskAllText,
+  checkSelectors: () => {},
+  rrwebOptions: () => ({ blockSelector: '[data-replay-block]' }),
+  facts: () => {
+    throw new Error('unused by target description');
+  },
+});
 
 function button(html: string) {
   document.body.innerHTML = html;
-  return document.body.firstElementChild as Element;
+  const first = document.body.firstElementChild;
+  if (!first) throw new Error('fixture has no element');
+  return first;
 }
 
 describe('interaction target description', () => {
@@ -28,7 +31,10 @@ describe('interaction target description', () => {
   });
 
   it('keeps only tag and role when text is masked', () => {
-    expect(describeTarget(button('<button aria-label="Pay Jane Doe">Pay</button>'), privacy(true))).toEqual({ tag: 'button', role: 'button' });
+    expect(describeTarget(button('<button aria-label="Pay Jane Doe">Pay</button>'), privacy(true))).toEqual({
+      tag: 'button',
+      role: 'button',
+    });
   });
 
   it('keeps only tag and role inside a blocked region', () => {
@@ -42,7 +48,9 @@ describe('interaction target description', () => {
   });
 });
 
-const entry = (over: object) => ({
+const entry = (over: object): PerformanceEntry & Record<string, unknown> => ({
+  toJSON: () => ({}),
+  entryType: 'event',
   name: 'click',
   interactionId: 7,
   startTime: 1000,
@@ -54,11 +62,12 @@ const entry = (over: object) => ({
 });
 
 function setup() {
-  const state: { receive?: PerformanceObserverCallback; options?: unknown } = {};
+  const state: { receive?: PerformanceObserverCallback; observer?: PerformanceObserver; options?: unknown } = {};
   class Observer {
     static supportedEntryTypes = ['event'];
     constructor(callback: PerformanceObserverCallback) {
       state.receive = callback;
+      state.observer = this;
     }
     observe(options: unknown) {
       state.options = options;
@@ -70,9 +79,17 @@ function setup() {
   }
   vi.stubGlobal('PerformanceObserver', Observer);
   const track: ReplayPerformanceTrack = { supported: [], entries: [] };
-  const stop = captureInteractions(track, () => {}, privacy(false), () => 2);
-  const deliver = (entries: object[]) =>
-    state.receive?.({ getEntries: () => entries } as unknown as PerformanceObserverEntryList, {} as PerformanceObserver);
+  const stop = captureInteractions(
+    track,
+    () => {},
+    privacy(false),
+    () => 2,
+  );
+  const deliver = (entries: PerformanceEntry[]) =>
+    state.receive?.(
+      { getEntries: () => entries, getEntriesByName: () => entries, getEntriesByType: () => entries },
+      state.observer ?? new Observer(() => {}),
+    );
   return { state, track, stop, deliver };
 }
 

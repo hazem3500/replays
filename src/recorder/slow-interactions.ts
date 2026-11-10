@@ -1,4 +1,4 @@
-import { interactionBreakdown, MAX_INTERACTIONS } from '../shared/interaction-timing.ts';
+import { interactionBreakdown, MAX_INTERACTIONS } from './interaction-math.ts';
 import type { ReplayInteraction, ReplayInteractionTarget, ReplayPerformanceTrack } from '../shared/replay.ts';
 import { CONTROL, controlName } from './interaction-steps.ts';
 import type { RecorderPrivacy } from './recorder-privacy.ts';
@@ -9,8 +9,8 @@ const IMPLICIT_ROLES: Record<string, string> = { button: 'button', a: 'link', se
 
 interface EventEntry extends PerformanceEntry {
   interactionId?: number;
-  processingStart: number;
-  processingEnd: number;
+  processingStart?: number;
+  processingEnd?: number;
   target?: Node | null;
 }
 
@@ -23,7 +23,8 @@ export function describeTarget(node: Node | null | undefined, privacy: RecorderP
   const blocked = String(privacy.rrwebOptions().blockSelector);
   const control = node.closest(CONTROL) ?? node;
   const tag = control.tagName.toLowerCase();
-  const role = control.getAttribute('role')?.trim().split(/\s+/)[0] || IMPLICIT_ROLES[tag];
+  const explicit = control.getAttribute('role')?.trim().split(/\s+/)[0];
+  const role = explicit ? explicit : IMPLICIT_ROLES[tag];
   const target: ReplayInteractionTarget = { tag, ...(role ? { role: role.slice(0, 30) } : {}) };
   if (control.closest(blocked) || privacy.textMasked(control)) return target;
   const name = controlName(control, privacy, blocked);
@@ -38,13 +39,13 @@ export function overlappingFrame(
 ): number | undefined {
   let best: number | undefined;
   let bestOverlap = 0;
-  frames.forEach((frame, index) => {
+  for (const [index, frame] of frames.entries()) {
     const overlap = Math.min(interaction.at + interaction.duration, frame.at + frame.duration) - Math.max(interaction.at, frame.at);
     if (overlap > bestOverlap) {
       bestOverlap = overlap;
       best = index;
     }
-  });
+  }
   return best;
 }
 
@@ -77,17 +78,24 @@ export function captureInteractions(
     if (!known && byId.size >= MAX_INTERACTIONS) return;
     const at = performance.timeOrigin + entry.startTime;
     const target = describeTarget(entry.target, privacy);
-    const step = stepAt(performance.timeOrigin + entry.processingStart);
+    const processingStart = entry.processingStart ?? entry.startTime;
+    const step = stepAt(performance.timeOrigin + processingStart);
     const item: ReplayInteraction = {
       at,
       interactionId: id,
       eventType: entry.name,
       duration: entry.duration,
-      ...interactionBreakdown(entry),
+      ...interactionBreakdown({
+        startTime: entry.startTime,
+        duration: entry.duration,
+        processingStart,
+        processingEnd: entry.processingEnd ?? processingStart,
+      }),
       ...(target ? { target } : {}),
       ...(step === undefined ? {} : { step }),
     };
-    const list = (track.interactions ??= []);
+    const list = track.interactions ?? [];
+    if (!track.interactions) Object.assign(track, { interactions: list });
     if (known) {
       grow(JSON.stringify(item).length - JSON.stringify(known).length);
       list[list.indexOf(known)] = item;
@@ -100,13 +108,18 @@ export function captureInteractions(
   try {
     const observer = new PerformanceObserver((list) => {
       if (!active) return;
-      for (const entry of list.getEntries()) retain(entry as EventEntry);
+      for (const entry of list.getEntries()) retain(entry);
       linkInteractions(track);
     });
-    observer.observe({ type: 'event', durationThreshold: DURATION_THRESHOLD_MS, buffered: false } as PerformanceObserverInit);
+    const options: PerformanceObserverInit & { durationThreshold: number } = {
+      type: 'event',
+      durationThreshold: DURATION_THRESHOLD_MS,
+      buffered: false,
+    };
+    observer.observe(options);
     return () => {
       active = false;
-      for (const entry of observer.takeRecords()) retain(entry as EventEntry);
+      for (const entry of observer.takeRecords()) retain(entry);
       linkInteractions(track);
       observer.disconnect();
     };
