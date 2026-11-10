@@ -39,8 +39,9 @@ describe('trace IDs', () => {
 
   it('fills the template and returns nothing without both parts', () => {
     expect(traceUrl('https://g.example/t?q={traceId}', ID)).toBe(`https://g.example/t?q=${ID}`);
-    expect(traceUrl(undefined, ID)).toBeUndefined();
-    expect(traceUrl('https://g.example/{traceId}', undefined)).toBeUndefined();
+    const missing = normalizeTraceId('');
+    expect(traceUrl(missing, ID)).toBeUndefined();
+    expect(traceUrl('https://g.example/{traceId}', missing)).toBeUndefined();
   });
 });
 
