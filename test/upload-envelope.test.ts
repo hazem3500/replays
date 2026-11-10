@@ -7,6 +7,7 @@ import { createApp } from '../src/server/app.ts';
 import { MemoryStorage } from '../src/server/storage/index.ts';
 import { ReplayStore } from '../src/server/store.ts';
 import { assertUploadBundle } from '../src/server/upload-validation.ts';
+import { REPLAY_FORMAT_VERSION } from '../src/shared/replay.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
 const servers: Array<ReturnType<typeof createServer>> = [];
@@ -118,6 +119,16 @@ describe('upload envelope', () => {
     expect(response.status).toBe(400);
     expect(await response.text()).toContain('replay');
     expect(await store.list()).toEqual([]);
+  });
+
+  it('names the server format on a rejection and refuses a newer bundle format', async () => {
+    const { post, store } = await start();
+    const response = await post({ ...replay(), meta: { ...replay().meta, formatVersion: 99 } });
+    expect(response.status).toBe(400);
+    expect(response.headers.get('x-replays-format')).toBe(String(REPLAY_FORMAT_VERSION));
+    expect(await response.text()).toContain('replay.meta.formatVersion');
+    expect(await store.list()).toEqual([]);
+    expect((await post({ ...replay(), meta: { ...replay().meta, formatVersion: REPLAY_FORMAT_VERSION } })).status).toBe(201);
   });
 
   it('validates alias output before global hooks and validates hook replacements again', async () => {

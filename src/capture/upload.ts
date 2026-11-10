@@ -15,6 +15,7 @@ import {
 } from './device-auth.ts';
 import { deleteCliToken, loadCliToken, saveCliToken } from './credentials.ts';
 import { createTerminal, reportCliFailure } from './terminal.ts';
+import { uploadFields, uploadSummary } from './upload-report.ts';
 import { readCliConfig, resetCliConfig, resolveServerUrl, resolveUploadEndpoint, saveServer, uploadEndpoint } from './server-config.ts';
 
 const LOGIN_REQUIRED_EXIT_CODE = 3;
@@ -56,8 +57,7 @@ export async function uploadWithCliAuth(
   if (options.headerFile) {
     if (options.forceLogin)
       throw new CliAuthError('--header-file uses the explicit host credentials and cannot be combined with --login', 2);
-    await upload(bundle, output, endpoint, options.headerFile);
-    return;
+    return upload(bundle, output, endpoint, options.headerFile);
   }
   /* why: A saved credential is considered only for the exact canonical endpoint derived from its saved server base.
      An arbitrary --upload-url or a wrapper-approved endpoint that differs from that target never receives a token. */
@@ -70,8 +70,7 @@ export async function uploadWithCliAuth(
   }
   if (!savedServer) {
     if (options.forceLogin) throw new CliAuthError('login requires a configured server; run `replays connect <server-url>` first', 2);
-    await upload(bundle, output, endpoint);
-    return;
+    return upload(bundle, output, endpoint);
   }
   let auth: Awaited<ReturnType<typeof fetchCliAuthCapability>>;
   try {
@@ -79,7 +78,7 @@ export async function uploadWithCliAuth(
   } catch (error) {
     if (!(error instanceof CliAuthError) || !/\((404|401|403)\)/.test(error.message)) throw error;
     try {
-      await upload(bundle, output, endpoint);
+      return await upload(bundle, output, endpoint);
     } catch (uploadError) {
       if (uploadError instanceof UploadHttpError && (uploadError.status === 401 || uploadError.status === 403))
         throw new Error(
@@ -88,12 +87,8 @@ export async function uploadWithCliAuth(
         );
       throw uploadError;
     }
-    return;
   }
-  if (auth.auth === 'none') {
-    await upload(bundle, output, endpoint);
-    return;
-  }
+  if (auth.auth === 'none') return upload(bundle, output, endpoint);
   if (!auth.deviceFlow) {
     if (options.forceLogin)
       throw new CliAuthError(
@@ -101,7 +96,7 @@ export async function uploadWithCliAuth(
         4,
       );
     try {
-      await upload(bundle, output, endpoint);
+      return await upload(bundle, output, endpoint);
     } catch (error) {
       if (error instanceof UploadHttpError && (error.status === 401 || error.status === 403))
         throw new Error(
@@ -110,7 +105,6 @@ export async function uploadWithCliAuth(
         );
       throw error;
     }
-    return;
   }
   let cached = await loadCliToken(savedServer, auth.deviceFlow.issuer, auth.deviceFlow.clientId);
   const available = await refreshIfNeeded(savedServer, auth.deviceFlow, cached);
@@ -129,7 +123,7 @@ export async function uploadWithCliAuth(
     process.stdout.write(`Signed in to ${savedServer} as ${identityLabel(authorized.status)}.\n`);
   }
   try {
-    await upload(bundle, output, endpoint, undefined, cached.accessToken);
+    return await upload(bundle, output, endpoint, undefined, cached.accessToken);
   } catch (error) {
     if (error instanceof UploadHttpError && error.status === 401) {
       /* why: keep failures non-destructive: this request may have used an older
@@ -139,8 +133,7 @@ export async function uploadWithCliAuth(
         const authorized = await beginDeviceLogin(savedServer, auth.deviceFlow);
         const refreshed = tokenFromResponse(savedServer, auth.deviceFlow, authorized.token, authorized.status);
         await saveCliToken(refreshed);
-        await upload(bundle, output, endpoint, undefined, refreshed.accessToken);
-        return;
+        return await upload(bundle, output, endpoint, undefined, refreshed.accessToken);
       }
       throw new CliAuthError(
         `the saved session for ${savedServer} was revoked; run \`replays login${options.serverName ? ` --server ${options.serverName}` : ''}\``,
@@ -149,7 +142,7 @@ export async function uploadWithCliAuth(
     }
     if (error instanceof UploadHttpError && error.status === 403)
       throw new CliAuthError(
-        `server refused ${error.video ? 'video upload' : 'replay upload'} (403); verify the signed-in account is allowed and its grant includes replays:upload${error.video ? '. The replay may already be saved' : ''}.`,
+        'server refused replay upload (403); verify the signed-in account is allowed and its grant includes replays:upload.',
         4,
       );
     throw error;
@@ -165,7 +158,7 @@ export async function uploadConfigured(
     ...(options.uploadUrl ? { explicitUploadUrl: options.uploadUrl } : {}),
     ...(options.serverName ? { explicitServerName: options.serverName } : {}),
   });
-  await uploadWithCliAuth(bundle, output, endpoint, options);
+  return uploadWithCliAuth(bundle, output, endpoint, options);
 }
 
 /** `replays upload <replay.json> [--upload-url <endpoint> | --server <name>] [--login] [--header-file file] [--profile id]` */
@@ -188,8 +181,9 @@ export async function runUploadCli(argv: string[], env: NodeJS.ProcessEnv = {}) 
     if (profile !== undefined) bundle.meta = withMetaProfile(bundle.meta, profile);
     const json = booleans.has('json');
     const spinner = createTerminal({ env, stream: process.stderr, json }).spinner('Uploading replay');
+    let result: Awaited<ReturnType<typeof uploadWithCliAuth>>;
     try {
-      await uploadWithCliAuth(bundle, dirname(resolve(file)), target, {
+      result = await uploadWithCliAuth(bundle, dirname(resolve(file)), target, {
         ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
         ...(booleans.has('login') ? { forceLogin: true } : {}),
         ...(values.server ? { serverName: values.server } : {}),
@@ -199,11 +193,8 @@ export async function runUploadCli(argv: string[], env: NodeJS.ProcessEnv = {}) 
       spinner.stop();
     }
     const out = createTerminal({ env, stream: process.stdout, json });
-    if (out.fancy) {
-      const base = target.endsWith('/api/replays') ? target.slice(0, -'/api/replays'.length) : undefined;
-      const link = base ? `\n\n${out.keyValue([['Replay', out.link(`${base}/r/${encodeURIComponent(bundle.meta.id)}`)]])}` : '';
-      process.stdout.write(`${out.header()}\n\n${out.ok(`Uploaded ${bundle.meta.id}`)}${link}\n`);
-    } else process.stdout.write(`${JSON.stringify({ success: true, id: bundle.meta.id })}\n`);
+    if (out.fancy) process.stdout.write(`${out.header()}\n\n${uploadSummary(out, result)}\n`);
+    else process.stdout.write(`${JSON.stringify({ success: true, ...uploadFields(result) })}\n`);
   } catch (error) {
     reportFailure(error, argv.includes('--json'), env);
   }

@@ -73,6 +73,9 @@ export type { PersonIdentity, ReplayPerson, ReplayPersonSummary } from './people
 /** Who made the recording: the capture CLI (an automated agent or script), or a person via an rrweb import. */
 export type ReplaySource = 'agent' | 'human';
 
+/** The bundle format this build writes and reads; the server names it in upload rejections so a CLI can say which side is behind. */
+export const REPLAY_FORMAT_VERSION = 1;
+
 export interface ReplayMeta {
   id: string;
   title: string;
@@ -82,6 +85,8 @@ export interface ReplayMeta {
   viewport: { width: number; height: number };
   eventCount: number;
   version: 1;
+  /** The bundle format the producer wrote (REPLAY_FORMAT_VERSION). Absent on bundles from before it existed. */
+  formatVersion?: number;
   videoFile?: string;
   /** Absent means 'agent'. */
   source?: ReplaySource;
@@ -151,6 +156,12 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
     throw new Error('replay tracks must be arrays');
   }
   if (replay.meta.version !== 1) throw new Error('unsupported replay version');
+  if (replay.meta.formatVersion !== undefined) {
+    if (!Number.isInteger(replay.meta.formatVersion) || replay.meta.formatVersion < 1)
+      throw new Error('replay.meta.formatVersion must be a positive integer');
+    if (replay.meta.formatVersion > REPLAY_FORMAT_VERSION)
+      throw new Error(`replay.meta.formatVersion ${replay.meta.formatVersion} is newer than the supported format ${REPLAY_FORMAT_VERSION}`);
+  }
   if (!Number.isFinite(replay.meta.duration) || Number(replay.meta.duration) < 0) {
     throw new Error('replay duration is invalid');
   }
