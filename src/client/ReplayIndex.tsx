@@ -422,9 +422,7 @@ export function ReplayIndex({
   const listSearch = searchFromFilters(filters);
   const queryClient = useQueryClient();
   // why: lists a server render put in the page (or this tab already loaded) show at once, without the first-load stagger.
-  const [restored] = useState(
-    () => cachedIndex(queryClient, listSearch, INDEX_SUITES_URL) ?? restoredIndex(listSearch),
-  );
+  const [restored] = useState(() => cachedIndex(queryClient, listSearch, INDEX_SUITES_URL) ?? restoredIndex(listSearch));
   // why: lists a server render fetched moments ago are what the server has; the first fetch would only repeat them.
   const [renderedFresh] = useState(() => freshIndex(queryClient, listSearch, INDEX_SUITES_URL));
   const skipFirstFetch = useRef({ sessions: renderedFresh, suites: renderedFresh });

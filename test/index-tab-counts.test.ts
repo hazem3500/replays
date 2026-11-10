@@ -29,7 +29,11 @@ describe('tab counts come from one list', () => {
   });
 
   it('matches a row by a linked handle and never matches an empty identity', () => {
-    const row = buildIndexEntries([{ ...summary('h', undefined), people: [{ role: 'reviewer', handles: { github: 'Ada-L' } }] } as ReplaySummary], [], {})[0]!;
+    const row = buildIndexEntries(
+      [{ ...summary('h', undefined), people: [{ role: 'reviewer', handles: { github: 'Ada-L' } }] } as ReplaySummary],
+      [],
+      {},
+    )[0]!;
     expect(entryIsMine(row, { handles: { github: 'ada-l' } })).toBe(true);
     expect(entryIsMine(row, {})).toBe(false);
   });
@@ -54,9 +58,7 @@ describe('profile tabs', () => {
   ] as never;
   const render = (value: string | undefined) =>
     act(() => {
-      root.render(
-        createElement(ProfileSegments, { profiles, value, counts: tabCounts(entries, me), onChange: () => {}, forYou: true }),
-      );
+      root.render(createElement(ProfileSegments, { profiles, value, counts: tabCounts(entries, me), onChange: () => {}, forYou: true }));
     });
   const shown = () => [...host.querySelectorAll('.profile-segment')].map((tab) => tab.textContent);
 
