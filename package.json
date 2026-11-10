@@ -49,7 +49,7 @@
     "quality:size:ratchet": "node scripts/quality-size.mjs --ratchet",
     "quality:size:base": "bash scripts/ci-size-base.sh",
     "quality:size:ci": "node scripts/quality-size.mjs --baseline .review-artifacts/quality/main-bundle-sizes.json --baseline-budgets .review-artifacts/quality/main-budgets.json --check-ratchet",
-    "quality:test": "node --test scripts/build-lib.test.mjs scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs scripts/mutation-report.test.mjs scripts/quality-report.test.mjs",
+    "quality:test": "node --test scripts/build-cli.test.mjs scripts/build-lib.test.mjs scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs scripts/mutation-report.test.mjs scripts/quality-report.test.mjs",
     "check:quick": "vp run cached:lint && vp run cached:format && vp run cached:types && pnpm test:changed",
     "test:changed": "vp test run --config vitest.config.ts --changed=origin/main --passWithNoTests",
     "test:affected": "vp test run --config vitest.config.ts --changed=${TEST_CHANGED_SINCE:?set TEST_CHANGED_SINCE to the base commit} --passWithNoTests",
@@ -64,7 +64,13 @@
     "mutation:report:test": "node --test scripts/mutation-report.test.mjs"
   },
   "dependencies": {
+    "playwright-core": "1.64.0"
+  },
+  "devDependencies": {
     "@agent-native/core": "0.220.0",
+    "@arethetypeswrong/cli": "0.18.5",
+    "@axe-core/playwright": "4.13.0",
+    "@babel/core": "7.29.7",
     "@base-ui/react": "1.9.0",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/context-async-hooks": "2.12.0",
@@ -75,38 +81,6 @@
     "@opentelemetry/sdk-trace-base": "2.12.0",
     "@opentelemetry/sdk-trace-node": "2.12.0",
     "@opentelemetry/semantic-conventions": "1.43.0",
-    "@tanstack/query-db-collection": "1.4.8",
-    "@tanstack/react-db": "0.5.12",
-    "@tanstack/react-query": "5.104.2",
-    "@tanstack/react-router": "1.170.46",
-    "@tanstack/react-router-ssr-query": "1.167.3",
-    "@tanstack/react-start": "1.169.4",
-    "@tanstack/react-virtual": "3.14.23",
-    "ajv": "^8.20.0",
-    "ajv-formats": "^3.0.1",
-    "class-variance-authority": "0.7.1",
-    "clsx": "2.1.1",
-    "effect": "4.0.6",
-    "esbuild": "0.28.2",
-    "h3": "2.0.8",
-    "lucide-react": "1.55.0",
-    "motion": "14.9.0",
-    "playwright-core": "1.64.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "rou3": "1.0.0",
-    "rrweb": "2.1.7",
-    "sonner": "2.0.8",
-    "srvx": "1.0.7",
-    "tailwind-merge": "3.7.0",
-    "ws": "8.22.0",
-    "xstate": "5.33.3",
-    "zod": "4.6.7"
-  },
-  "devDependencies": {
-    "@arethetypeswrong/cli": "0.18.5",
-    "@axe-core/playwright": "4.13.0",
-    "@babel/core": "7.29.7",
     "@playwright/test": "1.64.0",
     "@rolldown/plugin-babel": "0.2.4",
     "@size-limit/file": "14.3.0",
@@ -116,6 +90,13 @@
     "@stryker-mutator/core": "10.1.1",
     "@stryker-mutator/vitest-runner": "10.1.1",
     "@tailwindcss/vite": "4.3.3",
+    "@tanstack/query-db-collection": "1.4.8",
+    "@tanstack/react-db": "0.5.12",
+    "@tanstack/react-query": "5.104.2",
+    "@tanstack/react-router": "1.170.46",
+    "@tanstack/react-router-ssr-query": "1.167.3",
+    "@tanstack/react-start": "1.169.4",
+    "@tanstack/react-virtual": "3.14.23",
     "@tanstack/router-plugin": "1.168.48",
     "@types/babel__core": "7.20.5",
     "@types/node": "22.18.10",
@@ -123,18 +104,34 @@
     "@types/react-dom": "19.3.0",
     "@types/ws": "8.18.2",
     "@vitejs/plugin-react": "6.1.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "babel-plugin-react-compiler": "1.0.0",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
     "dependency-cruiser": "18.7.0",
+    "effect": "4.0.6",
+    "esbuild": "0.28.2",
+    "h3": "2.0.8",
     "happy-dom": "21.0.4",
     "jsdom": "27.4.0",
     "knip": "6.43.0",
     "lefthook": "2.2.2",
+    "lucide-react": "1.55.0",
+    "motion": "14.9.0",
     "msw": "3.0.3",
     "oxlint": "1.89.0",
     "oxlint-tsgolint": "7.0.2004",
     "publint": "0.3.25",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "rou3": "1.0.0",
+    "rrweb": "2.1.7",
     "size-limit": "14.3.0",
+    "sonner": "2.0.8",
+    "srvx": "1.0.7",
     "storybook": "10.6.3",
+    "tailwind-merge": "3.7.0",
     "tailwindcss": "4.3.3",
     "tsrs": "0.20.0-ts7.1.0-beta",
     "turbo": "2.11.10",
@@ -142,7 +139,10 @@
     "typescript": "5.9.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
     "vite-plus": "1.4.0",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "ws": "8.22.0",
+    "xstate": "5.33.3",
+    "zod": "4.6.7"
   },
   "description": "Record browser sessions (rrweb + steps + console + network + performance) into one portable replay, and play them back in a self-hostable viewer.",
   "license": "MIT",
@@ -258,10 +258,154 @@
     }
   },
   "peerDependencies": {
-    "react": ">=19"
+    "@agent-native/core": "0.220.0",
+    "@base-ui/react": "1.9.0",
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/context-async-hooks": "2.12.0",
+    "@opentelemetry/core": "2.12.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "0.223.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "0.223.0",
+    "@opentelemetry/resources": "2.12.0",
+    "@opentelemetry/sdk-trace-base": "2.12.0",
+    "@opentelemetry/sdk-trace-node": "2.12.0",
+    "@opentelemetry/semantic-conventions": "1.43.0",
+    "@tanstack/query-db-collection": "1.4.8",
+    "@tanstack/react-db": "0.5.12",
+    "@tanstack/react-query": "5.104.2",
+    "@tanstack/react-router": "1.170.46",
+    "@tanstack/react-router-ssr-query": "1.167.3",
+    "@tanstack/react-start": "1.169.4",
+    "@tanstack/react-virtual": "3.14.23",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "effect": "4.0.6",
+    "esbuild": "0.28.2",
+    "h3": "2.0.8",
+    "lucide-react": "1.55.0",
+    "motion": "14.9.0",
+    "react": ">=19",
+    "react-dom": ">=19",
+    "rou3": "1.0.0",
+    "rrweb": "2.1.7",
+    "sonner": "2.0.8",
+    "srvx": "1.0.7",
+    "tailwind-merge": "3.7.0",
+    "ws": "8.22.0",
+    "xstate": "5.33.3",
+    "zod": "4.6.7"
   },
   "peerDependenciesMeta": {
+    "@agent-native/core": {
+      "optional": true
+    },
+    "@base-ui/react": {
+      "optional": true
+    },
+    "@opentelemetry/api": {
+      "optional": true
+    },
+    "@opentelemetry/context-async-hooks": {
+      "optional": true
+    },
+    "@opentelemetry/core": {
+      "optional": true
+    },
+    "@opentelemetry/exporter-trace-otlp-grpc": {
+      "optional": true
+    },
+    "@opentelemetry/exporter-trace-otlp-proto": {
+      "optional": true
+    },
+    "@opentelemetry/resources": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-trace-base": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-trace-node": {
+      "optional": true
+    },
+    "@opentelemetry/semantic-conventions": {
+      "optional": true
+    },
+    "@tanstack/query-db-collection": {
+      "optional": true
+    },
+    "@tanstack/react-db": {
+      "optional": true
+    },
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "@tanstack/react-router": {
+      "optional": true
+    },
+    "@tanstack/react-router-ssr-query": {
+      "optional": true
+    },
+    "@tanstack/react-start": {
+      "optional": true
+    },
+    "@tanstack/react-virtual": {
+      "optional": true
+    },
+    "ajv": {
+      "optional": true
+    },
+    "ajv-formats": {
+      "optional": true
+    },
+    "class-variance-authority": {
+      "optional": true
+    },
+    "clsx": {
+      "optional": true
+    },
+    "effect": {
+      "optional": true
+    },
+    "esbuild": {
+      "optional": true
+    },
+    "h3": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "motion": {
+      "optional": true
+    },
     "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "rou3": {
+      "optional": true
+    },
+    "rrweb": {
+      "optional": true
+    },
+    "sonner": {
+      "optional": true
+    },
+    "srvx": {
+      "optional": true
+    },
+    "tailwind-merge": {
+      "optional": true
+    },
+    "ws": {
+      "optional": true
+    },
+    "xstate": {
+      "optional": true
+    },
+    "zod": {
       "optional": true
     }
   }

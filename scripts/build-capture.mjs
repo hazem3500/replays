@@ -36,8 +36,9 @@ for (const specifier of imports) {
   if (builtins.has(specifier)) continue;
   if (specifier.startsWith('.') || specifier.startsWith('/')) throw new Error(`unexpected external file: ${specifier}`);
   const name = specifier.startsWith('@') ? specifier.split('/').slice(0, 2).join('/') : specifier.split('/')[0];
-  if (!pkg.dependencies[name]) throw new Error(`undeclared capture dependency: ${specifier}`);
-  dependencies[name] = pkg.dependencies[name];
+  const version = pkg.dependencies[name] ?? pkg.devDependencies[name];
+  if (!version) throw new Error(`undeclared capture dependency: ${specifier}`);
+  dependencies[name] = version;
 }
 const inputs = Object.keys(result.metafile.inputs).sort();
 const forbidden = inputs.filter(

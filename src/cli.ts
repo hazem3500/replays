@@ -52,19 +52,10 @@ else
       process.stdout.write(`${renderAgentGuide()}\n`);
       break;
     case 'migrate':
-      await (await import('./server/migrate-cli.ts')).runMigrateCli(rest);
-      break;
     case 'plugin':
-      if (rest[0] !== 'check') {
-        process.stderr.write('usage: replays plugin check <file> [options]\n');
-        process.exitCode = 2;
-      } else await (await import('./plugin/check.ts')).runPluginCheckCli(rest.slice(1), process.env);
-      break;
     case 'mcp':
-      await (await import('./mcp/main.ts')).runMcpCli(rest);
-      break;
     case 'build-static':
-      await (await import('./server/static.ts')).runBuildStaticCli(rest);
+      await (await import('./server-commands.ts')).runServerCommand(command, rest, process.env);
       break;
     case 'serve':
       process.argv = [process.argv[0]!, process.argv[1]!, ...rest];

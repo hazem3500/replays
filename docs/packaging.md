@@ -32,9 +32,16 @@ installed copy with no repository checkout.
 
 ## What it costs, and when to split
 
-The cost is install weight for the narrow consumer: someone who only wants `/capture` also installs everything in `dependencies`,
-including the OpenTelemetry packages and the viewer's UI libraries. Split, or move heavy dependencies to optional peers,
-only if one of these becomes true:
+The cost was install weight for the narrow consumer, so the heavy dependencies are optional peers: `dependencies` is only
+`playwright-core`, and `dist/cli` is a self-contained bundle (`scripts/build-cli.test.mjs` fails if it imports a server or
+viewer module). The server and viewer dependencies (OpenTelemetry, the UI libraries and the rest) are `peerDependencies` marked
+optional, pinned in `devDependencies` for this repository. Code that imports the library entries installs the peers it uses.
+
+`replays serve`, `migrate`, `mcp`, `build-static` and `plugin check` need them. `bin/replays.mjs` checks whether they resolve beside
+the package and, if not, installs them with `npm install` into `<cache>/viewer-<version>-<key>` (`~/.cache/replays`, or
+`$XDG_CACHE_HOME/replays`, `%LOCALAPPDATA%\replays`, or `REPLAYS_VIEWER_CACHE`), shows a spinner, copies the package's `dist` and
+`sample` next to the install and runs from that copy (`src/viewer-runtime.ts`). Later runs reuse it. A failed install leaves no cache
+behind. Delete old `viewer-*` folders to reclaim space. Split into separate packages only if one of these becomes true:
 
 - consumers who only record complain about install size or supply-chain surface, and optional peer dependencies are not enough;
 - the capture side needs a different release cadence from the server (for example it is embedded in test runners that cannot

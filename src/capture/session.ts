@@ -1,4 +1,3 @@
-import { build } from 'esbuild';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -35,6 +34,8 @@ export async function recorderSource() {
     .find((candidate) => existsSync(candidate));
   if (prebuilt) return readFile(prebuilt, 'utf8');
   const file = fileURLToPath(new URL('./injected-recorder.ts', import.meta.url));
+  // why: only a source checkout bundles the recorder on demand; a built CLI ships it prebuilt and never loads esbuild.
+  const { build } = await import('esbuild');
   const result = await build({
     entryPoints: [file],
     bundle: true,

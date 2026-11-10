@@ -12,9 +12,22 @@ importers:
 
   .:
     dependencies:
+      playwright-core:
+        specifier: 1.64.0
+        version: 1.64.0
+    devDependencies:
       '@agent-native/core':
         specifier: 0.220.0
         version: 0.220.0(f8012c7d72bccf365f5f88537fbb7ce1)
+      '@arethetypeswrong/cli':
+        specifier: 0.18.5
+        version: 0.18.5
+      '@axe-core/playwright':
+        specifier: 4.13.0
+        version: 4.13.0(playwright-core@1.64.0)
+      '@babel/core':
+        specifier: 7.29.7
+        version: 7.29.7
       '@base-ui/react':
         specifier: 1.9.0
         version: 1.9.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -45,97 +58,6 @@ importers:
       '@opentelemetry/semantic-conventions':
         specifier: 1.43.0
         version: 1.43.0
-      '@tanstack/query-db-collection':
-        specifier: 1.4.8
-        version: 1.4.8(@tanstack/query-core@5.104.2)(typescript@5.9.3)
-      '@tanstack/react-db':
-        specifier: 0.5.12
-        version: 0.5.12(react@19.3.0)(typescript@5.9.3)
-      '@tanstack/react-query':
-        specifier: 5.104.2
-        version: 5.104.2(react@19.3.0)
-      '@tanstack/react-router':
-        specifier: 1.170.46
-        version: 1.170.46(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tanstack/react-router-ssr-query':
-        specifier: 1.167.3
-        version: 1.167.3(@tanstack/query-core@5.104.2)(@tanstack/react-query@5.104.2(react@19.3.0))(@tanstack/react-router@1.170.46(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.39)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tanstack/react-start':
-        specifier: 1.169.4
-        version: 1.169.4(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.12)
-      '@tanstack/react-virtual':
-        specifier: 3.14.23
-        version: 3.14.23(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      ajv-formats:
-        specifier: ^3.0.1
-        version: 3.0.1(ajv@8.20.0)
-      class-variance-authority:
-        specifier: 0.7.1
-        version: 0.7.1
-      clsx:
-        specifier: 2.1.1
-        version: 2.1.1
-      effect:
-        specifier: 4.0.6
-        version: 4.0.6
-      esbuild:
-        specifier: 0.28.2
-        version: 0.28.2
-      h3:
-        specifier: 2.0.8
-        version: 2.0.8(crossws@0.4.16(srvx@1.0.7))(ocache@0.3.1)
-      lucide-react:
-        specifier: 1.55.0
-        version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
-      motion:
-        specifier: 14.9.0
-        version: 14.9.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      playwright-core:
-        specifier: 1.64.0
-        version: 1.64.0
-      react:
-        specifier: 19.3.0
-        version: 19.3.0
-      react-dom:
-        specifier: 19.3.0
-        version: 19.3.0(react@19.3.0)
-      rou3:
-        specifier: 1.0.0
-        version: 1.0.0
-      rrweb:
-        specifier: 2.1.7
-        version: 2.1.7
-      sonner:
-        specifier: 2.0.8
-        version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      srvx:
-        specifier: 1.0.7
-        version: 1.0.7
-      tailwind-merge:
-        specifier: 3.7.0
-        version: 3.7.0
-      ws:
-        specifier: 8.22.0
-        version: 8.22.0
-      xstate:
-        specifier: 5.33.3
-        version: 5.33.3
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
-    devDependencies:
-      '@arethetypeswrong/cli':
-        specifier: 0.18.5
-        version: 0.18.5
-      '@axe-core/playwright':
-        specifier: 4.13.0
-        version: 4.13.0(playwright-core@1.64.0)
-      '@babel/core':
-        specifier: 7.29.7
-        version: 7.29.7
       '@playwright/test':
         specifier: 1.64.0
         version: 1.64.0
@@ -163,6 +85,27 @@ importers:
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))
+      '@tanstack/query-db-collection':
+        specifier: 1.4.8
+        version: 1.4.8(@tanstack/query-core@5.104.2)(typescript@5.9.3)
+      '@tanstack/react-db':
+        specifier: 0.5.12
+        version: 0.5.12(react@19.3.0)(typescript@5.9.3)
+      '@tanstack/react-query':
+        specifier: 5.104.2
+        version: 5.104.2(react@19.3.0)
+      '@tanstack/react-router':
+        specifier: 1.170.46
+        version: 1.170.46(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@tanstack/react-router-ssr-query':
+        specifier: 1.167.3
+        version: 1.167.3(@tanstack/query-core@5.104.2)(@tanstack/react-query@5.104.2(react@19.3.0))(@tanstack/react-router@1.170.46(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.39)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@tanstack/react-start':
+        specifier: 1.169.4
+        version: 1.169.4(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.12)
+      '@tanstack/react-virtual':
+        specifier: 3.14.23
+        version: 3.14.23(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/router-plugin':
         specifier: 1.168.48
         version: 1.168.48(@tanstack/react-router@1.170.46(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(esbuild@0.28.2)(rolldown@1.2.12)
@@ -184,12 +127,33 @@ importers:
       '@vitejs/plugin-react':
         specifier: 6.1.2
         version: 6.1.2(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7)(@babel/runtime@8.0.7)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(rolldown@1.2.12))(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(babel-plugin-react-compiler@1.0.0)
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
       babel-plugin-react-compiler:
         specifier: 1.0.0
         version: 1.0.0
+      class-variance-authority:
+        specifier: 0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: 2.1.1
+        version: 2.1.1
       dependency-cruiser:
         specifier: 18.7.0
         version: 18.7.0
+      effect:
+        specifier: 4.0.6
+        version: 4.0.6
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      h3:
+        specifier: 2.0.8
+        version: 2.0.8(crossws@0.4.16(srvx@1.0.7))(ocache@0.3.1)
       happy-dom:
         specifier: 21.0.4
         version: 21.0.4
@@ -202,6 +166,12 @@ importers:
       lefthook:
         specifier: 2.2.2
         version: 2.2.2
+      lucide-react:
+        specifier: 1.55.0
+        version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
+      motion:
+        specifier: 14.9.0
+        version: 14.9.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       msw:
         specifier: 3.0.3
         version: 3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3)
@@ -214,12 +184,33 @@ importers:
       publint:
         specifier: 0.3.25
         version: 0.3.25
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+      rou3:
+        specifier: 1.0.0
+        version: 1.0.0
+      rrweb:
+        specifier: 2.1.7
+        version: 2.1.7
       size-limit:
         specifier: 14.3.0
         version: 14.3.0
+      sonner:
+        specifier: 2.0.8
+        version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      srvx:
+        specifier: 1.0.7
+        version: 1.0.7
       storybook:
         specifier: 10.6.3
         version: 10.6.3(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))
+      tailwind-merge:
+        specifier: 3.7.0
+        version: 3.7.0
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
@@ -244,6 +235,15 @@ importers:
       vitest:
         specifier: 5.0.5
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/browser-preview@5.0.5)(@vitest/ui@5.0.5)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(happy-dom@21.0.4)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))
+      ws:
+        specifier: 8.22.0
+        version: 8.22.0
+      xstate:
+        specifier: 5.33.3
+        version: 5.33.3
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
 
   examples/agent-native:
     dependencies:

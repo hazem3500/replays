@@ -42,6 +42,8 @@ pnpm dev                          # http://localhost:3000, hot reload, AUTH_MODE
 pnpm build && pnpm start          # http://127.0.0.1:8080
 ```
 
+From an installed package, `replays serve` fetches the viewer's dependencies on first use into `~/.cache/replays` (set `REPLAYS_VIEWER_CACHE` to move it); the other commands need only `playwright-core`.
+
 The default `AUTH_MODE=none` is for local use. Read [Authentication](#authentication) before exposing the server.
 
 ### Record inside your app
