@@ -114,8 +114,6 @@ describe('host diagnostic surfaces', () => {
     expect([...host.querySelectorAll<HTMLElement>('li[data-slot-item]')].map((item) => item.dataset.slotItem)).toEqual([
       'plugin:acme:budget',
       'core:lcp',
-      'core:note:responsiveness',
-      'core:note:smoothness',
     ]);
     expect(host.textContent).toContain('Within the team budget');
     expect(host.textContent).toContain('Largest paint');
