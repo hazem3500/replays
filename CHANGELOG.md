@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Request policies: an optional `originPatterns` list of anchored host patterns (such as `^https://[0-9]+-web\.pull\.example\.com$`) for trusted origins that vary by subdomain, validated at registration so none can be broad. A refused cross-origin request now answers `403` with `Vary: Origin` and a JSON body, and a listed origin can read the refusal of a method or header it may not use.
+
 - Review suites: an optional plain-text `summary` on a suite and on each run. The suite's shows (collapsible) in the sidebar header and the run's in its Context tab. Not part of a registration's identity, so a later registration can replace it; at most 4000 characters, no HTML.
 
 - CLI: a branded, dependency-free terminal experience (header in the Replays pink, spinners for capture and upload, aligned `status` and `doctor` blocks, aligned help, clickable replay links) that turns itself off when piped, in CI, with `NO_COLOR` or with `--json`. Added `--json` to `capture`, `upload`, `status` and `doctor`, `replays agent-guide` (markdown generated from the same command definitions as `--help`), `doctor` checks for Node, Chrome, ffmpeg and sign-in, a one-line fix hint on common failures (also a `hint` field in the JSON error), and an opt-in once-a-day update notice. Exit codes and the default JSON output are unchanged.

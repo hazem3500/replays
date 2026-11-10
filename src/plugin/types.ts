@@ -246,6 +246,12 @@ export interface RequestPolicy {
   readonly methods: readonly string[];
   /** Serialized http(s) origins, without trailing slashes. No wildcards or opaque origins. */
   readonly origins: readonly string[];
+  /**
+   * Anchored regex strings for origins that vary by subdomain, such as `^https://[0-9]+-web\\.pull\\.example\\.com$`. Each starts
+   * with `^https://`, ends with `$`, escapes its dots and ends in a literal registrable suffix; an origin is allowed when
+   * it equals an entry of `origins` or fully matches a pattern.
+   */
+  readonly originPatterns?: readonly string[];
   /** Allowed preflight request header names (case insensitive). */
   readonly headers: readonly string[];
   readonly credentials?: boolean;

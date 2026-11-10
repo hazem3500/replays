@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { PluginRegistry } from '../plugin/registry.ts';
+import { originAllowed } from '../plugin/request-policy.ts';
 
 /** Keep policy Vary fields when core responses or host hooks add their own cache variations. */
 function vary(response: ServerResponse, fields: string[]) {
@@ -47,11 +48,17 @@ export function applyRequestPolicy(
   const method = preflight ? request.headers['access-control-request-method'] : request.method;
   const policy =
     typeof origin === 'string' && typeof method === 'string'
-      ? policies.find(({ value }) => value.methods.includes(method) && value.origins.includes(origin))?.value
+      ? policies.find(({ value }) => value.methods.includes(method) && originAllowed(value, origin))?.value
       : undefined;
   const deny = () => {
-    response.writeHead(403, { 'cache-control': 'no-store' });
-    response.end('cross-origin request denied');
+    // why: a listed origin may read why it was refused (wrong method or headers); an unlisted one learns nothing. The body is static.
+    const listed = typeof origin === 'string' ? policies.find(({ value }) => originAllowed(value, origin))?.value : undefined;
+    if (listed && !preflight) {
+      response.setHeader('access-control-allow-origin', origin!);
+      if (listed.credentials) response.setHeader('access-control-allow-credentials', 'true');
+    }
+    response.writeHead(403, { 'cache-control': 'no-store', 'content-type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify({ error: 'cross-origin request denied' }));
     return { handled: true, csrfAllowed: false };
   };
   if (preflight) {
