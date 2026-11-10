@@ -1,5 +1,5 @@
 import {
-  ChartNoAxesGanttIcon,
+  ChartColumnIcon,
   CircleAlertIcon,
   GaugeIcon,
   GlobeIcon,
@@ -266,7 +266,7 @@ export function TimelineToggle() {
       aria-controls={collapsed ? undefined : 'performance-timeline-plot'}
       onClick={() => toggleRibbonCollapsed()}
     >
-      <ChartNoAxesGanttIcon aria-hidden="true" />
+      <ChartColumnIcon aria-hidden="true" />
     </IconButton>
   );
 }

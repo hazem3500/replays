@@ -174,3 +174,4 @@ button.pp-chip:hover .pp-chip-value { text-decoration: underline; text-decoratio
 .pp-scope button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
 .pp-scope svg { width: 12px; height: 12px; }
 button.pp-chip[aria-pressed="true"] { text-decoration: underline; text-decoration-color: var(--accent, var(--text-secondary)); text-underline-offset: 3px; }
+.pp-vitals:not([data-details]) > ul > li:not(:has(> .pp-group-note)) + li:has(> .pp-group-note) { padding-left: 16px; border-left: 1px solid var(--r-border); margin-left: 0; }

@@ -111,7 +111,7 @@ export function VitalsBar({
           </>
         ),
       })),
-      ...(notes.length ? [{ id: `core:note:${group}`, order: base + 900, render: () => <GroupNotes notes={notes} /> }] : []),
+      ...(notes.length ? [{ id: `core:note:${group}`, order: details ? base + 900 : NOTES_LAST + position, render: () => <GroupNotes notes={notes} /> }] : []),
     ];
   });
   if (groups.every(({ shown }) => !shown.length))
@@ -142,6 +142,8 @@ export function VitalsBar({
   );
 }
 
+/** In the strip every note comes after every metric, as one muted group. */
+const NOTES_LAST = 10_000;
 const NO_STATS: readonly Stat[] = [];
 const GROUPS: readonly StatGroup[] = ['loading', 'responsiveness', 'smoothness'];
 
