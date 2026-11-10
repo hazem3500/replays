@@ -31,11 +31,11 @@ describe('performance why: moments', () => {
   it('lists interactions from the Event Timing breakdown beside the long tasks and frames no task covers', () => {
     expect(momentsOf().moments.map((item) => `${item.label} ${item.value}`)).toEqual([
       'Long task 310',
-      'Click · button \'Add to cart\' 56',
+      "Click · button 'Add to cart' 56",
       'Long task 90',
-      'Key press · textbox \'Search\' 120',
+      "Key press · textbox 'Search' 120",
       'Long task 140',
-      'Click · button \'Plan time\' 608',
+      "Click · button 'Plan time' 608",
       'Long task 182',
       'Long frame 90',
     ]);
@@ -55,8 +55,7 @@ describe('performance why: moments', () => {
     const bundle = recording();
     const track = must(bundle.performance);
     delete track.interactions;
-    track.entries.push({ at: 3737, kind: 'slow-interaction', value: 72, eventType: 'click' });
-    expect(momentsOf(bundle).moments.filter((item) => item.kind === 'interaction').map((item) => item.label)).toEqual(['Click']);
+    expect(momentsOf(bundle).moments.filter((item) => item.kind === 'interaction').map((item) => item.label)).toEqual(['Click', 'Key press', 'Click']);
   });
 
   it('does not count a frame no long task covers as a long task in the vitals', () => {
