@@ -29,7 +29,9 @@ interface Manifest {
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
 const stringMap = (value: unknown) =>
-  isRecord(value) ? Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) : {};
+  isRecord(value)
+    ? Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+    : {};
 
 function parseManifest(text: string): Manifest {
   const parsed: unknown = JSON.parse(text);
