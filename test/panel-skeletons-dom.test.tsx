@@ -8,28 +8,30 @@ import { PanelSkeleton } from '@/viewer/PanelSkeletons.tsx';
 
 Reflect.set(globalThis, 'IS_REACT_ACT_ENVIRONMENT', true);
 
+const flush = (work: () => void) => void act(work);
+
 let host: HTMLDivElement;
 let root: Root;
 
 function render(panel: string) {
-  act(() => root.render(<PanelSkeleton panel={panel} />));
+  flush(() => root.render(<PanelSkeleton panel={panel} />));
   return host.querySelector<HTMLElement>('[data-testid="panel-pending"]');
 }
 const count = (selector: string) => host.querySelectorAll(selector).length;
 
-beforeEach(() => {
-  vi.useFakeTimers();
-  host = document.createElement('div');
-  document.body.append(host);
-  root = createRoot(host);
-});
-afterEach(() => {
-  act(() => root.unmount());
-  host.remove();
-  vi.useRealTimers();
-});
-
 describe('panel skeletons', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+  });
+  afterEach(() => {
+    flush(() => root.unmount());
+    host.remove();
+    vi.useRealTimers();
+  });
+
   it('performance mirrors the headline, timeline lanes, stats pills and table rows', () => {
     render('performance');
     expect(count('.sk-lead .skel')).toBe(3);
@@ -82,17 +84,17 @@ describe('panel skeletons', () => {
 
   it('stays unshown before the delay and shows after it', () => {
     const frame = render('console');
-    act(() => vi.advanceTimersByTime(SKELETON_DELAY_MS - 1));
+    flush(() => vi.advanceTimersByTime(SKELETON_DELAY_MS - 1));
     expect(frame?.hasAttribute('data-shown')).toBe(false);
-    act(() => vi.advanceTimersByTime(1));
+    flush(() => vi.advanceTimersByTime(1));
     expect(frame?.hasAttribute('data-shown')).toBe(true);
   });
 
   it('never shows when the panel is replaced before the delay', () => {
     const frame = render('console');
-    act(() => vi.advanceTimersByTime(SKELETON_DELAY_MS - 10));
-    act(() => root.render(<p>loaded</p>));
-    act(() => vi.advanceTimersByTime(SKELETON_DELAY_MS));
+    flush(() => vi.advanceTimersByTime(SKELETON_DELAY_MS - 10));
+    flush(() => root.render(<p>loaded</p>));
+    flush(() => vi.advanceTimersByTime(SKELETON_DELAY_MS));
     expect(frame?.hasAttribute('data-shown')).toBe(false);
   });
 });

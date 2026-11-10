@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Skeleton, SkeletonFrame } from '@/components/ui/skeleton.tsx';
 
+// oxlint-disable-next-line import/no-unassigned-import -- why: the skeletons' styles travel with them into whichever chunk draws them.
 import './panel-skeletons.css';
 import { useRibbonCollapsed } from './ribbon-collapse.ts';
 
@@ -19,7 +20,7 @@ function Row({ head, children }: { head?: boolean; children: ReactNode }) {
 /** The two-to-three lanes of a time ribbon: labels in a gutter, faint bands in the plot. */
 function Ribbon({ labels, bands, tall }: { labels: readonly number[]; bands: readonly number[]; tall?: boolean }) {
   return (
-    <div className="sk-tl" data-tall={tall || undefined}>
+    <div className="sk-tl" data-tall={tall ? '' : undefined}>
       <div className="sk-tl-gutter">
         {labels.map((width) => (
           <div key={width} className="sk-lane">
