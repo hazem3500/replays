@@ -1,7 +1,8 @@
-import type { ReplayBundle, ReplayPerformanceTrack } from '../../../shared/replay.ts';
+import type { ReplayBundle, ReplayInteraction, ReplayLongFrame, ReplayPerformanceTrack } from '../../../shared/replay.ts';
 import { formatDuration, type NetworkRow } from '../network/model.ts';
 import { buildPerformance, type PerformanceSignal } from '../performance.ts';
 import { validDuration } from '../waterfall.ts';
+import { describeTarget, NO_WHY, overlapMs, type PerfWhy } from './why.ts';
 
 export type Verdict = 'good' | 'needs-work' | 'poor';
 /** [good at or under, poor over], in ms. */
@@ -40,6 +41,12 @@ export interface Moment {
   verdict: Verdict;
   /** How far toward the poor line: 1 is on it. */
   severity: number;
+  /** The interaction's phases and target, when the recorder captured them. */
+  interaction?: ReplayInteraction;
+  /** The long animation frame this moment sat in, with its scripts. */
+  frame?: ReplayLongFrame;
+  /** 'frame' for a long animation frame no long task covers; absent for a long task or interaction. */
+  origin?: 'frame';
 }
 
 /** The capture keeps one entry per event type; events this close with the same duration are one interaction. */
@@ -75,9 +82,48 @@ function moment(kind: Moment['kind'], signal: PerformanceSignal, value: number, 
   };
 }
 
-/** Long tasks and grouped interactions, in time order. Paints are milestones, not moments: they live in the vitals. */
-export function buildMoments(signals: readonly PerformanceSignal[]): Moment[] {
+function made(kind: Moment['kind'], id: string, label: string, at: number, value: number): Moment {
+  const budget = kind === 'task' ? BUDGETS.task : BUDGETS.interaction;
+  return { id, kind, label, at, end: at + value, value, verdict: verdictFor(value, budget), severity: value / budget[1] };
+}
+
+/** "Click · button 'Plan time'": what it was and what it happened on, where the privacy mode kept the target. */
+export function interactionTitle(interaction: ReplayInteraction) {
+  const what = interactionLabel([interaction.eventType]);
+  const target = describeTarget(interaction.target);
+  return target ? `${what} · ${target}` : what;
+}
+
+function interactionMoments(why: PerfWhy) {
+  return (why.interactions ?? []).filter((item) => validDuration(item.duration)).map((item, index) => {
+    const frame = why.frames.find((candidate) => candidate.index === item.frame);
+    return { ...made('interaction', `interaction-${index}`, interactionTitle(item), item.at, item.duration), interaction: item, ...(frame ? { frame } : {}) };
+  });
+}
+
+/** Attaches each long animation frame to the long task it overlaps most; a frame no task covers becomes its own moment. */
+function attachFrames(tasks: Moment[], why: PerfWhy) {
+  const loose: Moment[] = [];
+  for (const frame of why.frames) {
+    const span = { at: frame.at, end: frame.at + frame.duration };
+    const best = tasks
+      .filter((task) => !task.frame && overlapMs(task, span) > 0)
+      .reduce<Moment | undefined>((top, task) => (!top || overlapMs(task, span) > overlapMs(top, span) ? task : top), undefined);
+    if (best) best.frame = frame;
+    else if (!tasks.some((task) => overlapMs(task, span) > 0))
+      loose.push({ ...made('task', `frame-${frame.index}`, 'Long frame', frame.at, frame.duration), frame, origin: 'frame' });
+  }
+  return loose;
+}
+
+/**
+ * Long tasks and grouped interactions, in time order. Paints are milestones, not moments: they live in the vitals.
+ * With the recorder's "why" data, interactions come from its Event Timing breakdown (every one over 16 ms), and long
+ * animation frames explain the long tasks they overlap, or stand as moments of their own.
+ */
+export function buildMoments(signals: readonly PerformanceSignal[], why: PerfWhy = NO_WHY): Moment[] {
   const moments: Moment[] = [];
+  const rich = why.interactions !== undefined;
   let open: { signal: PerformanceSignal; events: string[] } | undefined;
   const close = () => {
     if (open) moments.push(moment('interaction', open.signal, open.signal.entry.value, interactionLabel(open.events)));
@@ -87,13 +133,18 @@ export function buildMoments(signals: readonly PerformanceSignal[]): Moment[] {
     const value = signal.entry.value;
     if (!validDuration(value)) continue;
     if (signal.entry.kind === 'long-task') moments.push(moment('task', signal, value, 'Long task'));
-    if (signal.entry.kind !== 'slow-interaction') continue;
+    if (signal.entry.kind !== 'slow-interaction' || rich) continue;
     const joins = open?.signal.entry.value === value && signal.at - open.signal.at <= SAME_INTERACTION_MS;
     if (!joins) close();
     if (open) open.events.push(signal.entry.eventType ?? '');
     else open = { signal, events: [signal.entry.eventType ?? ''] };
   }
   close();
+  const loose = attachFrames(
+    moments.filter((item) => item.kind === 'task'),
+    why,
+  );
+  moments.push(...loose, ...interactionMoments(why));
   return moments.toSorted((a, b) => a.at - b.at || a.id.localeCompare(b.id));
 }
 
@@ -184,7 +235,7 @@ export function buildVitals(signals: readonly PerformanceSignal[], moments: read
   const fcp = paints('first-contentful-paint')[0];
   // why: LCP is the latest candidate the browser reported, not the largest value.
   const lcp = paints('largest-contentful-paint').at(-1);
-  const tasks = moments.filter((item) => item.kind === 'task');
+  const tasks = moments.filter((item) => item.kind === 'task' && item.origin !== 'frame');
   const interaction = longestOf(moments.filter((item) => item.kind === 'interaction'));
   const task = longestOf(tasks);
   const blocking = watched('tbt') || tasks.length ? totalBlockingTime(tasks) : undefined;
@@ -199,8 +250,8 @@ export function buildVitals(signals: readonly PerformanceSignal[], moments: read
 
 /** A recording's vitals as it plays (another recording in compare mode). */
 export function vitalsOf(bundle: ReplayBundle) {
-  const signals = buildPerformance(bundle).signals;
-  return buildVitals(signals, buildMoments(signals), bundle.performance);
+  const { signals, why } = buildPerformance(bundle);
+  return buildVitals(signals, buildMoments(signals, why), bundle.performance);
 }
 
 /** Each vital's difference from another recording's (positive: this one is slower); undefined where either is missing. */

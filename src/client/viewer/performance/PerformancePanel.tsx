@@ -79,7 +79,7 @@ export function PerformancePanel({
   const [hovered, setHovered] = useState<readonly string[]>([]);
   // why: the verdict's jump lights its marks until the person picks something else.
   const [pinned, setPinned] = useState<readonly string[]>([]);
-  const moments = buildMoments(model.signals);
+  const moments = buildMoments(model.signals, model.why);
   const vitals = buildVitals(model.signals, moments, model.track);
   const lanes = buildLanes(moments, requests, model.shifts);
   const verdict = buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests });
