@@ -10,7 +10,6 @@ export type RawStep =
   | { kind: 'scroll'; direction: 'up' | 'down' | 'left' | 'right'; pixels?: number; label?: string }
   | { kind: 'scroll'; selector: string; label?: string }
   | { kind: 'goto'; url: string; label?: string }
-  /** A PNG of the page at this moment, saved as `shots/<name>.png` in the output directory. */
   | { kind: 'shot'; name: string; label?: string };
 
 /** What a selector wait waits for: a visible match (default), any match in the DOM, or no visible match. */
