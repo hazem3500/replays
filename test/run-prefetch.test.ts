@@ -99,7 +99,7 @@ describe('replay prefetch cache', () => {
   it('reports loaded and loading runs, and cancels a preload nothing shows', async () => {
     const client = new QueryClient();
     expect(replayCached(client, 'a')).toBe(false);
-    void client.prefetchQuery({ ...replayQuery('a'), queryFn: never });
+    void client.query({ ...replayQuery('a'), queryFn: never }).catch(() => undefined);
     expect(replayCached(client, 'a')).toBe(true);
     cancelReplayPrefetch(client, 'a');
     await Promise.resolve();
