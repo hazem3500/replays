@@ -2,10 +2,13 @@ import { formatClock, type ReplayStep } from '../../../shared/replay.ts';
 import { usePlayer } from '../../player.ts';
 import { type LocalItem, LocalTimeline } from '../LocalTimeline.tsx';
 import { DetailHead } from '../network/DetailHead.tsx';
+import { RequestLabel } from '../network/RequestLabel.tsx';
 import { formatDuration, type NetworkRow, stepAt } from '../network/model.ts';
 import type { RibbonTone } from '../TimeRibbon.tsx';
+import { BlockingScripts } from './BlockingScripts.tsx';
+import { InteractionBreakdown } from './InteractionBreakdown.tsx';
 import { MOMENT_DETAIL_ID } from './MomentList.tsx';
-import { BUDGETS, causeOf, type Moment, VERDICT_WORDS, type Verdict } from './model.ts';
+import { BUDGETS, causeOf, interactionLabel, type Moment, VERDICT_WORDS, type Verdict } from './model.ts';
 
 const STRINGS = {
   close: 'Close moment',
@@ -54,6 +57,7 @@ function aroundItems(
     .map((row) => ({
       id: `request:${row.id}`,
       label: `${row.entry.method} ${row.name.path}`,
+      request: { method: row.entry.method, path: row.name.path, url: row.entry.url },
       at: row.at,
       end: row.end,
       tone: row.failed ? ('danger' as const) : undefined,
@@ -104,7 +108,7 @@ export function MomentDetail({
     >
       <DetailHead at={moment.at} stacked={stacked} closeLabel={STRINGS.close} onClose={close}>
         <span className="pp-dot" data-verdict={moment.verdict} aria-hidden="true" />
-        <strong>{moment.label}</strong>
+        <strong>{moment.interaction ? interactionLabel([moment.interaction.eventType]) : moment.label}</strong>
         <span>{formatDuration(moment.value)}</span>
         <span className="pp-verdict" data-verdict={moment.verdict}>
           {VERDICT_WORDS[moment.verdict]}
@@ -112,6 +116,7 @@ export function MomentDetail({
       </DetailHead>
       <p className="np-aside pp-budget-line">{STRINGS.budget(good, poor)}</p>
       <MomentFacts moment={moment} moments={moments} requests={requests} steps={steps} onOpenRequest={onOpenRequest} />
+      <MomentWhy moment={moment} />
       <section className="np-section">
         <h3>{STRINGS.around}</h3>
         <LocalTimeline
@@ -124,6 +129,19 @@ export function MomentDetail({
         />
       </section>
     </section>
+  );
+}
+
+/**
+ * What the recorder captured about why: an interaction's phases, then the scripts of its long animation frame. Both
+ * components are self-contained, so any row detail container can render them.
+ */
+export function MomentWhy({ moment }: { moment: Moment }) {
+  return (
+    <>
+      {moment.interaction ? <InteractionBreakdown interaction={moment.interaction} /> : null}
+      {moment.frame ? <BlockingScripts frame={moment.frame} /> : null}
+    </>
   );
 }
 
@@ -165,7 +183,7 @@ function MomentFacts({
             <button type="button" className="pp-link" onClick={() => player.seek(cause.task.at)}>
               {STRINGS.blockedBy(cause.task.value)}
             </button>
-            <span className="np-aside">{STRINGS.attribution}</span>
+            {cause.task.frame ? null : <span className="np-aside">{STRINGS.attribution}</span>}
           </>
         ) : null}
         {cause.kind === 'network' ? (
@@ -175,7 +193,7 @@ function MomentFacts({
               {cause.requests.slice(0, WHY_MAX_REQUESTS).map((row) => (
                 <li key={row.id}>
                   <button type="button" className="pp-link" onClick={() => onOpenRequest(row.id)}>
-                    {row.entry.method} {row.name.path}
+                    <RequestLabel method={row.entry.method} path={row.name.path} url={row.entry.url} />
                   </button>
                   <span className="np-aside">{row.measured === undefined ? '' : formatDuration(row.measured)}</span>
                 </li>
@@ -189,13 +207,13 @@ function MomentFacts({
         {cause.kind === 'page' ? (
           <>
             {STRINGS.page}
-            <span className="np-aside">{STRINGS.attribution}</span>
+            {moment.frame ? null : <span className="np-aside">{STRINGS.attribution}</span>}
           </>
         ) : null}
         {cause.kind === 'none' ? (
           <>
             {STRINGS.taskIdle}
-            <span className="np-aside">{STRINGS.attribution}</span>
+            {moment.frame ? null : <span className="np-aside">{STRINGS.attribution}</span>}
           </>
         ) : null}
       </dd>

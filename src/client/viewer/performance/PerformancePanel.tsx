@@ -65,7 +65,7 @@ export function PerformancePanel({
   duration: number;
   peers?: readonly PerformancePeer[] | undefined;
   /** Whose source and page say how to capture performance when this recording has none. */
-  meta: Pick<ReplayMeta, 'source' | 'url'>;
+  meta: Pick<ReplayMeta, 'source' | 'url'> & { captured?: Pick<NonNullable<ReplayMeta['captured']>, 'fromLoad'> | undefined };
   /** Shown under the vitals (compare mode's own summary). */
   extra?: ReactNode;
   onOpenRequest: (id: string) => void;
@@ -79,7 +79,7 @@ export function PerformancePanel({
   const [hovered, setHovered] = useState<readonly string[]>([]);
   // why: the verdict's jump lights its marks until the person picks something else.
   const [pinned, setPinned] = useState<readonly string[]>([]);
-  const moments = buildMoments(model.signals);
+  const moments = buildMoments(model.signals, model.why);
   const vitals = buildVitals(model.signals, moments, model.track);
   const lanes = buildLanes(moments, requests, model.shifts);
   const verdict = buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests });
@@ -142,6 +142,15 @@ export function PerformancePanel({
         cadence={cadenceStats(model.track, model.shifts)}
         onPick={(vital) => (vital.moment ? select(vital.moment.id) : player.seek(vital.at ?? 0))}
       />
+      {meta.captured?.fromLoad ? (
+        <p
+          className="pp-from-load"
+          data-testid="performance-from-load"
+          title="The page was reloaded to record, so the load metrics cover the whole load."
+        >
+          Recorded from page load
+        </p>
+      ) : null}
       {extra}
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>

@@ -79,3 +79,4 @@
   .pt-label { justify-content: center; padding-left: 0; }
   .pt-label-text { display: none; }
 }
+.pt-tip-breakdown { color: var(--text-tertiary); }

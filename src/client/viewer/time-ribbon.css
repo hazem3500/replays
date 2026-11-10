@@ -74,10 +74,14 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
 }
 
 /* The local timeline: a moment's own scale. Label | track | value on one grid; a light ruler of round offsets. */
-.local-timeline { --lt-label: minmax(0, 40%); container: local-timeline / inline-size; display: grid; grid-template-columns: var(--lt-label) minmax(0, 1fr) 56px; column-gap: 10px; font-size: var(--text-xs); }
-.lt-ruler { position: relative; grid-column: 2; height: 16px; margin-bottom: 2px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
-.lt-ruler span { position: absolute; top: 0; padding-left: 3px; border-left: 1px solid var(--line-strong); line-height: 14px; white-space: nowrap; }
-.lt-ruler span:last-child:not(:first-child) { translate: -100% 0; padding: 0 3px 0 0; border-right: 1px solid var(--line-strong); border-left: 0; }
+/* --lt-label is set inline from the (resizable) label width. */
+.local-timeline { --lt-label: 45%; position: relative; container: local-timeline / inline-size; display: grid; grid-template-columns: var(--lt-label) minmax(0, 1fr) 56px; column-gap: 10px; font-size: var(--text-xs); }
+.lt-seam { position: absolute; top: 0; bottom: 0; z-index: 3; display: flex; }
+.lt-ruler { position: relative; grid-column: 2; height: 24px; margin-bottom: 2px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
+/* why: the scale's words sit on their own line above the tick marks, so no tick is drawn through a label. */
+.lt-ruler > span { position: absolute; top: 16px; height: 6px; border-left: 1px solid var(--line-strong); }
+.lt-tick-label { position: absolute; bottom: 100%; left: -1px; padding-bottom: 2px; line-height: 14px; white-space: nowrap; }
+.lt-ruler > span:last-child:not(:first-child) .lt-tick-label { right: -1px; left: auto; }
 .lt-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; min-height: 22px; margin: 0 -6px; padding: 0 6px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font: inherit; text-align: left; }
 button.lt-row { cursor: pointer; }
 button.lt-row:hover { background: var(--surface-hover); color: var(--text); }
@@ -92,8 +96,8 @@ button.lt-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2
 .lt-bar[data-tone="current"] { background: var(--accent); }
 .lt-value { color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 @media (pointer: coarse) { .lt-row { min-height: 36px; } }
-/* why: on a narrow detail the middle offsets would collide; their lines stay, only the ends are labelled. */
-@container local-timeline (max-width: 480px) {
-  .lt-ruler span:not(:first-child, :last-child) { color: transparent; }
-}
 .ribbon-key { color: var(--text-tertiary); }
+
+.rl { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rl-method { color: var(--text-secondary); }
+.rl-muted { color: var(--text-tertiary); }

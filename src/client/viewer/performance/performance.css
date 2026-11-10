@@ -112,8 +112,9 @@ button.pp-stat { cursor: pointer; border-radius: var(--radius-sm); }
 .pp-link { padding: 0; border: 0; background: none; color: var(--text); font: inherit; min-height: 24px; text-align: left; text-decoration: underline; text-decoration-color: var(--r-border); text-underline-offset: 3px; cursor: pointer; }
 .pp-link:hover { text-decoration-color: currentColor; }
 .pp-inflight { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 2px; }
-.pp-inflight li { display: flex; gap: 8px; min-width: 0; }
-.pp-inflight .pp-link { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-inflight li { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.pp-inflight li .np-aside { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+.pp-inflight .pp-link { min-width: 0; flex: 1 1 0; overflow: hidden; text-align: left; white-space: nowrap; }
 .pp-detail .np-detail-status { gap: 8px; color: var(--text); }
 .pp-pending .pp-pending-vitals { width: 60%; margin: auto 14px; }
 .pp-lead { flex: none; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 12px 14px 4px; color: var(--text); font-size: var(--text-sm); line-height: 20px; }
@@ -137,3 +138,26 @@ button.pp-stat { cursor: pointer; border-radius: var(--radius-sm); }
   .pp .np-body { flex: none; }
   .pp .pp-scroll { flex: none; overflow: visible; }
 }
+/* The "why" of a moment: an interaction's three phases and the scripts of its long animation frame. */
+.pp-breakdown-target { margin: 0 0 8px; color: var(--text); }
+.pp-breakdown-bar { display: flex; gap: 2px; height: 8px; overflow: hidden; border-radius: 4px; background: var(--line); }
+.pp-breakdown-seg { min-width: 2px; }
+.pp-breakdown-seg[data-part="inputDelay"], .pp-breakdown-swatch[data-part="inputDelay"] { background: var(--text-tertiary); }
+.pp-breakdown-seg[data-part="processing"], .pp-breakdown-swatch[data-part="processing"] { background: var(--accent); }
+.pp-breakdown-seg[data-part="presentation"], .pp-breakdown-swatch[data-part="presentation"] { background: var(--line-strong); }
+.pp-breakdown-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; }
+.pp-breakdown-legend li { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+.pp-breakdown-legend strong { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; }
+.pp-breakdown-swatch { flex: none; width: 8px; height: 8px; border-radius: 2px; }
+.pp-breakdown .pp-breakdown-total { margin: 6px 0 0; }
+.pp-scripts-lead { margin: 0 0 6px; }
+.pp-scripts-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.pp-scripts-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "file ms" "fn ms"; column-gap: 12px; padding: 4px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 30%, transparent); }
+.pp-script-file { grid-area: file; overflow: hidden; color: var(--text); font-family: var(--mono); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.pp-script-fn { grid-area: fn; overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
+.pp-script-ms { grid-area: ms; align-self: center; color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; }
+.pp-scripts-none { margin: 0; }
+.pp-scripts-style { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 8px 0 0; }
+.pp-scripts-style dt { color: var(--text-tertiary); }
+.pp-scripts-style dd { margin: 0; color: var(--text); }
+.pp-from-load { flex: none; margin: 0; padding: 4px 14px 0; color: var(--text-tertiary); font-size: var(--text-xs); }

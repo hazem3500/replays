@@ -1,6 +1,7 @@
 import type { EditTimeline } from '../../shared/edits.ts';
 import type { ReplayBundle, ReplayPerformanceKind } from '../../shared/replay.ts';
 import { type FrameBand, frameBands } from './performance/frames.ts';
+import type { PerfWhy } from './performance/why.ts';
 import { buildWaterfall, performanceHasDuration, validDuration, type WaterfallRow } from './waterfall.ts';
 
 export type PerformanceSignal = Extract<WaterfallRow, { kind: 'performance' }>;
@@ -19,6 +20,8 @@ export interface PerformanceModel {
   frames: FrameBand[];
   /** Layout shifts on the player's clock (after edits); empty when none were captured or the browser could not observe them. */
   shifts: LayoutShift[];
+  /** Long animation frames and interactions with their breakdown (Performance mode), on the player's clock. */
+  why: PerfWhy;
 }
 
 /** One layout shift: its score (`value`) and whether it followed an input, which the layout shift score excludes. */
@@ -33,6 +36,15 @@ function layoutShifts(shifts: ReplayBundle['performance'], timeline?: EditTimeli
     if (timeline && (timeline.isRemoved(shift.at) || shift.at > timeline.originalDuration)) return [];
     return [{ at: timeline ? timeline.toEdited(shift.at) : shift.at, value: shift.value, hadRecentInput: shift.hadRecentInput }];
   });
+}
+
+function whyOf(track: ReplayBundle['performance'], timeline?: EditTimeline): PerfWhy {
+  const visible = (at: number) => !timeline || (!timeline.isRemoved(at) && at <= timeline.originalDuration);
+  const mapped = (at: number) => (timeline ? timeline.toEdited(at) : at);
+  return {
+    frames: (track?.longFrames ?? []).flatMap((frame, index) => (visible(frame.at) ? [{ ...frame, at: mapped(frame.at), index }] : [])),
+    interactions: track?.interactions?.flatMap((item) => (visible(item.at) ? [{ ...item, at: mapped(item.at) }] : [])),
+  };
 }
 
 /** Reuse the source → edited span mapping; metric values always retain their captured meaning. */
@@ -59,6 +71,7 @@ export function buildPerformance(bundle: ReplayBundle, timeline?: EditTimeline):
     track: bundle.performance,
     frames,
     shifts: layoutShifts(bundle.performance, timeline),
+    why: whyOf(bundle.performance, timeline),
   };
 }
 
