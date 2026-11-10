@@ -57,9 +57,10 @@
 .np-row[data-selected], .np-row[data-selected]:hover { background: var(--accent-soft); }
 .np-time time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 .np-request button { width: 100%; min-height: calc(var(--np-row) - 1px); display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
-.np-name { min-width: 0; overflow: hidden; font-family: var(--mono); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.np-name { display: flex; align-items: baseline; min-width: 0; overflow: hidden; font-family: var(--mono); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.np-path { flex: 1 1 0; min-width: 0; }
 .np-query, .np-host { color: var(--text-tertiary); }
-.np-host { margin-left: 8px; }
+.np-host { flex: none; margin-left: 8px; }
 .np-code { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 .np-code[data-tone="bad"] { color: var(--danger); font-weight: 600; }
 .np-code[data-tone="none"] { color: var(--text-tertiary); font-family: var(--sans); }

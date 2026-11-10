@@ -7,7 +7,7 @@ import type { RibbonTone } from '../TimeRibbon.tsx';
 import { BlockingScripts } from './BlockingScripts.tsx';
 import { InteractionBreakdown } from './InteractionBreakdown.tsx';
 import { MOMENT_DETAIL_ID } from './MomentList.tsx';
-import { BUDGETS, causeOf, type Moment, VERDICT_WORDS, type Verdict } from './model.ts';
+import { BUDGETS, causeOf, interactionLabel, type Moment, VERDICT_WORDS, type Verdict } from './model.ts';
 
 const STRINGS = {
   close: 'Close moment',
@@ -56,6 +56,7 @@ function aroundItems(
     .map((row) => ({
       id: `request:${row.id}`,
       label: `${row.entry.method} ${row.name.path}`,
+      request: { method: row.entry.method, path: row.name.path, url: row.entry.url },
       at: row.at,
       end: row.end,
       tone: row.failed ? ('danger' as const) : undefined,
@@ -106,7 +107,7 @@ export function MomentDetail({
     >
       <DetailHead at={moment.at} stacked={stacked} closeLabel={STRINGS.close} onClose={close}>
         <span className="pp-dot" data-verdict={moment.verdict} aria-hidden="true" />
-        <strong>{moment.label}</strong>
+        <strong>{moment.interaction ? interactionLabel([moment.interaction.eventType]) : moment.label}</strong>
         <span>{formatDuration(moment.value)}</span>
         <span className="pp-verdict" data-verdict={moment.verdict}>
           {VERDICT_WORDS[moment.verdict]}
