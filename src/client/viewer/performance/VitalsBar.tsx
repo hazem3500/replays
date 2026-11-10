@@ -111,7 +111,9 @@ export function VitalsBar({
           </>
         ),
       })),
-      ...(notes.length ? [{ id: `core:note:${group}`, order: details ? base + 900 : NOTES_LAST + position, render: () => <GroupNotes notes={notes} /> }] : []),
+      ...(notes.length
+        ? [{ id: `core:note:${group}`, order: details ? base + 900 : NOTES_LAST + position, render: () => <GroupNotes notes={notes} /> }]
+        : []),
     ];
   });
   if (groups.every(({ shown }) => !shown.length))
