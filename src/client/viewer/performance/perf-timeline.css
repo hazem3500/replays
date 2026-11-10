@@ -3,15 +3,15 @@
 .pt { --pt-gutter: 116px; --pt-end: 14px; --pt-lane: 24px; position: relative; flex: none; margin-bottom: 8px; background: var(--surface); }
 .pt-body { display: grid; grid-template-columns: var(--pt-gutter) minmax(0, 1fr) var(--pt-end); padding-top: 8px; }
 .pt-gutter { display: flex; flex-direction: column; min-width: 0; }
-.pt-axis-gap { height: 18px; }
+.pt-axis-gap { height: 24px; }
 .pt-label { display: flex; align-items: center; gap: 6px; height: var(--pt-lane); padding-left: 14px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; white-space: nowrap; }
 .pt-label svg { width: 11px; height: 11px; flex: none; stroke-width: 1.75; }
 .pt-label[data-lane="fps"] { height: 64px; align-items: flex-start; padding-top: 8px; }
 .pt-plot { position: relative; cursor: crosshair; touch-action: pan-y; user-select: none; }
-.pt-axis { position: relative; height: 18px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
+.pt-axis { position: relative; height: 24px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
 .pt-tick[data-first] { translate: 10px 0; }
-.pt-tick { position: absolute; top: 2px; translate: -50% 0; line-height: 14px; white-space: nowrap; }
-.pt-grid { position: absolute; inset: 18px 0 0; pointer-events: none; }
+.pt-tick { position: absolute; top: 5px; translate: -50% 0; line-height: 14px; white-space: nowrap; }
+.pt-grid { position: absolute; inset: 24px 0 0; pointer-events: none; }
 .pt-grid > span { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in srgb, var(--line) 38%, transparent); }
 .pt-lanes { position: relative; }
 .pt-lane { position: relative; height: var(--pt-lane); }
@@ -43,8 +43,9 @@
 .pt .ribbon-toggle { width: 24px; height: 24px; }
 /* why: the shared ribbon dims what has not played by 45%, which at the start muddied every mark; here it only hints. */
 .pt .ribbon-future { background: color-mix(in srgb, var(--surface) 16%, transparent); }
-.pt .ribbon-lit { top: 18px; border-inline: 0; background: color-mix(in srgb, var(--text) 5%, transparent); }
-.pt:not([data-collapsed]) .ribbon-key { position: absolute; top: 2px; right: 0; padding: 0; }
+.pt .ribbon-lit { top: 24px; border-inline: 0; background: color-mix(in srgb, var(--text) 5%, transparent); }
+/* why: the toggle sits in the gutter beside the axis, so the playhead handle (24px, in the axis row) never covers it or is covered by it. */
+.pt:not([data-collapsed]) .ribbon-key { position: absolute; top: 8px; left: 4px; padding: 0; }
 .pt[data-collapsed] .ribbon-key { justify-content: flex-end; padding: 0 4px 2px; }
 .pt[data-collapsed] .ribbon-toggle svg { transform: rotate(180deg); }
 /* The frame-rate plot: one accent line and light fill on a 0 to 60 scale, guides at 60 and 30, the fill under 30 tinted danger. */
