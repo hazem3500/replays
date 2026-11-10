@@ -26,9 +26,9 @@ describe.skipIf(!CHROME)('a manual capture in a real browser', () => {
   const saved = { chrome: process.env.CHROME_PATH, sandbox: process.env.CHROMIUM_NO_SANDBOX };
 
   beforeAll(async () => {
-    process.env.CHROME_PATH = CHROME!;
+    if (CHROME) process.env.CHROME_PATH = CHROME;
     process.env.CHROMIUM_NO_SANDBOX ??= '1';
-    demo = (await startDemoServer(0)) as typeof demo;
+    demo = await startDemoServer(0);
     output = join(await mkdtemp(join(tmpdir(), 'replays-manual-browser-')), 'out');
     const args = await parseArgs(['--url', `${demo.origin}/`, '--headed', '--manual', '--output', output, '--id', 'manual-take']);
     const real = createDriver(args.driver, { headed: false });
@@ -48,7 +48,9 @@ describe.skipIf(!CHROME)('a manual capture in a real browser', () => {
         })();
       },
     });
-    bundle = JSON.parse(await readFile(result.replayPath, 'utf8')) as ReplayBundle;
+    const parsed: unknown = JSON.parse(await readFile(result.replayPath, 'utf8'));
+    assertReplayBundle(parsed);
+    bundle = parsed;
   }, 60_000);
 
   afterAll(async () => {

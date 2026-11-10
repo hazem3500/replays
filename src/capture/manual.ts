@@ -12,7 +12,7 @@ export interface ManualStopOptions {
   closed: Promise<void>;
   maxDurationMs: number;
   /** Read for one line (Enter), only when it is a terminal: a pipe is never waited on. */
-  stdin?: (Emitter & { isTTY?: boolean; pause(): unknown }) | undefined;
+  stdin?: (NodeJS.ReadableStream & { isTTY?: boolean }) | undefined;
   /** `process`: SIGINT and SIGTERM stop the recording and save it. */
   signals?: Emitter;
   /** A second signal while saving; the default exits with the usual 130. */
@@ -39,7 +39,7 @@ export function waitForManualStop(options: ManualStopOptions): { reason: Promise
   let stopped = false;
   const stop = (why: ManualStopReason) => {
     stopped = true;
-    waits.splice(0).forEach((cleanup) => cleanup());
+    for (const cleanup of waits.splice(0)) cleanup();
     settle(why);
   };
 
@@ -55,7 +55,7 @@ export function waitForManualStop(options: ManualStopOptions): { reason: Promise
 
   const stdin = options.stdin;
   if (stdin?.isTTY) {
-    const lines = createInterface({ input: stdin as never });
+    const lines = createInterface({ input: stdin });
     lines.once('line', () => stop('enter'));
     waits.push(() => {
       lines.close();
@@ -75,5 +75,8 @@ export function waitForManualStop(options: ManualStopOptions): { reason: Promise
     }
   }
 
-  return { reason, release: () => [...waits.splice(0), ...cleanups.splice(0)].forEach((cleanup) => cleanup()) };
+  const release = () => {
+    for (const cleanup of [...waits.splice(0), ...cleanups.splice(0)]) cleanup();
+  };
+  return { reason, release };
 }

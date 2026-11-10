@@ -11,15 +11,10 @@ import { CAPTURE_USAGE } from '../src/capture/capture-usage.ts';
 import type { CaptureDriver } from '../src/capture/drivers/types.ts';
 import { waitForManualStop } from '../src/capture/manual.ts';
 import { deriveManualSteps } from '../src/capture/manual-steps.ts';
-import { RecorderSession, recorderScript } from '../src/capture/session.ts';
-import type { ReplayBundle } from '../src/shared/replay.ts';
+import { recorderScript, type CdpLike, type RecorderChunk } from '../src/capture/session.ts';
+import { assertReplayBundle } from '../src/shared/replay.ts';
 
 const manual = ['--url', 'https://example.com', '--headed', '--manual'];
-
-afterEach(() => {
-  vi.restoreAllMocks();
-  vi.useRealTimers();
-});
 
 describe('--manual arguments', () => {
   it('needs --headed', async () => {
@@ -74,6 +69,10 @@ function stdinTty(isTTY: boolean) {
 }
 
 describe('stopping a manual recording', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const never = new Promise<void>(() => {});
 
   it('stops on a line from a terminal', async () => {
@@ -178,23 +177,36 @@ describe('steps of a manual recording', () => {
   });
 });
 
-async function run(stop: (driver: { close: () => void }) => void, hooks: Parameters<typeof capture>[2] = {}) {
+class FakeCdp implements CdpLike {
+  private pending: RecorderChunk | undefined;
+
+  constructor(chunk: RecorderChunk) {
+    this.pending = chunk;
+  }
+
+  send(method: string, params?: Record<string, unknown>) {
+    if (method !== 'Runtime.evaluate' || !String(params?.expression).includes('__REPLAYS_FLUSH__?.(')) return Promise.resolve({});
+    const value = this.pending;
+    this.pending = undefined;
+    return Promise.resolve({ result: { value } });
+  }
+
+  on() {}
+
+  off() {}
+}
+
+async function run(stop: (close: () => void) => void, hooks: Parameters<typeof capture>[2] = {}) {
   const root = await mkdtemp(join(tmpdir(), 'replays-manual-'));
   try {
     const origin = Date.now() + 10_000;
-    const tracks = {
-      origin,
-      duration: 2000,
-      events: [{ type: 2, timestamp: origin }],
-      console: [],
-      performance: undefined,
-      steps: [{ at: origin + 500, kind: 'click', label: 'Clicked “Save”', auto: true as const }],
-    };
-    vi.spyOn(RecorderSession, 'start').mockResolvedValue({
-      flush: async () => {},
-      stop: async () => tracks,
-      dispose: () => {},
-    } as unknown as RecorderSession);
+    const cdp = new FakeCdp({
+      events: [
+        { type: 2, timestamp: origin },
+        { type: 3, timestamp: origin + 2000 },
+      ],
+      steps: [{ at: origin + 500, kind: 'click', label: 'Clicked “Save”', auto: true }],
+    });
     let close!: () => void;
     const closed = new Promise<void>((resolve) => {
       close = resolve;
@@ -202,29 +214,25 @@ async function run(stop: (driver: { close: () => void }) => void, hooks: Paramet
     const waits: number[] = [];
     const driver: CaptureDriver = {
       name: 'fake',
-      launch: async ({ harPath }) => {
-        await writeFile(harPath, JSON.stringify({ log: { entries: [] } }));
-        return { send: async () => ({}), on: () => {}, off: () => {} };
-      },
+      launch: ({ harPath }) => writeFile(harPath, JSON.stringify({ log: { entries: [] } })).then(() => cdp),
       closed: () => closed,
-      open: async () => {},
-      step: async () => {
-        throw new Error('a manual recording runs no steps');
-      },
-      wait: async (ms) => {
+      open: () => Promise.resolve(),
+      step: () => Promise.reject(new Error('a manual recording runs no steps')),
+      wait: (ms) => {
         waits.push(ms);
+        return Promise.resolve();
       },
-      finish: async () => {},
-      close: async () => {},
+      finish: () => Promise.resolve(),
+      close: () => Promise.resolve(),
     };
     const args = await parseArgs([...manual, '--output', join(root, 'out'), '--max-duration', '30']);
-    const pending = capture({ ...args, steps: [{ kind: 'click', selector: 'a' }] }, driver, {
+    const result = await capture({ ...args, steps: [{ kind: 'click', selector: 'a' }] }, driver, {
       ...hooks,
-      onRecording: () => stop({ close }),
+      onRecording: () => stop(close),
     });
-    const result = await pending;
-    const bundle = JSON.parse(await readFile(result.replayPath, 'utf8')) as ReplayBundle;
-    return { result, bundle, waits };
+    const parsed: unknown = JSON.parse(await readFile(result.replayPath, 'utf8'));
+    assertReplayBundle(parsed);
+    return { result, bundle: parsed, waits };
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -232,7 +240,7 @@ async function run(stop: (driver: { close: () => void }) => void, hooks: Paramet
 
 describe('a manual capture', () => {
   it('saves the steps the page named, after the open step, when the window is closed', async () => {
-    const { result, bundle, waits } = await run((driver) => driver.close());
+    const { result, bundle, waits } = await run((close) => close());
     expect(result.stoppedBy).toBe('closed');
     expect(bundle.steps.map(({ at, label }) => [at, label])).toEqual([
       [0, 'Open example.com'],
