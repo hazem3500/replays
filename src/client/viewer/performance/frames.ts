@@ -28,6 +28,13 @@ export function bandAt(bands: readonly FrameBand[], time: number) {
   return bands.find((band) => time >= band.at && time < band.end);
 }
 
+/** The second's sample nearest `time` within `within` ms, so the last moments of a recording still read its closing second. */
+export function nearestBand(bands: readonly FrameBand[], time: number, within = 1000) {
+  const distance = (band: FrameBand) => (time < band.at ? band.at - time : Math.max(0, time - band.end));
+  const [nearest] = bands.toSorted((a, b) => distance(a) - distance(b));
+  return nearest && distance(nearest) <= within ? nearest : undefined;
+}
+
 /** Plot space: x runs 0 to `SPARK_WIDTH` over the replay, y runs 0 (top, the ceiling) to `SPARK_HEIGHT` (0 FPS). */
 export const SPARK_WIDTH = 1000;
 export const SPARK_HEIGHT = 100;

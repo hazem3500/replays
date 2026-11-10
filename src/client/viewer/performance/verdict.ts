@@ -66,16 +66,28 @@ function describeInteractions(slow: readonly Moment[], worst: Moment, moments: r
   return { headline: `Slow ${slow.length === 1 ? 'at' : 'around'} ${when}: ${cause}`, jump };
 }
 
-function taskHeadline(moments: readonly Moment[]) {
-  const slow = moments.filter((moment) => moment.kind === 'task' && moment.verdict !== 'good');
-  return slow.length ? describeTasks(slow) : undefined;
+/** With no paint to say when loading ended, the first two seconds count as loading. */
+const LOADING_WINDOW_MS = 2000;
+
+/** Before the largest paint, or in the first two seconds while nobody has interacted yet: the page is still loading. */
+function isLoading(at: number, moments: readonly Moment[], vitals: readonly Vital[]) {
+  const painted = vitals.find((vital) => vital.id === 'lcp')?.at;
+  if (painted !== undefined && at < painted) return true;
+  const firstInteraction = Math.min(...moments.filter((moment) => moment.kind === 'interaction').map((moment) => moment.at));
+  return at < LOADING_WINDOW_MS && at < firstInteraction;
 }
 
-function describeTasks(slow: readonly Moment[]) {
+function taskHeadline(moments: readonly Moment[], vitals: readonly Vital[]) {
+  const slow = moments.filter((moment) => moment.kind === 'task' && moment.verdict !== 'good');
+  return slow.length ? describeTasks(slow, moments, vitals) : undefined;
+}
+
+function describeTasks(slow: readonly Moment[], moments: readonly Moment[], vitals: readonly Vital[]) {
   const jump = jumpTo(slow, slow.length === 1 ? slow[0]?.at : undefined);
-  const when = clockLabel(jump?.at ?? 0);
+  const at = jump?.at ?? 0;
   const cause = slow.length === 1 ? 'a long task blocked the page' : `${slow.length} long tasks blocked the page`;
-  return { headline: `Slow ${slow.length === 1 ? 'at' : 'around'} ${when}: ${cause}`, jump };
+  const lead = isLoading(at, moments, vitals) ? 'Slow while loading' : `Slow ${slow.length === 1 ? 'at' : 'around'} ${clockLabel(at)}`;
+  return { headline: `${lead}: ${cause}`, jump };
 }
 
 function loadingHeadline(vitals: readonly Vital[]) {
@@ -141,7 +153,7 @@ export function buildVerdict(input: VerdictInput): PerformanceVerdict {
   const tone = toneOf(input);
   const found =
     interactionHeadline(input.moments, input.requests) ??
-    taskHeadline(input.moments) ??
+    taskHeadline(input.moments, input.vitals) ??
     loadingHeadline(input.vitals) ??
     framesHeadline(input.frames) ??
     shiftHeadline(input.shifts);

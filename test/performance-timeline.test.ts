@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { buildNetworkRows } from '../src/client/viewer/network/model.ts';
 import { buildPerformance } from '../src/client/viewer/performance.ts';
-import { buildMoments, buildVitals } from '../src/client/viewer/performance/model.ts';
-import { cadenceStats, shiftScore, shiftVerdict, vitalStat } from '../src/client/viewer/performance/stats.ts';
+import { BUDGETS, buildMoments, buildVitals } from '../src/client/viewer/performance/model.ts';
+import { cadenceStats, groupNote, shiftScore, shiftVerdict, vitalStat } from '../src/client/viewer/performance/stats.ts';
 import { buildLanes, clockLabel, clusterMarks, type LaneItem, niceTicks } from '../src/client/viewer/performance/timeline-model.ts';
 import { buildVerdict } from '../src/client/viewer/performance/verdict.ts';
 import { must } from './must.ts';
@@ -128,8 +128,19 @@ describe('verdict line', () => {
     const bundle = recording();
     must(bundle.performance).entries = must(bundle.performance).entries.filter((entry) => entry.kind === 'long-task');
     const { verdict } = verdictOf(bundle);
-    expect(verdict.headline).toMatch(/^Slow around 0:\d\d: 2 long tasks blocked the page$|^Slow at/);
+    expect(verdict.headline).toMatch(/^Slow (around 0:\d\d|while loading): 2 long tasks blocked the page$|^Slow at/);
     expect(verdict.jump?.ids.length).toBeGreaterThan(0);
+  });
+
+  it('says loading when the long tasks came before the largest paint or before any interaction', () => {
+    const bundle = recording();
+    must(bundle.performance).entries = [
+      { at: 300, kind: 'long-task', value: 900 },
+      { at: 900, kind: 'long-task', value: 700 },
+    ];
+    const { verdict } = verdictOf(bundle);
+    expect(verdict.headline).toBe('Slow while loading: 2 long tasks blocked the page');
+    expect(verdict.jump?.label).toMatch(/^Jump to 0:0\d$/);
   });
 
   it('says nothing was slow when nothing was', () => {
@@ -152,6 +163,21 @@ describe('stats', () => {
     const stat = vitalStat({ id: 'lcp', missing: 'not-captured' });
     expect(stat.value).toBeUndefined();
     expect(stat.missing).toContain('Not captured');
+  });
+
+  it('stands in one muted line for a group with nothing measured, with a reason when one is known', () => {
+    expect(groupNote('smoothness', [])).toEqual({ text: 'Frame rate wasn’t recorded', reason: 'Frame timing was not recorded.' });
+    const lcp = vitalStat({ id: 'lcp', missing: 'none' });
+    expect(groupNote('loading', [lcp])).toEqual({ text: 'Recording started after the page loaded' });
+    const notCaptured = vitalStat({ id: 'fcp', missing: 'not-captured' });
+    expect(groupNote('loading', [notCaptured]).reason).toContain('Not captured');
+  });
+
+  it('uses the web-vitals thresholds for paints', () => {
+    expect([BUDGETS.fcp, BUDGETS.lcp]).toEqual([
+      [1800, 3000],
+      [2500, 4000],
+    ]);
   });
 
   it('folds the layout shift note into the shift stat when the browser cannot report it', () => {

@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { formatDuration } from '../network/model.ts';
 import { VERDICT_WORDS, type Vital, type VitalId } from './model.ts';
-import { GROUP_LABELS, type Stat, type StatGroup, vitalStat } from './stats.ts';
+import { GROUP_LABELS, type GroupNote, groupNote, type Stat, type StatGroup, vitalStat } from './stats.ts';
 import { HostSurfaceSlot } from '../../plugins/HostSurface.tsx';
 import { PluginContexts } from '../../plugins/PluginUi.tsx';
 
@@ -53,18 +53,27 @@ export function VitalsBar({
   const viewer = use(PluginContexts)?.('');
   const context = viewer ? { replay: viewer.replay, seek: viewer.seek.bind(viewer) } : {};
   const items = [...vitals.map((vital) => ({ stat: vitalStat(vital), vital })), ...cadence.map((stat) => ({ stat, vital: undefined }))];
-  const started = new Set<StatGroup>();
-  const builtins = items.map(({ stat, vital }, index) => {
-    const start = !started.has(stat.group);
-    started.add(stat.group);
+  const groups = GROUPS.map((group) => {
+    const inGroup = items.filter((item) => item.stat.group === group);
     return {
+      group,
+      shown: inGroup.filter((item) => item.stat.value !== undefined),
+      note: groupNote(
+        group,
+        inGroup.filter((item) => item.stat.value === undefined).map((item) => item.stat),
+      ),
+    };
+  });
+  const builtins = groups.flatMap(({ shown }, position) => {
+    if (!shown.length) return [];
+    return shown.map(({ stat, vital }, index) => ({
       id: `core:${stat.id}`,
-      order: (index + 1) * 100,
+      order: (position + 1) * 1000 + index * 10,
       render: () => (
         <>
           <StatTile
             stat={stat}
-            start={start}
+            start={index === 0}
             pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
             onPick={() => vital && onPick(vital)}
           >
@@ -73,19 +82,66 @@ export function VitalsBar({
           {vital && peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
         </>
       ),
-    };
+    }));
+  });
+  if (groups.every(({ shown }) => !shown.length))
+    return (
+      <div className="pp-vitals" data-testid="performance-vitals">
+        <Tooltip>
+          {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: the reason is in a tooltip, so keyboard users must reach it. */}
+          <TooltipTrigger render={<p tabIndex={0} />} className="pp-stats-empty">
+            No performance measurements were recorded
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <span className="pp-stat-tip">{groups[0]?.note.reason ?? groups[0]?.note.text}</span>
+          </TooltipContent>
+        </Tooltip>
+        {children}
+      </div>
+    );
+  const footnote: GroupNote[] = groups.flatMap(({ group, shown, note }) => {
+    if (!shown.length) return [note];
+    const absent = items.filter((item) => item.stat.group === group && item.stat.value === undefined && item.stat.watched);
+    return [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []));
   });
   return (
     <div className="pp-vitals" data-testid="performance-vitals">
       <ul aria-label="Vitals">
         <HostSurfaceSlot slot="performance.vitals" context={context} element="li" builtins={builtins} />
       </ul>
+      {footnote.length ? <Footnote notes={footnote} /> : null}
       {children}
     </div>
   );
 }
 
 const NO_STATS: readonly Stat[] = [];
+const GROUPS: readonly StatGroup[] = ['loading', 'responsiveness', 'smoothness'];
+
+/** What is missing, as one quiet line; a note that knows its reason says it in a tooltip. */
+function Footnote({ notes }: { notes: readonly GroupNote[] }) {
+  return (
+    <p className="pp-stats-footnote">
+      {notes.map((note, index) => (
+        <span key={note.text}>
+          {index ? '. ' : ''}
+          {note.reason ? (
+            <Tooltip>
+              <TooltipTrigger render={<span />} className="pp-footnote-reason">
+                {note.text}
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <span className="pp-stat-tip">{note.reason}</span>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            note.text
+          )}
+        </span>
+      ))}
+    </p>
+  );
+}
 
 function StatTile({
   stat,
@@ -107,17 +163,10 @@ function StatTile({
         {start ? GROUP_LABELS[stat.group] : ''}
       </span>
       <span className="pp-vital-label">{stat.label}</span>
-      {stat.value === undefined ? (
-        <span className="pp-stat-value pp-missing">
-          <span aria-hidden="true">—</span>
-          <span className="visually-hidden">{stat.missing}</span>
-        </span>
-      ) : (
-        <span className="pp-stat-value">
-          {stat.value}
-          {stat.unit ? <span className="pp-unit"> {stat.unit}</span> : null}
-        </span>
-      )}
+      <span className="pp-stat-value">
+        {stat.value}
+        {stat.unit ? <span className="pp-unit"> {stat.unit}</span> : null}
+      </span>
       <StatMeter stat={stat} />
       {word ? (
         <span className="pp-stat-word" data-verdict={stat.verdict}>
@@ -127,7 +176,7 @@ function StatTile({
       {children}
     </>
   );
-  const tip = [word && `${word}.`, stat.missing, stat.hint].filter(Boolean).join(' ');
+  const tip = [word && `${word}.`, stat.hint].filter(Boolean).join(' ');
   return (
     <Tooltip>
       <TooltipTrigger
@@ -155,7 +204,7 @@ function StatTile({
 
 function StatMeter({ stat }: { stat: Stat }) {
   const { meter } = stat;
-  if (!meter) return <span className="pp-meter" data-empty="" aria-hidden="true" />;
+  if (!meter) return null;
   return (
     <span className="pp-meter" aria-hidden="true">
       {meter.bands.map((band) => (

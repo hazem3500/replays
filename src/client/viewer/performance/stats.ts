@@ -28,8 +28,42 @@ export interface Stat {
   verdict?: Verdict | undefined;
   meter?: Meter | undefined;
   hint: string;
-  /** Why there is no value, for the dash's tooltip. */
+  /** Why there is no value, for the group's tooltip. */
   missing?: string | undefined;
+  /** The browser watched for it and nothing was reported, as opposed to not being able to measure it. */
+  watched?: boolean | undefined;
+  /** The quiet sentence for a watched stat that has no value, shown when the rest of its group does. */
+  absent?: string | undefined;
+}
+
+/** A group with no measured stat is one muted line in its place: what is absent, and why when that is known. */
+export interface GroupNote {
+  text: string;
+  reason?: string | undefined;
+}
+
+const NOT_RECORDED: Readonly<Record<StatGroup, string>> = {
+  loading: 'Paint timing wasn’t recorded',
+  responsiveness: 'Interactions and long tasks weren’t recorded',
+  smoothness: 'Frame rate wasn’t recorded',
+};
+
+const NOTHING_REPORTED: Readonly<Record<StatGroup, string>> = {
+  loading: 'Recording started after the page loaded',
+  responsiveness: 'No slow interactions or long tasks were reported',
+  smoothness: 'No frame samples were reported',
+};
+
+const DEFAULT_REASON: Readonly<Record<StatGroup, string>> = {
+  loading: 'This browser did not report paint timing.',
+  responsiveness: 'This browser did not report long tasks or interactions.',
+  smoothness: 'Frame timing was not recorded.',
+};
+
+/** The line standing in for a group whose stats are all missing; `missing` holds the group's stats that have no value. */
+export function groupNote(group: StatGroup, missing: readonly Stat[]): GroupNote {
+  if (missing.length && missing.every((stat) => stat.watched)) return { text: NOTHING_REPORTED[group] };
+  return { text: NOT_RECORDED[group], reason: missing.find((stat) => stat.missing)?.missing ?? DEFAULT_REASON[group] };
 }
 
 /** The longest track a budget's meter draws, as a multiple of its poor line, so a value just past it still has room. */
@@ -94,6 +128,14 @@ const VITAL_META: Readonly<Record<VitalId, { group: StatGroup; label: string; hi
   },
 };
 
+const VITAL_ABSENT: Readonly<Record<VitalId, string>> = {
+  fcp: 'Recording started after the first paint',
+  lcp: 'Recording started after the largest paint',
+  interaction: 'No interaction was slow enough to report',
+  task: 'No long tasks were reported',
+  tbt: 'No long tasks were reported',
+};
+
 const VITAL_MISSING = {
   'not-captured': 'Not captured: this browser did not report it.',
   none: 'Watched, and nothing was reported.',
@@ -102,7 +144,15 @@ const VITAL_MISSING = {
 export function vitalStat(vital: Vital): Stat {
   const { group, label, hint } = VITAL_META[vital.id];
   if (vital.value === undefined || !vital.verdict)
-    return { id: vital.id, group, label, hint, missing: VITAL_MISSING[vital.missing ?? 'not-captured'] };
+    return {
+      id: vital.id,
+      group,
+      label,
+      hint,
+      missing: VITAL_MISSING[vital.missing ?? 'not-captured'],
+      watched: vital.missing === 'none',
+      absent: VITAL_ABSENT[vital.id],
+    };
   const [good, poor]: Budget = BUDGETS[vital.id];
   const [value, unit] = splitDuration(vital.value);
   return {

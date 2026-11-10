@@ -3,10 +3,12 @@
 .pp { container: performance / inline-size; }
 /* The stats: one grid in three groups, no boxes. Each stat is a label, a large value and a thin meter of its thresholds. */
 .pp-vitals { flex: none; }
-.pp-vitals > ul { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(104px, 1fr); align-items: end; margin: 0; padding: 12px 6px 16px; list-style: none; }
+.pp-vitals > ul { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 22px; margin: 0; padding: 4px 6px 10px; list-style: none; }
 .pp-vitals > ul > li { min-width: 0; display: flex; flex-direction: column; }
-.pp-vitals > ul > li:has(> .pp-stat[data-group-start]) { margin-left: 14px; }
-.pp-vitals > ul > li:first-child { margin-left: 0; }
+.pp-vitals > ul > li:has(> .pp-stat[data-group-start]):not(:first-child) { margin-left: 8px; }
+.pp-vitals > ul > li { min-width: 96px; }
+.pp-footnote-reason { text-decoration: underline dotted; text-underline-offset: 3px; cursor: default; }
+.pp-stats-footnote { margin: 0; padding: 0 14px 6px; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 16px; }
 .pp-stat { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 0 8px; border: 0; background: transparent; color: var(--text); font: inherit; min-height: 24px; text-align: left; }
 button.pp-stat { cursor: pointer; border-radius: var(--radius-sm); }
 .pp-stat:focus-visible, .pp-compare:focus-visible, .pp-moment button:focus-visible, .pp-lead button:focus-visible, .pp-sort:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
@@ -14,11 +16,11 @@ button.pp-stat { cursor: pointer; border-radius: var(--radius-sm); }
 .pp-stat-group:empty { display: none; }
 .pp-vital-label { min-height: 16px; color: var(--text-secondary); font-size: var(--text-xs); line-height: 16px; text-wrap: balance; }
 .pp-stat-value { display: flex; align-items: baseline; gap: 3px; height: 24px; font-size: var(--text-md); font-variant-numeric: tabular-nums; font-weight: 500; line-height: 24px; white-space: nowrap; }
-.pp-missing { color: var(--text-tertiary); font-weight: 400; }
+.pp-stat-note, .pp-stats-empty { margin: 0; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 16px; }
+.pp-stats-empty { padding: 4px 14px 10px; }
 .pp-unit { color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 400; line-height: 1; }
 /* The meter: a neutral track in its three bands; only the band the value falls in takes its rating colour. */
 .pp-meter { position: relative; display: flex; gap: 2px; height: 2px; margin-top: 8px; }
-.pp-meter[data-empty] { background: var(--line); }
 .pp-meter-band { min-width: 2px; border-radius: 1px; background: var(--line); }
 .pp-meter-band[data-active][data-verdict="good"] { background: var(--rating-good); }
 .pp-meter-band[data-active][data-verdict="needs-work"] { background: var(--rating-needs-work); }
@@ -33,13 +35,6 @@ button.pp-stat { cursor: pointer; border-radius: var(--radius-sm); }
 .pp-stat-tip { display: block; max-width: 240px; line-height: 1.4; }
 @media (hover: hover) and (pointer: fine) {
   button.pp-stat:hover { background: var(--surface-hover); }
-}
-@container performance (max-width: 1259px) {
-  .pp-vitals > ul { grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); row-gap: 14px; }
-  .pp-vitals > ul > li:has(> .pp-stat[data-group-start]) { grid-column-start: 1; margin-left: 0; }
-}
-@container performance (max-width: 559px) {
-  .pp-vitals > ul { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 2px; }
 }
 .pp-verdict { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-2xs); font-weight: 500; }
 .pp-verdict[data-verdict="good"] { color: var(--rating-good); }
