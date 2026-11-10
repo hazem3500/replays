@@ -39,6 +39,30 @@ export function profileCapture(
   return capture ?? {};
 }
 
+/** Profiles the CLI accepts without a declaration, so `--profile triage` works before any config names it. */
+export const DEFAULT_PROFILE_IDS = ['triage', 'design-review', 'walkthrough', 'support'] as const;
+
+/**
+ * The warning for a profile id nothing knows: not declared by the config or a plugin, not built in and not one of the
+ * defaults. Undefined for every known id, so the common profiles never warn.
+ */
+export function unknownProfileWarning(
+  id: string | undefined,
+  sources: { config?: readonly ProfileConfig[] | undefined; plugins?: readonly ProfileConfig[] | undefined },
+): string | undefined {
+  if (id === undefined) return undefined;
+  const known = [
+    ...new Set([
+      ...(sources.config ?? []).map((profile) => profile.id),
+      ...(sources.plugins ?? []).map((profile) => profile.id),
+      ...BUILT_IN_PROFILES.map((profile) => profile.id),
+      ...DEFAULT_PROFILE_IDS,
+    ]),
+  ];
+  if (known.includes(id)) return undefined;
+  return `warning: profile ${id} is not declared; declare it in replays.config.* or use one of: ${known.join(', ')}`;
+}
+
 /** `--network <off|headers|bodies>`, checked. */
 export function networkFlag(value: string | undefined): CaptureNetwork | undefined {
   if (value === undefined) return undefined;
