@@ -19,7 +19,7 @@ export interface BrandingConfig {
 }
 
 export interface IntegrationsConfig {
-  /** An https URL with `{traceId}` where the backend trace ID goes (a Grafana Tempo explore link); enables "Open trace" on requests. */
+  /** An https URL with `{traceId}` where the backend trace ID goes (a Grafana Tempo explore link); turns the trace ID in request details into a link. */
   traceUrlTemplate?: string;
 }
 
