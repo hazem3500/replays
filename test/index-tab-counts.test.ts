@@ -12,7 +12,7 @@ import type { ReplaySummary } from '../src/shared/replay.ts';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
-const summary = (id: string, profile: string | undefined, people: ReplayPersonSummary[] = []): ReplaySummary => ({
+const summary = (id: string, people: ReplayPersonSummary[] = [], profile?: string): ReplaySummary => ({
   id,
   title: id,
   url: 'https://app.test/',
@@ -30,10 +30,10 @@ const reviewer = (email: string): ReplayPersonSummary => ({ role: 'reviewer', em
 
 const me = { email: 'ada@example.com', handles: {} };
 const sessions = [
-  summary('a', 'triage', [reviewer('ada@example.com')]),
-  summary('b', 'triage'),
-  summary('c', 'walkthrough', [reviewer('bob@example.com')]),
-  summary('d', undefined, [reviewer('ada@example.com')]),
+  summary('a', [reviewer('ada@example.com')], 'triage'),
+  summary('b', [], 'triage'),
+  summary('c', [reviewer('bob@example.com')], 'walkthrough'),
+  summary('d', [reviewer('ada@example.com')]),
 ];
 const entries = buildIndexEntries(sessions, [], {});
 
@@ -43,7 +43,7 @@ describe('tab counts come from one list', () => {
   });
 
   it('matches a row by a linked handle and never matches an empty identity', () => {
-    const [row] = buildIndexEntries([summary('h', undefined, [{ role: 'reviewer', handles: { github: 'Ada-L' } }])], [], {});
+    const [row] = buildIndexEntries([summary('h', [{ role: 'reviewer', handles: { github: 'Ada-L' } }])], [], {});
     if (!row) throw new Error('expected a row');
     expect(entryIsMine(row, { handles: { github: 'ada-l' } })).toBe(true);
     expect(entryIsMine(row, {})).toBe(false);
@@ -67,7 +67,7 @@ describe('profile tabs', () => {
     { id: 'triage', label: 'Triage', order: 0 },
     { id: 'walkthrough', label: 'Walkthrough', order: 1 },
   ];
-  const render = (value: string | undefined) =>
+  const render = (value?: string) =>
     act(() => {
       root.render(createElement(ProfileSegments, { profiles, value, counts: tabCounts(entries, me), onChange: () => {}, forYou: true }));
     });
@@ -77,7 +77,7 @@ describe('profile tabs', () => {
     render(FOR_YOU);
     const before = [...host.querySelectorAll('.profile-segment')];
     expect(shown()).toEqual(['For you2', 'All4', 'Triage2', 'Walkthrough1']);
-    render(undefined);
+    render();
     expect(shown()).toEqual(['For you2', 'All4', 'Triage2', 'Walkthrough1']);
     expect([...host.querySelectorAll('.profile-segment')]).toEqual(before);
   });
