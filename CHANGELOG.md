@@ -5,6 +5,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+## [Unreleased]
+
+- Connect GitHub on a server with several hosts: the flow now runs entirely on `PUBLIC_ORIGIN` (GitHub has one callback URL). From another host the account menu links to `<PUBLIC_ORIGIN>/auth/github/start?return=<current URL>`, and the callback returns to `return` only when its host is one the server serves, so a flow started on a second host no longer fails with a missing state cookie.
 - Connect GitHub: an optional built-in plugin, on when `REPLAYS_GITHUB_CLIENT_ID` and `REPLAYS_GITHUB_CLIENT_SECRET` are set. A signed-in person verifies their GitHub login once from the account menu (OAuth with PKCE, no scopes, token discarded and revoked); the link is stored under `_identity/github/` and counts like a verified `api.identity` handle for avatars, `?for=me` and `/api/me`. Disconnect is in the same menu. The account menu now also shows for sign-ins without a sign-out URL when it has GitHub actions.
 - Viewer: in a suite, pressing play (the button, Space or K) right after switching runs now starts the new run as soon as it is ready, with a small spinner in the play button meanwhile; a run that was playing keeps playing across a switch, and a quick A, B, C switch only starts C. Once the run on screen is loaded, the suite's other runs are preloaded at low priority (next and previous first, two at a time, skipped on data saver or a 2g link) and the viewer keeps up to five parsed runs.
 - Recorder: an upload error may set `notice`, so the default UI shows a neutral lock in the muted colour instead of the red alert.

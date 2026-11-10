@@ -109,6 +109,8 @@ export const configQuery = queryOptions({
 export interface GithubLinkState {
   available: boolean;
   linked: { login: string; avatarUrl?: string } | null;
+  /** The public origin's start URL (set when the server has a `PUBLIC_ORIGIN`): where Connect GitHub goes from another host. */
+  start?: string;
 }
 
 function isGithubLinkState(value: unknown): value is GithubLinkState {

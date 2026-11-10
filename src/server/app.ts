@@ -136,6 +136,8 @@ export function createApp(options: AppOptions) {
             storage: options.store.storage,
             settings: options.githubConnect,
             publicOrigin: options.publicOrigin,
+            hosts: routing,
+            defaultBase,
             handles: () => userPlugins.people?.value.handles,
             ...(options.githubConnect.fetch ? { fetch: options.githubConnect.fetch } : {}),
           }),

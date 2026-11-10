@@ -390,6 +390,12 @@ match work even when the host's identity roster does not list them. It is off, a
 3. Generate a client secret. Set `REPLAYS_GITHUB_CLIENT_ID` (plain) and `REPLAYS_GITHUB_CLIENT_SECRET` (a secret), and
    `PUBLIC_ORIGIN` so the redirect URI matches the callback URL exactly.
 
+GitHub knows one callback URL, so the whole flow (its state cookie and the callback) runs on `PUBLIC_ORIGIN`. When the
+server also answers on other hosts (`hosts`), their account menu links to `<PUBLIC_ORIGIN>/auth/github/start?return=<this
+page>`, and the callback sends the person back to `return` only when its host is one the server serves (a listed host or
+the public origin's own, on the same scheme); any other `return` falls back to a path on the public origin. The link is
+stored per email in the shared storage, so it shows on every host afterwards.
+
 The link is stored as `_identity/github/<digest of the email>.json` in the configured storage (no migration). It counts
 like a verified `api.identity` handle: it drives `?for=me`, the avatar and `GET /api/me`. The host's `api.people` handles
 must include `github`, otherwise the link is not offered. A roster that already names the person's GitHub login wins and

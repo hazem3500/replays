@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypt
 
 import { definePlugin } from '../plugin/define.ts';
 import { PRODUCT_SLUG } from '../shared/brand.ts';
+import { hostName, type HostRouting, requestHost } from './base-path.ts';
 import type { PluginMiddlewareContext } from '../plugin/web-types.ts';
 import type { Identity } from './auth/types.ts';
 import type { GithubConnectSettings } from './github-connect-config.ts';
@@ -13,12 +14,17 @@ import type { ObjectStorage } from './storage/types.ts';
  * Connect GitHub, as a built-in plugin loaded when the host sets a GitHub OAuth app (github-connect-config.ts):
  *
  *   GET    <base>/auth/github/start       state cookie + PKCE, then GitHub's authorize page (no scopes: public profile only)
+ *                                         `?next=<path>` or `?return=<url>` says where to come back to
  *   GET    <base>/auth/github/callback    checks the state, reads the login from `GET /user`, stores email to login
- *   GET    /api/plugins/github-connect/link      { available, linked: { login, avatarUrl? } | null }
+ *   GET    /api/plugins/github-connect/link      { available, linked: { login, avatarUrl? } | null, start? }
  *   DELETE /api/plugins/github-connect/link      disconnect
  *
  * A stored link is an `api.identity` handle (`handles.github`), so For me, `GET /api/me` and avatars treat it as verified.
  * The access token is used once and revoked; nothing of it is kept.
+ *
+ * GitHub knows one callback URL, so the whole flow (state cookie, callback) runs on `PUBLIC_ORIGIN`. A person on another
+ * host of the same process is sent there (`start` in the link state), and comes back to `return` only when that URL's host
+ * is one this server serves (`hosts`, or the public origin's own): never an open redirect.
  */
 export const GITHUB_CONNECT_PLUGIN = 'github-connect';
 
@@ -36,7 +42,7 @@ interface Flow {
   v: string;
   /** Digest of the email that started the flow: another person's callback cannot finish it. */
   e: string;
-  /** Where to return, a path in this app. */
+  /** Where to return: a path in this app, or a URL on a host this server serves. */
   n: string;
   /** Expiry, ms since the epoch. */
   x: number;
@@ -65,7 +71,7 @@ const text = (status: number, body: string, headers: Record<string, string | str
 
 function redirect(location: string, cookie: string) {
   const response = new Response(null, { status: 302, headers: { location, 'cache-control': 'no-store' } });
-  response.headers.append('set-cookie', cookie);
+  if (cookie) response.headers.append('set-cookie', cookie);
   return response;
 }
 
@@ -74,6 +80,10 @@ export interface GithubConnectDeps {
   settings: GithubConnectSettings;
   /** `https://replays.example.com` (PUBLIC_ORIGIN); without it the request's own origin is used. */
   publicOrigin?: string | undefined;
+  /** The per-host bases (base-path.ts): the hosts this server serves, which a `return` URL may name. */
+  hosts?: HostRouting | undefined;
+  /** The base of every host not in `hosts`. */
+  defaultBase?: string | undefined;
   /** The host's `api.people` handle kinds, if it set any: a link under a kind it does not list would be dropped, so none is offered. */
   handles: () => readonly { id: string }[] | undefined;
   /** Process boundary for GitHub's two endpoints; tests replace it. */
@@ -84,6 +94,10 @@ export interface GithubConnectDeps {
 interface Env {
   settings: GithubConnectSettings;
   publicOrigin: string | undefined;
+  /** The public origin's host name and the base it is served at. */
+  publicHost: string | undefined;
+  publicBase: string;
+  hosts: HostRouting | undefined;
   handles: GithubConnectDeps['handles'];
   httpFetch: typeof fetch;
   now: () => number;
@@ -137,6 +151,36 @@ function unseal(env: Env, cookies: string | null): Flow | undefined {
     return;
   }
 }
+
+/** The host a request addressed, by the same rule that picked its base. */
+const hostOf = (env: Env, request: Request) =>
+  requestHost(
+    { host: request.headers.get('host') ?? undefined, 'x-forwarded-host': request.headers.get('x-forwarded-host') ?? undefined },
+    env.hosts?.trustForwardedHost ?? false,
+  );
+
+/** Whether this request came in on a host other than the public origin's, so its flow has to move there first. */
+const onOtherHost = (env: Env, request: Request) => env.publicHost !== undefined && hostOf(env, request) !== env.publicHost;
+
+/**
+ * A `return` URL the callback may send the person back to: http(s) on the public origin's scheme, and a host this server
+ * serves (a listed host, or the public origin's own). Anything else is dropped, so the callback cannot redirect off-site.
+ */
+function returnUrl(env: Env, value: string | null) {
+  if (!value || value.length > 2048 || !env.publicOrigin || /[\\\p{Cc}]/u.test(value)) return;
+  let target: URL;
+  try {
+    target = new URL(value);
+  } catch {
+    return;
+  }
+  const served = target.host !== '' && (hostName(target.host) === env.publicHost || env.hosts?.bases.has(hostName(target.host)));
+  if (target.protocol !== new URL(env.publicOrigin).protocol || target.username || target.password || !served) return;
+  return `${target.origin}${target.pathname}${target.search}`;
+}
+
+/** `<public origin><its base>/auth/github/start`: where every host sends a person to connect. */
+const startUrl = (env: Env) => `${env.publicOrigin}${env.publicBase}/auth/github/start`;
 
 const redirectUri = (env: Env, url: URL, base: string) => `${env.publicOrigin ?? url.origin}${base}/auth/github/callback`;
 
@@ -203,13 +247,20 @@ async function readAccount(env: Env, code: string, verifier: string, uri: string
 function start(env: Env, context: PluginMiddlewareContext) {
   const { identity, url, base } = context;
   if (!identity?.email) return text(403, 'Sign in with an email address to connect GitHub.');
+  // why: GitHub has one callback URL, so the flow and its state cookie must live on the public origin; another host hands over.
+  if (env.publicOrigin && onOtherHost(env, context.request)) {
+    const back =
+      returnUrl(env, url.searchParams.get('return')) ??
+      `${new URL(env.publicOrigin).protocol}//${context.request.headers.get('host') ?? ''}${returnPath(url.searchParams.get('next'), base)}`;
+    return redirect(`${startUrl(env)}?${new URLSearchParams({ return: back })}`, '');
+  }
   const state = b64(randomBytes(18));
   const verifier = b64(randomBytes(32));
   const flow: Flow = {
     s: state,
     v: verifier,
     e: emailDigest(identity.email),
-    n: returnPath(url.searchParams.get('next'), base),
+    n: returnUrl(env, url.searchParams.get('return')) ?? returnPath(url.searchParams.get('next'), base),
     x: env.now() + FLOW_SECONDS * 1000,
   };
   const uri = redirectUri(env, url, base);
@@ -271,7 +322,11 @@ async function linkStatus(env: Env, identity: Identity | undefined) {
     (env.handles()?.some((handle) => handle.id === 'github') ?? true) &&
     (Boolean(link) || !identity?.handles?.github);
   return Response.json(
-    { available, linked: link ? { login: link.login, ...(link.avatarUrl ? { avatarUrl: link.avatarUrl } : {}) } : null },
+    {
+      available,
+      linked: link ? { login: link.login, ...(link.avatarUrl ? { avatarUrl: link.avatarUrl } : {}) } : null,
+      ...(env.publicOrigin ? { start: startUrl(env) } : {}),
+    },
     { headers: { 'cache-control': 'no-store' } },
   );
 }
@@ -283,9 +338,14 @@ async function unlink(env: Env, identity: Identity | undefined) {
 
 export function githubConnectPlugin(deps: GithubConnectDeps) {
   const now = deps.now ?? Date.now;
+  const publicOrigin = deps.publicOrigin?.replace(/\/+$/, '');
+  const publicHost = publicOrigin ? hostName(new URL(publicOrigin).host) : undefined;
   const env: Env = {
     settings: deps.settings,
-    publicOrigin: deps.publicOrigin,
+    publicOrigin,
+    publicHost,
+    publicBase: (publicHost ? deps.hosts?.bases.get(publicHost) : undefined) ?? deps.defaultBase ?? '',
+    hosts: deps.hosts,
     handles: deps.handles,
     httpFetch: deps.fetch ?? fetch,
     now,
