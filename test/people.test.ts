@@ -385,13 +385,13 @@ describe('people through the app', () => {
     expect((await send('POST', '/api/replays', withPeople('one', [byHandle]))).status).toBe(201);
     expect((await send('POST', '/api/replays', withPeople('two', [{ role: 'pr-author', handles: { github: 'eve' } }]))).status).toBe(201);
 
-    const mine = (await (await send('GET', '/api/replays?for=me')).json()) as Array<{ id: string; reason: string }>;
-    expect(mine.map(({ id, reason }) => [id, reason])).toEqual([['one', 'pr-author']]);
-    const claimed = (await (await send('GET', '/api/replays?for=me&handle.github=eve')).json()) as Array<{ id: string }>;
-    expect(claimed.map(({ id }) => id)).toEqual(['one']);
-    const other = (await (await send('GET', '/api/replays?for=me', undefined, { 'x-email': 'bob@example.com' })).json()) as unknown[];
+    const mine = await (await send('GET', '/api/replays?for=me')).json();
+    expect(mine.map(({ id, reason }: { id: string; reason: string }) => [id, reason])).toEqual([['one', 'pr-author']]);
+    const claimed = await (await send('GET', '/api/replays?for=me&handle.github=eve')).json();
+    expect(claimed.map(({ id }: { id: string }) => id)).toEqual(['one']);
+    const other = await (await send('GET', '/api/replays?for=me', undefined, { 'x-email': 'bob@example.com' })).json();
     expect(other).toEqual([]);
-    const me = (await (await send('GET', '/api/me')).json()) as { handles?: unknown };
+    const me = await (await send('GET', '/api/me')).json();
     expect(me.handles).toEqual({ github: 'Ada' });
   });
 
