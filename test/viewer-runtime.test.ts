@@ -15,6 +15,9 @@ const manifest = {
 };
 
 const silent = { write: () => true };
+const emptyInstall = async (directory: string) => {
+  await mkdir(join(directory, 'node_modules'), { recursive: true });
+};
 const failingInstall = () => Promise.reject(new Error('offline'));
 const forbiddenInstall = () => Promise.reject(new Error('must not install'));
 
@@ -61,6 +64,18 @@ describe('viewer runtime', () => {
     expect(await readFile(join(app, 'dist/lib/server.mjs'), 'utf8')).toBe('export {};');
     expect(await prepareViewerRuntime({ packageRoot, env, stream: silent, install })).toBe(app);
     expect(installs).toEqual([{ 'playwright-core': '1.64.0', react: '19.3.0', zod: '4.6.7' }]);
+  });
+
+  it('uses a new cache directory when the app changes without its size changing', async () => {
+    const env = { REPLAYS_VIEWER_CACHE: join(work, 'cache') };
+    await mkdir(join(packageRoot, 'dist/client'), { recursive: true });
+    await writeFile(join(packageRoot, 'dist/client/app.js'), 'const a = 1;');
+    const first = await prepareViewerRuntime({ packageRoot, env, stream: silent, install: emptyInstall });
+    await writeFile(join(packageRoot, 'dist/client/app.js'), 'const a = 2;');
+    const second = await prepareViewerRuntime({ packageRoot, env, stream: silent, install: emptyInstall });
+    expect(second).not.toBe(first);
+    expect(await readFile(join(second, 'dist/client/app.js'), 'utf8')).toBe('const a = 2;');
+    expect(await prepareViewerRuntime({ packageRoot, env, stream: silent, install: emptyInstall })).toBe(second);
   });
 
   it('explains a failed install and leaves no partial cache behind', async () => {
