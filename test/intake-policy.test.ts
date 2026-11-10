@@ -221,7 +221,10 @@ describe('origin patterns', () => {
     'https://a.12-web.pull.example.com',
   ])('refuses %s with Vary and a JSON body and no CORS permission', async (origin) => {
     const { request } = await start((api) => api.requestPolicy(patterned));
-    for (const response of [await request('/api/replays', preflight({ origin })), await request('/api/replays', upload(replay(), from(origin)))]) {
+    for (const response of [
+      await request('/api/replays', preflight({ origin })),
+      await request('/api/replays', upload(replay(), from(origin))),
+    ]) {
       expect(response.status).toBe(403);
       expect(response.headers.get('access-control-allow-origin')).toBeNull();
       expect(response.headers.get('access-control-allow-credentials')).toBeNull();
