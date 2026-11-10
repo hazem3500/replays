@@ -1,5 +1,5 @@
 import {
-  ChevronDownIcon,
+  ChartColumnIcon,
   CircleAlertIcon,
   GaugeIcon,
   GlobeIcon,
@@ -11,13 +11,14 @@ import {
 import { type ReactNode, type RefObject, useRef } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
+import { IconButton } from '@/components/icon-button.tsx';
+
 import { usePlayheadAria } from '../../hooks/use-playhead-aria.ts';
 import { useRibbonScrub } from '../../hooks/use-ribbon-scrub.ts';
 import { usePlayer } from '../../player.ts';
-import { toggleRibbonCollapsed } from '../ribbon-collapse.ts';
-import type { TimelineTab } from '../../views/settings.ts';
+import { toggleRibbonCollapsed, useRibbonCollapsed } from '../ribbon-collapse.ts';
 import type { RibbonRange } from '../TimeRibbon.tsx';
-import { type FrameBand, readingAt } from './frames.ts';
+import { FPS_GUIDES, type FrameBand, fpsCeiling, fpsY, readingAt } from './frames.ts';
 import { LaneMarkButton } from './LaneMarkButton.tsx';
 import { clockLabel, clusterMarks, type Lane, type LaneId, type LaneMark, niceTicks } from './timeline-model.ts';
 
@@ -56,21 +57,38 @@ const percent = (at: number, span: number) => `${(at / span) * 100}%`;
 function LaneLabel({ id, text }: { id: GutterId; text: string }) {
   const Icon = ICONS[id];
   return (
-    <span className="pt-label" data-lane={id} title={text}>
+    <span className="pt-label" data-lane={id} title={text} aria-hidden="true">
       <Icon aria-hidden="true" />
       <span className="pt-label-text">{text}</span>
     </span>
   );
 }
 
-export function LaneGutter({ lanes, withFrames }: { lanes: readonly GutterLane[]; withFrames: boolean }) {
+/** The frame-rate row's gutter: its name centred on the chart band, and the 60 and 30 guides' labels at their real heights. */
+function FpsGutter({ frames }: { frames: readonly FrameBand[] }) {
+  const ceiling = fpsCeiling(frames);
   return (
-    <div className="pt-gutter" aria-hidden="true">
+    <div className="pt-fps-gutter" data-lane="fps" aria-hidden="true">
+      <LaneLabel id="fps" text={TIMELINE_STRINGS.frameRate} />
+      <div className="pt-fps-axes">
+        {FPS_GUIDES.map((fps) => (
+          <span key={fps} className="pt-fps-axis" style={{ top: `${fpsY(fps, ceiling)}%` }}>
+            {fps}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function LaneGutter({ lanes, frames = [] }: { lanes: readonly GutterLane[]; frames?: readonly FrameBand[] }) {
+  return (
+    <div className="pt-gutter">
       <span className="pt-axis-gap" />
       {lanes.map((lane) => (
         <LaneLabel key={lane.id} id={lane.id} text={lane.label} />
       ))}
-      {withFrames ? <LaneLabel id="fps" text={TIMELINE_STRINGS.frameRate} /> : null}
+      {frames.length ? <FpsGutter frames={frames} /> : null}
     </div>
   );
 }
@@ -236,29 +254,19 @@ export function Playhead({ span, plot, collapsed }: { span: number; plot: RefObj
   );
 }
 
-export function TimelineToggle({
-  collapsed,
-  tab = 'performance',
-  controls = 'performance-timeline-plot',
-  label = TIMELINE_STRINGS.toggle,
-}: {
-  collapsed: boolean;
-  tab?: TimelineTab;
-  controls?: string;
-  label?: string;
-}) {
+export function TimelineToggle() {
+  const collapsed = useRibbonCollapsed();
   return (
-    <div className="ribbon-key">
-      <button
-        type="button"
-        className="ribbon-toggle"
-        aria-label={label}
-        aria-expanded={!collapsed}
-        aria-controls={controls}
-        onClick={() => toggleRibbonCollapsed(tab)}
-      >
-        <ChevronDownIcon aria-hidden="true" />
-      </button>
-    </div>
+    <IconButton
+      label={TIMELINE_STRINGS.toggle}
+      hint={collapsed ? 'Show timeline' : 'Hide timeline'}
+      size="icon-sm"
+      className="pp-timeline-toggle"
+      aria-pressed={!collapsed}
+      aria-controls={collapsed ? undefined : 'performance-timeline-plot'}
+      onClick={() => toggleRibbonCollapsed()}
+    >
+      <ChartColumnIcon aria-hidden="true" />
+    </IconButton>
   );
 }

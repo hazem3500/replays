@@ -23,6 +23,32 @@ export function frameBands(samples: readonly FrameSample[] | undefined, timeline
   });
 }
 
+export interface BandSummary {
+  p50: number;
+  min: number;
+  dropped: number;
+  seconds: number;
+  /** Where the slowest second began. */
+  slowestAt: number;
+}
+
+/** The frame summary of the seconds that overlap `range` (all of them without one): what the stats strip shows for a selected range. */
+export function summarizeBands(bands: readonly FrameBand[], range?: { from: number; to: number }): BandSummary | undefined {
+  const inRange = range ? bands.filter((band) => band.end > range.from && band.at < range.to) : bands;
+  if (!inRange.length) return undefined;
+  const rates = inRange.map((band) => band.fps).toSorted((a, b) => a - b);
+  const middle = Math.floor(rates.length / 2);
+  const p50 = rates.length % 2 ? (rates[middle] ?? 0) : ((rates[middle - 1] ?? 0) + (rates[middle] ?? 0)) / 2;
+  const slowest = inRange.reduce((worst, band) => (band.fps < worst.fps ? band : worst));
+  return {
+    p50,
+    min: rates[0] ?? 0,
+    dropped: inRange.reduce((sum, band) => sum + band.dropped, 0),
+    seconds: inRange.length,
+    slowestAt: slowest.at,
+  };
+}
+
 /** The band holding `time`, or undefined in a gap. */
 export function bandAt(bands: readonly FrameBand[], time: number) {
   return bands.find((band) => time >= band.at && time < band.end);
@@ -40,7 +66,8 @@ export const SPARK_WIDTH = 1000;
 export const SPARK_HEIGHT = 100;
 /** A hole wider than this between two samples breaks the line; a cut's seam sits closer than this. */
 const GAP_MS = 250;
-const REFERENCE_FPS = 60;
+export const FPS_GUIDES = [60, 30] as const;
+const REFERENCE_FPS = 120;
 const CEILING_STEP = 30;
 
 export interface SparkPoint {
@@ -48,7 +75,7 @@ export interface SparkPoint {
   y: number;
 }
 
-/** The chart's top: 60 FPS, or the next 30 above the fastest second on a faster display. */
+/** The chart's top: 120 FPS, so the 60 and 30 guides sit apart, or the next 30 above the fastest second on a faster display. */
 export function fpsCeiling(bands: readonly FrameBand[]) {
   const fastest = bands.reduce((most, band) => Math.max(most, band.fps), 0);
   return Math.max(REFERENCE_FPS, Math.ceil(fastest / CEILING_STEP) * CEILING_STEP);

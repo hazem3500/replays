@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildNetworkRows } from '../src/client/viewer/network/model.ts';
 import { buildPerformance } from '../src/client/viewer/performance.ts';
+import { summarizeBands } from '../src/client/viewer/performance/frames.ts';
 import { BUDGETS, buildMoments, buildVitals } from '../src/client/viewer/performance/model.ts';
 import { cadenceStats, groupNote, shiftScore, shiftVerdict, vitalStat } from '../src/client/viewer/performance/stats.ts';
 import { buildLanes, clockLabel, clusterMarks, type LaneItem, niceTicks } from '../src/client/viewer/performance/timeline-model.ts';
@@ -143,6 +144,18 @@ describe('verdict line', () => {
     expect(verdict.jump?.label).toMatch(/^Jump to 0:0\d$/);
   });
 
+  it('jumps to the worst long task of a cluster, not the middle one', () => {
+    const bundle = recording();
+    must(bundle.performance).entries = [
+      { at: 100, kind: 'long-task', value: 300 },
+      { at: 3200, kind: 'long-task', value: 900 },
+      { at: 6000, kind: 'long-task', value: 400 },
+    ];
+    const { verdict } = verdictOf(bundle);
+    expect(verdict.jump?.at).toBe(3200);
+    expect(verdict.headline).toContain('0:03');
+  });
+
   it('says nothing was slow when nothing was', () => {
     const verdict = buildVerdict({ moments: [], vitals: [], frames: [], shifts: [], requests: [] });
     expect(verdict).toEqual({ tone: 'good', headline: 'No slowdowns found' });
@@ -187,5 +200,21 @@ describe('stats', () => {
     const shift = cadenceStats(model.track, model.shifts).find((stat) => stat.id === 'shift');
     expect(shift?.value).toBeUndefined();
     expect(shift?.missing).toBe('Layout shift: not available in this browser.');
+  });
+});
+
+describe('summarizeBands', () => {
+  const bands = [10, 30, 60, 60].map((fps, index) => ({
+    at: index * 1000,
+    end: (index + 1) * 1000,
+    fps,
+    dropped: index,
+    verdict: 'good' as const,
+  }));
+
+  it('summarizes every second without a range, and only the overlapping ones with one', () => {
+    expect(summarizeBands(bands)).toMatchObject({ min: 10, seconds: 4, dropped: 6, slowestAt: 0 });
+    expect(summarizeBands(bands, { from: 1500, to: 4000 })).toMatchObject({ min: 30, seconds: 3, slowestAt: 1000 });
+    expect(summarizeBands(bands, { from: 9000, to: 10000 })).toBeUndefined();
   });
 });

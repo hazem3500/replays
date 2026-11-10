@@ -37,13 +37,9 @@ function interactionNoun(slow: readonly Moment[]): [string, string] {
 
 const byWorst = (moments: readonly Moment[]) => moments.toSorted((a, b) => b.severity - a.severity || a.at - b.at);
 
-function medianOf(moments: readonly Moment[]) {
-  const sorted = moments.toSorted((a, b) => a.at - b.at);
-  return sorted[Math.floor((sorted.length - 1) / 2)];
-}
-
-function jumpTo(moments: readonly Moment[], at?: number): VerdictJump | undefined {
-  const target = at ?? medianOf(moments)?.at;
+/** why: a headline about a cluster names its worst moment, so the button and the words point at the same place. */
+function jumpTo(moments: readonly Moment[]): VerdictJump | undefined {
+  const target = byWorst(moments)[0]?.at;
   return target === undefined ? undefined : { label: `Jump to ${clockLabel(target)}`, at: target, ids: moments.map((moment) => moment.id) };
 }
 
@@ -56,7 +52,7 @@ function interactionHeadline(moments: readonly Moment[], requests: readonly Netw
 function describeInteractions(slow: readonly Moment[], worst: Moment, moments: readonly Moment[], requests: readonly NetworkRow[]) {
   const [one, many] = interactionNoun(slow);
   const blocked = slow.filter((moment) => causeOf(moment, moments, requests).kind === 'task').length;
-  const jump = jumpTo(slow, slow.length === 1 ? worst.at : undefined);
+  const jump = jumpTo(slow);
   const when = clockLabel(jump?.at ?? worst.at);
   const cause = (() => {
     if (slow.length === 1) return blocked ? `a long task blocked ${one}` : `${one} was slow`;
@@ -83,7 +79,7 @@ function taskHeadline(moments: readonly Moment[], vitals: readonly Vital[]) {
 }
 
 function describeTasks(slow: readonly Moment[], moments: readonly Moment[], vitals: readonly Vital[]) {
-  const jump = jumpTo(slow, slow.length === 1 ? slow[0]?.at : undefined);
+  const jump = jumpTo(slow);
   const at = jump?.at ?? 0;
   const cause = slow.length === 1 ? 'a long task blocked the page' : `${slow.length} long tasks blocked the page`;
   const lead = isLoading(at, moments, vitals) ? 'Slow while loading' : `Slow ${slow.length === 1 ? 'at' : 'around'} ${clockLabel(at)}`;

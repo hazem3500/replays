@@ -63,6 +63,7 @@ import { usePageView } from './hooks/use-page-view.ts';
 import { useQuietPlaying } from './hooks/use-quiet-chrome.ts';
 import { useWindowKeydown } from './hooks/use-window-keydown.ts';
 import { useViewState } from './hooks/use-view-state.ts';
+import { useDockGrow } from './hooks/use-dock-grow.ts';
 import { pageViews } from './views/catalog.ts';
 import { resolvePageView } from './views/page-view.ts';
 import { cycleView, switcherViews, viewDefaults } from './views/resolve.ts';
@@ -333,6 +334,23 @@ export function Viewer({
       setInspectorHeight(from);
     }
   }, [panelMotion, roomForRequest, setInspectorHeight]);
+
+  // why: a tab that declares the height it needs (Performance: headline, timeline, rows) grows a short panel to fit; a drag or saved height ends it.
+  const growDock = useCallback(
+    (to: number) => {
+      if (shell.current) panelMotion(shell.current, 'rows');
+      setInspectorHeight(to);
+    },
+    [panelMotion, setInspectorHeight],
+  );
+  const [hadSavedHeight] = useState(() => readStorage(viewSettingKey(page.view.id, 'dock-height')) !== null);
+  const markDockSized = useDockGrow({
+    shell,
+    height: inspectorHeight,
+    active: !collapsed && !stacked && !hidden,
+    savedHeight: hadSavedHeight,
+    grow: growDock,
+  });
 
   const notify = useCallback((message: string) => showToast(message), []);
   // Built-in features (plugins/features.tsx, e.g. comments): opening their tab unfolds the panel when it is folded, and a
@@ -718,7 +736,10 @@ export function Viewer({
             shell={shell}
             storageKey={viewSettingKey(page.view.id, 'dock-height')}
             height={inspectorHeight}
-            onHeightChange={setInspectorHeight}
+            onHeightChange={(next) => {
+              markDockSized();
+              setInspectorHeight(next);
+            }}
             collapsed={collapsed}
             onCollapsedChange={setCollapsed}
           />

@@ -1,6 +1,8 @@
 import { type ReactNode, useRef, useState } from 'react';
 
-import type { ReplayMeta, ReplayStep } from '../../../shared/replay.ts';
+import { formatClock, type ReplayMeta, type ReplayStep } from '../../../shared/replay.ts';
+import { useMinContentHeight } from '../../hooks/dock-grow.ts';
+import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { usePlayer } from '../../player.ts';
 import { Empty } from '../Empty.tsx';
@@ -11,6 +13,7 @@ import type { RibbonRange } from '../TimeRibbon.tsx';
 import { MomentDetail } from './MomentDetail.tsx';
 import { MomentList } from './MomentList.tsx';
 import { PerfTimeline } from './PerfTimeline.tsx';
+import { TimelineToggle } from './PerfTimelineParts.tsx';
 import { cadenceStats } from './stats.ts';
 import { buildLanes } from './timeline-model.ts';
 import { VerdictLine } from './VerdictLine.tsx';
@@ -30,6 +33,7 @@ export interface PerformancePeer {
   vitals: readonly Vital[];
 }
 
+const BLOCKING_AFTER_MS = 50;
 const SIDE_DETAIL_MIN_WIDTH = 760;
 
 const STRINGS = {
@@ -38,6 +42,15 @@ const STRINGS = {
   outsideTitle: 'Nothing slow in this stretch',
   outside: 'Clear the time range to see every moment.',
 };
+
+const LEAD = 40;
+const AXIS = 24;
+const LANE = 24;
+const FPS = 72;
+const STRIP = 56;
+const TABLE_HEAD = 28;
+const ROW = 30;
+export const MIN_TABLE_ROWS = 4;
 
 /** Something was measured: a vital has a value or was watched (`None`), or there is a moment. */
 function recorded(vitals: readonly Vital[], moments: number) {
@@ -75,16 +88,33 @@ export function PerformancePanel({
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
   const [selected, setSelected] = useState<string>();
   const [order, setOrder] = useState<MomentOrder>('worst');
+  const [blocking, setBlocking] = useState(false);
   const [range, setRange] = useState<RibbonRange>();
   const [hovered, setHovered] = useState<readonly string[]>([]);
   // why: the verdict's jump lights its marks until the person picks something else.
   const [pinned, setPinned] = useState<readonly string[]>([]);
   const moments = buildMoments(model.signals, model.why);
   const vitals = buildVitals(model.signals, moments, model.track);
+  const inRange = (at: number, end = at) => !range || (end >= range.from && at <= range.to);
+  const scopedMoments = moments.filter((item) => inRange(item.at, item.end));
+  const scopedVitals = range
+    ? buildVitals(
+        model.signals.filter((signal) => inRange(signal.at)),
+        scopedMoments,
+        model.track,
+      )
+    : vitals;
   const lanes = buildLanes(moments, requests, model.shifts);
   const verdict = buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests });
-  const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
+  const rows = blocking ? scopedMoments.filter((item) => item.kind === 'task' && item.value > BLOCKING_AFTER_MS) : scopedMoments;
+  const shown = orderMoments(rows, order);
   const open = moments.find((item) => item.id === selected);
+  const timelineCollapsed = useRibbonCollapsed();
+  const timelineHeight =
+    lanes.length || model.frames.length
+      ? (timelineCollapsed ? 0 : AXIS + lanes.length * LANE + (model.frames.length ? FPS : 0)) + (timelineCollapsed ? 0 : 8)
+      : 0;
+  useMinContentHeight(LEAD + timelineHeight + STRIP + TABLE_HEAD + MIN_TABLE_ROWS * ROW);
   const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
     id: peer.id,
     name: peer.name,
@@ -111,16 +141,21 @@ export function PerformancePanel({
     setPinned([]);
     setSelected(id);
   };
+  const verdictLine = (
+    <VerdictLine
+      verdict={verdict}
+      onJump={(jump) => {
+        player.seek(jump.at);
+        setSelected(undefined);
+        setPinned(jump.ids);
+      }}
+    >
+      {lanes.length || model.frames.length ? <TimelineToggle /> : null}
+    </VerdictLine>
+  );
   return (
     <div ref={panel} className="np pp" data-testid="performance-diagnostics" data-stacked={stacked || undefined}>
-      <VerdictLine
-        verdict={verdict}
-        onJump={(jump) => {
-          player.seek(jump.at);
-          setSelected(undefined);
-          setPinned(jump.ids);
-        }}
-      />
+      {verdictLine}
       {lanes.length || model.frames.length ? (
         <PerfTimeline
           duration={duration}
@@ -137,20 +172,33 @@ export function PerformancePanel({
         />
       ) : null}
       <VitalsBar
-        vitals={vitals}
-        peers={vitalPeers}
-        cadence={cadenceStats(model.track, model.shifts)}
-        onPick={(vital) => (vital.moment ? select(vital.moment.id) : player.seek(vital.at ?? 0))}
+        vitals={scopedVitals}
+        peers={range ? [] : vitalPeers}
+        cadence={cadenceStats(model.track, model.shifts, model.frames, range)}
+        ranged={range !== undefined}
+        fromLoad={Boolean(meta.captured?.fromLoad)}
+        blocking={blocking}
+        onBlocking={() => setBlocking(!blocking)}
+        scopes={[
+          ...(range
+            ? [
+                {
+                  text: `in ${formatClock(range.from)} to ${formatClock(range.to)}`,
+                  label: 'Clear the time range',
+                  onClear: () => setRange(undefined),
+                },
+              ]
+            : []),
+          ...(blocking ? [{ text: 'Blocking tasks', label: 'Show all moments', onClear: () => setBlocking(false) }] : []),
+        ]}
+        onSeek={(at) => player.seek(at)}
+        onPick={(vital) => {
+          if (vital.moment) {
+            player.seek(vital.moment.at);
+            select(vital.moment.id);
+          } else player.seek(vital.at ?? 0);
+        }}
       />
-      {meta.captured?.fromLoad ? (
-        <p
-          className="pp-from-load"
-          data-testid="performance-from-load"
-          title="The page was reloaded to record, so the load metrics cover the whole load."
-        >
-          Recorded from page load
-        </p>
-      ) : null}
       {extra}
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>

@@ -140,7 +140,7 @@ export function NetworkTimeline({
   return (
     <section className="pt nt" data-testid="network-timeline" aria-label={summary(rows.length, lanes)}>
       <div className="pt-body">
-        <LaneGutter lanes={networkGutter(lanes)} withFrames={false} />
+        <LaneGutter lanes={networkGutter(lanes)} />
         <div
           ref={plot}
           id="network-timeline-plot"

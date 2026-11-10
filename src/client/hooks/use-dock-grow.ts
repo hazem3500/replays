@@ -1,0 +1,52 @@
+import { type RefObject, useEffect, useRef } from 'react';
+
+import { growTarget, useDockNeeds } from './dock-grow.ts';
+
+const MIN_PLAYER_SHARE = 0.4;
+
+/**
+ * Grows the dock to what the open tab declared it needs (`useMinContentHeight`), animated by `grow`. Stops for good once the
+ * person has sized the panel (`markSized`), and starts that way when a height was saved.
+ */
+export function useDockGrow({
+  shell,
+  height,
+  active,
+  savedHeight,
+  grow,
+}: {
+  shell: RefObject<HTMLElement | null>;
+  height: number;
+  /** The dock is open on a desktop layout. */
+  active: boolean;
+  savedHeight: boolean;
+  grow: (to: number) => void;
+}) {
+  const content = useDockNeeds();
+  const sized = useRef(savedHeight);
+  const latest = useRef(height);
+  useEffect(() => {
+    latest.current = height;
+  }, [height]);
+  useEffect(() => {
+    const element = shell.current;
+    if (!element || !active) return;
+    const panel = element.querySelector<HTMLElement>('.inspector-panel:not([hidden]):not([data-ending-style])');
+    const dock = element.querySelector<HTMLElement>('.inspector');
+    if (!panel || !dock) return;
+    const chrome = Math.max(0, dock.offsetHeight - panel.clientHeight);
+    const room = Math.round(element.clientHeight * (1 - MIN_PLAYER_SHARE));
+    const to = growTarget({
+      content,
+      chrome,
+      current: latest.current,
+      room,
+      viewport: window.innerHeight,
+      userSized: sized.current,
+    });
+    if (to !== undefined) grow(to);
+  }, [active, content, grow, shell]);
+  return () => {
+    sized.current = true;
+  };
+}
