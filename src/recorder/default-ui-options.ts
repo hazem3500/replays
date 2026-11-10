@@ -151,8 +151,12 @@ type Parts = {
 
 function checked(item: HTMLElement, choice: RecordingChoice): boolean {
   if (item.dataset.group === 'diagnostics') {
-    const flags = { performance: choice.performance, debugging: choice.debugging, fromLoad: choice.fromLoad };
-    return flags[item.dataset.value as keyof typeof flags] === true;
+    const flags = new Map([
+      ['performance', choice.performance],
+      ['debugging', choice.debugging],
+      ['fromLoad', choice.fromLoad],
+    ]);
+    return flags.get(item.dataset.value ?? '') === true;
   }
   if (item.dataset.group === 'network') return choice.networkBodies === true;
   return item.dataset.value === (item.dataset.group === 'privacy' ? choice.privacy : choice.profile);

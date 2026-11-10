@@ -6,13 +6,31 @@ import { armReload, RELOAD_FLAG_KEY, RELOAD_FLAG_TTL_MS, takeReload } from './re
 
 const NOW = 1_000_000;
 
-afterEach(() => {
+class BlockedStorage implements Storage {
+  readonly length = 0;
+  [name: string]: unknown;
+  clear(): void {}
+  getItem(): string | null {
+    return null;
+  }
+  key(): string | null {
+    return null;
+  }
+  removeItem(): void {}
+  setItem(): void {
+    throw new Error('blocked');
+  }
+}
+
+function reset() {
   sessionStorage.clear();
   vi.unstubAllGlobals();
   Reflect.deleteProperty(globalThis, EARLY_GLOBAL);
-});
+}
 
 describe('reload flag', () => {
+  afterEach(reset);
+
   it('round-trips the choice and marks it as from load', () => {
     armReload({ privacy: 'text-masked', performance: true, fromLoad: true }, NOW);
     expect(takeReload(NOW + 5_000)).toEqual({ privacy: 'text-masked', performance: true, fromLoad: true });
@@ -52,14 +70,13 @@ describe('reload flag', () => {
   });
 
   it('reports false when storage is blocked, so the recorder records on this page', () => {
-    const storage = {
-      setItem: () => {
-        throw new Error('blocked');
-      },
-    } as unknown as Storage;
-    expect(armReload({ performance: true }, NOW, storage)).toBe(false);
+    expect(armReload({ performance: true }, NOW, new BlockedStorage())).toBe(false);
   });
 });
+
+function names(entries: PerformanceEntry[]): string[] {
+  return entries.map((entry) => entry.name);
+}
 
 function stub() {
   const seen: Record<string, unknown>[] = [];
@@ -78,6 +95,8 @@ function stub() {
 }
 
 describe('buffered observation', () => {
+  afterEach(reset);
+
   it('asks the browser for buffered entries when recording from load', () => {
     const seen = stub();
     observeType('paint', () => {}, true);
@@ -97,7 +116,7 @@ describe('buffered observation', () => {
     };
     vi.stubGlobal(EARLY_GLOBAL, early);
     const handled: string[][] = [];
-    observeType('paint', (entries) => handled.push(entries.map((entry) => entry.name)), true);
+    observeType('paint', (entries) => handled.push(names(entries)), true);
     expect(handled).toEqual([['first', 'late']]);
     expect(seen[0]).toMatchObject({ buffered: false });
   });
