@@ -7,7 +7,7 @@ import { stepPauseMs, type CapturePacingOptions } from '../shared/capture-pacing
 import type { CaptureNetwork, NetworkBodyLimits } from '../shared/capture-profile.ts';
 import { type ProfileConfig, profileOf, profilesOf } from '../shared/profiles.ts';
 import type { ConsoleLevel } from '../shared/replay.ts';
-import { captureSettings, capturedRecord, networkFlag, profileCapture } from './capture-settings.ts';
+import { captureSettings, capturedRecord, networkFlag, profileCapture, unknownProfileWarning } from './capture-settings.ts';
 import { assertReplayId, REPLAY_FORMAT_VERSION, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
 import { assertReplayTags, type ReplayPerson } from '../shared/replay.ts';
 import { parsePeopleFlags } from '../shared/people.ts';
@@ -145,8 +145,8 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   const context = await readContextFile(values['context-file']);
   const loaded = await loadCaptureSettings(values.config ? { configFile: values.config } : {});
   const own = profileCapture(profile, loaded.profiles ?? {});
-  if (profile && own === undefined)
-    process.stderr.write(`warning: profile ${profile} is not declared here; its capture defaults are unknown\n`);
+  const unknownProfile = unknownProfileWarning(profile, loaded.profiles ?? {});
+  if (unknownProfile) process.stderr.write(`${unknownProfile}\n`);
   const settings = captureSettings(own, {
     ...(values.network === undefined ? {} : { network: networkFlag(values.network) }),
     ...(booleans.has('no-performance') ? { performance: false } : {}),
@@ -222,7 +222,9 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     const wantsBodies = args.network === 'bodies';
     const bodiesRecorded = wantsBodies && driver.recordsBodies === true;
     if (wantsBodies && !bodiesRecorded)
-      process.stderr.write(`warning: the ${driver.name} driver cannot record bodies; keeping headers only\n`);
+      process.stderr.write(
+        `warning: --network bodies was requested but the ${driver.name} driver cannot record bodies; this capture keeps headers only\n`,
+      );
     const cdp = await driver.launch({
       viewport: args.viewport,
       harPath,
@@ -324,6 +326,8 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       performanceCount: bundle.performance?.entries.length ?? 0,
       duration,
       video: args.video ? join(args.output, 'session.mp4') : undefined,
+      networkRequested: args.network ?? 'headers',
+      networkMode: args.network === 'off' ? 'off' : bodiesRecorded ? 'bodies' : 'headers',
       ...(uploaded ? { upload: uploaded } : {}),
     };
   } finally {
@@ -353,6 +357,12 @@ export async function runCaptureCli(argv: string[], env: NodeJS.ProcessEnv = {})
         ['Events', String(result.eventCount)],
         ['Requests', String(result.requestCount)],
         ['Console', String(result.consoleCount)],
+        [
+          'Network',
+          result.networkMode === result.networkRequested
+            ? result.networkMode
+            : `${result.networkMode} (${result.networkRequested} was requested but this driver cannot record it)`,
+        ],
         ...(result.video ? ([['Video', result.video]] as Array<[string, string]>) : []),
       ];
       const receipt = result.upload ? `\n\n${uploadSummary(out, result.upload)}` : '';

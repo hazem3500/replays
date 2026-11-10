@@ -168,6 +168,57 @@ it('uses 80ms per character in the Playwright driver, leaving fill immediate', a
   await driver.close();
 });
 
+function networkDriver(recordsBodies?: true): CaptureDriver {
+  return {
+    name: 'fake',
+    ...(recordsBodies ? { recordsBodies } : {}),
+    launch: async ({ harPath }) => {
+      await writeFile(harPath, JSON.stringify({ log: { entries: [] } }));
+      return { send: async () => ({}), on: () => {}, off: () => {} };
+    },
+    open: async () => {},
+    step: async () => {},
+    wait: async () => {},
+    finish: async () => {},
+    close: async () => {},
+  };
+}
+
+function stubSession() {
+  const tracks = { origin: 1000, duration: 1000, events: [{ type: 2, timestamp: 1000 }], console: [], performance: undefined };
+  vi.spyOn(RecorderSession, 'start').mockResolvedValue({
+    flush: async () => {},
+    stop: async () => tracks,
+    dispose: () => {},
+  } as unknown as RecorderSession);
+}
+
+describe('--network bodies on a driver that cannot record them', () => {
+  it('says what was requested and what was recorded', async () => {
+    stubSession();
+    const warnings: string[] = [];
+    vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => {
+      warnings.push(String(chunk));
+      return true;
+    });
+    const args = await parseArgs([...argv, '--output', join(await directory(), 'out'), '--network', 'bodies']);
+    const result = await capture(args, networkDriver());
+    expect(result).toMatchObject({ networkRequested: 'bodies', networkMode: 'headers' });
+    expect(warnings.join('')).toContain('--network bodies was requested but the fake driver cannot record bodies');
+  });
+
+  it('reports bodies when the driver records them, and off when asked for off', async () => {
+    stubSession();
+    const bodies = await capture(
+      await parseArgs([...argv, '--output', join(await directory(), 'a'), '--network', 'bodies']),
+      networkDriver(true),
+    );
+    expect(bodies).toMatchObject({ networkRequested: 'bodies', networkMode: 'bodies' });
+    const off = await capture(await parseArgs([...argv, '--output', join(await directory(), 'b'), '--network', 'off']), networkDriver());
+    expect(off).toMatchObject({ networkRequested: 'off', networkMode: 'off' });
+  });
+});
+
 it('rejects an invalid programmatic pause before launching the driver', async () => {
   const args = await parseArgs(argv);
   const launch = vi.fn<() => void>();

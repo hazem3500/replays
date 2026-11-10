@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { COMMANDS, commandHelp, renderAgentGuide, renderHelp } from '../src/command-help.ts';
-import { checkChrome, checkFfmpeg, checkNode, doctorOutcome } from '../src/capture/doctor.ts';
+import { checkChrome, checkFfmpeg, checkNode, checkServe, doctorOutcome, doctorRows } from '../src/capture/doctor.ts';
 import { createTerminal } from '../src/capture/terminal.ts';
 
 const plain = createTerminal({ env: {}, stream: { isTTY: false, write: () => true } });
@@ -48,9 +48,20 @@ describe('help and the agent guide share one set of command definitions', () => 
 describe('doctor checks', () => {
   it('judges the Node version', () => {
     expect(checkNode('24.22.1').status).toBe('ok');
-    expect(checkNode('22.22.0').status).toBe('ok');
-    expect(checkNode('22.14.0').status).toBe('warn');
+    expect(checkNode('22.14.0')).toMatchObject({ status: 'ok', detail: '(Node 22.14.0)' });
     expect(checkNode('20.11.0').status).toBe('fail');
+    expect(checkServe('22.22.0').status).toBe('ok');
+    expect(checkServe('22.14.0')).toMatchObject({ status: 'warn', detail: 'needs Node 22.22+' });
+  });
+
+  it('splits capture and upload from serve so an old Node does not look like a broken CLI', () => {
+    const out = createTerminal({ env: { NO_COLOR: '1' }, stream: { isTTY: true, write: () => true } });
+    const rows = doctorRows([checkNode('22.16.0'), checkServe('22.16.0')], out);
+    expect(rows).toEqual([
+      ['capture/upload', '✓ (Node 22.16.0)'],
+      ['serve', '✗ needs Node 22.22+'],
+    ]);
+    expect(doctorOutcome([checkNode('22.16.0'), checkServe('22.16.0')])).toBe('ok');
   });
 
   it('finds Chrome and ffmpeg from the environment, and warns rather than fails when missing', () => {
