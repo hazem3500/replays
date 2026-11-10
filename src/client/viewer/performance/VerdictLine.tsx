@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { Button } from '@/components/ui/button.tsx';
 
 import type { PerformanceVerdict, VerdictJump } from './verdict.ts';
@@ -6,9 +8,12 @@ import type { PerformanceVerdict, VerdictJump } from './verdict.ts';
 export function VerdictLine({
   verdict,
   onJump,
+  children,
 }: {
   verdict: PerformanceVerdict;
   onJump: (jump: VerdictJump) => void;
+  /** Icon controls at the row's end, after the jump button. */
+  children?: ReactNode;
 }) {
   const { jump } = verdict;
   return (
@@ -20,6 +25,7 @@ export function VerdictLine({
           {jump.label}
         </Button>
       ) : null}
+      {children}
     </div>
   );
 }

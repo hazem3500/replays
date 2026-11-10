@@ -102,16 +102,17 @@ test('the Details toggle opens the grouped grid and the choice is remembered', a
   await expect(page.locator('.pp-stat').first()).toBeVisible();
 });
 
-test('a collapsed timeline is one slim header row with no chart and no marks', async ({ page }) => {
+test('a collapsed timeline removes its row entirely, with no chart and no marks; the toggle stays in the headline row', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await openPerformance(page, uniqueId('performance-collapsed'));
   await expect(page.locator('.pt-mark').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Timeline' }).click();
-  const timeline = page.getByTestId('performance-timeline');
-  await expect(timeline).toHaveAttribute('data-collapsed', '');
+  const toggle = page.getByRole('button', { name: 'Timeline' });
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('performance-timeline')).toHaveCount(0);
   await expect(page.locator('.pt-mark, .pt-plot, .fps-line, .pt-lane')).toHaveCount(0);
-  expect((await timeline.boundingBox())!.height).toBeLessThanOrEqual(24);
-  await page.getByRole('button', { name: 'Timeline' }).click();
+  await toggle.click();
   await expect(page.locator('.pt-mark').first()).toBeVisible();
 });
 

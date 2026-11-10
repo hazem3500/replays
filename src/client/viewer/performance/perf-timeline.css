@@ -43,12 +43,10 @@
 .pt-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-tertiary); opacity: 0.6; pointer-events: none; }
 .pt-readout { position: absolute; top: 0; z-index: 3; translate: -50% 0; padding: 1px 6px; border-radius: 3px; background: var(--surface-raised); box-shadow: 0 0 0 1px var(--line); color: var(--text); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; line-height: 14px; pointer-events: none; white-space: nowrap; }
 .pt .ribbon-handle { bottom: auto; height: 24px; }
-.pt .ribbon-toggle { width: 24px; height: 24px; }
 /* why: the shared ribbon dims what has not played by 45%, which at the start muddied every mark; here it only hints. */
 .pt .ribbon-future { background: color-mix(in srgb, var(--surface) 16%, transparent); }
 .pt .ribbon-lit { top: 24px; border-inline: 0; background: color-mix(in srgb, var(--text) 5%, transparent); }
 /* why: the toggle sits in the gutter beside the axis, so the playhead handle (24px, in the axis row) never covers it or is covered by it. */
-.pt:not([data-collapsed]) .ribbon-key { position: absolute; top: 0; left: calc(var(--pp-edge) - 6px); padding: 0; }
 /* The frame-rate plot: one accent line and light fill on a 0 to 120 scale, guides at 60 and 30 labelled in the gutter, the fill under 30 tinted danger. */
 .pt-fps { position: relative; height: 72px; }
 .fps-plot { position: absolute; inset: 4px 0; }
@@ -58,12 +56,6 @@
 .fps-area { fill: color-mix(in srgb, var(--accent) 9%, transparent); stroke: none; }
 .fps-danger { fill: color-mix(in oklch, var(--rating-poor) 24%, var(--surface)); stroke: none; }
 
-/* Collapsed: no plot, lanes or marks, only this header row: the name and chevron in the gutter. */
-.pt[data-collapsed] { height: 24px; }
-.pt[data-collapsed] .ribbon-key { position: static; padding: 0 0 0 calc(var(--pp-edge) - 6px); }
-.pt-head-label { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
-.pt[data-collapsed] .ribbon-toggle { width: auto; gap: 4px; padding: 0 6px; }
-.pt[data-collapsed] .ribbon-toggle svg { transform: rotate(-90deg); }
 @container performance (max-width: 719px) {
   .pt-label { padding-left: var(--pp-edge); }
   .pt-label-text { display: none; }

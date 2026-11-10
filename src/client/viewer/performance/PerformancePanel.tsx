@@ -13,6 +13,7 @@ import type { RibbonRange } from '../TimeRibbon.tsx';
 import { MomentDetail } from './MomentDetail.tsx';
 import { MomentList } from './MomentList.tsx';
 import { PerfTimeline } from './PerfTimeline.tsx';
+import { TimelineToggle } from './PerfTimelineParts.tsx';
 import { cadenceStats } from './stats.ts';
 import { buildLanes } from './timeline-model.ts';
 import { VerdictLine } from './VerdictLine.tsx';
@@ -98,7 +99,7 @@ export function PerformancePanel({
   const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
   const open = moments.find((item) => item.id === selected);
   const timelineCollapsed = useRibbonCollapsed();
-  const timelineHeight = lanes.length || model.frames.length ? (timelineCollapsed ? AXIS : AXIS + lanes.length * LANE + (model.frames.length ? FPS : 0)) + 8 : 0;
+  const timelineHeight = lanes.length || model.frames.length ? (timelineCollapsed ? 0 : AXIS + lanes.length * LANE + (model.frames.length ? FPS : 0)) + (timelineCollapsed ? 0 : 8) : 0;
   useMinContentHeight(LEAD + timelineHeight + STRIP + TABLE_HEAD + MIN_TABLE_ROWS * ROW);
   const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
     id: peer.id,
@@ -134,7 +135,9 @@ export function PerformancePanel({
         setSelected(undefined);
         setPinned(jump.ids);
       }}
-    />
+    >
+      {lanes.length || model.frames.length ? <TimelineToggle /> : null}
+    </VerdictLine>
   );
   return (
     <div ref={panel} className="np pp" data-testid="performance-diagnostics" data-stacked={stacked || undefined}>

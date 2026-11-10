@@ -15,7 +15,6 @@ import {
   Playhead,
   RangeAndLit,
   TIMELINE_STRINGS,
-  TimelineToggle,
   TimeAxis,
 } from './PerfTimelineParts.tsx';
 import type { Lane, LaneMark } from './timeline-model.ts';
@@ -46,14 +45,8 @@ interface TimelineProps {
  * cross all of them. A click seeks, a drag filters, the playhead handle scrubs; a mark lights its table row and back.
  */
 export function PerfTimeline(props: TimelineProps) {
-  // invariant: collapsed renders no plot, lanes or marks at all, only the header row that brings them back; the plot mounts fresh on expand so it measures itself.
-  return useRibbonCollapsed() ? (
-    <div className="pt" data-collapsed data-testid="performance-timeline">
-      <TimelineToggle collapsed />
-    </div>
-  ) : (
-    <TimelinePlot {...props} />
-  );
+  // invariant: collapsed renders nothing at all; the toggle lives in the headline row; the plot mounts fresh on expand so it measures itself.
+  return useRibbonCollapsed() ? null : <TimelinePlot {...props} />;
 }
 
 function TimelinePlot({
@@ -101,7 +94,6 @@ function TimelinePlot({
           <Playhead span={span} plot={plot} collapsed={false} />
         </div>
       </div>
-      <TimelineToggle collapsed={false} />
     </div>
   );
 }

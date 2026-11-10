@@ -1,11 +1,13 @@
-import { ChevronDownIcon, GaugeIcon, GlobeIcon, HourglassIcon, LayoutPanelLeftIcon, MousePointerClickIcon } from 'lucide-react';
+import { ChartNoAxesGanttIcon, GaugeIcon, GlobeIcon, HourglassIcon, LayoutPanelLeftIcon, MousePointerClickIcon } from 'lucide-react';
 import { type RefObject, useRef } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
+import { IconButton } from '@/components/icon-button.tsx';
+
 import { usePlayheadAria } from '../../hooks/use-playhead-aria.ts';
 import { useRibbonScrub } from '../../hooks/use-ribbon-scrub.ts';
 import { usePlayer } from '../../player.ts';
-import { toggleRibbonCollapsed } from '../ribbon-collapse.ts';
+import { toggleRibbonCollapsed, useRibbonCollapsed } from '../ribbon-collapse.ts';
 import type { RibbonRange } from '../TimeRibbon.tsx';
 import { FPS_GUIDES, type FrameBand, fpsCeiling, fpsY, readingAt } from './frames.ts';
 import { LaneMarkButton } from './LaneMarkButton.tsx';
@@ -217,20 +219,19 @@ export function Playhead({ span, plot, collapsed }: { span: number; plot: RefObj
   );
 }
 
-export function TimelineToggle({ collapsed }: { collapsed: boolean }) {
+export function TimelineToggle() {
+  const collapsed = useRibbonCollapsed();
   return (
-    <div className="ribbon-key">
-      <button
-        type="button"
-        className="ribbon-toggle"
-        aria-label={TIMELINE_STRINGS.toggle}
-        aria-expanded={!collapsed}
-        aria-controls={collapsed ? undefined : 'performance-timeline-plot'}
-        onClick={toggleRibbonCollapsed}
-      >
-        <ChevronDownIcon aria-hidden="true" />
-        {collapsed ? <span className="pt-head-label">{TIMELINE_STRINGS.toggle}</span> : null}
-      </button>
-    </div>
+    <IconButton
+      label={TIMELINE_STRINGS.toggle}
+      hint={collapsed ? 'Show timeline' : 'Hide timeline'}
+      size="icon-sm"
+      className="pp-timeline-toggle"
+      aria-pressed={!collapsed}
+      aria-controls={collapsed ? undefined : 'performance-timeline-plot'}
+      onClick={toggleRibbonCollapsed}
+    >
+      <ChartNoAxesGanttIcon aria-hidden="true" />
+    </IconButton>
   );
 }

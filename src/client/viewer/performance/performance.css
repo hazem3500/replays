@@ -134,6 +134,11 @@ button.pp-stat:hover { box-shadow: 0 0 0 4px var(--surface-hover); }
 .pp-lead[data-tone="poor"] .pp-lead-dot { background: var(--rating-poor); }
 .pp-lead .pp-lead-jump { margin: 0 -8px 0 auto; height: 24px; flex: none; color: var(--text-tertiary); }
 .pp-lead .pp-lead-jump:hover { color: var(--text); }
+.pp-lead .pp-timeline-toggle { flex: none; margin-right: -6px; color: var(--text-tertiary); }
+.pp-lead .pp-lead-jump + .pp-timeline-toggle { margin-left: 4px; }
+.pp-lead p + .pp-timeline-toggle { margin-left: auto; }
+.pp-lead .pp-lead-jump:has(+ .pp-timeline-toggle) { margin-right: 0; }
+.pp-lead .pp-timeline-toggle[aria-pressed="true"] { color: var(--text); }
 .pp-sort { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0 4px; margin: 0 -4px; border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; font: inherit; cursor: pointer; transition: color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
 .pp-sort:hover { color: var(--text); background: var(--surface-hover); }
 .pp-sort[data-active] { color: var(--text); }
