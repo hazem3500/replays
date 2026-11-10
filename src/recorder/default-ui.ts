@@ -92,6 +92,7 @@ export function createDefaultUi(
     floating.shell.dataset.phase = phase;
     delete floating.shell.dataset.custom;
     delete floating.shell.dataset.warning;
+    delete floating.shell.dataset.tone;
     floating.content.querySelectorAll<HTMLElement>('.time').forEach(cleanupText);
     floating.content.replaceChildren();
     floating.live.textContent = announcement;
@@ -347,8 +348,8 @@ export function createDefaultUi(
           const href = receipt.url ? safeHref(receipt.url) : undefined;
           appendCompletionControls(controls, completion?.actions, { resolveValue, copy, context, href, messages });
         } else {
-          if (error?.action && result.status === 'error')
-            renderCleanup = uploadRecovery(controls, error.action, result.retry, {
+          if (error?.action && result.status === 'error') {
+            const stopRecovery = uploadRecovery(controls, error.action, result.retry, {
               failure: (message) => {
                 updateText(current.label, message);
                 current.live.textContent = message;
@@ -365,6 +366,12 @@ export function createDefaultUi(
                 spinner = undefined;
               },
             });
+            renderCleanup = () => {
+              stopRecovery();
+              spinner?.stop();
+              spinner = undefined;
+            };
+          }
           if (error?.link) {
             const control = link(error.link.label, error.link.url);
             if (control) controls.append(control);
