@@ -171,8 +171,6 @@
   .np-section .np-copy { opacity: 0; }
   .np-section:hover .np-copy, .np-section:focus-within .np-copy { opacity: 1; }
 }
-.np-pending .np-toolbar .np-pending-chips { width: 220px; }
-.np-pending .np-row:not(.np-head) .skeleton:nth-child(2) { width: 70%; }
 
 /* Bodies: mono, wrapped, folded to 14 lines with a fade until "Show all"; redaction markers read as a quiet chip. */
 .np-body-text { max-height: none; margin: 0; padding: 8px 10px; overflow: auto; border-radius: var(--radius-sm); background: var(--surface); color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); line-height: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }

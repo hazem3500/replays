@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 
 import { registerViewerFeature } from '../plugins/features.tsx';
 import { CommentsBridge, CommentsProvider, preloadCommentRows, useComments } from './CommentsProvider.tsx';
+import { CommentsSkeleton } from '../viewer/PanelSkeletons.tsx';
 import { commentsEnabled } from './enabled.ts';
 
 let loadingUi: Promise<typeof import('./comments-ui.tsx')> | undefined;
@@ -13,7 +14,7 @@ const LazyMarkers = lazy(() => loadUi().then((module) => ({ default: module.Comm
 /** The Comments tab, from the comments UI chunk. why: the index and the first paint of a replay never pay for it. */
 function CommentsTabPanel() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<CommentsSkeleton />}>
       <LazyPanel />
     </Suspense>
   );

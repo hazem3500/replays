@@ -1,3 +1,4 @@
+import { GaugeIcon } from 'lucide-react';
 import { type ReactNode, useRef, useState } from 'react';
 
 import { formatClock, type ReplayMeta, type ReplayStep } from '../../../shared/replay.ts';
@@ -134,7 +135,9 @@ export function PerformancePanel({
   const empty = range ? (
     <Empty title={STRINGS.outsideTitle}>{STRINGS.outside}</Empty>
   ) : (
-    <Empty title={STRINGS.calmTitle}>{STRINGS.calm}</Empty>
+    <Empty icon={GaugeIcon} title={STRINGS.calmTitle}>
+      {STRINGS.calm}
+    </Empty>
   );
   const lit = [hovered, pinned, selected ? [selected] : []].find((ids) => ids.length) ?? [];
   const select = (id?: string) => {
@@ -230,20 +233,3 @@ export function PerformancePanel({
     </div>
   );
 }
-
-/** The panel's shape while the replay loads: the vitals bar, the header and a few rows, at their real heights. */
-export const PerformancePending = (
-  <div className="np pp pp-pending" aria-hidden="true">
-    <div className="pp-vitals">
-      <span className="skeleton pp-pending-vitals" />
-    </div>
-    <div className="pp-row pp-head" />
-    {['a', 'b', 'c', 'd'].map((row) => (
-      <div key={row} className="pp-row">
-        <span className="skeleton skeleton-thin" />
-        <span className="skeleton skeleton-thin" />
-        <span className="skeleton skeleton-thin" />
-      </div>
-    ))}
-  </div>
-);

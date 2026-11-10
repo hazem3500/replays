@@ -1,0 +1,65 @@
+/*
+ * The inspector tabs' skeletons (PanelSkeletons.tsx). They carry their own small layout, with the loaded panels'
+ * measures (rows 30 / 36 px, headers 28 px, the 128 px label gutter, 14 px edges), because the loaded panels' styles
+ * ship with the viewer chunk and a skeleton draws before it. Narrow panels drop the same columns the loaded ones do.
+ */
+.skel-frame { container: skel / inline-size; }
+.sk-end { margin-left: auto; }
+.sk-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sk-band { border-radius: 6px; opacity: 0.7; }
+.sk-heading { margin: 4px 0 8px; }
+
+.sk-lead { display: flex; flex: none; align-items: center; gap: 8px; height: 32px; margin-bottom: 8px; padding: 0 14px; }
+.sk-toolbar { display: flex; flex: none; align-items: center; gap: 6px; height: 36px; padding: 0 8px 0 10px; border-bottom: 1px solid var(--line); }
+
+.sk-tl { display: grid; flex: none; grid-template-columns: 128px minmax(0, 1fr) 14px; margin-bottom: 8px; padding-top: 24px; }
+.sk-tl[data-tall] { grid-template-columns: 0 minmax(0, 1fr) 14px; padding-top: 4px; margin-left: 10px; }
+.sk-tl-gutter, .sk-tl-plot { display: flex; flex-direction: column; min-width: 0; }
+.sk-tl-gutter { padding-left: 14px; }
+.sk-lane { display: flex; align-items: center; gap: 6px; height: 24px; }
+.sk-tl[data-tall] .sk-lane[data-first] { height: 32px; }
+
+.sk-vitals { display: flex; flex: none; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; padding: 2px 14px 0 128px; list-style: none; }
+.sk-vitals li { display: flex; align-items: center; min-height: 24px; }
+
+.sk-row { display: grid; grid-template-columns: var(--sk-cols); align-items: center; column-gap: 10px; min-height: 30px; padding: 0 14px 0 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.sk-row > * { min-width: 0; }
+.sk-head { height: 28px; min-height: 28px; border-bottom-color: var(--line); }
+.sk-table { --sk-cols: minmax(120px, 180px) 60px 64px 120px minmax(0, 1fr); }
+.sk-table[data-kind="perf"] .sk-row { padding-inline: 14px; }
+.sk-table[data-kind="net"] { --sk-cols: 60px minmax(0, 1fr) 52px 116px minmax(0, 200px); }
+.sk-table[data-kind="log"] { --sk-cols: 60px minmax(0, 1fr) minmax(0, 160px); }
+.sk-table[data-kind="log"] .sk-row:not(.sk-head) { min-height: 36px; }
+
+.sk-ctx { display: grid; align-content: start; padding: 0 16px 12px; }
+.sk-ctx-summary { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.sk-ctx > .sk-heading { margin-top: 16px; }
+.sk-ctx-source { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.sk-ctx-groups { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 24px; padding-top: 12px; }
+.sk-ctx-row { display: grid; grid-template-columns: minmax(0, 92px) minmax(0, 1fr); align-items: center; column-gap: 10px; min-height: 28px; }
+
+.sk-comments-wrap { display: flex; flex: 1; flex-direction: column; min-height: 0; padding: 0 16px; }
+.sk-comments { flex: 1; margin: 0; padding: 0; list-style: none; }
+.sk-comments > li + li { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.sk-comment { display: flex; gap: 12px; padding: 12px 0; }
+.sk-comment-text { display: grid; flex: 1; gap: 6px; min-width: 0; }
+.sk-comment-text > .sk-cell { height: 24px; }
+.sk-line { margin-block: 3px; }
+.sk-composer { display: flex; align-items: center; flex: none; min-height: 40px; margin: 8px 0 12px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; }
+
+.sk-list { display: grid; align-content: start; gap: 2px; padding: 6px; }
+.sk-list-row { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; }
+
+@container skel (max-width: 879px) {
+  .sk-table[data-kind="perf"] { --sk-cols: minmax(110px, 160px) 60px 64px minmax(0, 1fr); }
+  .sk-table[data-kind="net"] { --sk-cols: 60px minmax(0, 1fr) 52px 116px; }
+  .sk-table[data-kind="log"] { --sk-cols: 60px minmax(0, 1fr); }
+  .sk-md { display: none; }
+}
+@container skel (min-width: 720px) {
+  .sk-ctx-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container skel (max-width: 719px) {
+  .sk-vitals { padding-left: 44px; }
+  .sk-tl { grid-template-columns: 44px minmax(0, 1fr) 14px; }
+}

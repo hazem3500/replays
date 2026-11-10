@@ -100,12 +100,15 @@ function layout(hint: OpenHint | undefined) {
   const ratio = hint?.viewport && hint.viewport.height > 0 ? hint.viewport.width / hint.viewport.height : 16 / 10;
   // why: a suite with two or more recordings opens comparing them in its Grid, unless its address names one run.
   const tiles = /\/s\/[^/]+\/r\//.test(location.pathname) ? 0 : (hint?.recordings ?? 0);
-  return { height, collapsed, stepsWidth, ratio, tiles };
+  const tab = readStorage(viewSettingKey(view, 'tab')) || DEFAULT_TAB;
+  return { height, collapsed, stepsWidth, ratio, tiles, tab };
 }
 
 /** A skeleton that disappeared this recently hands over to the next one at once (no second fade-in). */
 let lastVisibleAt = Number.NEGATIVE_INFINITY;
 const SHOW_DELAY_MS = 150;
+/** why: the dock opens on Console until a tab is chosen (viewer/Inspector.tsx). */
+const DEFAULT_TAB = 'console';
 
 function loadingStyle(shape: ReturnType<typeof layout>, mobile: boolean): CSSProperties {
   return {
@@ -154,11 +157,12 @@ export function ViewerSkeleton({
         {label}…
       </span>
       {mobile ? (
-        <PhoneSkeleton hint={hint} />
+        <PhoneSkeleton hint={hint} tab={shape.tab} />
       ) : (
         <DesktopSkeleton
           hint={hint}
           stepsWidth={shape.stepsWidth}
+          tab={shape.tab}
           collapsed={collapsed}
           compare={suite || comparing !== undefined}
           tiles={comparing ?? (suite ? shape.tiles : 0)}
@@ -316,11 +320,13 @@ function PlayerSkeleton({ poster }: { poster?: string | undefined }) {
 function DesktopSkeleton({
   hint,
   stepsWidth,
+  tab,
   collapsed,
   compare,
   tiles,
 }: {
   hint: OpenHint | undefined;
+  tab: string;
   stepsWidth: number | undefined;
   collapsed: boolean;
   /** A suite or comparison: the bar has the layout switch, and the title is the focused recording's, not yet known. */
@@ -349,8 +355,8 @@ function DesktopSkeleton({
       </div>
       {collapsed ? null : <div className="skeleton-divider" aria-hidden="true" />}
       <div className="inspector" aria-hidden="true">
-        <LoadingTabs mobile={false} steps={hint?.steps} />
-        {collapsed ? null : <LoadingPanel />}
+        <LoadingTabs mobile={false} steps={hint?.steps} tab={tab} />
+        {collapsed ? null : <LoadingPanel tab={tab} />}
       </div>
     </>
   );
@@ -368,7 +374,7 @@ function StageSkeleton({ tiles, poster }: { tiles: number; poster: string | unde
   );
 }
 
-function PhoneSkeleton({ hint }: { hint: OpenHint | undefined }) {
+function PhoneSkeleton({ hint, tab }: { hint: OpenHint | undefined; tab: string }) {
   return (
     <>
       <LoadingTopbar title={hint?.title} mobile progress={<ProgressHint />} />
@@ -379,8 +385,8 @@ function PhoneSkeleton({ hint }: { hint: OpenHint | undefined }) {
         </section>
       </div>
       <div className="inspector" aria-hidden="true">
-        <LoadingTabs mobile steps={hint?.steps} />
-        <LoadingPanel />
+        <LoadingTabs mobile steps={hint?.steps} tab={tab} />
+        <LoadingPanel tab={tab} />
       </div>
     </>
   );

@@ -48,7 +48,6 @@
 }
 
 /* ---------- Quiet states ---------- */
-.comments-loading,
 .comments-filtered-empty {
   margin: 0;
   padding: 16px 0;

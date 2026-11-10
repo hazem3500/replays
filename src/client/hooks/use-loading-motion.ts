@@ -19,7 +19,7 @@ function loadingShell(element: HTMLElement) {
 }
 
 function loadingKind(element: HTMLElement, landed: number) {
-  if (element.matches(PULSE)) return element.closest('.panel-pending') ? '' : 'pulse';
+  if (element.matches(PULSE)) return 'pulse';
   if (element.matches('.skel-appear')) return 'appear';
   if (element.matches('.skeleton-shell, .skeleton-suite')) return loadingShell(element) ? 'loading' : '';
   if (element.matches('.app-shell')) return document.documentElement.hasAttribute('data-navigated') ? '' : 'shell';

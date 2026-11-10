@@ -1,3 +1,4 @@
+import { TerminalIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import type { ReplayConsoleEntry } from '../../../shared/replay.ts';
@@ -15,7 +16,6 @@ import './console.css';
 
 /** Narrower than this, the detail takes the list's place instead of sitting beside it. */
 const SIDE_DETAIL_MIN_WIDTH = 760;
-const PENDING_ROWS = ['a', 'b', 'c', 'd', 'e'];
 
 const STRINGS = {
   humanTitle: 'Console wasn’t recorded',
@@ -49,6 +49,7 @@ export function ConsolePanel({ entries, human }: { entries: readonly ReplayConso
   const copy = emptyCopy(rows.length, human);
   const empty = (
     <Empty
+      icon={TerminalIcon}
       title={copy.title}
       action={
         rows.length ? (
@@ -80,19 +81,3 @@ export function ConsolePanel({ entries, human }: { entries: readonly ReplayConso
     </div>
   );
 }
-
-/** The panel's shape while the replay loads: the toolbar row, the header and a few rows, at their real heights. */
-export const ConsolePending = (
-  <div className="np cp cp-pending" aria-hidden="true">
-    <div className="np-toolbar">
-      <span className="skeleton cp-pending-chips" />
-    </div>
-    <div className="cp-row cp-head" />
-    {PENDING_ROWS.map((row) => (
-      <div key={row} className="cp-row">
-        <span className="skeleton skeleton-thin" />
-        <span className="skeleton skeleton-thin" />
-      </div>
-    ))}
-  </div>
-);
