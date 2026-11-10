@@ -158,7 +158,9 @@ test('a stat in the strip jumps to its moment, and blocking time narrows the tab
   await page.setViewportSize({ width: 1280, height: 900 });
   await openPerformance(page, uniqueId('performance-strip-click'));
   const longest = page.getByRole('button', { name: /Longest task/ });
-  await expect(longest).toHaveAttribute('aria-pressed', 'false').catch(() => undefined);
+  await expect(longest)
+    .toHaveAttribute('aria-pressed', 'false')
+    .catch(() => undefined);
   await longest.click();
   await expect(page.locator('.pp-row[aria-selected="true"], .pp-row[data-selected]').first()).toBeVisible();
   const rowsBefore = await page.locator('.pp-row:not(.pp-head)').count();

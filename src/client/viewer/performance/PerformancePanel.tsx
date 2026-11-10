@@ -182,7 +182,13 @@ export function PerformancePanel({
         onBlocking={() => setBlocking(!blocking)}
         scopes={[
           ...(range
-            ? [{ text: `in ${formatClock(range.from)} to ${formatClock(range.to)}`, label: 'Clear the time range', onClear: () => setRange(undefined) }]
+            ? [
+                {
+                  text: `in ${formatClock(range.from)} to ${formatClock(range.to)}`,
+                  label: 'Clear the time range',
+                  onClear: () => setRange(undefined),
+                },
+              ]
             : []),
           ...(blocking ? [{ text: 'Blocking tasks', label: 'Show all moments', onClear: () => setBlocking(false) }] : []),
         ]}
