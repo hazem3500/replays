@@ -4,7 +4,8 @@ import { expect, userEvent, within } from 'storybook/test';
 
 import { config } from './mocks/api.ts';
 import { buildNetworkRows } from '../src/client/viewer/network/model.ts';
-import { NetworkPanel, NetworkPending, type NetworkPeer } from '../src/client/viewer/network/NetworkPanel.tsx';
+import { NetworkSkeleton, PerformanceSkeleton } from '../src/client/viewer/PanelSkeletons.tsx';
+import { NetworkPanel, type NetworkPeer } from '../src/client/viewer/network/NetworkPanel.tsx';
 import { buildPerformance } from '../src/client/viewer/performance.ts';
 import { vitalsOf } from '../src/client/viewer/performance/model.ts';
 import { PerformancePanel } from '../src/client/viewer/performance/PerformancePanel.tsx';
@@ -172,7 +173,20 @@ export const NetworkPhone: Story = { render: () => <Network bundle={busy} width=
 
 export const NetworkEmpty: Story = { render: () => <Network bundle={quiet} /> };
 
-export const NetworkLoading: Story = { render: () => <PanelFrame bundle={quiet}>{NetworkPending}</PanelFrame> };
+export const PerformanceLoading: Story = {
+  render: () => (
+    <PanelFrame bundle={quiet}>
+      <PerformanceSkeleton />
+    </PanelFrame>
+  ),
+};
+export const NetworkLoading: Story = {
+  render: () => (
+    <PanelFrame bundle={quiet}>
+      <NetworkSkeleton />
+    </PanelFrame>
+  ),
+};
 
 export const PerformanceMoments: Story = {
   render: () => <Performance bundle={busy} />,

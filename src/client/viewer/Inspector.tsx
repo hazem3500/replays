@@ -14,12 +14,11 @@ import { useContextSchema } from './context-schema.ts';
 import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
-import { ConsolePending } from './console/ConsolePanel.tsx';
 import { ConsoleCapture } from './console/ConsoleCapture.tsx';
 import { buildNetworkRows, networkBadge } from './network/model.ts';
-import { type NetworkPeer, NetworkPanel, NetworkPending } from './network/NetworkPanel.tsx';
+import { type NetworkPeer, NetworkPanel } from './network/NetworkPanel.tsx';
 import { buildMoments, performanceBadge, vitalsOf } from './performance/model.ts';
-import { type PerformancePeer, PerformancePanel, PerformancePending } from './performance/PerformancePanel.tsx';
+import { type PerformancePeer, PerformancePanel } from './performance/PerformancePanel.tsx';
 import { resolveSlot } from '../plugins/registry.ts';
 import { DockPanel, InspectorDock } from './InspectorDock.tsx';
 import { inspectorTabItems } from './inspector-tabs.ts';
@@ -246,10 +245,10 @@ export const Inspector = memo(function Inspector({
           <StepList />
         </DockPanel>
       ) : null}
-      <DockPanel value="console" pending={ConsolePending}>
+      <DockPanel value="console">
         <ConsoleCapture entries={consoleTrack.entries} human={human} meta={sourceBundle.meta} />
       </DockPanel>
-      <DockPanel value="network" pending={NetworkPending}>
+      <DockPanel value="network">
         <NetworkPanel
           rows={networkRows}
           steps={bundle.steps}
@@ -261,7 +260,7 @@ export const Inspector = memo(function Inspector({
           captured={sourceBundle.meta.captured}
         />
       </DockPanel>
-      <DockPanel value="performance" pending={PerformancePending}>
+      <DockPanel value="performance">
         <PerformancePanel
           model={performanceModel}
           requests={networkRows}

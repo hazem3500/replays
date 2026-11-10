@@ -1,6 +1,7 @@
 import {
   CheckIcon,
   CircleHelpIcon,
+  FileTextIcon,
   FlaskConicalIcon,
   GitCommitHorizontalIcon,
   GlobeIcon,
@@ -71,7 +72,7 @@ export function ContextPanel({
     return (
       <div className="table-scroll" data-testid="context-empty">
         {summary ? <RunSummary summary={summary} /> : null}
-        <Empty title="No context was captured">
+        <Empty icon={FileTextIcon} title="No context was captured">
           The recording app can attach approved build and runtime details. CLI captures can attach context with --context-file. Missing
           context cannot be recovered from this recording.
         </Empty>

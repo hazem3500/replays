@@ -2,11 +2,13 @@ import { type CSSProperties, createContext, type ReactNode, use } from 'react';
 
 import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
 import { PlaySpinner } from '@/components/play-spinner.tsx';
+import { SkeletonDelay } from '@/components/ui/skeleton.tsx';
 import { buttonVariants } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 
 import { commentsEnabled } from './comments/enabled.ts';
 import { editingEnabled } from './config.ts';
+import { PanelSkeleton } from './viewer/PanelSkeletons.tsx';
 import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
 
 /**
@@ -179,22 +181,19 @@ export function LoadingRail({ steps }: { steps: number | undefined }) {
   );
 }
 
-/** The open panel's stand-in rows under the tab row, at the inspector's row height. */
-export function LoadingPanel() {
+/** The open panel's skeleton: the stored tab's own layout (the viewer's default tab until one is chosen). */
+export function LoadingPanel({ tab }: { tab: string }) {
   return (
     <div className="sk-panel" aria-hidden="true">
-      {RAIL_WIDTHS.slice(0, 5).map((width) => (
-        <div key={width} className="sk-panel-row">
-          <span className="skeleton skeleton-thin sk-step-time" />
-          <span className="skeleton" style={{ width: `${width}%` } satisfies CSSProperties} />
-        </div>
-      ))}
+      <SkeletonDelay value={0}>
+        <PanelSkeleton panel={tab} />
+      </SkeletonDelay>
     </div>
   );
 }
 
 /** The inspector's tab row: desktop's labels, or phones' icon tabs (Steps first when there are steps). */
-export function LoadingTabs({ mobile, steps }: { mobile: boolean; steps: number | undefined }) {
+export function LoadingTabs({ mobile, steps, tab }: { mobile: boolean; steps: number | undefined; tab: string }) {
   const tabs = commentsEnabled() ? [...STRINGS.tabs, STRINGS.comments] : STRINGS.tabs;
   const count = mobile ? tabs.length + (steps ? 1 : 0) : 0;
   return (
@@ -207,7 +206,7 @@ export function LoadingTabs({ mobile, steps }: { mobile: boolean; steps: number 
               </span>
             ))
           : tabs.map((label) => (
-              <span key={label} className="inspector-tab sk-tab">
+              <span key={label} className="inspector-tab sk-tab" data-active={label.toLowerCase() === tab ? '' : undefined}>
                 {label}
               </span>
             ))}

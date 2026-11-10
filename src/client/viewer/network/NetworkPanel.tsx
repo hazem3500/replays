@@ -1,3 +1,4 @@
+import { GlobeIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Splitter } from '@/components/ui/splitter.tsx';
 import { useElementWidth } from '../../hooks/use-element-width.ts';
@@ -21,7 +22,6 @@ export type { NetworkPeer } from './RequestDetail.tsx';
 /** Narrower than this, the detail takes the list's place instead of sitting beside it. */
 const SIDE_DETAIL_MIN_WIDTH = 760;
 const NO_PEERS: readonly NetworkPeer[] = [];
-const PENDING_ROWS = ['a', 'b', 'c', 'd', 'e', 'f'];
 
 const STRINGS = {
   humanTitle: 'Network wasn’t recorded',
@@ -77,6 +77,7 @@ export function NetworkPanel({
   const copy = emptyCopy(rows.length, human);
   const empty = (
     <Empty
+      icon={GlobeIcon}
       title={copy.title}
       action={
         rows.length ? (
@@ -151,21 +152,3 @@ export function NetworkPanel({
     </div>
   );
 }
-
-/** The panel's shape while the replay loads: the toolbar row, the header and a few rows, at their real heights. */
-export const NetworkPending = (
-  <div className="np np-pending" aria-hidden="true">
-    <div className="np-toolbar">
-      <span className="skeleton np-pending-chips" />
-    </div>
-    <div className="np-row np-head" />
-    {PENDING_ROWS.map((row) => (
-      <div key={row} className="np-row">
-        <span className="skeleton skeleton-thin" />
-        <span className="skeleton skeleton-thin" />
-        <span className="skeleton skeleton-thin" />
-        <span className="skeleton skeleton-thin" />
-      </div>
-    ))}
-  </div>
-);

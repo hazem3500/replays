@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/empty-state.tsx';
 import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
 import { useThreadFollow } from '../hooks/use-thread-follow.ts';
 import { usePlayhead } from '../player.ts';
+import { CommentThreadsSkeleton } from '../viewer/PanelSkeletons.tsx';
 import { Composer } from './Composer.tsx';
 import { type CommentsApi, useComments } from './CommentsProvider.tsx';
 import { ReactionRow } from './Reactions.tsx';
@@ -58,9 +59,7 @@ export function CommentsPanelView({ comments }: { comments: CommentsApi }) {
             testId="comments-error"
           />
         ) : !comments.loaded ? (
-          <p className="comments-loading" role="status">
-            {commentStrings.loading}
-          </p>
+          <CommentThreadsSkeleton />
         ) : threads.length === 0 ? (
           <CommentsEmpty onComment={comments.startComment} />
         ) : items.length === 0 ? (
@@ -121,7 +120,7 @@ function CommentsEmpty({ onComment }: { onComment: () => void }) {
   return (
     <EmptyState
       variant="compact"
-      icon={null}
+      icon="inbox"
       title={commentStrings.emptyTitle}
       body={commentStrings.emptyBody}
       actions={[{ id: 'comment', label: commentStrings.emptyAction, onSelect: onComment }]}

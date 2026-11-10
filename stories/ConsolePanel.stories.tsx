@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 
-import { ConsolePanel, ConsolePending } from '../src/client/viewer/console/ConsolePanel.tsx';
+import { ConsolePanel } from '../src/client/viewer/console/ConsolePanel.tsx';
+import { ConsoleSkeleton } from '../src/client/viewer/PanelSkeletons.tsx';
 import type { ReplayBundle, ReplayConsoleEntry } from '../src/shared/replay.ts';
 import { PanelFrame, storyBundle } from './netperf-fixture.tsx';
 
@@ -72,4 +73,10 @@ export const Phone: Story = { render: () => <Console bundle={busy} width={390} /
 
 export const Empty: Story = { render: () => <Console bundle={quiet} /> };
 
-export const Loading: Story = { render: () => <PanelFrame bundle={quiet}>{ConsolePending}</PanelFrame> };
+export const Loading: Story = {
+  render: () => (
+    <PanelFrame bundle={quiet}>
+      <ConsoleSkeleton />
+    </PanelFrame>
+  ),
+};

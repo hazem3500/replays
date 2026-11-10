@@ -127,7 +127,6 @@ button.pp-stat:hover { box-shadow: 0 0 0 4px var(--surface-hover); }
 .pp-inflight li .np-aside { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
 .pp-inflight .pp-link { min-width: 0; flex: 1 1 0; overflow: hidden; text-align: left; white-space: nowrap; }
 .pp-detail .np-detail-status { gap: 8px; color: var(--text); }
-.pp-pending .pp-pending-vitals { width: 60%; margin: auto 14px; }
 .pp-lead { flex: none; display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 32px; margin-bottom: var(--pp-gap); padding: 0 var(--pp-end) 0 var(--pp-edge); color: var(--text); font-size: var(--text-sm); line-height: 20px; }
 .pp-lead p { margin: 0; min-width: 0; font-weight: 500; }
 .pp-lead-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--rating-good); }
