@@ -12,6 +12,7 @@ import { ReplayStore } from '../src/server/store.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
 const servers: Array<ReturnType<typeof createServer>> = [];
+// oxlint-disable-next-line vitest/require-top-level-describe -- why: this suite's cleanup runs after every test in the file.
 afterEach(async () => {
   await Promise.all(servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
 });
@@ -30,6 +31,7 @@ describe('mayRenameSteps', () => {
   it('refuses strangers, anonymous callers and replays without people', () => {
     expect(mayRenameSteps({ email: 'bob@example.com' }, people)).toBe(false);
     expect(mayRenameSteps({}, people)).toBe(false);
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- why: the call under test takes an explicit missing value.
     expect(mayRenameSteps({ email: 'ada@example.com' }, undefined)).toBe(false);
   });
 

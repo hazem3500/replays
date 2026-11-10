@@ -26,7 +26,8 @@ export function renameSteps<T extends Pick<ReplayStep, 'at' | 'label'>>(
   if (!names || Object.keys(names).length === 0) return steps;
   const keys = stepNameKeys(steps);
   return steps.map((step, index) => {
-    const name = names[keys[index]!];
+    const key = keys[index];
+    const name = key === undefined ? undefined : names[key];
     return name ? { ...step, label: name } : step;
   });
 }

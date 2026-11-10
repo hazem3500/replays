@@ -36,6 +36,7 @@ export function labelledSteps(steps: ReplayStep[], renaming: StepRenaming | null
 }
 
 const NO_SUBSCRIBE = () => () => {};
+// oxlint-disable-next-line unicorn/no-useless-undefined -- why: a stable no-op subscription value for useSyncExternalStore.
 const NO_KEY = () => undefined;
 
 /** The key of the step being renamed on `surface`, undefined otherwise; unlike the session it does not change as one types. */

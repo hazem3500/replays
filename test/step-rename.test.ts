@@ -19,6 +19,7 @@ describe('step names', () => {
   });
 
   it('relabels only named steps and returns the same list when none is named', () => {
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- why: the call under test takes an explicit missing value.
     expect(renameSteps(steps, undefined)).toBe(steps);
     expect(renameSteps(steps, { '1000#1': 'Save it' }).map((step) => step.label)).toEqual(['Open', 'Click A', 'Save it']);
   });
@@ -41,7 +42,7 @@ describe('step names', () => {
   it('validates keys and text', () => {
     expect(() => assertReplayEdits({ version: 1, cuts: [], stepNames: { '12': 'ok', '12#1': 'ok' } })).not.toThrow();
     expect(() => assertReplayEdits({ version: 1, cuts: [], stepNames: { abc: 'x' } })).toThrow(/not a step key/);
-    expect(() => assertReplayEdits({ version: 1, cuts: [], stepNames: { '1': '' } })).toThrow();
+    expect(() => assertReplayEdits({ version: 1, cuts: [], stepNames: { '1': '' } })).toThrow(/must not be empty/);
   });
 });
 
@@ -89,6 +90,7 @@ describe('mayRename', () => {
     expect(mayRename({ email: 'bob@example.com', roles: ['admin'] }, people)).toBe(true);
     expect(mayRename({ email: 'bob@example.com' }, people)).toBe(false);
     expect(mayRename(undefined, people)).toBe(false);
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- why: the call under test takes an explicit missing value.
     expect(mayRename({ email: 'ada@example.com' }, undefined)).toBe(false);
   });
 });

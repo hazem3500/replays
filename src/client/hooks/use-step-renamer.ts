@@ -24,7 +24,8 @@ function useViewerIdentity(enabled: boolean) {
     queryFn: async ({ signal }): Promise<RenameViewer> => {
       const response = await fetchPage(apiUrl('me'), { signal });
       if (!response.ok) throw new Error(`me ${response.status}`);
-      return (await response.json()) as RenameViewer;
+      const viewer: RenameViewer = await response.json();
+      return viewer;
     },
   }).data;
 }
