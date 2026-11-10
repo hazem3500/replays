@@ -81,10 +81,12 @@ export function labelFor(step: RawStep): string {
     case 'press':
       return `Press ${step.key}`;
     case 'wait':
-      return 'Wait for the page';
+      return 'selector' in step ? `Wait for ${target(false)}` : 'Wait for the page';
     case 'scroll':
-      return `Scroll ${step.direction}`;
+      return 'selector' in step ? `Scroll to ${target(false)}` : `Scroll ${step.direction}`;
     case 'goto':
       return `Open ${new URL(step.url).hostname}`;
+    case 'shot':
+      return `Screenshot “${step.name}”`;
   }
 }

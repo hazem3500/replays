@@ -2,9 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultUi } from './default-ui.ts';
 import { must } from './testing.ts';
-import type { PrivacyFacts, RecorderPrivacyMode, RecordingChoiceOffer } from './types.ts';
-
-const MODES: RecorderPrivacyMode[] = ['visible', 'inputs-masked', 'interface-visible', 'masked'];
+import type { PrivacyFacts, RecordingChoiceOffer } from './types.ts';
 
 const masked: PrivacyFacts = {
   mode: 'masked',
@@ -37,9 +35,9 @@ const active = () => {
   return element;
 };
 const trigger = () => node('[data-recorder-action=options]');
-const open = async () => {
+const open = async (shown: RecordingChoiceOffer = offer) => {
   const abort = new AbortController();
-  const choice = createDefaultUi().chooseOptions({ trigger: { source: 'user' }, offer, signal: abort.signal });
+  const choice = createDefaultUi().chooseOptions({ trigger: { source: 'user' }, offer: shown, signal: abort.signal });
   await vi.waitFor(() => node('[data-recorder-action=record]'));
   return { abort, choice };
 };
@@ -84,22 +82,41 @@ describe('default UI options menu content', () => {
     expect([...root().querySelectorAll('.options-heading')].map((heading) => heading.textContent)).toEqual(['Profile', 'Privacy']);
   });
 
-  it('describes each mode in one short line tied to its item', async () => {
+  it('describes each allowed mode in one short line tied to its item', async () => {
     await open();
-    expect(MODES.map((mode) => describedBy(item('privacy', mode)))).toEqual([
+    expect(['visible', 'masked'].map((mode) => describedBy(item('privacy', mode)))).toEqual([
       'Records text and inputs',
-      'Not allowed here',
-      'Not allowed here',
       'Hides everything',
     ]);
   });
 
-  it('disables a mode the host does not allow', async () => {
+  it('does not list a mode the host does not allow, nor the old reason', async () => {
     await open();
-    expect(item('privacy', 'inputs-masked').getAttribute('aria-disabled')).toBe('true');
-    trigger().click();
-    item('privacy', 'inputs-masked').click();
-    expect(trigger().getAttribute('aria-expanded')).toBe('true');
+    const modes = [...root().querySelectorAll<HTMLElement>('[data-group=privacy]')].map((mode) => mode.dataset.value);
+    expect(modes).toEqual(['visible', 'masked']);
+    expect(root().querySelector('[data-value=inputs-masked]')).toBeNull();
+    expect(root().querySelector('[data-value=interface-visible]')).toBeNull();
+    expect(root().querySelector('[aria-disabled=true]')).toBeNull();
+    expect(root().textContent).not.toContain('Not allowed here');
+  });
+
+  it('drops the Privacy group when only one mode is left', async () => {
+    await open({ ...offer, privacy: [must(offer.privacy[1])] });
+    expect([...root().querySelectorAll('.options-heading')].map((heading) => heading.textContent)).toEqual(['Profile']);
+    expect(root().querySelector('[data-group=privacy]')).toBeNull();
+    expect(trigger().title).toBe('Fully masked · Triage');
+  });
+
+  it('hides the network option when the host does not read bodies', async () => {
+    await open({ ...offer, networkBodies: { allowed: false } });
+    expect(root().querySelector('[data-group=network]')).toBeNull();
+    expect([...root().querySelectorAll('.options-heading')].map((heading) => heading.textContent)).toEqual(['Profile', 'Privacy']);
+    expect(root().textContent).not.toContain('Not allowed here');
+  });
+
+  it('shows the network option when the host reads bodies', async () => {
+    await open({ ...offer, networkBodies: { allowed: true } });
+    expect(node('[role=menuitemcheckbox][data-group=network]').textContent).toBe('Include request/response content');
   });
 
   it('adds no note under the privacy group', async () => {
@@ -119,7 +136,7 @@ describe('default UI options menu content', () => {
 describe('default UI options menu', () => {
   afterEach(clearPage);
 
-  it('opens on ArrowDown at the first checked item and skips disabled modes with the arrow keys', async () => {
+  it('opens on ArrowDown at the first checked item and moves across the allowed modes with the arrow keys', async () => {
     await open();
     key(trigger(), 'ArrowDown');
     expect(trigger().getAttribute('aria-expanded')).toBe('true');

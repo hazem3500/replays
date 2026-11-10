@@ -87,7 +87,11 @@ test('For me keeps the rows I am on (by email, then by a linked GitHub handle) a
   // why: a viewer with matching replays lands on For you; this check starts from All and picks For me itself.
   const tabs = page.getByRole('radiogroup', { name: 'Profile' });
   await expect(tabs.getByRole('radio', { name: 'For you' })).toBeChecked();
+  const count = (name: string) => tabs.locator('label', { hasText: name }).locator('.profile-segment-count');
+  await expect(count('For you')).toHaveText(/^[1-9]\d*$/);
+  await expect(count('All')).toHaveText(/^[1-9]\d*$/);
   await tabs.locator('label', { hasText: 'All' }).click();
+  await expect(count('For you')).toHaveText(/^[1-9]\d*$/);
   await expect(tabs.getByRole('radio', { name: 'All' })).toBeChecked();
   await expect(row(other)).toBeVisible();
 

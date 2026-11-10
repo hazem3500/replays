@@ -71,7 +71,10 @@ export type RecorderMessages = {
   privacyLabel: string;
   /** Options step: heading of the profile group in the options menu. */
   profileLabel: string;
-  /** Options step: why a masking mode is unavailable (the host's privacy does not allow it). */
+  /**
+   * @deprecated No longer shown: the options menu hides what the host does not allow instead of disabling it. Kept so
+   * hosts that set it still type-check; remove it from catalogs at the next major.
+   */
   privacyUnavailable: string;
   /** Options step: a masking mode's name. */
   privacyMode: (params: { mode: RecorderPrivacyMode }) => string;

@@ -72,8 +72,8 @@ pnpm capture \
 `./out/replay.json` is the whole recording. Open it by uploading it in the viewer (the upload button, or drag and
 drop), or `POST` it to `/api/replays`. The CLI prints one JSON line (`{"success":true,…}`), so agents and CI can parse it.
 
-Steps are a closed list: `click`, `hover`, `type`, `fill`, `press`, `wait`, `scroll`, `goto`. Arbitrary page scripts are
-intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/demo-shop.steps.json` is a longer one.
+Steps are a closed list: `click`, `hover`, `type`, `fill`, `press`, `wait`, `scroll`, `goto`, `shot`. Arbitrary page
+scripts are intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/demo-shop.steps.json` is a longer one.
 Use `--step-pause 1200` to hold each non-wait action for a readable beat (default: 0ms, or
 `capture.stepPauseMs` in your config). Built-in drivers type at 80ms per character; `fill` is immediate.
 Unlabelled waits execute without adding a step. Labels use selector names without typed values.
@@ -81,9 +81,45 @@ See [capture pacing](docs/extending.md#capture-pacing) for host configuration. `
 [capture defaults](docs/extension-api.md#capture-profiles) under the explicit flags; `--network bodies` also keeps redacted
 request and response bodies (off by default).
 
+A `wait` takes `ms` or a `selector` with optional `state` (`visible` by default, `attached`, or `hidden`: no visible
+match) and `timeout` in ms (15000 by default, at most 300000). A `scroll` takes `direction` with optional `pixels`, or a
+`selector` to bring into view. A `shot` takes a lowercase `name` (unique in the run) and saves
+`<output>/shots/<name>.png`; the result line lists each as `{"name","file","label","step","at"}` under `shots`, where
+`step` is the 1-based step number (`#step-<n>` in the viewer) and `at` the time in ms on the replay clock:
+
+```json
+[
+  {"kind":"click","selector":"text=Export","label":"Start the export"},
+  {"kind":"wait","selector":"[data-testid=export-done]","state":"visible","timeout":60000,"label":"Wait for the export"},
+  {"kind":"scroll","selector":"#history"},
+  {"kind":"shot","name":"export-done"}
+]
+```
+
+`--state <file>` starts the browser signed in from a Playwright storage state (`{"cookies":[…],"origins":[…]}`; for
+example `context.storageState({ path })`). agent-browser reads the same shape, so a state file written for
+`AGENT_BROWSER_STATE` works for either `--driver` as is, and with agent-browser it is loaded once at launch.
+`replays probe --state` takes the same file.
+
+`--hide <selector>` (repeatable) hides every match from the first frame, so a cookie banner or chat widget is out of the
+replay, the video and each `shot`: it adds a style rule before the recorder snapshots the page and never clicks or
+answers anything. A selector the browser rejects stops the capture before it records.
+
+`--privacy <mode>` picks what the recording shows, with the [recorder's own modes](docs/recorder.md#options-step-for-internal-hosts):
+`inputs-masked` (the default: typed values hidden, page text shown), `visible` (typed values too; passwords and hidden
+inputs stay masked, and the bundle says `meta.captured.inputs: "visible"`, which a server keeps only for a host that
+allows it), `text-masked`, `interface-visible` (text only where the page marks `data-replay-public`, media blocked) and
+`masked`. A profile that masks all text refuses a mode that shows it.
+
+`--type-delay <ms>` (default 80) paces `type` steps, `--shot-delay <ms>` holds after a `shot` (default: the step pause),
+and `--step-delay` is another name for `--step-pause`. `--compress-waits` plays an unlabelled `{"kind":"wait","ms":n}`
+over 5 seconds as 2 seconds of replay, captioned "Waited n s, sped up here"; label the wait to keep it whole. It cannot
+be combined with `--video`, which keeps real time.
+
 ```text
 replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
-                   [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
+                   [--state storageState.json] [--hide selector]… [--privacy mode] [--viewport 1440x900]
+                   [--step-pause 0..10000] [--type-delay 0..1000] [--shot-delay 0..10000] [--compress-waits] [--video] [--tag t]… [--person role:email[:handle=value]]…
                    [--source github:owner/repo#12]… [--profile id] [--network headers|off|bodies] [--no-performance]
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed [--manual [--max-duration 3m]]]
@@ -272,6 +308,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `RETENTION_PROFILE_<ID>_DAYS` | – | Days for replays of one [profile](docs/extension-api.md#profiles-and-retention) (`RETENTION_PROFILE_DESIGN_REVIEW_DAYS`); `0` keeps explicit ones forever |
 | `REPLAYS_CONFIG` | `replays.config.{ts,mjs,js,json}` in the working directory | The config file (below); a script can also list [plugins](#extending-replays) |
 | `SAMPLE_DIR` | the bundled `sample/` | Directory of read-only demo replays; point it at an empty directory for none |
+| `TRACE_URL_TEMPLATE` | – | `https` link with `{traceId}` (or `integrations.traceUrlTemplate` in the config file); network requests with a backend trace ID make the trace ID a link |
 | `PRODUCT_NAME`, `LOGO_URL` | `replays`, – | Branding (name in the header and title; logo must be an `https:` URL or a `data:image/…;base64` URL) |
 | `CONTEXT_SCHEMA_FILE` | – | JSON Schema for `context.fields` (see [Context schema](#context-metadata-schema)) |
 | `GITHUB_HOST`, `GITLAB_HOST` | `github.com`, `gitlab.com` | Hosts the `github:` / `gitlab:` source providers link to (self-managed instances) |

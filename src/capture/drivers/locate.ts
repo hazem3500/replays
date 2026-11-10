@@ -1,5 +1,10 @@
 import type { Locator, Page } from 'playwright-core';
 
+import type { WaitState } from './types.ts';
+
+/** How long a step waits for its selector before it fails, in ms. */
+export const STEP_TIMEOUT = 15_000;
+
 /** How many matches a timeout error and a probe name before saying "and N more". */
 export const MAX_CANDIDATES = 5;
 const TEXT_SNIPPET = 40;
@@ -63,5 +68,22 @@ export async function onFirstVisible(page: Page, selector: string, timeout: numb
     const found = await describeMatches(page, selector).catch(() => null);
     if (!found) throw error;
     throw new Error(timeoutMessage(selector, timeout / 1000, found), { cause: error });
+  }
+}
+
+/**
+ * Waits until `selector` is visible (the default), present in the DOM, or has no visible match. A timeout names the
+ * selector and, for a visible wait, the candidates it did find.
+ */
+export async function waitForSelector(page: Page, selector: string, state: WaitState, timeout: number) {
+  if (state === 'visible') return onFirstVisible(page, selector, timeout, (match) => match.waitFor({ state: 'attached', timeout }));
+  const matches = state === 'attached' ? page.locator(selector) : page.locator(selector).filter({ visible: true });
+  try {
+    await matches.first().waitFor({ state: state === 'attached' ? 'attached' : 'detached', timeout });
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'TimeoutError') throw error;
+    const found = await describeMatches(page, selector).catch(() => null);
+    const still = found ? `, it still matches ${found.count} element${found.count === 1 ? '' : 's'}` : '';
+    throw new Error(`"${selector}" was not ${state} within ${timeout / 1000}s${state === 'hidden' ? still : ''}`, { cause: error });
   }
 }

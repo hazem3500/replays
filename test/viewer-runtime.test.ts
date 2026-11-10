@@ -9,6 +9,7 @@ import { cacheRoot, isInstalled, prepareViewerRuntime, viewerDependencies } from
 const manifest = {
   name: 'pkg',
   version: '1.2.3',
+  dependencies: { 'playwright-core': '1.64.0' },
   peerDependencies: { zod: '4.6.7', react: '>=19' },
   devDependencies: { zod: '4.6.7', react: '19.3.0' },
 };
@@ -30,7 +31,7 @@ describe('viewer runtime', () => {
   afterEach(() => rm(work, { recursive: true, force: true }));
 
   it('pins peer dependencies to the versions the package is tested with', () => {
-    expect(viewerDependencies(manifest)).toEqual({ react: '19.3.0', zod: '4.6.7' });
+    expect(viewerDependencies(manifest)).toEqual({ 'playwright-core': '1.64.0', react: '19.3.0', zod: '4.6.7' });
   });
 
   it('prefers the cache location from the environment', () => {
@@ -40,7 +41,7 @@ describe('viewer runtime', () => {
   });
 
   it('runs in place when the dependencies sit beside the package', async () => {
-    for (const name of ['zod', 'react']) {
+    for (const name of ['zod', 'react', 'playwright-core']) {
       await mkdir(join(work, 'node_modules', name), { recursive: true });
       await writeFile(join(work, 'node_modules', name, 'package.json'), '{}');
     }
@@ -59,7 +60,7 @@ describe('viewer runtime', () => {
     expect(app.startsWith(join(work, 'cache', 'viewer-1.2.3-'))).toBe(true);
     expect(await readFile(join(app, 'dist/lib/server.mjs'), 'utf8')).toBe('export {};');
     expect(await prepareViewerRuntime({ packageRoot, env, stream: silent, install })).toBe(app);
-    expect(installs).toEqual([{ react: '19.3.0', zod: '4.6.7' }]);
+    expect(installs).toEqual([{ 'playwright-core': '1.64.0', react: '19.3.0', zod: '4.6.7' }]);
   });
 
   it('explains a failed install and leaves no partial cache behind', async () => {

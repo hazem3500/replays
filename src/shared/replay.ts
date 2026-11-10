@@ -26,6 +26,8 @@ export interface ReplayNetworkEntry {
   mimeType?: string;
   requestHeaders: Array<{ name: string; value: string }>;
   responseHeaders: Array<{ name: string; value: string }>;
+  /** Backend trace ID (32 hex) from the trace headers the capture kept; src/shared/trace.ts. */
+  traceId?: string;
   /** The request body, only when the capture asked for bodies (`network: 'bodies'`); src/shared/network-bodies.ts. */
   requestBody?: ReplayNetworkBody;
   /** The response body, under the same rules as `requestBody`. */

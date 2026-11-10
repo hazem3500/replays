@@ -88,6 +88,53 @@ describe('capture metadata', () => {
     expect(() => validateSteps([{ kind: 'goto', url: 'http://example.com' }])).toThrow('--steps[0].url must use https');
   });
 
+  it('accepts a selector wait with a state and timeout, a scroll to a selector and a shot', () => {
+    expect(
+      validateSteps([
+        { kind: 'wait', selector: '#done' },
+        { kind: 'wait', selector: '.spinner', state: 'hidden', timeout: 60_000, label: 'Wait for the export' },
+        { kind: 'wait', ms: 250 },
+        { kind: 'scroll', selector: '#pricing' },
+        { kind: 'scroll', direction: 'down', pixels: 300 },
+        { kind: 'shot', name: 'after-save', label: 'Saved' },
+      ]),
+    ).toEqual([
+      { kind: 'wait', selector: '#done' },
+      { kind: 'wait', selector: '.spinner', state: 'hidden', timeout: 60_000, label: 'Wait for the export' },
+      { kind: 'wait', ms: 250 },
+      { kind: 'scroll', selector: '#pricing' },
+      { kind: 'scroll', direction: 'down', pixels: 300 },
+      { kind: 'shot', name: 'after-save', label: 'Saved' },
+    ]);
+  });
+
+  it.each([
+    [{ kind: 'wait', selector: '#a', ms: 5 }, 'waits for a selector or ms, not both'],
+    [{ kind: 'wait', ms: 5, state: 'hidden' }, 'state and timeout need a selector'],
+    [{ kind: 'wait', ms: 5, timeout: 1000 }, 'state and timeout need a selector'],
+    [{ kind: 'wait', selector: '#a', state: 'gone' }, '--steps[0].state must be visible, attached, hidden'],
+    [{ kind: 'wait', selector: '#a', timeout: 0 }, 'between 1 and 300000'],
+    [{ kind: 'wait', selector: '#a', timeout: 300_001 }, 'between 1 and 300000'],
+    [{ kind: 'wait', selector: '' }, '--steps[0].selector must be a non-empty string'],
+    [{ kind: 'wait' }, '--steps[0].ms must be a non-negative number'],
+    [{ kind: 'scroll', selector: '#a', direction: 'down' }, 'scrolls to a selector or by direction, not both'],
+    [{ kind: 'scroll', selector: '#a', pixels: 10 }, 'scrolls to a selector or by direction, not both'],
+    [{ kind: 'shot' }, '--steps[0].name must be a non-empty string'],
+    [{ kind: 'shot', name: 'Bad Name' }, 'lowercase letters, digits and hyphens'],
+    [{ kind: 'shot', name: 'x'.repeat(65) }, 'lowercase letters, digits and hyphens'],
+  ])('refuses the step %j', (step, message) => {
+    expect(() => validateSteps([step])).toThrow(message);
+  });
+
+  it('refuses a shot name used twice, which would overwrite the first PNG', () => {
+    expect(() =>
+      validateSteps([
+        { kind: 'shot', name: 'before' },
+        { kind: 'shot', name: 'before' },
+      ]),
+    ).toThrow('--steps[1].name repeats an earlier shot: before');
+  });
+
   it('refuses a non-empty output directory before capture starts', async () => {
     const root = await mkdtemp(join(tmpdir(), 'replays-output-'));
     const output = join(root, 'capture');

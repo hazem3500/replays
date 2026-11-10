@@ -68,6 +68,8 @@ export interface FileConfig {
   name?: string;
   logoUrl?: string;
   theme?: BrandingConfig['theme'];
+  /** Links to other tools; `traceUrlTemplate` (TRACE_URL_TEMPLATE) turns a request's trace ID into a link. */
+  integrations?: BrandingConfig['integrations'];
   basePath?: string;
   /** A different base per request host (`Host`, or `X-Forwarded-Host` when trusted); other hosts get `basePath`. */
   hosts?: Readonly<Record<string, HostConfig>>;
@@ -132,6 +134,7 @@ export const CONFIG_KEYS = new Set([
   'name',
   'logoUrl',
   'theme',
+  'integrations',
   'basePath',
   'hosts',
   'trustForwardedHost',
@@ -178,6 +181,9 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     name: pick('PRODUCT_NAME') ?? file.name,
     ...((pick('LOGO_URL') ?? file.logoUrl) ? { logoUrl: (pick('LOGO_URL') ?? file.logoUrl)! } : {}),
     ...(file.theme ? { theme: file.theme } : {}),
+    ...((pick('TRACE_URL_TEMPLATE') ?? file.integrations?.traceUrlTemplate)
+      ? { integrations: { traceUrlTemplate: (pick('TRACE_URL_TEMPLATE') ?? file.integrations?.traceUrlTemplate)! } }
+      : {}),
   } as Partial<BrandingConfig>);
   const basePath = normalizeBasePath(pick('BASE_PATH') ?? file.basePath);
   if (file.trustForwardedHost !== undefined && typeof file.trustForwardedHost !== 'boolean')

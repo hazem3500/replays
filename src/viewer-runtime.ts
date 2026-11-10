@@ -22,6 +22,7 @@ export interface ViewerRuntimeOptions {
 
 interface Manifest {
   version?: string;
+  dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
 }
@@ -38,17 +39,21 @@ function parseManifest(text: string): Manifest {
   if (!isRecord(parsed)) throw new Error('package.json is not an object');
   return {
     ...(typeof parsed.version === 'string' ? { version: parsed.version } : {}),
+    dependencies: stringMap(parsed.dependencies),
     peerDependencies: stringMap(parsed.peerDependencies),
     devDependencies: stringMap(parsed.devDependencies),
   };
 }
 
-/** The server and viewer dependencies: the package's peer dependencies, pinned to the versions it is tested with. */
+/**
+ * What the server needs beside the package: its peer dependencies, pinned to the versions it is tested with, and the
+ * package's own `dependencies` (playwright-core renders posters and video), because the server runs from a copy that
+ * cannot see the packages installed next to the original.
+ */
 export function viewerDependencies(manifest: Manifest) {
-  const result: Record<string, string> = {};
-  for (const [name, range] of Object.entries(manifest.peerDependencies ?? {}).sort(([a], [b]) => a.localeCompare(b)))
-    result[name] = manifest.devDependencies?.[name] ?? range;
-  return result;
+  const result: Record<string, string> = { ...manifest.dependencies };
+  for (const [name, range] of Object.entries(manifest.peerDependencies ?? {})) result[name] = manifest.devDependencies?.[name] ?? range;
+  return Object.fromEntries(Object.entries(result).sort(([a], [b]) => a.localeCompare(b)));
 }
 
 export function cacheRoot(env: NodeJS.ProcessEnv, platform: NodeJS.Platform = process.platform) {

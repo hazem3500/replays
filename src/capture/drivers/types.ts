@@ -6,8 +6,14 @@ export type RawStep =
   | { kind: 'type' | 'fill'; selector: string; text: string; label?: string }
   | { kind: 'press'; key: string; label?: string }
   | { kind: 'wait'; ms: number; label?: string }
+  | { kind: 'wait'; selector: string; state?: WaitState; timeout?: number; label?: string }
   | { kind: 'scroll'; direction: 'up' | 'down' | 'left' | 'right'; pixels?: number; label?: string }
-  | { kind: 'goto'; url: string; label?: string };
+  | { kind: 'scroll'; selector: string; label?: string }
+  | { kind: 'goto'; url: string; label?: string }
+  | { kind: 'shot'; name: string; label?: string };
+
+/** What a selector wait waits for: a visible match (default), any match in the DOM, or no visible match. */
+export type WaitState = 'visible' | 'attached' | 'hidden';
 
 export interface LaunchOptions {
   viewport: { width: number; height: number };
@@ -17,6 +23,10 @@ export interface LaunchOptions {
   videoPath?: string;
   /** Embed request and response bodies in the HAR; only asked of drivers with `recordsBodies`. */
   bodies?: boolean;
+  /** A Playwright storage state file (cookies and local storage) to start the browser signed in; see `readStateFile`. */
+  state?: string;
+  /** Per-character delay of a `type` step in ms (`--type-delay`); a driver without one types at its default pace. */
+  typeDelayMs?: number;
 }
 
 /**
@@ -32,8 +42,11 @@ export interface CaptureDriver {
   /** Resolves when the person closes the page or the browser window (manual recordings); drivers that cannot tell leave it out. */
   closed?(): Promise<void>;
   open(url: string): Promise<void>;
+  /** Runs one step; capture saves a `shot` step through `screenshot`, so it never reaches this. */
   step(step: RawStep): Promise<void>;
   wait(ms: number): Promise<void>;
+  /** Saves a PNG of the page; drivers that cannot leave it out, and a `shot` step then fails the capture. */
+  screenshot?(path: string): Promise<void>;
   /** Stops the HAR and video; both files exist afterwards. */
   finish(): Promise<void>;
   close(): Promise<void>;

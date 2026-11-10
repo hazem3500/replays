@@ -17,12 +17,15 @@ const deferred = () => {
   });
   return { promise, resolve, reject };
 };
+const failure = (replacesRetry: boolean) =>
+  Object.assign(new Error('private'), { action: { label: 'Sign in and upload', replacesRetry, run: async () => {} } });
+
 describe('upload recovery', () => {
   afterEach(() => {
     document.body.innerHTML = '';
   });
 
-  it('prefers recovery over a legacy link while preserving link-only errors', () => {
+  it('shows a link beside a recovery action, and a link-only error on its own', () => {
     const ui = createDefaultUi();
     const link = { label: 'Sign in', url: 'https://example.com/sign-in' };
     ui.showResult({
@@ -33,11 +36,23 @@ describe('upload recovery', () => {
       }),
     });
     expect(control('recover').textContent).toBe('Sign in');
-    expect(document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a')).toBeNull();
+    const beside = document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a');
+    expect(beside?.href).toBe(link.url);
     ui.showResult({ status: 'error', error: Object.assign(new Error('private'), { link }) });
     const anchor = document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a');
     expect(anchor?.textContent).toBe('Sign in');
     expect(anchor?.href).toBe(link.url);
+    ui.dismiss();
+  });
+
+  it('shows Retry beside an action unless the action replaces it', () => {
+    const ui = createDefaultUi();
+    ui.showResult({ status: 'error', error: failure(false), retry() {} });
+    expect(control('retry')).toBeTruthy();
+    ui.showResult({ status: 'error', error: failure(true), retry() {} });
+    expect(control('recover').textContent).toBe('Sign in and upload');
+    expect(document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('[data-recorder-action=retry]')).toBeNull();
+    expect(control('dismiss')).toBeTruthy();
     ui.dismiss();
   });
 
