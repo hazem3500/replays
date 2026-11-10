@@ -496,9 +496,37 @@ page, and **captions** (written from the steps). Open it with the *Edit* button 
   `GET|PUT /api/replays/<id>/edits` endpoints answer `404`, exports ignore any edit list, and the editor's code chunk is
   never requested. A client can never switch it on by itself (an editor without its API cannot save), so the server
   allows it; each person can then hide editing under Settings › Labs. For local preview run `REPLAYS_BETA_EDITOR=true pnpm dev`.
+- **From the terminal.** `replays edit <id|viewer-link> <command>` does everything the editor saves, for people and agents
+  without a browser; see [CLI editing](#cli-editing).
 - It is a beta: the edit-list format (`src/shared/edits.ts`, `src/shared/effects.ts`) may still change before 1.0.
 
 ![Edit mode: the replay above and one timeline of lanes for clip, cuts, zoom, speed, blur and captions](docs/screenshots/editor.png)
+
+### CLI editing
+
+`replays edit` uses the same server, sign-in and `--header-file` as `upload` (`replays connect`, `replays login`), and the same
+`GET|PUT /api/replays/<id>/edits` routes and validators as the editor, so a CLI edit and a browser edit are the same edit.
+
+```bash
+replays edit <id> show                      # numbered steps and edits (add --json for agents)
+replays edit <id> rename 7 "Open the invoice"   # a step number, or its time: 12.3s
+replays edit <id> cut --from 10s --to 18s
+replays edit <id> cut waits --min 2s        # the editor's "Remove waits"
+replays edit <id> speed --from 20s --to 40s --rate 4
+replays edit <id> zoom --from 3s --to 6s --rect 25%,25%,50%,50%
+replays edit <id> blur --from 3s --to 6s --rect 10%,10%,20%,20%    # remove: a solid block instead
+replays edit <id> caption add --from 3s --to 6s "Signing in"
+replays edit <id> highlight add --at 14.9s "Look here"
+replays edit <id> pull -o edits.json        # round-trip the whole list; then: push edits.json
+replays edit <id> export --speed 2 -o edited.mp4
+```
+
+Times are `12.3s`, `1:02.5`, `1500ms`, `start` or `end`. Every command prints what changed and the viewer link, and takes
+`--json`. Each change is a read-modify-write with `If-Match` and one retry when someone saved in between; `push` refuses a file
+older than the server's list (`--force` overwrites) and shows a diff first (`--dry-run` stops there). Renaming steps needs your
+sign-in email to match a person on the replay, or the admin role; every other edit is open to anyone who can open the replay.
+The server keeps no edit history, so there is no `undo`; `pull` a backup before a big change. `replays edit --help` has the
+full reference.
 
 ## Malleable viewer (beta, off by default)
 
