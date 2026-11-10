@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { CACHE_VERSION, SUITES, suiteKey, suitesReason } from './ci-scope.mjs';
+import { CACHE_VERSION, prWantsE2e, SUITES, suiteKey, suitesReason } from './ci-scope.mjs';
 
 const FILES = [
   'README.md',
@@ -156,6 +156,25 @@ describe('browser-backed suite placement', () => {
     assert.equal(run('workflow_dispatch', { CI_REF: 'refs/heads/feature' }).values.wanted, 'true');
   });
 
+  it('runs end-to-end on pull requests that touch the viewer, its specs or the CI that runs them', () => {
+    for (const file of [
+      'src/client/Viewer.tsx',
+      'src/shared/replay.ts',
+      'e2e/smoke.spec.ts',
+      'playwright.config.ts',
+      'pnpm-lock.yaml',
+      '.github/workflows/ci.yml',
+    ])
+      assert.equal(prWantsE2e([file]), true, file);
+    for (const file of ['src/server/app.ts', 'src/cli/main.ts', 'docs/cli.md', 'test/people.test.ts', '.github/workflows/pages.yml'])
+      assert.equal(prWantsE2e([file]), false, file);
+    assert.equal(prWantsE2e([]), false);
+    const viewer = run('pull_request', { CI_CHANGED_FILES: 'docs/a.md\nsrc/client/Viewer.tsx\n' }).values;
+    assert.equal(viewer.wanted_e2e, 'true');
+    assert.equal(viewer.wanted, 'false');
+    assert.equal(run('pull_request', { CI_CHANGED_FILES: 'src/server/app.ts' }).values.wanted_e2e, 'false');
+  });
+
   it('rejects unknown events', () => {
     assert.equal(suitesReason({ event: 'pull_request_target', ref: 'refs/heads/main' }), '');
     assert.equal(suitesReason(), '');
@@ -172,7 +191,7 @@ describe('command line', () => {
 
   it('writes one content-addressed key per marker, shared by the end-to-end shards', () => {
     const { values, summary } = run('pull_request', { CI_BASE: 'HEAD' });
-    assert.deepEqual(Object.keys(values).sort(), ['browser', 'docker', 'e2e-1', 'e2e-2', 'e2e-3', 'force', 'wanted']);
+    assert.deepEqual(Object.keys(values).sort(), ['browser', 'docker', 'e2e-1', 'e2e-2', 'e2e-3', 'force', 'wanted', 'wanted_e2e']);
     for (const shard of [1, 2, 3]) assert.equal(values[`e2e-${shard}`], `ci-pass-${CACHE_VERSION}-e2e-${shard}-${key('e2e')}`);
     assert.match(values.docker, new RegExp(`^ci-pass-${CACHE_VERSION}-docker-[0-9a-f]{64}$`));
     assert.equal(values.wanted, 'false');

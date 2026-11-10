@@ -65,6 +65,8 @@ button.primary:active, a.primary:active { background: color-mix(in srgb, var(--r
 .pill :is(button, a):focus-visible { outline-offset: 1px; }
 .pill .finish-button:focus-visible { outline-color: var(--r-danger); }
 .stop-icon { display: block; width: 10px; height: 10px; flex-shrink: 0; border-radius: 2.5px; background: currentColor; transition: transform 160ms var(--r-ease), border-radius 160ms var(--r-ease); }
+.status-spinner { display: block; box-sizing: border-box; width: 16px; height: 16px; flex-shrink: 0; border: 2px solid color-mix(in srgb, var(--r-fg) 22%, transparent); border-top-color: var(--r-primary); border-radius: 50%; }
+button:disabled { opacity: .6; cursor: default; }
 @media (prefers-reduced-motion: no-preference) {
   :is(button, .pill a):active:not(:disabled) { scale: .96; }
   .finish-button:is(:hover, :focus-visible) .stop-icon { transform: scale(1.12); border-radius: 3px; }
