@@ -168,7 +168,7 @@ function StatusChips({
           onKeyDown={keepKeys}
         >
           {chip.id === 'all' ? null : <span className="np-dot" data-status={chip.id} aria-hidden="true" />}
-          {chip.label}
+          {chip.id === 'all' ? chip.label : <span className="np-chip-label">{chip.label}</span>}
           <span className="np-chip-count">{counts[chip.id]}</span>
         </button>
       ))}

@@ -112,6 +112,8 @@ export function storedLinkedHandles(): Record<string, string> {
 interface Me {
   id: string;
   email?: string;
+  /** Accounts the server verified for this person (`api.identity`); they need no linking. */
+  handles?: Record<string, string>;
   people?: { roles?: string[]; handles: LinkableHandle[] };
 }
 
@@ -632,8 +634,8 @@ export function ReplayIndex({
     Boolean(me?.people) ||
     Boolean(items?.some((summary) => summary.people?.length)) ||
     Boolean(suites?.some((suite) => suite.people?.length || suite.runDetails.some((run) => run.replay?.people?.length)));
-  const forYouTab = Boolean(me) && (Boolean(me?.email) || Object.keys(linked).length > 0);
-  const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: linked }), [me, linked]);
+  const forYouTab = Boolean(me) && (Boolean(me?.email) || Object.keys(me?.handles ?? {}).length > 0 || Object.keys(linked).length > 0);
+  const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: { ...linked, ...me?.handles } }), [me, linked]);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   // why: a retry re-runs the request with a fresh filters object; the failure stays on screen while it runs.
   const error = settledFilters === filters || retriedFilters === filters ? loadError : '';
@@ -759,7 +761,15 @@ export function ReplayIndex({
     setParam,
     setKind: changeKind,
     clearFilters,
-    ...(peopleOn ? { forMe, setForMe: changeForMe, handles: me?.people?.handles ?? [], linked, setLinked: changeLinked } : {}),
+    ...(peopleOn
+      ? {
+          forMe,
+          setForMe: changeForMe,
+          handles: (me?.people?.handles ?? []).filter((handle) => !me?.handles?.[handle.id]),
+          linked,
+          setLinked: changeLinked,
+        }
+      : {}),
   };
 
   const profileInfo = profile ? profiles.find((item) => item.id === profile) : undefined;

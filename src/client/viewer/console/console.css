@@ -12,8 +12,8 @@
 .cp-row > * { min-width: 0; }
 .cp-head { position: sticky; z-index: 2; top: 0; align-items: center; height: 28px; min-height: 28px; padding-block: 0; border-bottom-color: var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
 .cp-row:not(.cp-head):hover { background: var(--surface-hover); }
-.cp-row[data-level="error"] { background: var(--danger-tint); }
-.cp-row[data-level="warn"] { background: color-mix(in srgb, var(--warning) 7%, transparent); }
+.cp-row[data-level="error"] { background: color-mix(in srgb, var(--danger) 15%, var(--danger-tint)); }
+.cp-row[data-level="warn"] { background: color-mix(in srgb, var(--warning-fill) 16%, transparent); }
 .cp-row[data-selected], .cp-row[data-selected]:hover { background: var(--accent-soft); }
 .cp-time { padding-top: 0; }
 .cp-time time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
@@ -32,7 +32,7 @@
 .cp-head .cp-page { padding-top: 0; }
 .cp-row[data-future] .cp-text, .cp-row[data-future] .cp-page { color: var(--text-tertiary); }
 .cp-row[data-future] .cp-level-icon { opacity: 0.5; }
-.cp-row[data-future][data-level="error"] { background: color-mix(in srgb, var(--danger-tint) 45%, transparent); }
+.cp-row[data-future][data-level="error"] { background: color-mix(in srgb, color-mix(in srgb, var(--danger) 15%, var(--danger-tint)) 75%, transparent); }
 
 /* Phones and narrow panels: the message's two lines as one 48 px target on top, time and page on their own line
    below; nothing is hidden, the page moves under the message instead of being dropped. */
