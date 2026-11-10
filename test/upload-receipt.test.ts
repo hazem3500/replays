@@ -104,7 +104,7 @@ describe('format mismatch', () => {
     });
     const failure = await upload(replay('a'), tmpdir(), `${origin}/api/replays`).catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(UploadHttpError);
-    const message = (failure as Error).message;
+    const message = failure instanceof Error ? failure.message : '';
     expect(message).toContain('replay.meta.source');
     expect(message).toContain(`This CLI writes format ${REPLAY_FORMAT_VERSION}; the server expects 2.`);
     expect(message).toContain('replays update');
@@ -116,6 +116,6 @@ describe('format mismatch', () => {
       request.on('end', () => response.writeHead(400).end('bad'));
     });
     const failure = await upload(replay('a'), tmpdir(), `${origin}/api/replays`).catch((error: unknown) => error);
-    expect((failure as Error).message).toContain('the server expects an older or unreported one');
+    expect(failure instanceof Error ? failure.message : '').toContain('the server expects an older or unreported one');
   });
 });
