@@ -7,6 +7,11 @@
 .np-chip:hover { background: var(--surface-hover); color: var(--text); }
 .np-chip[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
 .np-chip:focus-visible, .np-icon:focus-visible, .np-request button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+/* why: with the search open on a phone the chips share the row with it; a status chip shrinks to its dot and count, and keeps its name for screen readers. */
+@container network (max-width: 600px) {
+  .np-toolbar[data-searching] .np-chips { flex: none; }
+  .np-toolbar[data-searching] .np-chip-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
 .np-chip-count { color: var(--text-tertiary); font-variant-numeric: tabular-nums; font-weight: 600; }
 .np-chip[aria-pressed="true"] .np-chip-count { color: var(--text); }
 .np-chip[data-status="failed"] .np-chip-count { color: var(--danger); }
