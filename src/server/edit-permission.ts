@@ -7,7 +7,9 @@ export const ADMIN_ROLE = 'admin';
 
 const namesOf = (value: unknown) =>
   JSON.stringify(
-    Object.entries(typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {}).sort(([a], [b]) => a.localeCompare(b)),
+    Object.entries(typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {}).sort(([a], [b]) =>
+      a.localeCompare(b),
+    ),
   );
 
 /** True when a save's `stepNames` differ from the stored ones. */

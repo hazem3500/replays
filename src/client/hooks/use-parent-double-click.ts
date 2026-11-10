@@ -12,7 +12,8 @@ export function useParentDoubleClick(host: RefObject<HTMLElement | null>, target
     if (!parent || !enabled) return;
     const listener = (event: MouseEvent) => {
       const rect = host.current?.querySelector(target)?.getBoundingClientRect();
-      if (!rect || event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
+      if (!rect || event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)
+        return;
       event.preventDefault();
       run();
     };

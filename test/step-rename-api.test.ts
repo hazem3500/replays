@@ -90,7 +90,9 @@ describe('PUT edits with step names', () => {
     const { put, store } = await start({ id: 'ada', email: 'ada@example.com' });
     const saved = await put(renamed, '"e.none"');
     expect(saved.status).toBe(200);
-    await expect(store.readEdits('test-replay')).resolves.toMatchObject({ edits: { stepNames: { '0': 'Open the app' }, updatedBy: 'ada' } });
+    await expect(store.readEdits('test-replay')).resolves.toMatchObject({
+      edits: { stepNames: { '0': 'Open the app' }, updatedBy: 'ada' },
+    });
   });
 
   it('refuses a caller who is not on the replay, and stores nothing', async () => {

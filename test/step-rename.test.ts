@@ -2,13 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { applyEdits, editsVersion, isEmptyEdits, normalizeEdits, renameSteps, stepNameKeys, withStepName } from '../src/shared/edits.ts';
 import { assertReplayEdits } from '../src/shared/edit-validation.ts';
-import {
-  createRenameStore,
-  mayRename,
-  renameReducer,
-  type RenameSession,
-  renameResult,
-} from '../src/client/viewer/step-rename.ts';
+import { createRenameStore, mayRename, renameReducer, type RenameSession, renameResult } from '../src/client/viewer/step-rename.ts';
 import { replay } from './fixtures.ts';
 
 const session = (draft: string, label = 'Click Save'): RenameSession => ({ key: '1000', surface: 'rail', draft, label, wasPlaying: false });
@@ -61,10 +55,10 @@ describe('rename session', () => {
   });
 
   it('keeps the draft when the same step is started again and caps it', () => {
-    const edited = renameReducer(
-      renameReducer(undefined, { type: 'start', key: '1', surface: 'caption', label: 'A', wasPlaying: true }),
-      { type: 'change', draft: 'B'.repeat(200) },
-    );
+    const edited = renameReducer(renameReducer(undefined, { type: 'start', key: '1', surface: 'caption', label: 'A', wasPlaying: true }), {
+      type: 'change',
+      draft: 'B'.repeat(200),
+    });
     expect(edited?.draft).toHaveLength(120);
     expect(renameReducer(edited, { type: 'start', key: '1', surface: 'caption', label: 'A' })).toBe(edited);
   });

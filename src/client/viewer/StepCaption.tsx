@@ -47,7 +47,9 @@ export function StepCaption() {
             },
           }
         : {})}
-      {...(editing && renaming ? { editor: <StepNameInput renaming={renaming} renamed={Boolean(key && key in renaming.names)} onFinish={finish} /> } : {})}
+      {...(editing && renaming
+        ? { editor: <StepNameInput renaming={renaming} renamed={Boolean(key && key in renaming.names)} onFinish={finish} /> }
+        : {})}
     />
   );
 }

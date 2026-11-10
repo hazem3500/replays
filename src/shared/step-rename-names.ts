@@ -19,7 +19,10 @@ export function stepNameKeys(steps: ReadonlyArray<Pick<ReplayStep, 'at'>>): stri
 }
 
 /** The steps with their stored names as labels; the same array when nothing is renamed. */
-export function renameSteps<T extends Pick<ReplayStep, 'at' | 'label'>>(steps: readonly T[], names: Readonly<Record<string, string>> | undefined) {
+export function renameSteps<T extends Pick<ReplayStep, 'at' | 'label'>>(
+  steps: readonly T[],
+  names: Readonly<Record<string, string>> | undefined,
+) {
   if (!names || Object.keys(names).length === 0) return steps;
   const keys = stepNameKeys(steps);
   return steps.map((step, index) => {
