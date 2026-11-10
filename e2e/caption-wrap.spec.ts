@@ -12,7 +12,7 @@ async function openLongCaption(page: Page) {
     if (!isRecord(bundle)) throw new Error('the demo replay is not a bundle');
     await route.fulfill({ response, json: { ...bundle, steps: [{ at: 0, kind: 'click', label: LONG_LABEL }] } });
   });
-  await page.addInitScript(() => localStorage.setItem('replays-view:standard:captions', '1'));
+  await page.addInitScript(() => localStorage.setItem('replays-captions', '1'));
   await openReplay(page, `${origin()}/r/demo-shop`);
   await page.getByTestId('step-timeline').locator('[data-step-index="0"]').click();
   const caption = page.getByTestId('step-caption');

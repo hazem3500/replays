@@ -140,11 +140,10 @@ test('dense captions keep every edit without overlapping labels, part words or b
   await expect(captions).toHaveCount(30);
   const first = captions.first();
   await first.scrollIntoViewIfNeeded();
-  // why: a block too short for two words is no box but a thin bar in its lane's hue, never an icon stub; its name keeps the text.
+  // why: a caption too short for its text is still a clip block like the other lanes' (no thin bar), never an icon stub; its name keeps the text.
   await expect(first.locator('.tl-region-label')).toHaveCount(0);
   await expect(first.locator('.tl-region-body svg')).toHaveCount(0);
-  await expect(first.locator('.tl-region-body')).toHaveAttribute('data-short', '');
-  expect(await first.locator('.tl-region-body').evaluate((body) => getComputedStyle(body, '::before').height)).toBe('4px');
+  await expect(first.locator('.tl-region-body')).not.toHaveAttribute('data-short');
   await expect(first.locator('.tl-region-body')).toHaveAccessibleName(/Caption 1: complete text remains available for editing$/);
   const boxes = await captions.evaluateAll((nodes) =>
     nodes.map((node) => {

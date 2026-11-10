@@ -344,7 +344,7 @@ function RequestRow({
               type="button"
               id={`request-switch-${row.id}`}
               data-request-id={row.id}
-              aria-label={`${row.entry.method} ${row.entry.url}`}
+              aria-label={`${row.entry.method} ${row.name.path}${row.name.query ?? ''}${row.name.host ? ` ${row.name.host}` : ''}`}
               aria-expanded={selected}
               aria-controls={selected ? REQUEST_DETAIL_ID : undefined}
               onClick={() => onSelect(selected ? undefined : row.id)}
