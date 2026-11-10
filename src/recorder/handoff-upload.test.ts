@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { HANDOFF_CHANNEL, HANDOFF_VERSION } from '../shared/upload-handoff.ts';
+import { HANDOFF_CHANNEL, HANDOFF_VERSION } from './handoff-protocol.ts';
 import { handoffUpload, HandoffUploadError, type HandoffHost } from './handoff-upload.ts';
 
 const REPLAYS = 'https://replays.dev.toggl.com';
@@ -19,8 +19,7 @@ function setup() {
     addEventListener: (_type, fn) => (listener = fn),
     removeEventListener: () => (listener = undefined),
   };
-  const send = (data: unknown, origin = REPLAYS, source: unknown = popup) =>
-    listener?.({ data, origin, source } as unknown as MessageEvent);
+  const send = (data: unknown, origin = REPLAYS, source: unknown = popup) => listener?.({ data, origin, source } as never);
   const sentId = () => (popup.postMessage.mock.calls[0]![0] as { id: string }).id;
   return { host, popup, send, sentId, listening: () => listener !== undefined };
 }

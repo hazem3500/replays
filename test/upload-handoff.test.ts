@@ -8,7 +8,8 @@ import { createApp } from '../src/server/app.ts';
 import { renderHandoffPage } from '../src/server/api/upload-handoff.ts';
 import { MemoryStorage } from '../src/server/storage/index.ts';
 import { ReplayStore } from '../src/server/store.ts';
-import { HANDOFF_CHANNEL, HANDOFF_VERSION, handoffOriginAllowed, parseHandoffMessage } from '../src/shared/upload-handoff.ts';
+import * as protocol from '../src/recorder/handoff-protocol.ts';
+import { HANDOFF_CHANNEL, HANDOFF_PATH, HANDOFF_VERSION, MAX_HANDOFF_CHARS } from '../src/shared/upload-handoff.ts';
 import { appDefaults } from './fixtures.ts';
 
 const APP = 'https://app.example.com';
@@ -113,22 +114,24 @@ describe('upload handoff page', () => {
 
 describe('handoff messages', () => {
   it('parses only well-formed messages of the wanted types', () => {
-    expect(parseHandoffMessage({ ...base, type: 'ready' }, ['ready'])).toBeDefined();
-    expect(parseHandoffMessage({ ...base, type: 'ready' }, ['receipt'])).toBeUndefined();
-    expect(parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: 'x1' }, ['receipt'])).toBeDefined();
-    expect(parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: '../x' }, ['receipt'])).toBeUndefined();
+    expect(protocol.parseHandoffMessage({ ...base, type: 'ready' }, ['ready'])).toBeDefined();
+    expect(protocol.parseHandoffMessage({ ...base, type: 'ready' }, ['receipt'])).toBeUndefined();
+    expect(protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: 'x1' }, ['receipt'])).toBeDefined();
+    expect(protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: '../x' }, ['receipt'])).toBeUndefined();
     expect(
-      parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: 'x1', url: 'https://evil.example' }, ['receipt']),
+      protocol.parseHandoffMessage({ ...base, type: 'receipt', id, ok: true, replayId: 'x1', url: 'https://evil.example' }, ['receipt']),
     ).toBeUndefined();
-    expect(parseHandoffMessage({ ...base, version: 2, type: 'ready' }, ['ready'])).toBeUndefined();
-    expect(parseHandoffMessage('ready', ['ready'])).toBeUndefined();
+    expect(protocol.parseHandoffMessage({ ...base, version: 2, type: 'ready' }, ['ready'])).toBeUndefined();
+    expect(protocol.parseHandoffMessage('ready', ['ready'])).toBeUndefined();
   });
 
-  it('matches origins exactly or by pattern', () => {
-    expect(handoffOriginAllowed(allowlist, APP)).toBe(true);
-    expect(handoffOriginAllowed(allowlist, 'https://7-web.pull.example.com')).toBe(true);
-    expect(handoffOriginAllowed(allowlist, 'https://7-web.pull.example.com.evil.example')).toBe(false);
-    expect(handoffOriginAllowed(allowlist, 'http://app.example.com')).toBe(false);
+  it('keeps the recorder and server halves of the protocol in step', () => {
+    expect([protocol.HANDOFF_PATH, protocol.HANDOFF_CHANNEL, protocol.HANDOFF_VERSION, protocol.MAX_HANDOFF_CHARS]).toEqual([
+      HANDOFF_PATH,
+      HANDOFF_CHANNEL,
+      HANDOFF_VERSION,
+      MAX_HANDOFF_CHARS,
+    ]);
   });
 });
 

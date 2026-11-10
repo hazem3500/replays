@@ -6,7 +6,7 @@ import {
   newHandoffId,
   parseHandoffMessage,
   type HandoffBundle,
-} from '../shared/upload-handoff.ts';
+} from './handoff-protocol.ts';
 import type { IssueReportReceipt } from './upload.ts';
 
 /** Why a handoff did not produce a receipt. */
