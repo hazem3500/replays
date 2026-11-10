@@ -408,8 +408,8 @@ test.describe('index slots: summary fields, a server filter, and a column, filte
   test('the column, the section and the filter menu control are drawn by the browser entry', async ({ page }) => {
     await page.goto(`${origin}${BASE}/`);
     const row = (id: string) => page.locator(`.feed-list [data-entry-id="session:${id}"]`);
-    // why: a viewer with replays of their own may land on For you; the column and filter checks need every row (All).
-    // The For you tab appears once the viewer is known, after the landing tab is chosen, so the switch to All sticks.
+    /* why: a viewer with replays of their own may land on For you, and these checks need every row (All). The For you
+       tab appears once the viewer is known, after the landing tab is chosen, so the switch to All sticks. */
     const tabs = page.getByRole('radiogroup', { name: 'Profile' });
     await expect(tabs.locator('label', { hasText: 'For you' })).toBeVisible();
     await tabs.locator('label', { hasText: 'All' }).click();
