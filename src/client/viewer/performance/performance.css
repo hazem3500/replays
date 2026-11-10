@@ -105,3 +105,8 @@
 .pp-meaning .pp-bar { max-width: none; height: 8px; margin-bottom: 6px; }
 .pp-detail .np-detail-status { gap: 8px; color: var(--text); }
 .pp-pending .pp-pending-vitals { width: 60%; margin: auto 14px; }
+.pp-cadence .pp-vital { cursor: default; }
+.pp-unit { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
+.pp-cadence-aside, .pp-cadence-note { margin: 0; color: var(--text-tertiary); font-size: var(--text-2xs); }
+.pp-cadence-aside { align-self: center; margin-left: auto; padding: 0 14px; }
+.pp-cadence-note { flex: none; padding: 6px 14px; border-bottom: 1px solid var(--line); }
