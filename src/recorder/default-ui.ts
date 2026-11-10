@@ -8,6 +8,7 @@ import { createRecorderFormat } from './format.ts';
 import { focusReturn, trapFocus } from './kit/index.ts';
 import { resolveRecorderMessages } from './messages.ts';
 import { createUploadActivity } from './upload-activity.ts';
+import { createStatusSpinner } from './status-spinner.ts';
 import { uploadRecovery } from './upload-recovery.ts';
 import { startRecordingPulse } from './recording-pulse.ts';
 import { cleanupText, updateText } from './text-motion.ts';
@@ -338,15 +339,30 @@ export function createDefaultUi(
       } else {
         current.label.className = 'message';
         updateText(current.label, text);
-        current.content.append(icon(receipt ? 'check' : 'alert', 'status-icon'), current.label);
+        const restingIcon = icon(receipt ? 'check' : 'alert', 'status-icon');
+        let spinner: ReturnType<typeof createStatusSpinner> | undefined;
+        current.content.append(restingIcon, current.label);
         if (receipt) {
           const href = receipt.url ? safeHref(receipt.url) : undefined;
           appendCompletionControls(controls, completion?.actions, { resolveValue, copy, context, href, messages });
         } else {
           if (error?.action && result.status === 'error')
-            renderCleanup = uploadRecovery(controls, error.action, result.retry, (message) => {
-              updateText(current.label, message);
-              current.live.textContent = message;
+            renderCleanup = uploadRecovery(controls, error.action, result.retry, {
+              failure: (message) => {
+                updateText(current.label, message);
+                current.live.textContent = message;
+              },
+              pendingStart: (message) => {
+                spinner = createStatusSpinner();
+                restingIcon.replaceWith(spinner.node);
+                updateText(current.label, message);
+                current.live.textContent = message;
+              },
+              pendingEnd: () => {
+                spinner?.node.replaceWith(restingIcon);
+                spinner?.stop();
+                spinner = undefined;
+              },
             });
           if (error?.link) {
             const control = link(error.link.label, error.link.url);
