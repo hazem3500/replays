@@ -139,12 +139,28 @@ export interface PageBranding {
   plugins?: string;
   /** Browser chrome colour per scheme (`<meta name="theme-color">`): the theme's `page` token; unset keeps the built-in one. */
   themeColor?: { dark?: string; light?: string };
+  /** The theme's `accent` per scheme: the tab icon is drawn in it unless a logo replaces the icon. */
+  accent?: { dark?: string; light?: string };
   /** JSON list of the source providers' icons and nouns (`<meta name="app-sources">`); see SourceProviders.describe. */
   sources?: string;
 }
 
 const escapeHtml = (value: string) =>
   value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+
+const FAVICON_LINK = /<link rel="icon" href="[^"]*\/favicon\.svg" type="image\/svg\+xml" \/>/;
+
+/** The shapes of public/assets/brand/favicon.svg (test/branding.test.ts keeps them equal). */
+const FAVICON_SHAPES =
+  '<rect x="1" y="15" width="7" height="6" rx="3" fill="currentColor"/><rect x="9.8" y="15" width="3" height="6" rx="3" fill="currentColor"/><rect x="21.2" y="15" width="4.4" height="6" rx="3" fill="currentColor" fill-opacity="0.35"/><rect x="27.6" y="15" width="3.4" height="6" rx="3" fill="currentColor" fill-opacity="0.35"/><rect x="14.8" y="8.8" width="4.4" height="18.7" rx="2.2" fill="currentColor"/><circle cx="17" cy="8.8" r="4.4" fill="currentColor"/>';
+
+/** The built-in tab icon in the deployment's accent, as a data: URL (an icon cannot read the page's CSS tokens). */
+function accentFavicon(accent: { dark?: string; light?: string }) {
+  const dark = accent.dark ?? accent.light ?? '';
+  const light = accent.light ?? dark;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>svg{color:${light}}@media (prefers-color-scheme:dark){svg{color:${dark}}}</style>${FAVICON_SHAPES}</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
 
 const THEME_COLOR_META = /<meta name="theme-color"[^>]*>/;
 
@@ -181,6 +197,8 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
       `<meta name="app-sources" content="${escapeHtml(branding.sources ?? '')}" />`,
     );
     out = out.replaceAll('__PRODUCT_NAME__', escapeHtml(branding.name)).replaceAll('__PRODUCT_LOGO__', escapeHtml(branding.logoUrl ?? ''));
+    if (branding.accent && !branding.logoUrl)
+      out = out.replace(FAVICON_LINK, `<link rel="icon" href="${accentFavicon(branding.accent)}" type="image/svg+xml" />`);
     const color = branding.themeColor;
     if (color?.dark || color?.light)
       out = out.replace(THEME_COLOR_META, (meta) => {

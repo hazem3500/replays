@@ -58,13 +58,22 @@ export function themeColor(branding: BrandingConfig): { dark?: string; light?: s
   return dark || light ? { ...(dark ? { dark } : {}), ...(light ? { light } : {}) } : undefined;
 }
 
+/** The theme's `accent` per scheme, where it sets one. */
+export function themeAccent(branding: BrandingConfig): { dark?: string; light?: string } | undefined {
+  const dark = branding.theme?.dark?.accent;
+  const light = branding.theme?.light?.accent;
+  return dark || light ? { ...(dark ? { dark } : {}), ...(light ? { light } : {}) } : undefined;
+}
+
 export function pageBranding(branding: BrandingConfig): PageBranding {
   const color = themeColor(branding);
+  const accent = themeAccent(branding);
   return {
     name: branding.name,
     tokensCss: tokensCss(branding),
     ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}),
     ...(color ? { themeColor: color } : {}),
+    ...(accent ? { accent } : {}),
   };
 }
 

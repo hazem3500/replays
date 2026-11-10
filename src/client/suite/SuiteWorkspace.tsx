@@ -31,7 +31,19 @@ import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import { SummaryText } from '../viewer/SummaryText.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
-import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns } from './runs.ts';
+import {
+  initialRunReplayId,
+  isExpired,
+  neighbourReplayId,
+  orderedRuns,
+  playableReplayId,
+  type RecordedRun,
+  recordedRuns,
+  type RunMetric,
+  runRowMetrics,
+} from './runs.ts';
+import { isPerformanceFocused } from '../../shared/performance-focus.ts';
+import { pageProfiles } from '../profiles.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
 import { compareDefaults, isComparisonView, suiteViewLayout } from '../compare/defaults.ts';
 import { monograms, shortNames } from '../compare/tiles.ts';
@@ -143,6 +155,10 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // why: retain every playable run for layout switching even when entry shows only the selected run.
   const playable = recordedRuns(runs, detailed);
   const view = usePageView({ replay: bundle, suiteProfile: suite?.profile, recordings: 1 });
+  const performanceFocused = isPerformanceFocused({
+    view: view.view.id,
+    profiles: [pageProfiles().find((profile) => profile.id === suite?.profile)],
+  });
   const defaults = compareDefaults({
     page: 'suite',
     recordings: playable.length,
@@ -297,6 +313,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           onSelect={select}
           onSwitch={switchRail}
           keep={keep}
+          performanceFocused={performanceFocused}
         />
       ) : null}
       {!narrow && !collapsed ? (
@@ -319,8 +336,10 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         {comparing && selected ? (
           <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? playable.length : 0} />}>
             <SuiteCompare
-              // why: on wider screens the runs sidebar, open or folded to its rail, already lists and switches the runs.
-              hideCompareSummary={!narrow}
+              // why: the runs sidebar (desktop) and the title run menu (phone) already switch runs; colour frames mark
+              // the focused tile. The CompareSummary strip belongs on standalone Compare — on a phone with many runs
+              // it wraps into an unreadable pile of clocks and deltas above the player.
+              hideCompareSummary
               runs={playable}
               fallback={defaults.layout}
               focus={selected}
@@ -393,6 +412,7 @@ function SuiteSidebar({
   onSelect,
   onSwitch,
   keep,
+  performanceFocused,
 }: {
   suite: SuiteWithRuns;
   runs: WorkspaceRun[];
@@ -403,6 +423,7 @@ function SuiteSidebar({
   onSelect: (replayId: string | undefined) => void;
   onSwitch: () => void;
   keep: ReturnType<typeof useKeepSuite>;
+  performanceFocused: boolean;
 }) {
   const RailIcon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon;
   const overall = suiteOverallStatus(runs);
@@ -501,7 +522,7 @@ function SuiteSidebar({
               name={names[index] ?? run.label}
               status={playable ? tone : expired ? 'Expired' : 'No recording'}
               tone={tone}
-              errors={errors}
+              metrics={runRowMetrics(run, performanceFocused)}
             />
           );
           const label = `Run ${sequenceLabel(run)}: ${run.label}, ${tone}${errors ? `, ${plural(errors, 'error')}` : ''}${playable ? '' : expired ? ', recording expired' : ', no recording'}`;
@@ -549,7 +570,20 @@ function SuiteSidebar({
 }
 
 /** One expanded sidebar row: the run's colour swatch, name, duration, status and error count. */
-function RunCopy({ run, name, status, tone, errors }: { run: WorkspaceRun; name: string; status: string; tone: string; errors: number }) {
+function RunCopy({
+  run,
+  name,
+  status,
+  tone,
+  metrics,
+}: {
+  run: WorkspaceRun;
+  name: string;
+  status: string;
+  tone: string;
+  metrics: RunMetric[] | undefined;
+}) {
+  const errors = runErrors(run);
   return (
     <>
       <span className="run-swatch" aria-hidden="true" />
@@ -562,8 +596,25 @@ function RunCopy({ run, name, status, tone, errors }: { run: WorkspaceRun; name:
           <span className={`run-status tone-${tone}`}>{status}</span>
           {errors > 0 ? <span className="run-errors">{plural(errors, 'error')}</span> : null}
         </span>
+        {metrics ? <RunPerf metrics={metrics} /> : null}
       </span>
     </>
+  );
+}
+
+/** A performance-focused suite's comparison row: what the run recorded, and a plain note for what it did not. */
+function RunPerf({ metrics }: { metrics: RunMetric[] }) {
+  const noFps = metrics.length > 0 && !metrics.some((metric) => metric.id === 'fps');
+  return (
+    <span className="run-perf" data-testid="run-perf">
+      {metrics.map((metric) => (
+        <span key={metric.id} data-verdict={metric.verdict}>
+          {metric.label} <strong>{metric.value}</strong>
+        </span>
+      ))}
+      {metrics.length === 0 ? <span>No performance data</span> : null}
+      {noFps ? <span>FPS not recorded</span> : null}
+    </span>
   );
 }
 
@@ -612,10 +663,11 @@ function RunMenuItems({
             value={playableReplayId(run, detailed) ?? `missing-${run.id}`}
             disabled={!playableReplayId(run, detailed)}
             closeOnClick
+            className="run-picker-item"
           >
             <span className="run-seq">{sequenceLabel(run)}</span>
-            <span className="min-w-0 flex-1 truncate">{run.label}</span>
-            {isExpired(run, detailed) ? <span className="text-muted-foreground">Expired</span> : null}
+            <span className="run-picker-label">{run.label}</span>
+            {isExpired(run, detailed) ? <span className="run-picker-expired">Expired</span> : null}
             <span className={`status-dot tone-${statusTone(run, detailed)}`} aria-hidden="true" />
           </DropdownMenuRadioItem>
         ))}

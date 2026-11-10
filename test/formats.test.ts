@@ -167,7 +167,7 @@ describe('docs/formats', () => {
       updatedAt: '2026-01-01T00:00:00.000Z',
     };
     expect(check(edits).errors).toBe('No errors');
-    expect(check({ ...edits, speeds: [{ id: 's1', from: 1, to: 2, rate: 3 }] }).ok).toBe(false);
+    expect(check({ ...edits, speeds: [{ id: 's1', from: 1, to: 2, rate: 20 }] }).ok).toBe(false);
   });
 
   it('the shipped example plugins are valid plugin files', async () => {

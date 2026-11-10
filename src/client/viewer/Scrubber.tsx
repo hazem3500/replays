@@ -21,8 +21,9 @@ import {
   clampCentre,
   ERROR_NOTCH_GAP,
   easeOut,
-  nearestMark,
+  type HighlightSpot,
   notchX,
+  resolveHover,
   runLabel,
   type ScrubberMark,
   type ScrubberSegment,
@@ -351,12 +352,23 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
       if (barEls[index]) barEls[index]!.dataset.hover = '';
       hoveredBar = index;
     };
-    /** What the pointer is over: an error dot close by (`e3`), else the bar under it (`s1`), or ''. */
+    /** What the pointer is over: a highlight marker, else an error dot close by (`e3`), else the bar under it (`s1`), or ''. */
+    let spots: HighlightSpot[] = [];
+    const readSpots = () => {
+      const origin = element.getBoundingClientRect().left + INSET;
+      return [...element.querySelectorAll<HTMLElement>('.scrubber-highlight-marker')].map((marker) => {
+        const box = marker.getBoundingClientRect();
+        return {
+          x: box.left + box.width / 2 - origin,
+          at: Number(marker.dataset.at),
+          label: marker.dataset.label ?? '',
+        };
+      });
+    };
     const targetAt = (at: number) => {
-      const error = nearestMark(errorMarks, at, MARK_TOLERANCE);
-      if (error >= 0) return `e${error}`;
+      spots = readSpots();
       const bar = segmentAt(segments, toTime(at));
-      return bar >= 0 && segments[bar]!.label ? `s${bar}` : '';
+      return resolveHover(spots, errorMarks, at, bar >= 0 && segments[bar]!.label ? bar : -1, MARK_TOLERANCE);
     };
     const intent = { timer: 0, key: '', anchor: 0, shown: '', warmUntil: 0 };
     const clearIntent = (warm: boolean) => {
@@ -368,6 +380,13 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
     };
     const renderHover = () => {
       const index = Number(intent.shown.slice(1));
+      const highlight = intent.shown.startsWith('h') ? spots[index] : undefined;
+      if (highlight) {
+        write(highlight.at, highlight.label, 'highlight');
+        show(highlight.x);
+        setPreviewTime(highlight.at);
+        return;
+      }
       const error = intent.shown.startsWith('e') ? errorMarks[index] : undefined;
       if (error) {
         write(error.at, error.label, 'error');
@@ -537,6 +556,19 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
       keyed = false;
       if (landed) hide();
     };
+    const markerOf = (event: Event) => (event.target as Element | null)?.closest<HTMLElement>('.scrubber-highlight-marker') ?? null;
+    const onMarkerFocus = (event: FocusEvent) => {
+      const marker = markerOf(event);
+      if (!marker || scrubbing || !marker.matches(':focus-visible')) return;
+      const box = marker.getBoundingClientRect();
+      bubbleEl.dataset.instant = '';
+      write(Number(marker.dataset.at), marker.dataset.label ?? '', 'highlight');
+      show(box.left + box.width / 2 - element.getBoundingClientRect().left - INSET, true);
+      landed = true;
+    };
+    const onMarkerBlur = (event: FocusEvent) => {
+      if (markerOf(event) && landed && !hovering) hide();
+    };
 
     draw(player.getTime());
     const offTime = player.subscribeTime(paint);
@@ -550,6 +582,8 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
     range.addEventListener('keydown', onKey);
     range.addEventListener('keyup', onKeyUp);
     range.addEventListener('blur', onBlur);
+    element.addEventListener('focusin', onMarkerFocus);
+    element.addEventListener('focusout', onMarkerBlur);
     window.addEventListener('pointerup', onUp, true);
     window.addEventListener('pointercancel', onUp, true);
     window.addEventListener('pointermove', onAnnotationMove, true);
@@ -569,6 +603,8 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
       range.removeEventListener('keydown', onKey);
       range.removeEventListener('keyup', onKeyUp);
       range.removeEventListener('blur', onBlur);
+      element.removeEventListener('focusin', onMarkerFocus);
+      element.removeEventListener('focusout', onMarkerBlur);
       window.removeEventListener('pointerup', onUp, true);
       window.removeEventListener('pointercancel', onUp, true);
       window.removeEventListener('pointermove', onAnnotationMove, true);
@@ -701,7 +737,8 @@ function HighlightMarks({
                   data-selected={selected === mark.id || undefined}
                   aria-label={`${title} at ${formatClock(at)}`}
                   aria-pressed={selected === mark.id}
-                  title={`${label ? `${label} · ` : ''}${formatClock(at)}`}
+                  data-at={at}
+                  data-label={label ?? ''}
                   style={cssVars({ '--target-offset': `${targetOffset}px` }, { left: `${x(at)}px` })}
                   onFocus={() => onFocus(mark.id)}
                   onPointerDown={(event) => onPointerDown(event.nativeEvent)}

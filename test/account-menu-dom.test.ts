@@ -66,10 +66,11 @@ describe('the account menu', () => {
 
   it('offers Sign out in the index’s phone sheet, which stands in for More there', () => {
     act(() => {
-      root.render(createElement(IndexPhoneMenu, { items: phoneMenuItems({ account: OIDC }) }));
+      root.render(createElement(IndexPhoneMenu, { account: OIDC, items: phoneMenuItems({ account: OIDC }) }));
     });
     const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Menu"]');
     if (!trigger) throw new Error('the phone sheet trigger is not rendered');
+    expect(trigger.querySelector('svg.lucide-user-round')).not.toBeNull();
     act(() => {
       trigger.click();
     });
@@ -85,5 +86,15 @@ describe('the account menu', () => {
   it('shows nothing on desktop when the auth mode has no way to sign out', () => {
     renderBar({ id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } });
     expect(host.querySelector('[data-testid="account-menu"]')).toBeNull();
+  });
+
+  it('keeps the index phone trigger as More when the auth mode has no way to sign out', () => {
+    const iap: Account = { id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } };
+    act(() => {
+      root.render(createElement(IndexPhoneMenu, { account: iap, items: phoneMenuItems({ account: iap }) }));
+    });
+    const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Menu"]');
+    expect(trigger?.querySelector('svg.lucide-user-round')).toBeNull();
+    expect(trigger?.querySelector('[data-icon="ellipsis"]')).not.toBeNull();
   });
 });

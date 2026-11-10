@@ -32,7 +32,9 @@ import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
 import { compareWith } from './compare/open.ts';
 import { betaMalleable } from './malleable/flag.ts';
-import { replayProfile } from './profiles.ts';
+import { pageProfiles, replayProfile } from './profiles.ts';
+import { isPerformanceFocused } from '../shared/performance-focus.ts';
+import { frameBands } from './viewer/performance/frames.ts';
 import { openWorkshop } from './malleable/ui-state.ts';
 import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
@@ -177,7 +179,15 @@ export function Viewer({
   // why: the page's view (`?view=`, the suite's or replay's profile, the number of recordings) sets how it opens and lays out.
   const comparisonContext = Boolean(stage && (comparing?.length ?? 0) > 1);
   const page = usePageView({ replay: bundle, suiteProfile, recordings: comparing?.length ?? 1, comparison: comparisonContext });
-  const defaults = viewDefaults(page);
+  const viewerDefaults = viewDefaults(page);
+  const performanceFocused = isPerformanceFocused({
+    view: page.view.id,
+    profiles: [profile, suiteProfile ? pageProfiles().find((candidate) => candidate.id === suiteProfile) : undefined],
+    tags: bundle.meta.tags,
+  });
+  // why: a performance-focused replay opens on Performance unless the person named a view (`?view=`) or has a stored tab (useViewState).
+  const defaults = performanceFocused && page.source !== 'url' ? { ...viewerDefaults, tab: 'performance' } : viewerDefaults;
+  const frames = useMemo(() => frameBands(sourceBundle.performance?.frames, timeline), [sourceBundle, timeline]);
   const opened = useMemo(() => {
     if (sharedPlayer) return { controller: sharedPlayer, step: undefined, resume: false, tab: undefined };
     const controller = new ReplayController(bundle, effects ? { effects } : {});
@@ -399,8 +409,12 @@ export function Viewer({
       highlights: projectHighlights(highlights, timeline ?? editTimeline(undefined, player.duration)),
       tracks: defaults.tracks,
       tabOrder: defaults.tabs,
+      performanceFocused,
+      frames,
     };
   }, [
+    performanceFocused,
+    frames,
     defaults.tabs,
     defaults.tracks,
     bundle.steps,
@@ -426,29 +440,22 @@ export function Viewer({
   usePluginShortcuts(pluginContexts);
   const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
-  // why: the recording picker stays in More so the top bar keeps room for the view and layout switches. A suite already
+  // why: the recording picker stays in More (Compare with… in the View submenu) so the top bar keeps room for the view and layout switches. A suite already
   // says which runs belong together, so it offers no way to add another recording.
   const inSuite = Boolean(suite);
   const hasKeyboard = useHasKeyboard();
   const deletion = useReplayDeletion(bundle.meta.id, bundle.meta.title, true);
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
-      ...(inSuite
+      ...(inSuite || !sharedPlayer
         ? []
         : [
-            sharedPlayer
-              ? {
-                  label: 'Add a recording',
-                  icon: <AnimatedIcon name="plus" />,
-                  onSelect: () => setPickerOpen(true),
-                  testId: 'compare-with',
-                }
-              : {
-                  label: 'Compare with…',
-                  icon: <AnimatedIcon name="columns-2" />,
-                  onSelect: () => setPickerOpen(true),
-                  testId: 'compare-with',
-                },
+            {
+              label: 'Add a recording',
+              icon: <AnimatedIcon name="plus" />,
+              onSelect: () => setPickerOpen(true),
+              testId: 'compare-with',
+            },
           ]),
       ...pluginMenu.items,
       ...(betaMalleable()
@@ -629,7 +636,15 @@ export function Viewer({
           pluginActions={pluginMenu.bar}
           menuFooter={pluginMenu.settings}
           menu={menu}
-          menuSettings={comparisonContext ? null : <ViewMenuItems {...viewChoice} showReset={false} />}
+          menuSettings={
+            comparisonContext ? null : (
+              <ViewMenuItems
+                {...viewChoice}
+                showReset={false}
+                {...(inSuite || sharedPlayer ? {} : { onCompare: () => setPickerOpen(true) })}
+              />
+            )
+          }
           menuTail={<ResetViewItem onReset={layout.reset} />}
           {...(titleMenu ? { titleMenu } : {})}
           {...(titleFrom ? { titleFrom } : {})}
@@ -914,13 +929,7 @@ function PhoneHeader({
         {...props}
         compact
         appearanceInMenu
-        menuItems={[
-          ...menuItems.filter((item) => item.testId === 'compare-with'),
-          detailsItem,
-          ...copyLinkItems(player, steps, suite?.href),
-          ...menuItems.filter((item) => item.testId !== 'compare-with'),
-          ...download.items,
-        ]}
+        menuItems={[detailsItem, ...copyLinkItems(player, steps, suite?.href), ...menuItems, ...download.items]}
         actions={
           <>
             <ActionsBar

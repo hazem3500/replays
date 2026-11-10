@@ -67,7 +67,13 @@ describe('effect lists in the edit schema', () => {
 
   it('names what it rejects', () => {
     expect(() => assertReplayEdits(edits({ zooms: [{ id: 'z', from: 0, to: 1000, scale: 9 }] }))).toThrow('edits.zooms[0].scale');
-    expect(() => assertReplayEdits(edits({ speeds: [{ id: 's', from: 0, to: 1000, rate: 3 as 2 }] }))).toThrow('edits.speeds[0].rate');
+    expect(() => assertReplayEdits(edits({ speeds: [{ id: 's', from: 0, to: 1000, rate: 17 }] }))).toThrow('edits.speeds[0].rate');
+    expect(() => assertReplayEdits(edits({ speeds: [{ id: 's', from: 0, to: 1000, rate: 0.5 }] }))).toThrow('edits.speeds[0].rate');
+    expect(() => assertReplayEdits(edits({ speeds: [{ id: 's', from: 0, to: 1000, rate: '2' as unknown as number }] }))).toThrow(
+      'edits.speeds[0].rate',
+    );
+    for (const rate of [1, 2.5, 3.75, 6.5, 11, 16])
+      expect(() => assertReplayEdits(edits({ speeds: [{ id: 's', from: 0, to: 1000, rate }] }))).not.toThrow();
     expect(() =>
       assertReplayEdits(
         edits({

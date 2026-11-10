@@ -151,6 +151,7 @@ test('More adds a recording to compare, and Back returns to the replay alone', a
   await openReplay(page, `${origin()}/r/demo-shop`);
   await expect(page.getByTestId('compare-with')).toHaveCount(0);
   await page.getByRole('button', { name: 'More actions' }).click();
+  await page.getByTestId('view-submenu-trigger').click();
   await expect(page.getByTestId('compare-with')).toHaveText('Compare with…');
   await page.getByTestId('compare-with').click();
   const picker = page.getByTestId('compare-picker');
