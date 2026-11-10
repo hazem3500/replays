@@ -128,10 +128,37 @@ function passKeys(options) {
   return Object.fromEntries(Object.entries(MARKERS).map(([marker, suite]) => [marker, key(marker, suite)]));
 }
 
-/** Main owns browser coverage; pull requests keep the blocking Gate. */
+/** Main owns browser and Docker coverage; pull requests keep the blocking Gate and, for viewer changes, end-to-end. */
 export function suitesReason({ event, ref } = {}) {
   if (event === 'workflow_dispatch') return `manual run on ${ref}`;
   return ref === 'refs/heads/main' && ['push', 'schedule'].includes(event) ? `${event} on main` : '';
+}
+
+/**
+ * Paths whose change makes a pull request run the end-to-end shards before merge: the viewer, the specs and their
+ * harness, the dependencies they build from, and the CI that runs them. Server-only and tooling changes keep the Gate.
+ */
+export const PR_E2E_PATHS = [
+  'src/client/',
+  'src/shared/',
+  'e2e/',
+  'public/',
+  '.github/actions/',
+  'index.html',
+  'render.html',
+  'playwright.config.ts',
+  'vite.config.ts',
+  'vite.start.config.ts',
+  'package.json',
+  'pnpm-lock.yaml',
+  'scripts/ci-scope.mjs',
+  'scripts/test-server.mjs',
+  '.github/workflows/ci.yml',
+];
+
+/** Whether a pull request's changed files touch the viewer or the end-to-end specs (PR_E2E_PATHS). */
+export function prWantsE2e(files = []) {
+  return files.some((file) => PR_E2E_PATHS.some((path) => (path.endsWith('/') ? file.startsWith(path) : file === path)));
 }
 
 /** Nightly coverage catches dependency and runner drift even when source inputs are unchanged. */
@@ -145,16 +172,23 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     ref: process.env.CI_REF ?? '',
   });
   const keys = passKeys();
-  console.log(JSON.stringify({ force, wanted: reason !== '', reason, keys }, null, 2));
+  const changed = (process.env.CI_CHANGED_FILES ?? '').split('\n').filter(Boolean);
+  const wantedE2e = reason !== '' || (event === 'pull_request' && prWantsE2e(changed));
+  console.log(JSON.stringify({ force, wanted: reason !== '', wantedE2e, reason, keys }, null, 2));
   if (process.env.GITHUB_OUTPUT) {
-    const lines = [`force=${force}`, `wanted=${reason !== ''}`, ...Object.entries(keys).map(([marker, key]) => `${marker}=${key}`)];
+    const lines = [
+      `force=${force}`,
+      `wanted=${reason !== ''}`,
+      `wanted_e2e=${wantedE2e}`,
+      ...Object.entries(keys).map(([marker, key]) => `${marker}=${key}`),
+    ];
     appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join('\n')}\n`);
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
     const rows = Object.entries(keys).map(([marker, key]) => `| ${marker} | ${MARKERS[marker]} | \`${key}\` |`);
-    const why = reason
-      ? `End-to-end, browser and Docker suites: wanted (${reason}).`
-      : 'End-to-end, browser and Docker suites run only on main and nightly.';
+    let why = 'End-to-end, browser and Docker suites run only on main and nightly.';
+    if (reason) why = `End-to-end, browser and Docker suites: wanted (${reason}).`;
+    else if (wantedE2e) why = 'End-to-end: wanted (this pull request touches the viewer or its specs); browser and Docker run on main.';
     const mode = force ? 'Full run: earlier passes are not reused.' : 'Suites whose inputs already passed are reused.';
     const table = ['| Marker | Suite | Key |', '| --- | --- | --- |', ...rows].join('\n');
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Browser-backed suites\n\n${why} ${mode}\n\n${table}\n\n`);

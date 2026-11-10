@@ -3,17 +3,7 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    # Documentation-only changes start no run; scripts/ci-scope.mjs mirrors these exclusions per suite.
-    paths:
-      - '**'
-      - '!*.md'
-      - '!docs/**/*.md'
-      - 'docs/tokens.md'
-      - '!docs/screenshots/**'
-      - '!.github/ISSUE_TEMPLATE/**'
-      - '!.github/pull_request_template.md'
-      - '!.github/CODEOWNERS'
-      - '!LICENSE'
+    # why: no path filter, so the required End-to-end result always reports (a filtered-out run would never satisfy it).
   push:
     branches: [main]
     paths:
@@ -177,9 +167,13 @@ jobs:
 
   smoke-scope:
     name: Select main smoke suites
-    if: github.event_name == 'workflow_dispatch' || (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')
+    # why: pull requests run it too: a viewer or spec change runs the end-to-end shards before merge (scripts/ci-scope.mjs).
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) || github.ref == 'refs/heads/main'
     runs-on: ubicloud-standard-2
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       e2e_shards: ${{ steps.scope.outputs.e2e_shards }}
       browser: ${{ steps.scope.outputs.browser }}
@@ -191,8 +185,21 @@ jobs:
       key_docker: ${{ steps.scope.outputs.key_docker }}
     steps:
       - uses: actions/checkout@v4
+      - id: changed
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo 'files<<CHANGED_FILES'
+            gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --jq '.[].filename'
+            echo 'CHANGED_FILES'
+          } >> "$GITHUB_OUTPUT"
       - id: scope
         uses: ./.github/actions/scope
+        with:
+          changed-files: ${{ steps.changed.outputs.files }}
 
   e2e:
     name: End-to-end (${{ matrix.shard }}/3)
@@ -268,6 +275,22 @@ jobs:
         uses: ./.github/actions/remember-pass
         with:
           key: ${{ matrix.shard == 1 && needs.smoke-scope.outputs.key_e2e_1 || matrix.shard == 2 && needs.smoke-scope.outputs.key_e2e_2 || needs.smoke-scope.outputs.key_e2e_3 }}
+
+  # The one required end-to-end check: green when every selected shard passed, or when none was needed or all were reused.
+  e2e-result:
+    name: End-to-end result
+    needs: [smoke-scope, e2e]
+    if: ${{ always() }}
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 2
+    steps:
+      - env:
+          SCOPE: ${{ needs.smoke-scope.result }}
+          E2E: ${{ needs.e2e.result }}
+        run: |
+          echo "Scope: $SCOPE, end-to-end: $E2E"
+          case "$SCOPE" in success | skipped) ;; *) echo '::error::Suite selection did not finish.'; exit 1 ;; esac
+          case "$E2E" in success | skipped) ;; *) echo "::error::End-to-end $E2E."; exit 1 ;; esac
 
   # One install and one viewer/package build shared by the browser-backed suites. Independent groups still report.
   browser:
