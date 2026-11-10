@@ -64,6 +64,14 @@ const MIN_CHARS_PER_MS = 32;
 const WINDOW_NAME = 'replays-upload-handoff';
 const WINDOW_FEATURES = 'popup,width=520,height=640';
 
+function closeQuietly(popup: HandoffWindow) {
+  try {
+    popup.close();
+  } catch {
+    // why: a window that is already gone has nothing left to close.
+  }
+}
+
 function browserHost(): HandoffHost {
   return {
     open: (url, name, features) => window.open(url, name, features),
@@ -103,7 +111,6 @@ export function handoffUpload(options: HandoffUploadOptions): Promise<IssueRepor
     let sent = false;
     let finished = false;
     let deadline: ReturnType<typeof setTimeout>;
-    let closedTimer: ReturnType<typeof setInterval>;
 
     const finish = (outcome: () => void, closeWindow = true) => {
       if (finished) return;
@@ -112,13 +119,7 @@ export function handoffUpload(options: HandoffUploadOptions): Promise<IssueRepor
       clearInterval(closedTimer);
       host.removeEventListener('message', onMessage);
       options.signal?.removeEventListener('abort', onAbort);
-      if (closeWindow) {
-        try {
-          popup.close();
-        } catch {
-          // why: a window that is already gone has nothing left to close.
-        }
-      }
+      if (closeWindow) closeQuietly(popup);
       outcome();
     };
     const fail = (kind: HandoffFailureKind, message: string, status?: number, closeWindow = true) =>
@@ -165,7 +166,7 @@ export function handoffUpload(options: HandoffUploadOptions): Promise<IssueRepor
     options.signal?.addEventListener('abort', onAbort, { once: true });
     arm(readyMs);
     // why: a message the window posted just before closing is delivered before the next poll sees `closed`.
-    closedTimer = setInterval(() => {
+    const closedTimer = setInterval(() => {
       if (popup.closed) fail('closed', 'The Replays window was closed before the upload finished.', undefined, false);
     }, options.closedPollMs ?? 500);
   });

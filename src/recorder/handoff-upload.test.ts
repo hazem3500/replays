@@ -27,10 +27,10 @@ function setup() {
   return { host, popup, send, sentId, listening: () => listener !== undefined };
 }
 
-beforeEach(() => vi.useFakeTimers());
-afterEach(() => vi.useRealTimers());
-
 describe('handoffUpload', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
   it('opens the upload page, sends the bundle to the Replays origin only and resolves with the receipt', async () => {
     const t = setup();
     const result = handoffUpload({ replaysUrl: `${REPLAYS}/`, payload: '{"a":1}', host: t.host });
@@ -88,6 +88,11 @@ describe('handoffUpload', () => {
     expect(await settled).toMatchObject(matcher_settled);
     expect(t.popup.close).not.toHaveBeenCalled();
   });
+});
+
+describe('handoffUpload limits', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
 
   it('times out when the page never gets ready, and again when no receipt comes', async () => {
     const first = setup();

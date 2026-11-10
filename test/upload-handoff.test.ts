@@ -25,7 +25,7 @@ function loadPage({
   fetchImpl,
 }: { opener?: boolean; fetchImpl?: (url: string, init: RequestInit) => Promise<Response> } = {}) {
   const html = renderHandoffPage(allowlist, 'nonce');
-  const script = /<script nonce="nonce">([\s\S]*)<\/script>/.exec(html)![1]!;
+  const script = /<script nonce="nonce">([\s\S]*)<\/script>/.exec(html)?.[1] ?? '';
   let onMessage: ((event: unknown) => void) | undefined;
   const status = { textContent: '' };
   const openerWindow = { closed: false, postMessage: vi.fn<(message: unknown, origin: string) => void>() };
@@ -61,7 +61,7 @@ describe('upload handoff page', () => {
       { ...base, type: 'receipt', id, ok: true, replayId: 'issue-1', url: '/r/issue-1' },
       APP,
     );
-    page.timers.forEach((run) => run());
+    for (const run of page.timers) run();
     expect(page.close).toHaveBeenCalled();
   });
 
@@ -159,8 +159,9 @@ describe('GET /upload', () => {
     const origin = await start([APP]);
     const response = await fetch(`${origin}/upload`);
     expect(response.status).toBe(200);
-    const csp = response.headers.get('content-security-policy')!;
-    const nonce = /nonce-([^']+)'/.exec(csp)![1]!;
+    const csp = response.headers.get('content-security-policy') ?? '';
+    const nonce = /nonce-([^']+)'/.exec(csp)?.[1] ?? '';
+    expect(nonce).not.toBe('');
     expect(csp).toContain("frame-ancestors 'none'");
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('cross-origin-opener-policy')).toBeNull();
