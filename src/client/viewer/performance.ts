@@ -49,7 +49,17 @@ export function buildPerformance(bundle: ReplayBundle, timeline?: EditTimeline):
     .filter((row) => row.entry.kind === 'largest-contentful-paint' && validDuration(row.entry.value))
     .reduce<PerformanceSignal | undefined>((latest, row) => (!latest || row.sourceAt >= latest.sourceAt ? row : latest), undefined);
   const frames = frameBands(bundle.performance?.frames, timeline);
-  return { ...model, signals, moments, longestTask, slowestInteraction, largestPaint, track: bundle.performance, frames, shifts: layoutShifts(bundle.performance, timeline) };
+  return {
+    ...model,
+    signals,
+    moments,
+    longestTask,
+    slowestInteraction,
+    largestPaint,
+    track: bundle.performance,
+    frames,
+    shifts: layoutShifts(bundle.performance, timeline),
+  };
 }
 
 export function missingPerformanceLabel(model: PerformanceModel, api: string, kind: ReplayPerformanceKind) {

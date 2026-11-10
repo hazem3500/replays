@@ -32,8 +32,7 @@ function Described({ mark }: { mark: LaneMark }) {
       <>
         <strong>{single.title}</strong>
         <span>
-          {single.value} ·{' '}
-          <i className="pt-tip-dot" data-verdict={single.verdict} aria-hidden="true" />
+          {single.value} · <i className="pt-tip-dot" data-verdict={single.verdict} aria-hidden="true" />
           {VERDICT_WORDS[single.verdict]}
         </span>
         <span>{formatClock(single.at)}</span>
@@ -83,7 +82,10 @@ export function LaneMarkButton({
   const heaviest = Math.max(...mark.items.map((item) => item.weight ?? 0));
   const size = SHIFT_MIN_PX + heaviest * SHIFT_SPAN_PX;
   const pixels = ((mark.end - mark.at) / span) * width;
-  const over = mark.lane === 'task' && single && mark.items.length === 1 ? Math.min(100, (TASK_FLOOR_MS / Math.max(1, duration(single))) * 100) : undefined;
+  const over =
+    mark.lane === 'task' && single && mark.items.length === 1
+      ? Math.min(100, (TASK_FLOOR_MS / Math.max(1, duration(single))) * 100)
+      : undefined;
   const style = dot
     ? { left: `${(mark.at / span) * 100}%`, width: size, height: size }
     : { left: `${(mark.at / span) * 100}%`, width: `max(3px, ${((mark.end - mark.at) / span) * 100}%)` };

@@ -17,28 +17,28 @@ export function FpsPlot({ bands, span }: { bands: readonly FrameBand[]; span: nu
   return (
     <div className="pt-fps" data-testid="fps-lane" role="img" aria-label="Frame rate over time">
       <div className="fps-plot">
-      {GUIDES.map((fps) => (
-        <span key={fps} className="fps-guide" style={{ top: `${fpsY(fps, ceiling)}%` }} />
-      ))}
-      <svg viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`} preserveAspectRatio="none" focusable="false" aria-hidden="true">
-        <defs>
-          <clipPath id={clip}>
-            <rect x={0} y={dangerTop} width={SPARK_WIDTH} height={SPARK_HEIGHT - dangerTop} />
-          </clipPath>
-        </defs>
-        {runs.map((run) => (
-          <g key={run[0]?.x ?? 0}>
-            <path className="fps-area" d={areaPath(run)} />
-            <path className="fps-danger" d={dipPath(run, dangerTop)} clipPath={`url(#${clip})`} />
-            <path className="fps-line" d={linePath(run)} />
-          </g>
+        {GUIDES.map((fps) => (
+          <span key={fps} className="fps-guide" style={{ top: `${fpsY(fps, ceiling)}%` }} />
         ))}
-      </svg>
-      {GUIDES.map((fps) => (
-        <span key={fps} className="fps-guide-label" style={{ top: `${fpsY(fps, ceiling)}%` }}>
-          {fps}
-        </span>
-      ))}
+        <svg viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`} preserveAspectRatio="none" focusable="false" aria-hidden="true">
+          <defs>
+            <clipPath id={clip}>
+              <rect x={0} y={dangerTop} width={SPARK_WIDTH} height={SPARK_HEIGHT - dangerTop} />
+            </clipPath>
+          </defs>
+          {runs.map((run) => (
+            <g key={run[0]?.x ?? 0}>
+              <path className="fps-area" d={areaPath(run)} />
+              <path className="fps-danger" d={dipPath(run, dangerTop)} clipPath={`url(#${clip})`} />
+              <path className="fps-line" d={linePath(run)} />
+            </g>
+          ))}
+        </svg>
+        {GUIDES.map((fps) => (
+          <span key={fps} className="fps-guide-label" style={{ top: `${fpsY(fps, ceiling)}%` }}>
+            {fps}
+          </span>
+        ))}
       </div>
     </div>
   );

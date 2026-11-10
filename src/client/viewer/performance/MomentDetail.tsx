@@ -181,7 +181,9 @@ function MomentFacts({
                 </li>
               ))}
             </ul>
-            {cause.requests.length > WHY_MAX_REQUESTS ? <span className="np-aside">{STRINGS.more(cause.requests.length - WHY_MAX_REQUESTS)}</span> : null}
+            {cause.requests.length > WHY_MAX_REQUESTS ? (
+              <span className="np-aside">{STRINGS.more(cause.requests.length - WHY_MAX_REQUESTS)}</span>
+            ) : null}
           </>
         ) : null}
         {cause.kind === 'page' ? (

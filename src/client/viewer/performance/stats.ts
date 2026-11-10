@@ -67,7 +67,11 @@ export function splitDuration(milliseconds: number): [string, string] {
 }
 
 const VITAL_META: Readonly<Record<VitalId, { group: StatGroup; label: string; hint: string }>> = {
-  fcp: { group: 'loading', label: 'First paint', hint: 'First contentful paint: when anything first appeared. Good under 1.8 s, poor over 3 s.' },
+  fcp: {
+    group: 'loading',
+    label: 'First paint',
+    hint: 'First contentful paint: when anything first appeared. Good under 1.8 s, poor over 3 s.',
+  },
   lcp: {
     group: 'loading',
     label: 'Largest paint',
@@ -78,8 +82,16 @@ const VITAL_META: Readonly<Record<VitalId, { group: StatGroup; label: string; hi
     label: 'Slowest interaction',
     hint: 'The slowest response to a click, key or input. Good under 200 ms, poor over 500 ms.',
   },
-  task: { group: 'responsiveness', label: 'Longest task', hint: 'The longest stretch the main thread could not respond. Good under 100 ms, poor over 250 ms.' },
-  tbt: { group: 'responsiveness', label: 'Blocking time', hint: 'Every long task’s time past 50 ms, summed. Good under 200 ms, poor over 600 ms.' },
+  task: {
+    group: 'responsiveness',
+    label: 'Longest task',
+    hint: 'The longest stretch the main thread could not respond. Good under 100 ms, poor over 250 ms.',
+  },
+  tbt: {
+    group: 'responsiveness',
+    label: 'Blocking time',
+    hint: 'Every long task’s time past 50 ms, summed. Good under 200 ms, poor over 600 ms.',
+  },
 };
 
 const VITAL_MISSING = {
@@ -93,7 +105,16 @@ export function vitalStat(vital: Vital): Stat {
     return { id: vital.id, group, label, hint, missing: VITAL_MISSING[vital.missing ?? 'not-captured'] };
   const [good, poor]: Budget = BUDGETS[vital.id];
   const [value, unit] = splitDuration(vital.value);
-  return { id: vital.id, group, label, hint, value, unit, verdict: vital.verdict, meter: risingMeter(vital.value, good, poor, poor * TRACK_SPAN) };
+  return {
+    id: vital.id,
+    group,
+    label,
+    hint,
+    value,
+    unit,
+    verdict: vital.verdict,
+    meter: risingMeter(vital.value, good, poor, poor * TRACK_SPAN),
+  };
 }
 
 /** Layout shift score: good to 0.1, poor over 0.25 (Web Vitals CLS). */

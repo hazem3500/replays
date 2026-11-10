@@ -84,7 +84,13 @@ export function MomentList({
         <div className="pp-table" role="table" aria-rowcount={moments.length + 1}>
           <div className="pp-row pp-head" role="row" aria-rowindex={1}>
             <span role="columnheader">{STRINGS.moment}</span>
-            <SortHeader label={STRINGS.when} active={order === 'time'} direction="ascending" sortable={moments.length > 1} onSort={() => onOrder('time')} />
+            <SortHeader
+              label={STRINGS.when}
+              active={order === 'time'}
+              direction="ascending"
+              sortable={moments.length > 1}
+              onSort={() => onOrder('time')}
+            />
             <SortHeader
               label={STRINGS.took}
               className="pp-took"
@@ -227,7 +233,14 @@ function SortHeader({
   return (
     <span role="columnheader" className={className} aria-sort={active ? direction : undefined}>
       {sortable ? (
-        <button type="button" className="pp-sort" data-active={active || undefined} data-direction={direction} aria-label={STRINGS.sortBy(label)} onClick={onSort}>
+        <button
+          type="button"
+          className="pp-sort"
+          data-active={active || undefined}
+          data-direction={direction}
+          aria-label={STRINGS.sortBy(label)}
+          onClick={onSort}
+        >
           {label}
         </button>
       ) : (

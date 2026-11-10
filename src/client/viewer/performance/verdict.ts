@@ -73,11 +73,16 @@ function taskHeadline(moments: readonly Moment[]) {
 }
 
 function loadingHeadline(vitals: readonly Vital[]) {
-  const slow = vitals.filter((vital) => (vital.id === 'fcp' || vital.id === 'lcp') && vital.value !== undefined && vital.verdict && vital.verdict !== 'good');
+  const slow = vitals.filter(
+    (vital) => (vital.id === 'fcp' || vital.id === 'lcp') && vital.value !== undefined && vital.verdict && vital.verdict !== 'good',
+  );
   const worst = slow.toSorted((a, b) => (b.value ?? 0) - (a.value ?? 0))[0];
   if (!worst) return undefined;
   const label = worst.id === 'lcp' ? 'largest paint' : 'first paint';
-  return { headline: `Slow to load: the ${label} came late`, ...(worst.at === undefined ? {} : { jump: { label: `Jump to ${clockLabel(worst.at)}`, at: worst.at, ids: [] } }) };
+  return {
+    headline: `Slow to load: the ${label} came late`,
+    ...(worst.at === undefined ? {} : { jump: { label: `Jump to ${clockLabel(worst.at)}`, at: worst.at, ids: [] } }),
+  };
 }
 
 function framesHeadline(frames: readonly FrameBand[]) {
@@ -91,7 +96,10 @@ function shiftHeadline(shifts: readonly LayoutShift[]) {
   if (shiftVerdict(shiftScore(shifts)) === 'good') return undefined;
   const [biggest] = shifts.filter((shift) => !shift.hadRecentInput).toSorted((a, b) => b.value - a.value);
   if (!biggest) return undefined;
-  return { headline: `The layout jumped around ${clockLabel(biggest.at)}`, jump: { label: `Jump to ${clockLabel(biggest.at)}`, at: biggest.at, ids: [] } };
+  return {
+    headline: `The layout jumped around ${clockLabel(biggest.at)}`,
+    jump: { label: `Jump to ${clockLabel(biggest.at)}`, at: biggest.at, ids: [] },
+  };
 }
 
 export interface VerdictInput {

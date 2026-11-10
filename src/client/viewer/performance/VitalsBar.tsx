@@ -52,10 +52,7 @@ export function VitalsBar({
 }) {
   const viewer = use(PluginContexts)?.('');
   const context = viewer ? { replay: viewer.replay, seek: viewer.seek.bind(viewer) } : {};
-  const items = [
-    ...vitals.map((vital) => ({ stat: vitalStat(vital), vital })),
-    ...cadence.map((stat) => ({ stat, vital: undefined })),
-  ];
+  const items = [...vitals.map((vital) => ({ stat: vitalStat(vital), vital })), ...cadence.map((stat) => ({ stat, vital: undefined }))];
   const started = new Set<StatGroup>();
   const builtins = items.map(({ stat, vital }, index) => {
     const start = !started.has(stat.group);
@@ -122,7 +119,11 @@ function StatTile({
         </span>
       )}
       <StatMeter stat={stat} />
-      {word ? <span className="pp-stat-word" data-verdict={stat.verdict}>{word}</span> : null}
+      {word ? (
+        <span className="pp-stat-word" data-verdict={stat.verdict}>
+          {word}
+        </span>
+      ) : null}
       {children}
     </>
   );
@@ -158,7 +159,13 @@ function StatMeter({ stat }: { stat: Stat }) {
   return (
     <span className="pp-meter" aria-hidden="true">
       {meter.bands.map((band) => (
-        <span key={band.verdict} className="pp-meter-band" data-verdict={band.verdict} data-active={band.verdict === stat.verdict || undefined} style={{ flexGrow: band.share }} />
+        <span
+          key={band.verdict}
+          className="pp-meter-band"
+          data-verdict={band.verdict}
+          data-active={band.verdict === stat.verdict || undefined}
+          style={{ flexGrow: band.share }}
+        />
       ))}
       <span className="pp-meter-mark" style={{ left: `${meter.at * 100}%` }} />
     </span>
