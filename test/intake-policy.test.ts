@@ -160,7 +160,7 @@ describe('trusted request policy', () => {
     }
     const put = await request('/api/replays', { ...upload(replay(), crossSite), method: 'PUT' });
     expect(put.status).toBe(403);
-    expect(put.headers.get('access-control-allow-origin')).toBeNull();
+    expectCors(put);
     const get = await request('/api/replays', { headers: { authorization: 'Bearer trusted', origin: trusted } });
     expect(get.status).toBe(200);
     expect(get.headers.get('access-control-allow-origin')).toBeNull();
@@ -189,6 +189,92 @@ describe('trusted request policy', () => {
       expectCors(response);
       expect(new Set(response.headers.get('vary')?.split(', '))).toEqual(new Set(['Accept-Encoding', 'Host', 'Origin']));
     }
+  });
+});
+
+describe('origin patterns', () => {
+  const preview = 'https://12-web.pull.example.com';
+  const patterned: RequestPolicy = { ...policy, origins: [trusted], originPatterns: ['^https://[0-9]+-web\\.pull\\.example\\.com$'] };
+  const from = (origin: string) => ({ origin, 'sec-fetch-site': 'cross-site' });
+
+  it('allows a matching origin on preflight and upload, and still allows exact origins', async () => {
+    const { request } = await start((api) => api.requestPolicy(patterned));
+    for (const origin of [preview, trusted]) {
+      const flight = await request('/api/replays', preflight({ origin }));
+      expect(flight.status).toBe(204);
+      expect(flight.headers.get('access-control-allow-origin')).toBe(origin);
+      const response = await request('/api/replays', upload(replay(`r-${origin.length}`), from(origin)));
+      expect(response.status).toBe(201);
+      expect(response.headers.get('access-control-allow-origin')).toBe(origin);
+      expect(response.headers.get('access-control-allow-credentials')).toBe('true');
+    }
+  });
+
+  it.each([
+    'https://x-web.pull.example.com',
+    'https://12-web.pull.example.com.evil.example',
+    'https://evil12-web.pull.example.com.',
+    'https://12-web.pull.example.com:8443',
+    'http://12-web.pull.example.com',
+    'https://12-web.pull.example.com/',
+    'https://12-web-pull.example.com',
+    'https://a.12-web.pull.example.com',
+  ])('refuses %s with Vary and a JSON body and no CORS permission', async (origin) => {
+    const { request } = await start((api) => api.requestPolicy(patterned));
+    for (const response of [await request('/api/replays', preflight({ origin })), await request('/api/replays', upload(replay(), from(origin)))]) {
+      expect(response.status).toBe(403);
+      expect(response.headers.get('access-control-allow-origin')).toBeNull();
+      expect(response.headers.get('access-control-allow-credentials')).toBeNull();
+      expect(response.headers.get('vary')).toContain('Origin');
+      expect(response.headers.get('content-type')).toContain('application/json');
+      expect(await response.json()).toEqual({ error: 'cross-origin request denied' });
+    }
+  });
+
+  it('lets a listed origin read the refusal of a disallowed method; an unlisted one gets no CORS headers', async () => {
+    const { request } = await start((api) => api.requestPolicy(patterned));
+    const put = await request('/api/replays', { ...upload(replay(), from(preview)), method: 'PUT' });
+    expect(put.status).toBe(403);
+    expect(put.headers.get('access-control-allow-origin')).toBe(preview);
+    const unlisted = await request('/api/replays', { ...upload(replay(), from('https://evil.example')), method: 'PUT' });
+    expect(unlisted.status).toBe(403);
+    expect(unlisted.headers.get('access-control-allow-origin')).toBeNull();
+  });
+
+  it('accepts a patterns-only policy and freezes the registration', async () => {
+    const registry = await register((api) => api.requestPolicy({ ...patterned, origins: [] }));
+    const [{ value }] = registry.requestPolicies;
+    expect(value.origins).toEqual([]);
+    expect(Object.isFrozen(value.originPatterns)).toBe(true);
+  });
+
+  it.each([
+    '^https://.*\\.example\\.com$',
+    '^https://.+\\.example\\.com$',
+    '^https://[a-z]+.example.com$',
+    '^https://[^/]+\\.example\\.com$',
+    '^https://[a-z0-9.]+\\.example\\.com$',
+    '^https://\\w+\\.example\\.com$',
+    '^https://(a|b)\\.example\\.com$',
+    '^https://[0-9]+-web\\.pull\\.example\\.[a-z]+$',
+    '^https://[a-z]+\\.com$',
+    '^https://[a-z0-9-]+$',
+    'https://[0-9]+\\.example\\.com$',
+    '^https://[0-9]+\\.example\\.com',
+    '^http://[0-9]+\\.example\\.com$',
+    '^https://[0-9]+\\.example\\.com:[0-9]+$',
+    '',
+  ])('rejects the unsafe pattern %j', async (pattern) => {
+    await expect(register((api) => api.requestPolicy({ ...policy, originPatterns: [pattern] }))).rejects.toMatchObject({
+      code: 'invalid-registration',
+    });
+  });
+
+  it('rejects patterns that are not an array of strings', async () => {
+    for (const originPatterns of ['^https://a\\.b\\.c$', [1], [null]])
+      await expect(register((api) => api.requestPolicy({ ...policy, originPatterns } as unknown as RequestPolicy))).rejects.toMatchObject({
+        code: 'invalid-registration',
+      });
   });
 });
 

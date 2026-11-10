@@ -123,7 +123,7 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.storage({ id, create({ env, dataDir }) })` | An [`ObjectStorage`](extending.md#storage) selected by `STORAGE=<id>` or the config's `storage`. Its `kind` is any string (usually the id); set `listCacheMs` when listing is remote and slow | id taken or built in (`fs`, `s3`, `memory`) |
 | `api.branding({ name?, logoUrl?, theme? })` | Name, logo (https URL or base64 data image) and [theme tokens](extending.md#theming-and-branding) | the same field set to different values by two plugins; the config file and environment override plugins without error |
 | `api.basePath('/replays')` | The default base path | two plugins disagree; config and `BASE_PATH` override |
-| `api.requestPolicy({ path, methods, origins, headers, credentials? })` | [Trusted route policy](#trusted-browser-intake-and-upload-aliases): exact-origin CORS, preflight validation and a narrow CSRF exception; actual requests retain auth | overlapping path/method registration |
+| `api.requestPolicy({ path, methods, origins, originPatterns?, headers, credentials? })` | [Trusted route policy](#trusted-browser-intake-and-upload-aliases): exact-origin or anchored-pattern CORS, preflight validation and a narrow CSRF exception; actual requests retain auth | overlapping path/method registration |
 | `api.uploadEndpoint({ path, prepare?, authenticate?, maxBytes?, rateLimit?, normalize?, receipt? })` | A [custom upload endpoint](#custom-upload-endpoints) into the core upload pipeline, optionally with its own credentials, body cap, rate limit, normalization and receipt; no implicit CORS | duplicate path or a reserved core path |
 | `api.onRequest(hook, { phase? })` | `hook({ request, response, path, identity? })`, return `true` after answering. `post-auth` (default): only authenticated requests, with `identity`, after the same-origin check. `pre-auth`: requests not already answered by health checks or route policies. `path` has the base path removed | – |
 | `api.onResponse(hook)` | `hook({ method, path, status, durationMs, identity? })` after each response; errors are logged | – |
@@ -821,6 +821,34 @@ query strings, patterns or the deployment base prefix. Methods are uppercase `GE
 `DELETE`; origins are serialized HTTP(S) origins without paths, trailing slashes, credentials or wildcards. Header names
 are case insensitive explicit HTTP tokens, never `*`. Overlapping path/method policies are rejected even across plugins;
 registrations are copied and frozen so selection is stable after setup.
+
+Hosts whose trusted origins vary by subdomain, such as per-PR previews, add `originPatterns`: anchored regex strings
+that an origin must fully match, alongside or instead of exact `origins`.
+
+```ts
+api.requestPolicy({
+  path: '/api/replays',
+  methods: ['POST'],
+  origins: ['https://app.example.com'],
+  originPatterns: ['^https://[0-9]+-web\\.pull\\.example\\.com$'],
+  headers: ['content-type'],
+  credentials: true,
+});
+```
+
+A pattern is a host shape, not a free-form regex. It starts with `^https://` and ends with `$`; between them it holds
+lowercase literals, escaped dots (`\.`) and the bounded classes `[0-9]`, `[a-z]`, `[a-z0-9]`, `[a-z0-9-]` and `[a-f0-9]`, each
+optionally followed by `+` or `{n}` / `{n,m}`. It must end in a literal run of at least two labels, so
+`^https://[0-9]+\.example\.com$` is accepted and `.*`, `[^/]+`, groups, alternation, an unescaped dot, a port or a wildcard
+registrable suffix are refused at registration. Origins are matched as serialized by the browser, so a pattern never
+matches a path, a trailing slash or an explicit port.
+
+When a request is refused for its origin, method or headers, the response is `403` with `Vary: Origin`, `Cache-Control: no-store`
+and a static JSON body, `{"error":"cross-origin request denied"}`. A non-preflight refusal also carries
+`Access-Control-Allow-Origin` (and `Access-Control-Allow-Credentials` when the policy sets it) only when the origin is itself allowed
+by a policy for that path, for example a trusted origin using a method the policy does not list, so its page can read the
+reason. That reveals nothing the allowlist has not already granted that origin. An unlisted origin gets no CORS headers and
+cannot read the response; refused preflights never carry them.
 
 For the example policy, only `POST /api/replays` from the named origin gets `Access-Control-Allow-Origin` and
 `Access-Control-Allow-Credentials: true`. `GET` gets no CORS permission. An OPTIONS preflight must name an allowed
