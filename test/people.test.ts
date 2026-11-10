@@ -206,6 +206,25 @@ describe('identity resolvers', () => {
     expect(resolve).toHaveBeenCalledTimes(2);
   });
 
+  it("takes verified handles that fit the deployment's handles and merges them across resolvers", async () => {
+    const registry = await resolvePlugins([
+      definePlugin({
+        name: 'people',
+        setup: (api) => api.people({ handles: [{ id: 'github', label: 'GitHub username', pattern: '[a-z0-9-]{1,39}' }] }),
+      }),
+      definePlugin({
+        name: 'one',
+        setup: (api) => api.identity({ resolve: (identity) => ({ ...identity, handles: { github: 'ada', chat: 'U1' } }) }),
+      }),
+      definePlugin({
+        name: 'two',
+        setup: (api) => api.identity({ resolve: (identity) => ({ ...identity, handles: { github: 'not valid!' } }) }),
+      }),
+    ]);
+    const result = await identityResolver(registry)({ id: 'ada' }, hooks(request()));
+    expect(result.handles).toEqual({ github: 'ada' });
+  });
+
   it('cannot change the id, and a failing or unsafe resolver changes nothing', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const registry = await resolvePlugins([
@@ -347,6 +366,33 @@ describe('people through the app', () => {
     expect(invalid.status).toBe(400);
     expect(await invalid.text()).toContain('handle.github is not a valid GitHub username');
     expect((await send('GET', '/api/replays?for=me&handle.gitlab=ada')).status).toBe(400);
+  });
+
+  it("a resolver's verified handles count as the viewer's own: in For me and GET /api/me, and win over a linked claim", async () => {
+    const directory = definePlugin({
+      name: 'directory',
+      setup(api) {
+        api.identity({
+          resolve: (identity) =>
+            identity.email === 'ada@example.com'
+              ? { ...identity, handles: { github: 'Ada', gitlab: 'ada', slack: 'not valid!' } }
+              : undefined,
+        });
+      },
+    });
+    const { send } = await start([peoplePlugin, directory]);
+    const byHandle = { role: 'pr-author', handles: { github: 'ada' } };
+    expect((await send('POST', '/api/replays', withPeople('one', [byHandle]))).status).toBe(201);
+    expect((await send('POST', '/api/replays', withPeople('two', [{ role: 'pr-author', handles: { github: 'eve' } }]))).status).toBe(201);
+
+    const mine = (await (await send('GET', '/api/replays?for=me')).json()) as Array<{ id: string; reason: string }>;
+    expect(mine.map(({ id, reason }) => [id, reason])).toEqual([['one', 'pr-author']]);
+    const claimed = (await (await send('GET', '/api/replays?for=me&handle.github=eve')).json()) as Array<{ id: string }>;
+    expect(claimed.map(({ id }) => id)).toEqual(['one']);
+    const other = (await (await send('GET', '/api/replays?for=me', undefined, { 'x-email': 'bob@example.com' })).json()) as unknown[];
+    expect(other).toEqual([]);
+    const me = (await (await send('GET', '/api/me')).json()) as { handles?: unknown };
+    expect(me.handles).toEqual({ github: 'Ada' });
   });
 
   it('GET /api/me: the resolved identity and the people config', async () => {

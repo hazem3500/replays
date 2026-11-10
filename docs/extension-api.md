@@ -196,7 +196,10 @@ linkable handle; neither appears when no row has people and the deployment regis
 
 `api.identity({ resolve(identity, { request }) })` runs once per request, right after the auth adapter, before the request hooks;
 resolvers run in plugin order, each on the previous result, and may be async. From what `resolve` returns, only `name`, an `https:`
-`avatarUrl`, and `email` when the adapter gave none are taken. A result with a different `id` is refused (logged; the request goes on
+`avatarUrl`, `email` when the adapter gave none, and `handles` are taken. `handles` (`{ github: 'octocat' }`) are accounts the server
+vouches for, such as a directory's email-to-GitHub mapping: each must match the deployment's pattern for that handle (others are dropped),
+they count as the viewer's own in **For me** (and show in `GET /api/me`) without being linked by hand, and they replace a linked claim for
+the same handle. Handles a browser linked only filter and never authorise anything. A result with a different `id` is refused (logged; the request goes on
 with the identity it had), as is a resolver that throws: `id` stays the auth adapter's.
 
 **Avatars and the page's CSP.** The viewer page sends no `img-src` restriction (only `frame-src` with the beta user plugins), so an

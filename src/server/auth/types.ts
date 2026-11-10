@@ -12,6 +12,11 @@ export interface Identity {
   name?: string;
   /** An https image URL for the person's avatar (shown beside their comments); optional. */
   avatarUrl?: string;
+  /**
+   * Accounts elsewhere that the server itself vouches for (`{ github: 'octocat' }`), set by an `api.identity`
+   * resolver. They count as the person's own in "For me"; handles a browser says it linked are only used to filter.
+   */
+  handles?: Readonly<Record<string, string>>;
   /** Populated only for narrowly scoped API tokens; ordinary browser sessions remain unrestricted. */
   authScopes?: readonly string[];
   /** Expiry of a verified bearer token, in Unix seconds. */
