@@ -2,6 +2,7 @@ import { Replayer } from 'rrweb';
 import { type PlayerState, type Viewport, type Speed, type Listener } from './types.ts';
 import { TargetOutline } from './target-outline.ts';
 import { rrwebEvents } from './rrweb-wire.ts';
+import { settleAnimations } from './settle-animations.ts';
 
 import { withDottedMasks } from '../../shared/mask-display.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
@@ -97,7 +98,7 @@ export class ReplayController {
       if (this.state.status === 'playing') this.finish();
     });
     this.replayer = replayer;
-    replayer.pause(this.offsetFor(this.time));
+    this.pauseAt(this.time);
     const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, {
       settings: this.effects.cursor,
       source: this.source,
@@ -211,7 +212,7 @@ export class ReplayController {
     if (this.state.status === 'playing') {
       this.replayer?.play(this.offsetFor(at));
     } else {
-      this.replayer?.pause(this.offsetFor(at));
+      this.pauseAt(at);
       if (this.state.status === 'ended') this.setState({ status: 'paused' });
     }
   };
@@ -306,9 +307,16 @@ export class ReplayController {
     this.scrubTimer = 0;
   }
 
+  private pauseAt(time: number) {
+    const replayer = this.replayer;
+    if (!replayer) return;
+    replayer.pause(this.offsetFor(time));
+    settleAnimations(replayer.iframe.contentDocument);
+  }
+
   private renderAt(time: number) {
     const started = performance.now();
-    this.replayer?.pause(this.offsetFor(time));
+    this.pauseAt(time);
     this.scrubRenderedAt = performance.now();
     this.scrubRenderCost = this.scrubRenderedAt - started;
     if (this.state.status === 'ended') this.setState({ status: 'paused' });
