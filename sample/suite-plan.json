@@ -1,0 +1,36 @@
+{
+  "$schema": "../docs/formats/suite-plan.schema.json",
+  "id": "shop-checkout-review",
+  "title": "Checkout review",
+  "profile": "design-review",
+  "source": "github:example-org/shop-demo#42",
+  "people": ["pr-author:ada@example.com", "reviewer:grace@example.com"],
+  "summary": "Checks the cart and the coupon error at desktop and phone width.\n\n- Not covered: payment.",
+  "runs": [
+    {
+      "id": "desktop-coupon",
+      "title": "Desktop: coupon error",
+      "url": "http://localhost:4173/",
+      "viewport": "1440x900",
+      "summary": "A bad coupon shows an error and keeps the cart.",
+      "expect": { "noConsoleErrors": true },
+      "steps": [
+        { "kind": "click", "selector": "button[data-id='tea']", "label": "Add the tea" },
+        { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" },
+        { "kind": "type", "selector": "#coupon", "text": "SPRING10", "label": "Type a coupon code" },
+        { "kind": "click", "selector": "#apply", "label": "Apply the coupon" },
+        { "kind": "wait", "ms": 1000, "label": "Read the coupon error" }
+      ]
+    },
+    {
+      "id": "phone-cart",
+      "title": "Phone: cart",
+      "url": "http://localhost:4173/",
+      "viewport": { "width": 390, "height": 844 },
+      "steps": [
+        { "kind": "click", "selector": "button[data-id='mug']", "label": "Add the mug" },
+        { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" }
+      ]
+    }
+  ]
+}

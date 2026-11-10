@@ -59,6 +59,7 @@ describe('docs/formats', () => {
       'plugin-manifest.schema.json',
       'replay-summary.schema.json',
       'replay.schema.json',
+      'suite-plan.schema.json',
       'user-plugin-history.schema.json',
       'user-plugin.schema.json',
     ]);
