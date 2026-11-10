@@ -302,6 +302,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `REPLAYS_BETA_CURSOR_CUSTOMIZATION` | `false` | Allows cursor customization in Settings > Labs; opt in there to show the collapsed editor controls. Also `beta.cursorCustomization` in config. Saved cursor edits still play and export when off |
 | `REPLAYS_BETA_MALLEABLE` | `false` | Turns on the beta plugin workshop and agent bridge ([Malleable viewer](#malleable-viewer-beta-off-by-default)). Also `beta.malleable` in the config file; the variable wins |
 | `REPLAYS_COMMENTS` | `true` | Comments on replays (below). `false` removes the UI and makes the API answer `404`. Also `comments.enabled` in the config file; the variable wins |
+| `REPLAYS_GITHUB_CLIENT_ID`, `REPLAYS_GITHUB_CLIENT_SECRET` | – | Turn on Connect GitHub with a GitHub OAuth app ([below](#connect-github)). Set both or neither; one alone stops startup. Needs a sign-in that identifies people, and `PUBLIC_ORIGIN` when behind a proxy |
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
 | `RENDER_ASSETS` | `public` | Render public third-party assets; `origin-only` restricts requests to this server and the explicit allowlist |
 | `RENDER_ASSET_ALLOWLIST` | – | Comma-separated exact hostnames or IPs trusted for internal render assets; permits their private addresses |
@@ -356,6 +357,24 @@ identity-aware proxy forwards in a header (signature, issuer, audience, expiry).
 Uploads from CI need credentials the adapter understands. Automatic device login is only started by an interactive upload or
 an explicit `replays login`; noninteractive uploads fail quickly with the login command when the session is missing. For
 `header`, IAP, and custom adapters, `--header-file` carries the host's expected upload headers.
+
+### Connect GitHub
+
+Optional. A signed-in person can verify their GitHub login once from the account menu, so their avatar and "For you"
+match work even when the host's identity roster does not list them. It is off, and invisible, until both variables are set.
+
+1. On GitHub, open Settings > Developer settings > OAuth Apps > New OAuth App (an organization can own it).
+2. Set **Homepage URL** to the viewer's address and **Authorization callback URL** to
+   `<origin><base path>/auth/github/callback`, for example `https://replays.example.com/auth/github/callback`.
+   Leave device flow off. The app asks for no scopes: it reads only the public profile (`GET /user`).
+3. Generate a client secret. Set `REPLAYS_GITHUB_CLIENT_ID` (plain) and `REPLAYS_GITHUB_CLIENT_SECRET` (a secret), and
+   `PUBLIC_ORIGIN` so the redirect URI matches the callback URL exactly.
+
+The link is stored as `_identity/github/<digest of the email>.json` in the configured storage (no migration). It counts
+like a verified `api.identity` handle: it drives `?for=me`, the avatar and `GET /api/me`. The host's `api.people` handles
+must include `github`, otherwise the link is not offered. A roster that already names the person's GitHub login wins and
+the item is not shown. Disconnect removes the link and revokes the token GitHub issued for the check (it is never kept).
+Routes: `GET /auth/github/start`, `GET /auth/github/callback`, and `GET`/`DELETE /api/plugins/github-connect/link`.
 
 ## Extension points
 

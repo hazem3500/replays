@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Connect GitHub: an optional built-in plugin, on when `REPLAYS_GITHUB_CLIENT_ID` and `REPLAYS_GITHUB_CLIENT_SECRET` are set. A signed-in person verifies their GitHub login once from the account menu (OAuth with PKCE, no scopes, token discarded and revoked); the link is stored under `_identity/github/` and counts like a verified `api.identity` handle for avatars, `?for=me` and `/api/me`. Disconnect is in the same menu. The account menu now also shows for sign-ins without a sign-out URL when it has GitHub actions.
+
 - Packaging: installing the package for the CLI is small. `dependencies` is only `playwright-core`; `dist/cli` bundles the CLI commands (capture, import, upload, probe, edit, suite, doctor, login, status, logout, agent-guide) and needs nothing else. The server and viewer dependencies are optional `peerDependencies`. `replays serve` (and `migrate`, `mcp`, `build-static`, `plugin check`) runs from the package when those are installed beside it, and otherwise installs them once into `~/.cache/replays/viewer-<version>-<key>` (`REPLAYS_VIEWER_CACHE` overrides the location) and runs from a copy there. Programs that import `@hazem3500/replays/server` or the other library entries install the peer dependencies themselves.
 
 - Recorder options menu: privacy modes the host does not allow (not in `choices.privacy`, or above its `privacy` cap) are no longer listed as disabled with "Not allowed here"; they are not shown. With one mode left the Privacy group is dropped, and the network-content checkbox is hidden unless `capture.network` is `'bodies'`. The `privacyUnavailable` message is deprecated and no longer shown; hosts that set it keep working.

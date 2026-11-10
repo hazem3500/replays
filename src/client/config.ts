@@ -54,6 +54,8 @@ export interface ClientConfig {
   malleable?: MalleablePolicy;
   /** What the server allows (the ceiling); each person can opt out under Settings › Labs (src/shared/beta-flags.ts). */
   beta?: BetaFlags;
+  /** The loaded plugins' names, built-ins included (`github-connect` when the host set a GitHub OAuth app). */
+  plugins?: string[];
   /** Plugin index filters the server matches (`api.indexFilter`); absent when there are none. */
   indexFilters?: Array<{ plugin: string; id: string; param: string }>;
   /** Effective edit write capability, with beta.editor as the outer gate. */

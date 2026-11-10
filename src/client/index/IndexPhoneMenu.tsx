@@ -5,7 +5,7 @@ import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer.tsx';
 
-import { accountMenuItems } from '../account/AccountMenu.tsx';
+import { accountMenuItems, hasAccountActions } from '../account/AccountMenu.tsx';
 import { productName } from '../config.ts';
 import type { Account } from '../queries.ts';
 import { openSettings } from '../settings/Settings.tsx';
@@ -90,15 +90,15 @@ function PhoneMenuRowContent({ item }: { item: IndexPhoneMenuItem }) {
  * Phones: the index header keeps two actions, search and this one. Upload, the theme and Settings fold into one
  * bottom sheet (thumb-reachable, 52 px rows) instead of four 40 px icons crowding the product name. Upload and
  * Settings open their own dialogs (still mounted by the header) after the sheet has closed. The trigger draws a person
- * only when the account can sign out (the sheet then holds that action); otherwise the More ellipsis the viewer uses —
+ * only when the account has an action there (Sign out, Connect GitHub); otherwise the More ellipsis the viewer uses —
  * IAP is signed in but has no sign-out, so a person glyph would be a label with no action.
  */
 export function IndexPhoneMenu({ items, account }: { items: IndexPhoneMenuItem[]; account?: Account }) {
-  const canSignOut = Boolean(account?.session?.signOutUrl);
+  const hasAccountMenu = Boolean(account && hasAccountActions(account));
   return (
     <Drawer>
       <DrawerTrigger className="phone-menu-trigger" aria-label={strings.trigger}>
-        {canSignOut ? <UserRoundIcon aria-hidden="true" /> : <AnimatedIcon name="ellipsis" />}
+        {hasAccountMenu ? <UserRoundIcon aria-hidden="true" /> : <AnimatedIcon name="ellipsis" />}
       </DrawerTrigger>
       <DrawerContent className="phone-menu-sheet">
         <DrawerTitle className="phone-menu-title">{productName()}</DrawerTitle>

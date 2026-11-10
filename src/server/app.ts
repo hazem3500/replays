@@ -24,6 +24,8 @@ import type { BrandingConfig } from './branding.ts';
 import { BridgeHub } from './bridge-hub.ts';
 import type { CommentsSettings } from './comments-config.ts';
 import { COMMENTS_PLUGIN, commentsPlugin } from './comments-plugin.ts';
+import type { GithubConnectSettings } from './github-connect-config.ts';
+import { githubConnectPlugin } from './github-connect.ts';
 import type { ContextSchema } from './context-schema.ts';
 import { type EditingSettings, editingFromEnv } from './editing-config.ts';
 import { handleEditsApi } from './edits-routes.ts';
@@ -92,6 +94,8 @@ export interface AppOptions {
   versions?: HostVersions;
   /** Comments on replays (`REPLAYS_COMMENTS`, on by default in the server's settings): absent here means off. */
   comments?: CommentsSettings;
+  /** A GitHub OAuth app for Connect GitHub (`REPLAYS_GITHUB_CLIENT_ID` / `_SECRET`): absent means no routes and no UI. `fetch` is the test seam for GitHub's endpoints. */
+  githubConnect?: GithubConnectSettings & { fetch?: typeof fetch };
   /** Public origin (`https://replays.example.com`); only auth adapters that redirect need it. */
   publicOrigin?: string;
   /** What the loaded plugins registered (src/plugin/registry.ts); none by default. */
@@ -125,6 +129,18 @@ export function createApp(options: AppOptions) {
   const versions = options.versions ?? { core: coreVersion() };
   const builtIns = [
     ...(options.comments?.enabled ? [commentsPlugin({ store: options.store, anonymous })] : []),
+    // invariant: Connect GitHub needs a person with an email, so it is never loaded without sign-in.
+    ...(options.githubConnect && !anonymous
+      ? [
+          githubConnectPlugin({
+            storage: options.store.storage,
+            settings: options.githubConnect,
+            publicOrigin: options.publicOrigin,
+            handles: () => userPlugins.people?.value.handles,
+            ...(options.githubConnect.fetch ? { fetch: options.githubConnect.fetch } : {}),
+          }),
+        ]
+      : []),
     // invariant: beta user plugins and the agent bridge are absent unless the flag is on: no routes, no sandbox page, no bridge.
     ...(options.beta?.malleable
       ? [malleablePlugin({ storage: options.store.storage, anonymous, hub: options.bridgeHub ?? new BridgeHub(), policy, versions })]
