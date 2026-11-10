@@ -132,8 +132,13 @@ export const NetworkTraceLink: Story = {
   play: async ({ canvasElement }) => {
     const detail = within(canvasElement).getByTestId('request-detail');
     await expect(within(detail).getByText(TRACE_ID)).toBeVisible();
-    const link = await within(detail).findByRole('link', { name: /Open trace/ });
+    const link = await within(detail).findByRole('link', { name: `Open trace ${TRACE_ID} in a new tab` });
+    await expect(link).toHaveTextContent(TRACE_ID);
     await expect(link).toHaveAttribute('href', `https://grafana.example.com/explore?q=${TRACE_ID}`);
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    await expect(within(detail).getByRole('button', { name: 'Copy trace ID' })).toBeVisible();
+    await expect(within(detail).queryByText('Open trace')).toBeNull();
   },
 };
 
@@ -143,6 +148,7 @@ export const NetworkTraceWithoutLink: Story = {
     const detail = within(canvasElement).getByTestId('request-detail');
     await expect(within(detail).getByText(TRACE_ID)).toBeVisible();
     await expect(within(detail).queryByRole('link', { name: /Open trace/ })).toBeNull();
+    await expect(within(detail).getByRole('button', { name: 'Copy trace ID' })).toBeVisible();
   },
 };
 
