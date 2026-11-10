@@ -148,8 +148,9 @@
 .np-facts strong { font-weight: 600; font-variant-numeric: tabular-nums; }
 .np-trace { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
 .np-trace code { font-family: var(--mono); font-size: var(--text-xs); overflow-wrap: anywhere; }
-.np-trace-link { color: var(--accent); text-decoration: none; }
-.np-trace-link:hover { text-decoration: underline; }
+.np-trace-link { display: inline-flex; align-items: center; gap: 3px; color: var(--accent); text-decoration: none; }
+.np-trace-link svg { width: 12px; height: 12px; flex: none; }
+.np-trace-link:hover code, .np-trace-link:focus-visible code { text-decoration: underline; }
 .np-trace-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: var(--radius-sm); }
 .np-aside { margin-left: 8px; color: var(--text-tertiary); font-weight: 400; }
 .np-section { padding: 10px 14px 12px; border-top: 1px solid var(--line); }

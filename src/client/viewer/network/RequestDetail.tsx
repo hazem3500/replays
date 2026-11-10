@@ -3,6 +3,7 @@ import { traceIdFromHeaders, traceUrl } from '../../../shared/trace.ts';
 import { configQuery } from '../../queries.ts';
 import { formatClock, type ReplayCaptured, type ReplayStep } from '../../../shared/replay.ts';
 import { copyText } from '../../clipboard.ts';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { CopyButton } from '@/components/copy-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { entrySize, formatBytes } from '../../format.ts';
@@ -41,8 +42,7 @@ const STRINGS = {
   type: 'Type',
   size: 'Size',
   trace: 'Trace',
-  openTrace: 'Open trace',
-  openTraceLabel: (id: string) => `Open trace ${id} (opens in a new tab)`,
+  openTraceLabel: (id: string) => `Open trace ${id} in a new tab`,
   copyTrace: 'Copy trace ID',
   notRecorded: 'Not recorded',
   around: 'Around this request',
@@ -183,8 +183,6 @@ function Facts({ row, rows, steps }: { row: NetworkRow; rows: readonly NetworkRo
         <>
           <dt>{STRINGS.trace}</dt>
           <dd className="np-trace" data-testid="request-trace">
-            <code>{traceId}</code>
-            <CopyButton value={traceId} label={STRINGS.copyTrace} />
             {href ? (
               <a
                 className="np-trace-link"
@@ -193,9 +191,13 @@ function Facts({ row, rows, steps }: { row: NetworkRow; rows: readonly NetworkRo
                 rel="noopener noreferrer"
                 aria-label={STRINGS.openTraceLabel(traceId)}
               >
-                {STRINGS.openTrace}
+                <code>{traceId}</code>
+                <AnimatedIcon name="arrow-up-right" />
               </a>
-            ) : null}
+            ) : (
+              <code>{traceId}</code>
+            )}
+            <CopyButton value={traceId} label={STRINGS.copyTrace} />
           </dd>
         </>
       ) : null}

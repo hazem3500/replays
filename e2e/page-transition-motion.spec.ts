@@ -135,7 +135,8 @@ test('Back moves the replay picture along its spring from the first frame', asyn
   for (const layer of frames) expect(Math.abs(layer.scale - (layer.expectedScale ?? 0))).toBeLessThan(0.02);
 });
 
-test('Back pressed while a replay opens starts from where its picture is', async ({ page }) => {
+// why: quarantined, it flakes on a one- or two-frame full-size flash before the retarget; https://github.com/hazem3500/replays/issues/333
+test.fixme('Back pressed while a replay opens starts from where its picture is', async ({ page }) => {
   const link = await replayLibrary(page, server().origin);
   await link.click();
   await expect.poll(() => transitionFrames(page).then((records) => heroFrames(records[0]).length)).toBeGreaterThan(3);

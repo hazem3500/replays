@@ -69,7 +69,7 @@ export interface FileConfig {
   name?: string;
   logoUrl?: string;
   theme?: BrandingConfig['theme'];
-  /** Links to other tools; `traceUrlTemplate` (TRACE_URL_TEMPLATE) turns a request's trace ID into an "Open trace" link. */
+  /** Links to other tools; `traceUrlTemplate` (TRACE_URL_TEMPLATE) turns a request's trace ID into a link. */
   integrations?: BrandingConfig['integrations'];
   basePath?: string;
   /** A different base per request host (`Host`, or `X-Forwarded-Host` when trusted); other hosts get `basePath`. */

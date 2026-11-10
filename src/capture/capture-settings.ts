@@ -97,7 +97,7 @@ export function captureSettings(
 
 /** `meta.captured` for a capture: bodies count only when the driver could record them. */
 export function capturedRecord(
-  settings: Pick<CaptureSettings, 'network' | 'performance' | 'console'> & { performanceChosen?: boolean },
+  settings: Pick<CaptureSettings, 'network' | 'performance' | 'console'> & { performanceChosen?: boolean; inputsVisible?: boolean },
   video: boolean,
   bodiesRecorded: boolean,
 ): ReplayCaptured {
@@ -110,5 +110,6 @@ export function capturedRecord(
     ...(settings.performance && settings.performanceChosen
       ? { diagnostics: { performance: true, debugging: false, chosen: true as const } }
       : {}),
+    ...(settings.inputsVisible ? { inputs: 'visible' as const } : {}),
   };
 }

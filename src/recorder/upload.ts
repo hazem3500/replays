@@ -49,6 +49,8 @@ export type IssueUploadErrorDetails = {
   action?: {
     label: string;
     pendingLabel?: string;
+    /** The action stands in for Retry (it retries by itself once it succeeds), so the default UI shows no Retry beside it. */
+    replacesRetry?: boolean;
     run: (context: { signal: AbortSignal }) => Promise<void>;
   };
 };

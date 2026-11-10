@@ -112,7 +112,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
           break;
         case 'type':
           await onFirstVisible(target, step.selector, STEP_TIMEOUT, (match) =>
-            match.pressSequentially(step.text, { delay: TYPE_DELAY_MS, timeout: STEP_TIMEOUT }),
+            match.pressSequentially(step.text, { delay: launched?.typeDelayMs ?? TYPE_DELAY_MS, timeout: STEP_TIMEOUT }),
           );
           break;
         case 'fill':

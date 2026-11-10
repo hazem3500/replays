@@ -17,6 +17,9 @@ const deferred = () => {
   });
   return { promise, resolve, reject };
 };
+const failure = (replacesRetry: boolean) =>
+  Object.assign(new Error('private'), { action: { label: 'Sign in and upload', replacesRetry, run: async () => {} } });
+
 describe('upload recovery', () => {
   afterEach(() => {
     document.body.innerHTML = '';
@@ -39,6 +42,17 @@ describe('upload recovery', () => {
     const anchor = document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a');
     expect(anchor?.textContent).toBe('Sign in');
     expect(anchor?.href).toBe(link.url);
+    ui.dismiss();
+  });
+
+  it('shows Retry beside an action unless the action replaces it', () => {
+    const ui = createDefaultUi();
+    ui.showResult({ status: 'error', error: failure(false), retry() {} });
+    expect(control('retry')).toBeTruthy();
+    ui.showResult({ status: 'error', error: failure(true), retry() {} });
+    expect(control('recover').textContent).toBe('Sign in and upload');
+    expect(document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('[data-recorder-action=retry]')).toBeNull();
+    expect(control('dismiss')).toBeTruthy();
     ui.dismiss();
   });
 
