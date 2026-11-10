@@ -17,6 +17,8 @@ import { activeStepIndex } from './Transport.tsx';
 import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import { queueReveal } from './stagger.ts';
 import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
+import { StepNameInput } from './StepNameInput.tsx';
+import { useRenamingKey, useStepRenaming } from './step-rename-context.ts';
 
 /** One glyph per step kind; the kind's name is the icon's accessible label. */
 const STEP_ICONS: Record<string, { icon: AnimatedIconName; label: string }> = {
@@ -90,6 +92,8 @@ export const StepRail = memo(function StepRail() {
 /** The step list itself: the desktop rail's body, and the Steps tab of the mobile panel. */
 export const StepList = memo(function StepList() {
   const { steps, goToStep } = useViewer();
+  const renaming = useStepRenaming();
+  const editingKey = useRenamingKey(renaming, 'rail');
   const player = usePlayer();
   const active = usePlayhead((time) => activeStepIndex(steps, time, player.duration));
   const list = useRef<HTMLDivElement>(null);
@@ -203,6 +207,20 @@ export const StepList = memo(function StepList() {
               const kind = STEP_ICONS[step.kind]?.label ?? step.kind ?? '';
               const clock = formatClock(step.at);
               const where = [kind.toLowerCase(), step.selector].filter(Boolean).join(' ') || 'step';
+              const key = renaming?.keys[index];
+              const canRename = Boolean(renaming?.allowed && key);
+              if (renaming && key && key === editingKey)
+                return (
+                  <div
+                    key={`${step.at}-${index}-editing`}
+                    data-step-index={index}
+                    className={`step editing ${state} ${step.kind === 'wait' ? 'wait' : ''}`}
+                  >
+                    <StepIcon kind={step.kind} active={index === active} index={index} />
+                    <StepNameInput renaming={renaming} renamed={key in renaming.names} onFinish={renaming.finish} />
+                    <time>{clock}</time>
+                  </div>
+                );
               return (
                 <button
                   key={`${step.at}-${step.label}`}
@@ -212,10 +230,21 @@ export const StepList = memo(function StepList() {
                   aria-current={index === active ? 'step' : undefined}
                   aria-label={`Step ${numbers[index]} of ${total}, ${step.label}, ${where}, ${clock}`}
                   onClick={() => goToStep(index)}
+                  onDoubleClick={canRename ? () => renaming?.start(index, 'rail', step.label) : undefined}
+                  onKeyDown={
+                    canRename
+                      ? (event) => {
+                          if (event.key !== 'F2') return;
+                          event.preventDefault();
+                          renaming?.start(index, 'rail', step.label);
+                        }
+                      : undefined
+                  }
                   onPointerEnter={(event) => {
-                    // A native title for the full label, only when the row cuts it.
+                    // A native title for the full label, only when the row cuts it; renaming adds its hint.
                     const label = event.currentTarget.querySelector('strong');
-                    event.currentTarget.title = label && label.scrollWidth > label.clientWidth ? step.label : '';
+                    const cut = label && label.scrollWidth > label.clientWidth ? step.label : '';
+                    event.currentTarget.title = [cut, canRename ? 'Double-click to rename' : ''].filter(Boolean).join('\n');
                     if (event.pointerType === 'mouse') showTarget(step.selector, step.at);
                   }}
                   onPointerLeave={hideTarget}

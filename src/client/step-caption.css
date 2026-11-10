@@ -53,6 +53,10 @@
   .step-caption-text:has(.step-caption-number) { padding-left: 0.47em; }
   @media (forced-colors: active) { .step-caption-text { border: 1px solid CanvasText; } }
   .step-caption-label { min-width: 0; max-height: 2.7em; overflow: hidden; }
+  .step-caption[data-editing] .step-caption-text { pointer-events: auto; }
+  .step-caption .step-name-editor { display: inline-flex; min-width: 12em; max-width: 100%; align-items: center; gap: 0.53em; }
+  .step-caption .step-name-editor input { min-width: 0; flex: 1 1 auto; padding: 0; border: 0; outline: 0; background: transparent; color: inherit; font: inherit; text-align: center; }
+  .step-caption .step-name-reset { flex: none; padding: 0.1em 0.5em; border: 0; border-radius: 1em; background: rgb(255 255 255 / 0.16); color: inherit; font: inherit; font-size: 0.8em; cursor: pointer; }
   /* Live browser captions have a stable host for line swaps. Exported video captions keep their deterministic
      frame-render animation and markup unchanged. */
   /* Show: fade and move in over 200 ms. Hide: the same caption fades and moves 4 px

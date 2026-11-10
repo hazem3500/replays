@@ -59,6 +59,8 @@ export interface ReplayEdits {
   /** Playback navigation marks on the original timeline; not burned into MP4s. */
   highlights?: ReplayHighlight[];
   cursor?: ReplayCursorSettings;
+  /** Author names for steps, by `stepNameKeys` (src/shared/step-names.ts); a step without one keeps its automatic label. */
+  stepNames?: Record<string, string>;
 }
 
 /** As stored and served: the edit list plus who saved it last, and when. */
@@ -75,7 +77,7 @@ export const EMPTY_EDITS: ReplayEdits = { version: EDITS_VERSION, cuts: [] };
 
 /** True when the list has no saved edit or playback-navigation annotation. */
 export function isEmptyEdits(edits: ReplayEdits | undefined): boolean {
-  return !edits || (!edits.trim && edits.cuts.length === 0 && !hasEffectEdits(edits) && !edits.highlights?.length);
+  return !edits || (!edits.trim && edits.cuts.length === 0 && !hasEffectEdits(edits) && !edits.highlights?.length && !hasStepNames(edits));
 }
 
 /** True when the list has any effect (zoom, speed, blur, caption or cursor presentation). */
@@ -88,4 +90,9 @@ export function hasEffectEdits(edits: ReplayEdits | undefined): boolean {
 /** True when the list changes timing (trim, cuts or speed-ups): the bundle has to be remapped. */
 export function changesTime(edits: ReplayEdits | undefined): boolean {
   return edits !== undefined && (edits.trim !== undefined || edits.cuts.length > 0 || Boolean(edits.speeds?.length));
+}
+
+/** True when the list renames a step. */
+export function hasStepNames(edits: ReplayEdits | undefined): boolean {
+  return Boolean(edits?.stepNames && Object.keys(edits.stepNames).length);
 }

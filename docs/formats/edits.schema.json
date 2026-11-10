@@ -145,6 +145,19 @@
         }
       }
     },
+    "stepNames": {
+      "type": "object",
+      "maxProperties": 500,
+      "description": "Author names for steps, keyed by the step's original start in whole ms (`12000`), with `#n` for the nth further step starting in the same ms (`12000#1`). A step without an entry keeps its automatic label.",
+      "propertyNames": {
+        "pattern": "^[0-9]{1,12}(#[0-9]{1,4})?$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    },
     "highlights": {
       "type": "array",
       "maxItems": 200,

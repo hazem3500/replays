@@ -2,6 +2,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { sanitizeUrlFields } from '../capture/sanitize.ts';
 import type { StoredReplayEdits } from '../shared/edits.ts';
+import type { Identity } from './auth/types.ts';
+import { changesStepNames, mayRenameSteps } from './edit-permission.ts';
 import { REVALIDATE } from './http/respond.ts';
 import { notModified, sendJson } from './http/send.ts';
 import { parseJsonBody } from './http/body.ts';
@@ -43,7 +45,8 @@ function sendEdits(response: ServerResponse, status: number, body: unknown, vers
  * `GET|PUT /api/replays/<id>/edits`: the replay's non-destructive edit list (src/shared/edits.ts), behind the auth
  * adapter like the rest of the app (and the same-origin check for writes). Only mounted with the beta editor flag
  * (`REPLAYS_BETA_EDITOR=true`, see src/server/config.ts); without it these paths are plain 404s. Anyone who can open a
- * replay can edit it unless the host disables writes with editing.enabled; the save records who.
+ * replay can edit it unless the host disables writes with editing.enabled; the save records who. Renaming steps
+ * (`stepNames`) additionally needs the caller to be one of the replay's people or an admin (edit-permission.ts): 403.
  * Disabled writes return 403 before preconditions or body parsing; GET/HEAD remain available.
  *
  * GET answers the stored list (or an empty one, revision 0) with an ETag and `private, no-cache`, so the viewer
@@ -55,7 +58,7 @@ export async function handleEditsApi(
   request: IncomingMessage,
   response: ServerResponse,
   path: string,
-  options: { store: ReplayStore; user: string; editing?: EditingSettings },
+  options: { store: ReplayStore; user: string; identity?: Identity; editing?: EditingSettings },
 ) {
   const match = /^\/api\/replays\/([a-z0-9][a-z0-9-]{0,79})\/edits$/.exec(path);
   if (!match) return false;
@@ -96,6 +99,13 @@ export async function handleEditsApi(
   const text = await readBody(request);
   // why: same privacy pass as uploads: a URL pasted into a label loses credentials and sensitive parameters.
   const input: unknown = sanitizeUrlFields(parseJsonBody(text));
+  if (changesStepNames(input, (await store.readEdits(id)).edits)) {
+    const people = (await store.summary(id, { suites: false }))?.people;
+    if (!options.identity || !mayRenameSteps(options.identity, people)) {
+      sendJson(response, 403, { error: 'only the people on this replay can rename its steps' });
+      return true;
+    }
+  }
   try {
     // why: an If-Match that is not one of ours can never match: the conflict path answers with the current list.
     const saved = await store.saveEdits(id, input, { by: options.user, ifVersion: ifVersion === undefined ? '\0' : ifVersion });
