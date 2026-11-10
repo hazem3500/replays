@@ -352,7 +352,7 @@ export function createDefaultUi(
             const control = link(error.link.label, error.link.url);
             if (control) controls.append(control);
           }
-          if (result.status === 'error' && result.retry) {
+          if (result.status === 'error' && result.retry && !error?.action?.replacesRetry) {
             const retry = element('button', { type: 'button', className: 'primary', onclick: result.retry }, [messages.retry]);
             retry.dataset.recorderAction = 'retry';
             controls.append(retry);
