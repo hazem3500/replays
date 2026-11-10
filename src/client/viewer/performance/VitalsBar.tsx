@@ -64,25 +64,32 @@ export function VitalsBar({
       ),
     };
   });
-  const builtins = groups.flatMap(({ shown }, position) => {
-    if (!shown.length) return [];
-    return shown.map(({ stat, vital }, index) => ({
-      id: `core:${stat.id}`,
-      order: (position + 1) * 1000 + index * 10,
-      render: () => (
-        <>
-          <StatTile
-            stat={stat}
-            start={index === 0}
-            pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
-            onPick={() => vital && onPick(vital)}
-          >
-            {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
-          </StatTile>
-          {vital && peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
-        </>
-      ),
-    }));
+  const builtins = groups.flatMap(({ group, shown, note }, position) => {
+    const base = (position + 1) * 1000;
+    const absent = items.filter((item) => item.stat.group === group && item.stat.value === undefined && item.stat.watched);
+    const notes: GroupNote[] = shown.length
+      ? [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []))
+      : [note];
+    return [
+      { id: `core:group:${group}`, order: base - 10, render: () => <GroupName group={group} /> },
+      ...shown.map(({ stat, vital }, index) => ({
+        id: `core:${stat.id}`,
+        order: base + index * 10,
+        render: () => (
+          <>
+            <StatTile
+              stat={stat}
+              pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
+              onPick={() => vital && onPick(vital)}
+            >
+              {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
+            </StatTile>
+            {vital && peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
+          </>
+        ),
+      })),
+      ...(notes.length ? [{ id: `core:note:${group}`, order: base + 900, render: () => <GroupNotes notes={notes} /> }] : []),
+    ];
   });
   if (groups.every(({ shown }) => !shown.length))
     return (
@@ -99,17 +106,11 @@ export function VitalsBar({
         {children}
       </div>
     );
-  const footnote: GroupNote[] = groups.flatMap(({ group, shown, note }) => {
-    if (!shown.length) return [note];
-    const absent = items.filter((item) => item.stat.group === group && item.stat.value === undefined && item.stat.watched);
-    return [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []));
-  });
   return (
     <div className="pp-vitals" data-testid="performance-vitals">
       <ul aria-label="Vitals">
         <HostSurfaceSlot slot="performance.vitals" context={context} element="li" builtins={builtins} />
       </ul>
-      {footnote.length ? <Footnote notes={footnote} /> : null}
       {children}
     </div>
   );
@@ -118,10 +119,19 @@ export function VitalsBar({
 const NO_STATS: readonly Stat[] = [];
 const GROUPS: readonly StatGroup[] = ['loading', 'responsiveness', 'smoothness'];
 
-/** What is missing, as one quiet line; a note that knows its reason says it in a tooltip. */
-function Footnote({ notes }: { notes: readonly GroupNote[] }) {
+/** The group's name, in the gutter beside its row of stats. */
+function GroupName({ group }: { group: StatGroup }) {
   return (
-    <p className="pp-stats-footnote">
+    <span className="pp-group-name" aria-hidden="true">
+      {GROUP_LABELS[group]}
+    </span>
+  );
+}
+
+/** What is missing from a group, as one quiet line in its row; a note that knows its reason says it in a tooltip. */
+function GroupNotes({ notes }: { notes: readonly GroupNote[] }) {
+  return (
+    <p className="pp-group-note">
       {notes.map((note, index) => (
         <span key={note.text}>
           {index ? '. ' : ''}
@@ -143,25 +153,10 @@ function Footnote({ notes }: { notes: readonly GroupNote[] }) {
   );
 }
 
-function StatTile({
-  stat,
-  start,
-  pickable,
-  onPick,
-  children,
-}: {
-  stat: Stat;
-  start: boolean;
-  pickable: boolean;
-  onPick: () => void;
-  children?: ReactNode;
-}) {
+function StatTile({ stat, pickable, onPick, children }: { stat: Stat; pickable: boolean; onPick: () => void; children?: ReactNode }) {
   const word = stat.verdict ? VERDICT_WORDS[stat.verdict] : undefined;
   const body = (
     <>
-      <span className="pp-stat-group" aria-hidden="true">
-        {start ? GROUP_LABELS[stat.group] : ''}
-      </span>
       <span className="pp-vital-label">{stat.label}</span>
       <span className="pp-stat-value">
         {stat.value}
@@ -190,7 +185,6 @@ function StatTile({
         }
         className="pp-stat pp-vital"
         data-group={stat.group}
-        data-group-start={start || undefined}
         data-verdict={stat.verdict}
       >
         {body}

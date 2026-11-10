@@ -151,9 +151,9 @@ describe('frame-rate sparkline', () => {
   });
 
   it('clamps to the plot and raises the ceiling on a faster display', () => {
-    expect(fpsCeiling(framed(sample(0, 60)))).toBe(60);
-    expect(fpsCeiling(framed(sample(0, 61)))).toBe(90);
+    expect(fpsCeiling(framed(sample(0, 60)))).toBe(120);
     expect(fpsCeiling(framed(sample(0, 120)))).toBe(120);
+    expect(fpsCeiling(framed(sample(0, 121)))).toBe(150);
     const [run] = sparkRuns(framed(sample(0, 70), sample(1000, 0)), 2000, 60);
     expect(run?.map((point) => point.y)).toEqual([0, 0, SPARK_HEIGHT, SPARK_HEIGHT]);
   });

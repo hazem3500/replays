@@ -31,6 +31,7 @@ export interface PerformancePeer {
 }
 
 const SIDE_DETAIL_MIN_WIDTH = 760;
+const INLINE_QUIET_HEADLINE = true;
 
 const STRINGS = {
   calmTitle: 'No slow activity captured',
@@ -106,21 +107,27 @@ export function PerformancePanel({
   ) : (
     <Empty title={STRINGS.calmTitle}>{STRINGS.calm}</Empty>
   );
+  // why: with nothing slow the headline is quiet, so it rides the timeline's axis row instead of taking a row of its own.
+  const inlineLead = INLINE_QUIET_HEADLINE && verdict.tone === 'good' && !verdict.jump && Boolean(lanes.length || model.frames.length);
   const lit = [hovered, pinned, selected ? [selected] : []].find((ids) => ids.length) ?? [];
   const select = (id?: string) => {
     setPinned([]);
     setSelected(id);
   };
+  const verdictLine = (
+    <VerdictLine
+      verdict={verdict}
+      inline={inlineLead}
+      onJump={(jump) => {
+        player.seek(jump.at);
+        setSelected(undefined);
+        setPinned(jump.ids);
+      }}
+    />
+  );
   return (
     <div ref={panel} className="np pp" data-testid="performance-diagnostics" data-stacked={stacked || undefined}>
-      <VerdictLine
-        verdict={verdict}
-        onJump={(jump) => {
-          player.seek(jump.at);
-          setSelected(undefined);
-          setPinned(jump.ids);
-        }}
-      />
+      {inlineLead ? null : verdictLine}
       {lanes.length || model.frames.length ? (
         <PerfTimeline
           duration={duration}
@@ -128,6 +135,7 @@ export function PerformancePanel({
           frames={model.frames}
           range={range}
           onRange={setRange}
+          lead={inlineLead ? verdictLine : undefined}
           lit={lit}
           onLight={setHovered}
           onPick={(mark) => {

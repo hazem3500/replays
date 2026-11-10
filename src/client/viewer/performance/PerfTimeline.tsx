@@ -1,4 +1,4 @@
-import { type PointerEvent, useRef, useState } from 'react';
+import { type PointerEvent, type ReactNode, useRef, useState } from 'react';
 
 import { useElementWidth } from '../../hooks/use-element-width.ts';
 import { usePlayheadProgress } from '../../hooks/use-playhead-progress.ts';
@@ -41,6 +41,7 @@ export function PerfTimeline({
   lit,
   onLight,
   onPick,
+  lead,
 }: {
   duration: number;
   lanes: readonly Lane[];
@@ -52,6 +53,8 @@ export function PerfTimeline({
   onLight: (ids: readonly string[]) => void;
   /** A mark was clicked: select its moment when it has one. */
   onPick: (mark: LaneMark) => void;
+  /** The headline, when it sits on the axis row in the gutter instead of in its own row. */
+  lead?: ReactNode;
 }) {
   const player = usePlayer();
   const span = Math.max(1, duration);
@@ -70,7 +73,7 @@ export function PerfTimeline({
   return (
     <div className="pt" data-collapsed={collapsed || undefined} data-testid="performance-timeline">
       <div className="pt-body">
-        <LaneGutter lanes={lanes} withFrames={frames.length > 0} />
+        <LaneGutter lanes={lanes} frames={frames} lead={lead} />
         <div
           ref={plot}
           id="performance-timeline-plot"

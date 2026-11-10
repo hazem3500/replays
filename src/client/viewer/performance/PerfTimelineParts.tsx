@@ -1,5 +1,5 @@
 import { ChevronDownIcon, GaugeIcon, GlobeIcon, HourglassIcon, LayoutPanelLeftIcon, MousePointerClickIcon } from 'lucide-react';
-import { type RefObject, useRef } from 'react';
+import { type ReactNode, type RefObject, useRef } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
 import { usePlayheadAria } from '../../hooks/use-playhead-aria.ts';
@@ -7,7 +7,7 @@ import { useRibbonScrub } from '../../hooks/use-ribbon-scrub.ts';
 import { usePlayer } from '../../player.ts';
 import { toggleRibbonCollapsed } from '../ribbon-collapse.ts';
 import type { RibbonRange } from '../TimeRibbon.tsx';
-import { type FrameBand, readingAt } from './frames.ts';
+import { FPS_GUIDES, type FrameBand, fpsCeiling, fpsY, readingAt } from './frames.ts';
 import { LaneMarkButton } from './LaneMarkButton.tsx';
 import { clockLabel, clusterMarks, type Lane, type LaneId, type LaneMark, niceTicks } from './timeline-model.ts';
 
@@ -34,21 +34,38 @@ const percent = (at: number, span: number) => `${(at / span) * 100}%`;
 function LaneLabel({ id, text }: { id: LaneId | 'fps'; text: string }) {
   const Icon = ICONS[id];
   return (
-    <span className="pt-label" data-lane={id} title={text}>
+    <span className="pt-label" data-lane={id} title={text} aria-hidden="true">
       <Icon aria-hidden="true" />
       <span className="pt-label-text">{text}</span>
     </span>
   );
 }
 
-export function LaneGutter({ lanes, withFrames }: { lanes: readonly Lane[]; withFrames: boolean }) {
+/** The frame-rate row's gutter: its name centred on the chart band, and the 60 and 30 guides' labels at their real heights. */
+function FpsGutter({ frames }: { frames: readonly FrameBand[] }) {
+  const ceiling = fpsCeiling(frames);
   return (
-    <div className="pt-gutter" aria-hidden="true">
-      <span className="pt-axis-gap" />
+    <div className="pt-fps-gutter" data-lane="fps" aria-hidden="true">
+      <LaneLabel id="fps" text={TIMELINE_STRINGS.frameRate} />
+      <div className="pt-fps-axes">
+        {FPS_GUIDES.map((fps) => (
+          <span key={fps} className="pt-fps-axis" style={{ top: `${fpsY(fps, ceiling)}%` }}>
+            {fps}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function LaneGutter({ lanes, frames, lead }: { lanes: readonly Lane[]; frames: readonly FrameBand[]; lead?: ReactNode }) {
+  return (
+    <div className="pt-gutter">
+      <span className="pt-axis-gap">{lead}</span>
       {lanes.map((lane) => (
         <LaneLabel key={lane.id} id={lane.id} text={lane.label} />
       ))}
-      {withFrames ? <LaneLabel id="fps" text={TIMELINE_STRINGS.frameRate} /> : null}
+      {frames.length ? <FpsGutter frames={frames} /> : null}
     </div>
   );
 }

@@ -40,7 +40,9 @@ export const SPARK_WIDTH = 1000;
 export const SPARK_HEIGHT = 100;
 /** A hole wider than this between two samples breaks the line; a cut's seam sits closer than this. */
 const GAP_MS = 250;
-const REFERENCE_FPS = 60;
+/** The frame-rate chart's reference lines. */
+export const FPS_GUIDES = [60, 30] as const;
+const REFERENCE_FPS = 120;
 const CEILING_STEP = 30;
 
 export interface SparkPoint {
@@ -48,7 +50,7 @@ export interface SparkPoint {
   y: number;
 }
 
-/** The chart's top: 60 FPS, or the next 30 above the fastest second on a faster display. */
+/** The chart's top: 120 FPS, so the 60 and 30 guides sit apart, or the next 30 above the fastest second on a faster display. */
 export function fpsCeiling(bands: readonly FrameBand[]) {
   const fastest = bands.reduce((most, band) => Math.max(most, band.fps), 0);
   return Math.max(REFERENCE_FPS, Math.ceil(fastest / CEILING_STEP) * CEILING_STEP);
