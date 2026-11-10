@@ -15,6 +15,7 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
                            its capture defaults apply under the flags here. --purpose is its deprecated name
   --network <mode>         headers (default), off, or bodies: also keep request and response bodies (JSON,
                            text and form data only, cut at 64 KiB, secrets redacted)
+  --performance            record for performance: marks the replay performance-focused (on by default, unmarked)
   --no-performance         leave out paint, long-task and interaction timings
   --person <spec>          someone related to it, role:email[:handle=value] (reviewer:ada@example.com); repeatable
   --source <p:ref>         link to the thing under test, e.g. github:owner/repo#12; repeatable

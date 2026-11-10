@@ -1,5 +1,6 @@
 import {
   type CapturedChoice,
+  type CapturedDiagnostics,
   type CapturedInputs,
   contentTypeAllowed,
   DEFAULT_BODY_LIMITS,
@@ -40,6 +41,8 @@ export interface ReplayCaptured {
   inputs?: CapturedInputs;
   /** Present when a customer chose the masking in the recorder's options step; see `CapturedChoice`. */
   choice?: CapturedChoice;
+  /** Present when Performance (and Debugging) was turned on on purpose; see `CapturedDiagnostics`. */
+  diagnostics?: CapturedDiagnostics;
 }
 
 /** What a captured body is replaced with, wherever a secret was found. */

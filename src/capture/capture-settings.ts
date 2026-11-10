@@ -15,6 +15,8 @@ export interface CaptureSettings {
   /** Body limits, only with `network: 'bodies'`. */
   bodies?: NetworkBodyLimits;
   performance: boolean;
+  /** Performance was asked for (`--performance` or a profile that captures it), not just the default. */
+  performanceChosen: boolean;
   /** Console levels kept; absent keeps all. */
   console?: readonly ConsoleLevel[];
   /** Mask every text node, not only inputs. */
@@ -87,6 +89,7 @@ export function captureSettings(
     network,
     ...(network === 'bodies' ? { bodies: own.bodies ?? {} } : {}),
     performance: flags.performance ?? own.performance ?? true,
+    performanceChosen: (flags.performance ?? own.performance) === true,
     ...(own.console ? { console: own.console } : {}),
     maskAllText: own.privacy?.maskAllText === true,
   };
@@ -94,10 +97,18 @@ export function captureSettings(
 
 /** `meta.captured` for a capture: bodies count only when the driver could record them. */
 export function capturedRecord(
-  settings: Pick<CaptureSettings, 'network' | 'performance' | 'console'>,
+  settings: Pick<CaptureSettings, 'network' | 'performance' | 'console'> & { performanceChosen?: boolean },
   video: boolean,
   bodiesRecorded: boolean,
 ): ReplayCaptured {
   const network = settings.network === 'bodies' && !bodiesRecorded ? 'headers' : settings.network;
-  return { console: settings.console === undefined || settings.console.length > 0, network, performance: settings.performance, video };
+  return {
+    console: settings.console === undefined || settings.console.length > 0,
+    network,
+    performance: settings.performance,
+    video,
+    ...(settings.performance && settings.performanceChosen
+      ? { diagnostics: { performance: true, debugging: false, chosen: true as const } }
+      : {}),
+  };
 }

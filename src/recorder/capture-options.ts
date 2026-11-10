@@ -70,6 +70,7 @@ export function capturedRecord(
     network,
     performance: capture.performance,
     video: false,
+    ...(capture.performance ? { diagnostics: { performance: true, debugging: capture.debugging, chosen: true as const } } : {}),
     ...(inputsVisible ? { inputs: 'visible' as const } : {}),
     ...(customerMode
       ? {

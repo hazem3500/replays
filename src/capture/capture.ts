@@ -75,11 +75,13 @@ export interface CaptureArgs extends CapturePacingOptions {
   bodies?: NetworkBodyLimits;
   /** Default true. */
   performance?: boolean;
+  /** Performance was asked for on purpose; the bundle then records it as the reason for the capture. */
+  performanceChosen?: boolean;
   /** Console levels kept; default all. */
   console?: readonly ConsoleLevel[];
 }
 
-const BOOLEAN_FLAGS = new Set(['video', 'headed', 'upload', 'login', 'no-performance']);
+const BOOLEAN_FLAGS = new Set(['video', 'headed', 'upload', 'login', 'performance', 'no-performance']);
 
 export { CAPTURE_USAGE };
 
@@ -149,7 +151,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   if (unknownProfile) process.stderr.write(`${unknownProfile}\n`);
   const settings = captureSettings(own, {
     ...(values.network === undefined ? {} : { network: networkFlag(values.network) }),
-    ...(booleans.has('no-performance') ? { performance: false } : {}),
+    ...(booleans.has('no-performance') ? { performance: false } : booleans.has('performance') ? { performance: true } : {}),
   });
   const redaction = settings.maskAllText ? mergeRedactionRules(loaded.redaction, { maskSelectors: ['body'] }) : loaded.redaction;
   const pause = stepPauseMs(
@@ -168,6 +170,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     network: settings.network,
     ...(settings.bodies ? { bodies: settings.bodies } : {}),
     performance: settings.performance,
+    performanceChosen: settings.performanceChosen,
     ...(settings.console ? { console: settings.console } : {}),
     sources,
     tags,
@@ -288,7 +291,12 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
         ...(profile ? { profile } : {}),
         ...(args.people?.length ? { people: args.people } : {}),
         captured: capturedRecord(
-          { network: args.network ?? 'headers', performance: args.performance ?? true, ...(args.console ? { console: args.console } : {}) },
+          {
+            network: args.network ?? 'headers',
+            performance: args.performance ?? true,
+            performanceChosen: args.performanceChosen === true,
+            ...(args.console ? { console: args.console } : {}),
+          },
           args.video,
           bodiesRecorded,
         ),

@@ -48,6 +48,8 @@ export type ReplayCaptured = {
    * A customer's pick in the options step (`choices.by: 'customer'`): whether that mode shows typed values and page
    * text, and whether they asked for request and response content. The ingest endpoint keeps what it allows.
    */
+  /** Present when Performance was turned on on purpose (`capture.performance` or the options step). */
+  diagnostics?: { performance: boolean; debugging: boolean; chosen: true };
   choice?: {
     by: 'customer';
     /** The picked mode, so the server knows which text rules applied. */

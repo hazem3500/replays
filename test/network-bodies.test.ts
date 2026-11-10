@@ -183,6 +183,8 @@ describe('the server privacy pass over uploaded bodies', () => {
   });
 });
 
+const marked = (settings: ReturnType<typeof captureSettings>) => capturedRecord(settings, false, false).diagnostics;
+
 describe('capture settings', () => {
   it('keeps headers only unless the profile or the flag asks for bodies', () => {
     expect(captureSettings(undefined, {}).network).toBe('headers');
@@ -209,5 +211,14 @@ describe('capture settings', () => {
       performance: true,
       video: false,
     });
+  });
+
+  it('marks Performance as chosen only for --performance or a performance profile', () => {
+    expect(marked(captureSettings(undefined, {}))).toBeUndefined();
+    expect(marked(captureSettings({ network: 'headers' }, {}))).toBeUndefined();
+    expect(marked(captureSettings(undefined, { performance: false }))).toBeUndefined();
+    expect(marked(captureSettings(undefined, { performance: true }))).toEqual({ performance: true, debugging: false, chosen: true });
+    expect(marked(captureSettings({ performance: true }, {}))).toEqual({ performance: true, debugging: false, chosen: true });
+    expect(marked(captureSettings(profileCapture('performance', {}), {}))).toEqual({ performance: true, debugging: false, chosen: true });
   });
 });

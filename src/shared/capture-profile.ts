@@ -35,6 +35,17 @@ export interface CapturedChoice {
   bodies: boolean;
 }
 
+/**
+ * The diagnostics a person turned on for a recording (`meta.captured.diagnostics`). Written only for an explicit
+ * choice (the options step, `capture.performance`, `--performance` or a performance profile), so `performance` is a
+ * signal of why it was recorded, which `meta.captured.performance` is not.
+ */
+export interface CapturedDiagnostics {
+  performance: boolean;
+  debugging: boolean;
+  chosen: true;
+}
+
 /** rrweb sampling: every mouse move and scroll (`full`), the recorder's defaults (`balanced`), or fewer (`light`). */
 export type CaptureSampling = 'full' | 'balanced' | 'light';
 export const CAPTURE_SAMPLING: readonly CaptureSampling[] = ['full', 'balanced', 'light'];
@@ -139,8 +150,14 @@ const CAPTURED_CHECKS: Checks = {
   video: [isBoolean, 'must be a boolean'],
   inputs: [oneOf(CAPTURED_INPUTS), `must be one of ${CAPTURED_INPUTS.join(', ')}`],
   choice: [isRecord, 'must be an object'],
+  diagnostics: [isRecord, 'must be an object'],
 };
-const OPTIONAL_CAPTURED = new Set(['inputs', 'choice']);
+const OPTIONAL_CAPTURED = new Set(['inputs', 'choice', 'diagnostics']);
+const DIAGNOSTICS_CHECKS: Checks = {
+  performance: [isBoolean, 'must be a boolean'],
+  debugging: [isBoolean, 'must be a boolean'],
+  chosen: [oneOf([true]), 'must be true'],
+};
 const CHOICE_CHECKS: Checks = {
   by: [oneOf(['customer']), 'must be customer'],
   mode: [oneOf(CAPTURED_MODES), `must be one of ${CAPTURED_MODES.join(', ')}`],
@@ -154,6 +171,12 @@ export function assertCaptured(value: unknown, where = 'captured'): asserts valu
   assertShape(value, CAPTURED_CHECKS, where);
   const missing = Object.keys(CAPTURED_CHECKS).filter((key) => !OPTIONAL_CAPTURED.has(key) && value[key] === undefined);
   if (missing.length) throw new Error(`${where} is missing ${missing.join(', ')}`);
+  if (value.diagnostics !== undefined) {
+    const diagnostics = value.diagnostics;
+    assertShape(diagnostics, DIAGNOSTICS_CHECKS, `${where}.diagnostics`);
+    const absent = Object.keys(DIAGNOSTICS_CHECKS).filter((key) => diagnostics[key] === undefined);
+    if (absent.length) throw new Error(`${where}.diagnostics is missing ${absent.join(', ')}`);
+  }
   if (value.choice === undefined) return;
   const choice = value.choice;
   assertShape(choice, CHOICE_CHECKS, `${where}.choice`);
