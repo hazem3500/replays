@@ -1,41 +1,20 @@
-import { ChevronDownIcon, GaugeIcon, GlobeIcon, HourglassIcon, LayoutPanelLeftIcon, MousePointerClickIcon } from 'lucide-react';
-import { type PointerEvent, useLayoutEffect, useRef, useState } from 'react';
+import { type PointerEvent, useRef, useState } from 'react';
 
-import { formatClock } from '../../../shared/replay.ts';
 import { useElementWidth } from '../../hooks/use-element-width.ts';
 import { usePlayheadProgress } from '../../hooks/use-playhead-progress.ts';
 import { useRibbonBrush } from '../../hooks/use-ribbon-brush.ts';
-import { useRibbonScrub } from '../../hooks/use-ribbon-scrub.ts';
 import { usePlayer } from '../../player.ts';
-import { toggleRibbonCollapsed, useRibbonCollapsed } from '../ribbon-collapse.ts';
+import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import type { RibbonRange } from '../TimeRibbon.tsx';
 import { FpsPlot } from './FpsPlot.tsx';
-import { type FrameBand, readingAt } from './frames.ts';
-import { LaneMarkButton } from './LaneMarkButton.tsx';
-import { clockLabel, clusterMarks, type Lane, type LaneId, type LaneMark, niceTicks } from './timeline-model.ts';
+import type { FrameBand } from './frames.ts';
+import { Crosshair, LaneGutter, LaneRows, Playhead, RangeAndLit, TIMELINE_STRINGS, TimelineToggle, TimeAxis } from './PerfTimelineParts.tsx';
+import type { Lane, LaneMark } from './timeline-model.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the timeline reuses the ribbon's playhead, veil and range styles, loaded with the lazy inspector.
 import '../time-ribbon.css';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the timeline's styles load with the lazy inspector chunk, not with every page.
 import './perf-timeline.css';
 
-const ICONS = {
-  interaction: MousePointerClickIcon,
-  task: HourglassIcon,
-  request: GlobeIcon,
-  shift: LayoutPanelLeftIcon,
-  fps: GaugeIcon,
-} as const;
-
-const STRINGS = {
-  hint: 'Click to seek. Drag the playhead to scrub. Drag across the timeline to filter the moments.',
-  toggle: 'Timeline',
-  frameRate: 'Frame rate',
-};
-
-const MAX_TICKS = 6;
-/** A narrow plot labels fewer ticks so the labels never crowd. */
-const NARROW_PX = 420;
-const NARROW_TICKS = 4;
 /** The plot's width before it is measured, so the first paint clusters about right. */
 const FIRST_WIDTH = 640;
 
@@ -68,23 +47,11 @@ export function PerfTimeline({
   const player = usePlayer();
   const span = Math.max(1, duration);
   const plot = useRef<HTMLDivElement>(null);
-  const handle = useRef<HTMLSpanElement>(null);
   const width = useElementWidth(plot, FIRST_WIDTH);
   const collapsed = useRibbonCollapsed();
   const [hover, setHover] = useState<number>();
   const { brush, handlers } = useRibbonBrush(span, (time) => player.seek(time), onRange);
-  const scrub = useRibbonScrub(player, span, plot);
   usePlayheadProgress(plot, span);
-  useLayoutEffect(() => {
-    const write = () => handle.current?.setAttribute('aria-valuenow', String(Math.round(player.getTime())));
-    write();
-    return player.subscribeTime(write);
-  }, [player]);
-  const shown = brush ?? range;
-  const litItems = lanes.flatMap((lane) => lane.items.filter((item) => item.momentId && lit.includes(item.momentId)));
-  const litFrom = Math.min(...litItems.map((item) => item.at));
-  const litTo = Math.max(...litItems.map((item) => item.end));
-  const reading = hover === undefined || collapsed ? undefined : readingAt(frames, hover, span);
   const track = (event: PointerEvent<HTMLElement>) => {
     handlers.onPointerMove(event);
     if (collapsed || event.pointerType === 'touch') return;
@@ -94,117 +61,26 @@ export function PerfTimeline({
   return (
     <div className="pt" data-collapsed={collapsed || undefined} data-testid="performance-timeline">
       <div className="pt-body">
-        <div className="pt-gutter" aria-hidden="true">
-          <span className="pt-axis-gap" />
-          {lanes.map((lane) => (
-            <LaneLabel key={lane.id} id={lane.id} text={lane.label} />
-          ))}
-          {frames.length ? <LaneLabel id="fps" text={STRINGS.frameRate} /> : null}
-        </div>
+        <LaneGutter lanes={lanes} withFrames={frames.length > 0} />
         <div
           ref={plot}
           id="performance-timeline-plot"
           className="pt-plot"
           data-testid="performance-ribbon"
-          aria-description={STRINGS.hint}
+          aria-description={TIMELINE_STRINGS.hint}
           {...handlers}
           onPointerMove={track}
           onPointerLeave={() => setHover(undefined)}
         >
-          <div className="pt-axis" title={STRINGS.hint} aria-hidden="true">
-            {niceTicks(span, width < NARROW_PX ? NARROW_TICKS : MAX_TICKS).map((at) => (
-              <span key={at} className="pt-tick" data-first={at === 0 || undefined} style={{ left: `${(at / span) * 100}%` }}>
-                {clockLabel(at)}
-              </span>
-            ))}
-          </div>
-          <div className="pt-grid" aria-hidden="true">
-            {niceTicks(span, width < NARROW_PX ? NARROW_TICKS : MAX_TICKS).map((at) => (
-              <span key={at} style={{ left: `${(at / span) * 100}%` }} />
-            ))}
-          </div>
-          <div className="pt-lanes">
-            {lanes.map((lane) => (
-              <div key={lane.id} className="pt-lane" data-lane={lane.id} role="group" aria-label={lane.label}>
-                {clusterMarks(lane.items, span, width).map((mark) => (
-                  <LaneMarkButton
-                    key={mark.id}
-                    mark={mark}
-                    span={span}
-                    width={width}
-                    lit={mark.items.some((item) => item.momentId && lit.includes(item.momentId))}
-                    focusable={!collapsed}
-                    onLight={onLight}
-                    onPick={onPick}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
+          <TimeAxis span={span} width={width} />
+          <LaneRows lanes={lanes} span={span} width={width} lit={lit} focusable={!collapsed} onLight={onLight} onPick={onPick} />
           {frames.length ? <FpsPlot bands={frames} span={span} /> : null}
-          {shown ? (
-            <span
-              className="ribbon-range"
-              data-live={brush ? '' : undefined}
-              style={{ left: `${(shown.from / span) * 100}%`, width: `${((shown.to - shown.from) / span) * 100}%` }}
-            />
-          ) : null}
-          {litItems.length ? (
-            <span
-              className="ribbon-lit"
-              style={{ left: `${(litFrom / span) * 100}%`, width: `max(3px, ${((litTo - litFrom) / span) * 100}%)` }}
-            />
-          ) : null}
-          {hover === undefined ? null : (
-            <>
-              <span className="pt-cursor" style={{ left: `${hover * 100}%` }} aria-hidden="true" />
-              <span className="pt-readout" style={{ left: `clamp(34px, ${hover * 100}%, calc(100% - 34px))` }} aria-hidden="true">
-                {formatClock(hover * span)}
-                {reading?.fps === undefined ? '' : ` · ${Math.round(reading.fps)} fps`}
-              </span>
-            </>
-          )}
-          <span className="ribbon-future" />
-          <span className="ribbon-now">
-            <span
-              ref={handle}
-              className="ribbon-handle"
-              data-ribbon-handle=""
-              role="slider"
-              tabIndex={collapsed ? -1 : 0}
-              aria-hidden={collapsed || undefined}
-              aria-label="Playhead"
-              aria-orientation="horizontal"
-              aria-valuemin={0}
-              aria-valuemax={Math.round(span)}
-              aria-valuenow={0}
-              {...scrub}
-            />
-          </span>
+          <RangeAndLit lanes={lanes} lit={lit} span={span} shown={brush ?? range} brushing={Boolean(brush)} />
+          <Crosshair hover={hover} frames={frames} span={span} collapsed={collapsed} />
+          <Playhead span={span} plot={plot} collapsed={collapsed} />
         </div>
       </div>
-      <div className="ribbon-key">
-        <button
-          type="button"
-          className="ribbon-toggle"
-          aria-label={STRINGS.toggle}
-          aria-expanded={!collapsed}
-          aria-controls="performance-timeline-plot"
-          onClick={toggleRibbonCollapsed}
-        >
-          <ChevronDownIcon aria-hidden="true" />
-        </button>
-      </div>
+      <TimelineToggle collapsed={collapsed} />
     </div>
-  );
-}
-
-function LaneLabel({ id, text }: { id: LaneId | 'fps'; text: string }) {
-  const Icon = ICONS[id];
-  return (
-    <span className="pt-label" data-lane={id} title={text}>
-      <Icon aria-hidden="true" />
-      <span className="pt-label-text">{text}</span>
-    </span>
   );
 }

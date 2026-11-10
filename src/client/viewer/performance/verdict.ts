@@ -50,7 +50,10 @@ function jumpTo(moments: readonly Moment[], at?: number): VerdictJump | undefine
 function interactionHeadline(moments: readonly Moment[], requests: readonly NetworkRow[]) {
   const slow = moments.filter((moment) => moment.kind === 'interaction' && moment.verdict !== 'good');
   const [worst] = byWorst(slow);
-  if (!worst) return undefined;
+  return worst ? describeInteractions(slow, worst, moments, requests) : undefined;
+}
+
+function describeInteractions(slow: readonly Moment[], worst: Moment, moments: readonly Moment[], requests: readonly NetworkRow[]) {
   const [one, many] = interactionNoun(slow);
   const blocked = slow.filter((moment) => causeOf(moment, moments, requests).kind === 'task').length;
   const jump = jumpTo(slow, slow.length === 1 ? worst.at : undefined);
@@ -65,7 +68,10 @@ function interactionHeadline(moments: readonly Moment[], requests: readonly Netw
 
 function taskHeadline(moments: readonly Moment[]) {
   const slow = moments.filter((moment) => moment.kind === 'task' && moment.verdict !== 'good');
-  if (!slow.length) return undefined;
+  return slow.length ? describeTasks(slow) : undefined;
+}
+
+function describeTasks(slow: readonly Moment[]) {
   const jump = jumpTo(slow, slow.length === 1 ? slow[0]?.at : undefined);
   const when = clockLabel(jump?.at ?? 0);
   const cause = slow.length === 1 ? 'a long task blocked the page' : `${slow.length} long tasks blocked the page`;
@@ -76,8 +82,11 @@ function loadingHeadline(vitals: readonly Vital[]) {
   const slow = vitals.filter(
     (vital) => (vital.id === 'fcp' || vital.id === 'lcp') && vital.value !== undefined && vital.verdict && vital.verdict !== 'good',
   );
-  const worst = slow.toSorted((a, b) => (b.value ?? 0) - (a.value ?? 0))[0];
-  if (!worst) return undefined;
+  const [worst] = slow.toSorted((a, b) => (b.value ?? 0) - (a.value ?? 0));
+  return worst ? describeLoading(worst) : undefined;
+}
+
+function describeLoading(worst: Vital) {
   const label = worst.id === 'lcp' ? 'largest paint' : 'first paint';
   return {
     headline: `Slow to load: the ${label} came late`,
@@ -86,16 +95,21 @@ function loadingHeadline(vitals: readonly Vital[]) {
 }
 
 function framesHeadline(frames: readonly FrameBand[]) {
-  const slowest = frames.reduce<FrameBand | undefined>((low, band) => (!low || band.fps < low.fps ? band : low), undefined);
-  if (!slowest || fpsVerdict(slowest.fps) === 'good') return undefined;
+  const [slowest] = frames.toSorted((a, b) => a.fps - b.fps);
+  return slowest && fpsVerdict(slowest.fps) !== 'good' ? describeChoppy(slowest) : undefined;
+}
+
+function describeChoppy(slowest: FrameBand) {
   const at = (slowest.at + slowest.end) / 2;
   return { headline: `Choppy around ${clockLabel(at)}: the frame rate dropped`, jump: { label: `Jump to ${clockLabel(at)}`, at, ids: [] } };
 }
 
 function shiftHeadline(shifts: readonly LayoutShift[]) {
-  if (shiftVerdict(shiftScore(shifts)) === 'good') return undefined;
   const [biggest] = shifts.filter((shift) => !shift.hadRecentInput).toSorted((a, b) => b.value - a.value);
-  if (!biggest) return undefined;
+  return biggest && shiftVerdict(shiftScore(shifts)) !== 'good' ? describeShift(biggest) : undefined;
+}
+
+function describeShift(biggest: LayoutShift) {
   return {
     headline: `The layout jumped around ${clockLabel(biggest.at)}`,
     jump: { label: `Jump to ${clockLabel(biggest.at)}`, at: biggest.at, ids: [] },

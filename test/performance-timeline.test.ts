@@ -46,6 +46,8 @@ const item = (id: string, at: number, end: number, lane: LaneItem['lane'] = 'int
   value: '1 ms',
 });
 
+const memberIds = (mark: { items: readonly { id: string }[] }) => mark.items.map((member) => member.id);
+
 describe('layout shifts', () => {
   it('scores only shifts nobody caused', () => {
     const { model } = inputs();
@@ -72,11 +74,9 @@ describe('timeline lanes', () => {
 
   it('merges marks that touch once drawn, and keeps apart the ones that do not', () => {
     const items = [item('a', 0, 10), item('b', 11, 20), item('c', 500, 510)];
-    // 1000 ms over 1000 px: a and b are 2 px apart, c is far off.
     const marks = clusterMarks(items, 1000, 1000);
-    expect(marks.map((mark) => mark.items.map((member) => member.id))).toEqual([['a', 'b'], ['c']]);
+    expect(marks.map(memberIds)).toEqual([['a', 'b'], ['c']]);
     expect(marks[0]).toMatchObject({ at: 0, end: 20 });
-    // Zoomed out the same items fall into one mark; zoomed in all three stay.
     expect(clusterMarks(items, 1000, 100)).toHaveLength(2);
     expect(clusterMarks(items, 1000, 10_000)).toHaveLength(3);
   });

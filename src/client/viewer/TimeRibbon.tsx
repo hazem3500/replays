@@ -1,9 +1,10 @@
 import { ChevronDownIcon } from 'lucide-react';
-import { useLayoutEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { formatClock } from '../../shared/replay.ts';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 
 import { useRibbonHighlightMotion } from '../hooks/use-ribbon-highlight-motion.ts';
+import { usePlayheadAria } from '../hooks/use-playhead-aria.ts';
 import { usePlayheadProgress } from '../hooks/use-playhead-progress.ts';
 import { useRibbonScrub } from '../hooks/use-ribbon-scrub.ts';
 import { useRibbonBrush } from '../hooks/use-ribbon-brush.ts';
@@ -72,11 +73,7 @@ export function TimeRibbon({
   const handle = useRef<HTMLSpanElement>(null);
   const scrub = useRibbonScrub(player, span, strip);
   usePlayheadProgress(strip, span);
-  useLayoutEffect(() => {
-    const write = () => handle.current?.setAttribute('aria-valuenow', String(Math.round(player.getTime())));
-    write();
-    return player.subscribeTime(write);
-  }, [player]);
+  usePlayheadAria(handle, player);
   const lit = highlight ? marks.find((mark) => mark.id === highlight) : undefined;
   const highlightRef = useRibbonHighlightMotion(lit?.id, lit?.at ?? 0, lit?.end ?? 0, span);
   const shown = brush ?? range;

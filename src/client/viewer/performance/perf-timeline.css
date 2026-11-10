@@ -39,11 +39,12 @@
 .pt-tip-dot[data-verdict="poor"] { background: var(--rating-poor); }
 .pt-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-tertiary); opacity: 0.6; pointer-events: none; }
 .pt-readout { position: absolute; top: 0; z-index: 3; translate: -50% 0; padding: 1px 6px; border-radius: 3px; background: var(--surface-raised); box-shadow: 0 0 0 1px var(--line); color: var(--text); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; line-height: 14px; pointer-events: none; white-space: nowrap; }
-.pt .ribbon-handle { bottom: auto; height: 18px; }
+.pt .ribbon-handle { bottom: auto; height: 24px; }
+.pt .ribbon-toggle { width: 24px; height: 24px; }
 /* why: the shared ribbon dims what has not played by 45%, which at the start muddied every mark; here it only hints. */
 .pt .ribbon-future { background: color-mix(in srgb, var(--surface) 16%, transparent); }
 .pt .ribbon-lit { top: 18px; border-inline: 0; background: color-mix(in srgb, var(--text) 5%, transparent); }
-.pt:not([data-collapsed]) .ribbon-key { position: absolute; top: 4px; right: 2px; padding: 0; }
+.pt:not([data-collapsed]) .ribbon-key { position: absolute; top: 2px; right: 0; padding: 0; }
 .pt[data-collapsed] .ribbon-key { justify-content: flex-end; padding: 0 4px 2px; }
 .pt[data-collapsed] .ribbon-toggle svg { transform: rotate(180deg); }
 /* The frame-rate plot: one accent line and light fill on a 0 to 60 scale, guides at 60 and 30, the fill under 30 tinted danger. */
