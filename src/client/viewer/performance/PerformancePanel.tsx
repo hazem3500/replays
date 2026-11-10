@@ -15,16 +15,7 @@ import { cadenceStats } from './stats.ts';
 import { buildLanes } from './timeline-model.ts';
 import { VerdictLine } from './VerdictLine.tsx';
 import { buildVerdict } from './verdict.ts';
-import {
-  buildMoments,
-  buildVitals,
-  causeOf,
-  causeText,
-  type MomentOrder,
-  orderMoments,
-  type Vital,
-  vitalDeltas,
-} from './model.ts';
+import { buildMoments, buildVitals, causeOf, causeText, type MomentOrder, orderMoments, type Vital, vitalDeltas } from './model.ts';
 import { type VitalPeer, VitalsBar } from './VitalsBar.tsx';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the panel shares the network panel's frame styles, loaded with the lazy inspector.
 import '../network/network.css';
