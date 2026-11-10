@@ -44,17 +44,19 @@ function localTicks(origin: number, to: number) {
 }
 
 /** Labels a tick only when it clears the last labelled one, as a share of the ruler; the marks always draw. */
-const LABEL_GAP = 0.28;
+const LABEL_PX = 56;
+/** The value column, both column gaps and the least room the bars keep, px. */
+const TRACK_RESERVE = 56 + 20 + 150;
 
 const tick = (ms: number) => {
   if (ms === 0) return '0';
   return ms < 1000 ? `+${ms} ms` : `+${ms / 1000} s`;
 };
 
-function labelledTicks(ticks: readonly { offset: number; position: number }[]) {
+function labelledTicks(ticks: readonly { offset: number; position: number }[], gap: number) {
   let last = -Infinity;
   return ticks.map((item) => {
-    const labelled = item.position - last >= LABEL_GAP;
+    const labelled = item.position - last >= gap;
     if (labelled) last = item.position;
     return { ...item, labelled };
   });
@@ -86,9 +88,11 @@ export function LocalTimeline({
   const [saved, setSaved] = useState(savedWidth);
   const [preview, setPreview] = useState<number | undefined>(undefined);
   const min = Math.round(measured * LABEL_SHARE.min);
-  const max = Math.round(measured * LABEL_SHARE.max);
-  const initial = Math.round(measured * LABEL_SHARE.initial);
+  const room = Math.max(min, measured - TRACK_RESERVE);
+  const max = Math.min(Math.round(measured * LABEL_SHARE.max), room);
+  const initial = Math.min(Math.round(measured * LABEL_SHARE.initial), room);
   const labelWidth = Math.min(max, Math.max(min, preview ?? saved ?? initial));
+  const trackPx = Math.max(1, measured - labelWidth - 20 - 56);
   const left = (at: number) => `${(Math.max(0, at - from) / span) * 100}%`;
   const width = (item: LocalItem) => `${((Math.min(to, item.end) - Math.max(from, item.at)) / span) * 100}%`;
   return (
@@ -119,7 +123,7 @@ export function LocalTimeline({
         />
       </div>
       <div className="lt-ruler" aria-hidden="true">
-        {labelledTicks(localTicks(origin, to).map((offset) => ({ offset, position: (origin - from + offset) / span }))).map((item) => (
+        {labelledTicks(localTicks(origin, to).map((offset) => ({ offset, position: (origin - from + offset) / span })), LABEL_PX / trackPx).map((item) => (
           <span key={item.offset} style={{ left: `${item.position * 100}%` }}>
             {item.labelled ? <span className="lt-tick-label">{tick(item.offset)}</span> : null}
           </span>

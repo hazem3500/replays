@@ -47,20 +47,20 @@ describe('LocalTimeline label column', () => {
     render();
     const start = labelWidth();
     pointer('pointerdown', 100);
-    pointer('pointermove', 160);
-    pointer('pointerup', 160);
-    expect(labelWidth()).toBe(start + 60);
-    expect(localStorage.getItem(LABEL_WIDTH_KEY)).toBe(String(start + 60));
+    pointer('pointermove', 130);
+    pointer('pointerup', 130);
+    expect(labelWidth()).toBe(start + 30);
+    expect(localStorage.getItem(LABEL_WIDTH_KEY)).toBe(String(start + 30));
 
     pointer('pointerdown', 100);
     pointer('pointermove', 5000);
     pointer('pointerup', 5000);
-    expect(labelWidth()).toBeLessThanOrEqual(Math.round(480 * 0.75));
+    expect(labelWidth()).toBe(480 - 226);
 
     act(() => root.unmount());
     root = createRoot(host);
     render();
-    expect(labelWidth()).toBe(Math.round(480 * 0.75));
+    expect(labelWidth()).toBe(480 - 226);
   });
 
   it('moves with the arrow keys and resets on double-click', () => {
