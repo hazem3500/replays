@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './support.ts';
+import { boxOf, cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './support.ts';
 
 const server = serveApp();
 
@@ -28,15 +28,23 @@ async function openPerformance(page: Page, id: string, options: { details?: bool
   await expect(page.getByTestId('performance-timeline')).toBeVisible();
 }
 
+/** How many table rows end at or above the open panel's bottom edge. */
+async function rowsInsidePanel(page: Page) {
+  const region = await boxOf(page.locator('.inspector-panel:not([hidden])').first());
+  return page
+    .locator('.pp-row:not(.pp-head)')
+    .evaluateAll((rows, bottom) => rows.filter((row) => row.getBoundingClientRect().bottom <= bottom).length, region.y + region.height);
+}
+
 test('the timeline plot, stat cells and notes start at one x, and lane labels sit inside their lanes', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await openPerformance(page, uniqueId('performance-grid'), { details: true });
   const left = (selector: string) => page.locator(selector).evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
-  const [plot] = await left('.pt-plot');
+  const plot = (await left('.pt-plot'))[0] ?? 0;
   const cells = await left('.pp-stat');
   const notes = await left('.pp-group-note');
   expect(cells.length).toBeGreaterThan(4);
-  for (const x of [Math.min(...cells), ...notes]) expect(Math.abs(x - plot!)).toBeLessThanOrEqual(1);
+  for (const x of [Math.min(...cells), ...notes]) expect(Math.abs(x - plot)).toBeLessThanOrEqual(1);
 
   const widths = await page.locator('.pp-stat').evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().width)));
   expect(new Set(widths).size).toBe(1);
@@ -48,27 +56,28 @@ test('the timeline plot, stat cells and notes start at one x, and lane labels si
 
   const pairs = await page.locator('.pt-lane').evaluateAll((lanes) =>
     lanes.map((lane) => {
-      const label = document.querySelector(`.pt-label[data-lane="${(lane as HTMLElement).dataset.lane}"]`)!.getBoundingClientRect();
+      const label = document.querySelector(`.pt-label[data-lane="${lane.getAttribute('data-lane')}"]`)?.getBoundingClientRect();
       const box = lane.getBoundingClientRect();
-      return { lane: [box.top, box.bottom], middle: (label.top + label.bottom) / 2 };
+      return { top: box.top, bottom: box.bottom, middle: label ? (label.top + label.bottom) / 2 : Number.NaN };
     }),
   );
-  for (const { lane, middle } of pairs) {
-    expect(middle).toBeGreaterThanOrEqual(lane[0]!);
-    expect(middle).toBeLessThanOrEqual(lane[1]!);
+  for (const { top, bottom, middle } of pairs) {
+    expect(middle).toBeGreaterThanOrEqual(top);
+    expect(middle).toBeLessThanOrEqual(bottom);
   }
 
   const band = await page.locator('.pt-fps').evaluate((node) => {
     const box = node.getBoundingClientRect();
-    return [box.top, box.bottom];
+    return { top: box.top, bottom: box.bottom };
   });
   const fpsLabel = await page.locator('.pt-label[data-lane="fps"]').evaluate((node) => {
     const box = node.getBoundingClientRect();
     return (box.top + box.bottom) / 2;
   });
-  expect(Math.abs(fpsLabel - (band[0]! + band[1]!) / 2)).toBeLessThanOrEqual(2);
+  expect(Math.abs(fpsLabel - (band.top + band.bottom) / 2)).toBeLessThanOrEqual(2);
   const guides = await page.locator('.pt-fps-axis').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
-  expect(guides[1]! - guides[0]!).toBeGreaterThanOrEqual(12);
+  const [firstGuide = 0, secondGuide = 0] = guides;
+  expect(secondGuide - firstGuide).toBeGreaterThanOrEqual(12);
 });
 
 test('at 1280x800 the table shows four rows under a one-line headline and stats strip, and the panel grew to fit', async ({ page }) => {
@@ -85,19 +94,8 @@ test('at 1280x800 the table shows four rows under a one-line headline and stats 
   });
   expect(lead.height).toBe(32);
   if (lead.jumpMiddle !== undefined) expect(Math.abs(lead.jumpMiddle - lead.middle)).toBeLessThanOrEqual(1);
-  const strip = await page.getByTestId('performance-vitals').boundingBox();
-  expect(strip!.height).toBeLessThanOrEqual(56);
-  await expect
-    .poll(async () => {
-      const region = await page.locator('.inspector-panel:not([hidden])').first().boundingBox();
-      return page
-        .locator('.pp-row:not(.pp-head)')
-        .evaluateAll(
-          (rows, bottom) => rows.filter((row) => row.getBoundingClientRect().bottom <= bottom).length,
-          region!.y + region!.height,
-        );
-    })
-    .toBeGreaterThanOrEqual(4);
+  expect((await boxOf(page.getByTestId('performance-vitals'))).height).toBeLessThanOrEqual(56);
+  await expect.poll(() => rowsInsidePanel(page)).toBeGreaterThanOrEqual(4);
   const head = await page.locator('.pp-head').evaluate((node) => getComputedStyle(node).position);
   expect(head).toBe('sticky');
 });
@@ -133,12 +131,12 @@ test('dragging the bottom splitter on Performance resizes the panel, keeps the h
   await page.setViewportSize({ width: 1280, height: 900 });
   await openPerformance(page, uniqueId('performance-splitter'));
   const resizer = page.getByTestId('inspector-resizer');
-  const panelHeight = async () => (await page.locator('.inspector').first().boundingBox())!.height;
+  const panelHeight = async () => (await boxOf(page.locator('.inspector').first())).height;
   await expect(resizer).toBeVisible();
   // why: the panel may still be growing to fit its content (about 220 ms); the drag starts from where it settles.
   await page.waitForTimeout(600);
   const before = await panelHeight();
-  const seam = (await resizer.boundingBox())!;
+  const seam = await boxOf(resizer);
   const x = seam.x + 300;
   const y = seam.y + seam.height / 2;
   await page.mouse.move(x, y);
@@ -158,9 +156,6 @@ test('a stat in the strip jumps to its moment, and blocking time narrows the tab
   await page.setViewportSize({ width: 1280, height: 900 });
   await openPerformance(page, uniqueId('performance-strip-click'));
   const longest = page.getByRole('button', { name: /Longest task/ });
-  await expect(longest)
-    .toHaveAttribute('aria-pressed', 'false')
-    .catch(() => undefined);
   await longest.click();
   await expect(page.locator('.pp-row[aria-selected="true"], .pp-row[data-selected]').first()).toBeVisible();
   const rowsBefore = await page.locator('.pp-row:not(.pp-head)').count();
@@ -179,7 +174,7 @@ test('dragging a range on the timeline scopes the strip to it, and clearing it b
   await openPerformance(page, uniqueId('performance-strip-range'));
   const longest = page.getByRole('button', { name: /Longest task/ });
   await expect(longest).toContainText('120');
-  const box = (await page.locator('.pt-plot').boundingBox())!;
+  const box = await boxOf(page.locator('.pt-plot'));
   await page.mouse.move(box.x + box.width * 0.62, box.y + 8);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.98, box.y + 8, { steps: 6 });

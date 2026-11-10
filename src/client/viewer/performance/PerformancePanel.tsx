@@ -1,7 +1,7 @@
 import { type ReactNode, useRef, useState } from 'react';
 
 import { formatClock, type ReplayMeta, type ReplayStep } from '../../../shared/replay.ts';
-import { useMinContentHeight } from '../dock-grow.ts';
+import { useMinContentHeight } from '../../hooks/dock-grow.ts';
 import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { usePlayer } from '../../player.ts';

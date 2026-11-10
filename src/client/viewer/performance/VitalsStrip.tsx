@@ -62,8 +62,9 @@ export function ScopeChips({ scopes }: { scopes: readonly { text: string; label:
       {scopes.map((scope) => (
         <span key={scope.text} className="pp-scope">
           {scope.text}
-          <button type="button" aria-label={scope.label} onClick={scope.onClear}>
+          <button type="button" onClick={scope.onClear}>
             <XIcon aria-hidden="true" />
+            <span className="sr-only">{scope.label}</span>
           </button>
         </span>
       ))}

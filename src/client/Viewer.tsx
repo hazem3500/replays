@@ -63,7 +63,7 @@ import { usePageView } from './hooks/use-page-view.ts';
 import { useQuietPlaying } from './hooks/use-quiet-chrome.ts';
 import { useWindowKeydown } from './hooks/use-window-keydown.ts';
 import { useViewState } from './hooks/use-view-state.ts';
-import { useDockGrow } from './viewer/use-dock-grow.ts';
+import { useDockGrow } from './hooks/use-dock-grow.ts';
 import { pageViews } from './views/catalog.ts';
 import { resolvePageView } from './views/page-view.ts';
 import { cycleView, switcherViews, viewDefaults } from './views/resolve.ts';

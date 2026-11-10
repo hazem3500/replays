@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
-import { maxInspectorHeight } from './inspector-size.ts';
+import { maxInspectorHeight } from '../viewer/inspector-size.ts';
 
 /** Below this window height the player needs all the room it has, so no panel grows on its own. */
 export const SHORT_VIEWPORT = 640;

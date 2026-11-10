@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { growTarget } from '../src/client/viewer/dock-grow.ts';
+import { growTarget } from '../src/client/hooks/dock-grow.ts';
 
 const base = { content: 320, chrome: 48, current: 336, room: 600, viewport: 800, userSized: false };
 
