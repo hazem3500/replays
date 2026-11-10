@@ -34,7 +34,8 @@ const STRINGS = {
 export function useSignedIn(): Account | undefined {
   const me = useQuery(meQuery, queryClient).data;
   const signedIn = Boolean(me?.session?.signedIn);
-  const config = useQuery(configQuery, queryClient).data;
+  // why: config is read only for a signed-in person, so signed-out pages and fixtures add no request.
+  const config = useQuery({ ...configQuery, enabled: signedIn }, queryClient).data;
   // why: asked only where the host set a GitHub OAuth app (the plugin is listed), so everywhere else adds no request.
   const listed = Boolean(config?.plugins?.includes('github-connect'));
   const github = useQuery({ ...githubLinkQuery, enabled: signedIn && listed }, queryClient).data;
