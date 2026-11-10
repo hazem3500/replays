@@ -13,7 +13,6 @@ export function useDockGrow({
   shell,
   height,
   active,
-  tab,
   savedHeight,
   grow,
 }: {
@@ -21,7 +20,6 @@ export function useDockGrow({
   height: number;
   /** The dock is open on a desktop layout. */
   active: boolean;
-  tab: string;
   savedHeight: boolean;
   grow: (to: number) => void;
 }) {
@@ -50,7 +48,7 @@ export function useDockGrow({
       userSized: sized.current,
     });
     if (to !== undefined) grow(to);
-  }, [active, content, grow, shell, tab]);
+  }, [active, content, grow, shell]);
   return () => {
     sized.current = true;
   };

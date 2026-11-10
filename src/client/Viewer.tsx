@@ -349,7 +349,6 @@ export function Viewer({
     shell,
     height: inspectorHeight,
     active: !collapsed && !stacked && !hidden,
-    tab,
     savedHeight: hadSavedHeight,
     grow: growDock,
   });

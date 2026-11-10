@@ -147,12 +147,6 @@ button.pp-stat:hover { box-shadow: 0 0 0 4px var(--surface-hover); }
 .pp-took .pp-sort { flex-direction: row-reverse; }
 .pp-sort-phone { display: none; }
 @media (prefers-reduced-motion: reduce) { .pp-sort { transition: none; } }
-/* why: the headline, timeline and stats are taller than a short panel (a phone, or a laptop's dock), so the whole panel scrolls and the table's header sticks to its top. */
-@media (max-width: 600px), (max-height: 900px) {
-  .np.pp { overflow-y: auto; overscroll-behavior: contain; }
-  .pp .np-body { flex: none; }
-  .pp .pp-scroll { flex: none; overflow: visible; }
-}
 
 /* The compact strip: every stat as `label value dot` on one line, notes muted beside them; Details opens the grouped grid. */
 .pp-vitals:not([data-details]) { display: flex; align-items: flex-start; gap: 8px; min-height: 24px; padding: 0 var(--pp-end) 0 var(--pp-edge); }
