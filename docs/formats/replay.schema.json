@@ -189,6 +189,69 @@
             }
           }
         },
+        "longFrames": {
+          "description": "Long Animation Frames over 50 ms (Chromium), at most 300 and 30 per minute. `at` is on the replay's clock; `renderStart` and `styleAndLayoutStart` are milliseconds after `at`. Optional: older bundles and other browsers omit it. Source of truth: src/shared/replay.ts.",
+          "type": "array",
+          "maxItems": 300,
+          "items": {
+            "type": "object",
+            "required": ["at", "duration", "blockingDuration", "renderStart", "styleAndLayoutStart", "scripts"],
+            "properties": {
+              "at": { "type": "number", "minimum": 0 },
+              "duration": { "type": "number", "minimum": 0 },
+              "blockingDuration": { "type": "number", "minimum": 0 },
+              "renderStart": { "type": "number", "minimum": 0 },
+              "styleAndLayoutStart": { "type": "number", "minimum": 0 },
+              "scripts": {
+                "description": "The three longest scripts. `sourceURL` is origin and path only, never a query or hash.",
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "type": "object",
+                  "required": ["sourceURL", "sourceFunctionName", "invoker", "invokerType", "duration", "forcedStyleAndLayoutDuration"],
+                  "properties": {
+                    "sourceURL": { "type": "string" },
+                    "sourceFunctionName": { "type": "string" },
+                    "invoker": { "type": "string" },
+                    "invokerType": { "type": "string" },
+                    "duration": { "type": "number", "minimum": 0 },
+                    "forcedStyleAndLayoutDuration": { "type": "number", "minimum": 0 }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "interactions": {
+          "description": "Interactions grouped by Event Timing `interactionId`, at most 200, with the INP-style breakdown: inputDelay + processing + presentation = duration. Optional. Source of truth: src/shared/replay.ts.",
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "required": ["at", "interactionId", "eventType", "duration", "inputDelay", "processing", "presentation"],
+            "properties": {
+              "at": { "type": "number", "minimum": 0 },
+              "interactionId": { "type": "integer" },
+              "eventType": { "type": "string" },
+              "duration": { "type": "number", "minimum": 0 },
+              "inputDelay": { "type": "number", "minimum": 0 },
+              "processing": { "type": "number", "minimum": 0 },
+              "presentation": { "type": "number", "minimum": 0 },
+              "target": {
+                "description": "Tag and role always; `name` (at most 40 characters) only when the privacy mode shows the control's text.",
+                "type": "object",
+                "required": ["tag"],
+                "properties": {
+                  "tag": { "type": "string" },
+                  "role": { "type": "string" },
+                  "name": { "type": "string", "maxLength": 40 }
+                }
+              },
+              "step": { "type": "integer", "minimum": 0, "description": "Index into `steps`." },
+              "frame": { "type": "integer", "minimum": 0, "description": "Index into `longFrames` of the overlapping frame." }
+            }
+          }
+        },
         "frames": {
           "type": "array",
           "maxItems": 600,
@@ -205,7 +268,9 @@
         },
         "supported": {
           "type": "array",
-          "items": { "enum": ["paint", "largest-contentful-paint", "longtask", "event", "layout-shift", "animation-frame"] }
+          "items": {
+            "enum": ["paint", "largest-contentful-paint", "longtask", "event", "layout-shift", "animation-frame", "long-animation-frame"]
+          }
         },
         "entries": {
           "type": "array",
