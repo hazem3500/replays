@@ -6,6 +6,24 @@ import { createFakeRrweb } from './testing/fakes.ts';
 import type { IssueReportUpload } from './upload.ts';
 import { must } from './testing.ts';
 
+const stops = vi.hoisted(() => ({ count: 0 }));
+vi.mock('./status-spinner.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./status-spinner.ts')>();
+  return {
+    ...actual,
+    createStatusSpinner: () => {
+      const spinner = actual.createStatusSpinner();
+      return {
+        node: spinner.node,
+        stop: () => {
+          stops.count += 1;
+          spinner.stop();
+        },
+      };
+    },
+  };
+});
+
 const root = () => must(document.querySelector('[data-recorder-ui]')?.shadowRoot);
 const control = (name: string) =>
   must(document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector<HTMLButtonElement>(`[data-recorder-action=${name}]`));
@@ -105,6 +123,12 @@ describe('notice errors', () => {
   });
 });
 
+const pendingError = (run: () => Promise<void>) =>
+  Object.assign(new Error('secret'), {
+    userMessage: 'Sign in to upload this recording.',
+    action: { label: 'Sign in and upload', pendingMessage: 'Waiting for you to sign in', run },
+  });
+
 describe('recovery pending state', () => {
   afterEach(() => {
     document.body.innerHTML = '';
@@ -141,6 +165,45 @@ describe('recovery pending state', () => {
     expect(control('recover').textContent).toBe('Open sign-in again');
     expect(control('recover').disabled).toBe(false);
     ui.dismiss();
+  });
+
+  it('puts the earlier guidance back when the action fails without a user message', async () => {
+    const wait = deferred();
+    const ui = createDefaultUi();
+    ui.showResult({ status: 'error', error: pendingError(() => wait.promise), retry() {} });
+    control('recover').click();
+    expect(root().textContent).toContain('Waiting for you to sign in');
+    wait.reject(new Error('popup blocked'));
+    await wait.promise.catch(() => {});
+    await Promise.resolve();
+    expect(root().querySelector('.status-spinner')).toBeNull();
+    expect(root().textContent).toContain('Sign in to upload this recording.');
+    expect(root().textContent).not.toContain('Waiting for you to sign in');
+    expect(root().textContent).not.toContain('popup blocked');
+    ui.dismiss();
+  });
+
+  it('stops the spinner when the wait succeeds and the result is replaced by the retry', async () => {
+    const wait = deferred();
+    const ui = createDefaultUi();
+    const before = stops.count;
+    ui.showResult({ status: 'error', error: pendingError(() => wait.promise), retry: () => ui.showUploading?.() });
+    control('recover').click();
+    wait.resolve();
+    await wait.promise;
+    await Promise.resolve();
+    expect(stops.count).toBe(before + 1);
+    ui.dismiss();
+  });
+
+  it('stops the spinner when the surface is dismissed during the wait', () => {
+    const ui = createDefaultUi();
+    const before = stops.count;
+    ui.showResult({ status: 'error', error: pendingError(() => new Promise<void>(() => {})), retry() {} });
+    control('recover').click();
+    expect(root().querySelector('.status-spinner')).not.toBeNull();
+    ui.dismiss();
+    expect(stops.count).toBe(before + 1);
   });
 });
 
