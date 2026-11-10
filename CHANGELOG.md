@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- CLI: `replays suite` creates and runs review suites end to end: `suite create`, `suite run add|set|summary`, `suite summary`, `suite show`, `suite list [--mine]` and `suite record --plan plan.json`, which registers the suite, then for each run registers it as running, captures it with the closed step vocabulary, uploads the replay to the run and marks it passed or failed (a failed run does not stop the next; `--only <run>` retries one, `--dry-run` checks the plan). The plan format is `docs/formats/suite-plan.schema.json`, with an example in `sample/suite-plan.json`. Every command takes `--json` and the usual `--server`, `--upload-url` and `--header-file`.
+
 - CLI selectors: capture steps act on the first visible match of a selector (Playwright `.filter({ visible: true }).first()`, and the same through CDP for `agent-browser`) instead of failing on a hidden duplicate. A step that times out lists up to five candidates with tag, text and visible or hidden. New `replays probe --url <url> --selector <selector> [--json]` opens the page headless and reports every match with visibility and bounding box.
 
 - CLI: `capture --json` reports `networkRequested` and `networkMode`, so `--network bodies` on the `agent-browser` driver (which records headers only) no longer degrades silently; the human summary has a Network line saying so. `--profile triage`, `design-review`, `walkthrough` and `support` are accepted without a declaration; only an unknown id warns, naming `replays.config.*` and the ids to use. `doctor` splits the Node check into `capture/upload` and `serve` (`needs Node 22.22+` is a warning that blocks `serve` only).

@@ -2,6 +2,7 @@ import { PRODUCT_SLUG } from './shared/brand.ts';
 import { CAPTURE_USAGE } from './capture/capture-usage.ts';
 import type { Terminal } from './capture/terminal.ts';
 import { EDIT_USAGE } from './edit/usage.ts';
+import { SUITE_USAGE } from './suite/usage.ts';
 
 const p = PRODUCT_SLUG;
 
@@ -96,6 +97,12 @@ a missing optional tool is reported as a warning. --json prints the checks as on
     help: EDIT_USAGE,
   },
   {
+    name: 'suite',
+    summary: 'create review suites, add runs, record a plan of runs and read results back',
+    captureOnly: true,
+    help: SUITE_USAGE,
+  },
+  {
     name: 'agent-guide',
     summary: 'print a markdown guide to every command for AI agents',
     captureOnly: true,
@@ -157,7 +164,7 @@ export function renderAgentGuide({ captureOnly = false } = {}) {
     '## Output contract',
     '',
     '- Results go to stdout, errors to stderr. Output is plain unless a person is at a terminal: no colour or spinners when it is piped, in CI, with `NO_COLOR`, or with `--json`.',
-    '- `--json` (capture, upload, status, doctor, edit) prints one JSON object. Success is `{"success":true,...}` on stdout; failure is `{"success":false,"error":"...","hint":"..."}` on stderr (`hint` appears when there is a fix to suggest).',
+    '- `--json` (capture, upload, status, doctor, edit, suite) prints one JSON object. Success is `{"success":true,...}` on stdout; failure is `{"success":false,"error":"...","hint":"..."}` on stderr (`hint` appears when there is a fix to suggest).',
     `- Exit codes: ${EXIT_CODES}.`,
     `- \`${p} edit\` is the replay editor without a browser. Run \`${p} edit <id> show --json\` first: it lists the numbered steps (\`rename\` takes a step number or time) and the numbered edits (\`cut rm 2\`). Every edit command takes \`--json\` and returns \`changes\` plus the viewer \`link\`.`,
     '- `doctor --json` lists `checks` (`id`, `status` of `ok`, `warn` or `fail`, `detail`, optional `fix`); run it first when something fails.',

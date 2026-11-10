@@ -59,10 +59,23 @@ describe('docs/formats', () => {
       'plugin-manifest.schema.json',
       'replay-summary.schema.json',
       'replay.schema.json',
+      'suite-plan.schema.json',
       'user-plugin-history.schema.json',
       'user-plugin.schema.json',
     ]);
     for (const file of files) expect(instance.getSchema(id(file.replace('.schema.json', '')))).toBeTruthy();
+  });
+
+  it('the sample suite plan validates, and the schema rejects what the CLI rejects', async () => {
+    const check = await validator('suite-plan');
+    const sample = JSON.parse(await readFile(join(import.meta.dirname, '../sample/suite-plan.json'), 'utf8'));
+    expect(check(sample).errors).toBe('No errors');
+    const run = { id: 'a', title: 'A', url: 'https://example.com/', steps: [] };
+    expect(check({ id: 'p', title: 'P', runs: [run] }).ok).toBe(true);
+    expect(check({ id: 'p', title: 'P', runs: [{ ...run, steps: [{ kind: 'click' }] }] }).ok).toBe(false);
+    expect(check({ id: 'p', title: 'P', runs: [{ ...run, steps: [{ kind: 'eval' }] }] }).ok).toBe(false);
+    expect(check({ id: 'P', title: 'P', runs: [run] }).ok).toBe(false);
+    expect(check({ id: 'p', title: 'P', runs: [] }).ok).toBe(false);
   });
 
   it('the sample replays validate as replay bundles', async () => {

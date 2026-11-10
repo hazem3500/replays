@@ -46,6 +46,9 @@ else
     case 'edit':
       await (await import('../edit/cli.ts')).runEditCli(args, process.env);
       break;
+    case 'suite':
+      await (await import('../suite/cli.ts')).runSuiteCli(args, process.env);
+      break;
     case 'agent-guide':
       process.stdout.write(`${renderAgentGuide({ captureOnly: true })}\n`);
       break;
