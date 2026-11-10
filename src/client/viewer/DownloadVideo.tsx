@@ -150,6 +150,20 @@ function DownloadProgress({ download, children }: { download: VideoDownload; chi
   );
 }
 
+/** The last render availability any replay resolved to, so a run switch that remounts the viewer keeps its action. */
+let lastResolvedAvailability = false;
+
+/** Whether the render probe is still out, and the availability to assume meanwhile: this replay's last, else the last seen. */
+function useSteadyAvailability({ availability, canRender }: { availability: string; canRender: boolean }) {
+  const pending = availability === 'unknown';
+  const [lastAvailable, setLastAvailable] = useState(() => canRender || lastResolvedAvailability);
+  if (!pending && lastAvailable !== canRender) setLastAvailable(canRender);
+  useEffect(() => {
+    if (!pending) lastResolvedAvailability = canRender;
+  }, [pending, canRender]);
+  return { pending, lastAvailable };
+}
+
 /**
  * Downloads live in the topbar's "More" menu. Returns
  * the menu items and the progress anchor, which sits at the end of the bar's actions, under "More".
@@ -159,9 +173,7 @@ export function useDownloadMenu(meta: ReplayMeta): { items: TopbarMenuItem[]; pr
   const download = useVideoDownload(meta);
   const { stored, canRender, active, variant, start } = download;
   const items: TopbarMenuItem[] = [];
-  const [lastAvailable, setLastAvailable] = useState(canRender);
-  const pending = download.availability === 'unknown';
-  if (!pending && lastAvailable !== canRender) setLastAvailable(canRender);
+  const { pending, lastAvailable } = useSteadyAvailability(download);
   if (canRender || (pending && lastAvailable)) {
     items.push({
       label: active ? 'Rendering video…' : exportLabel(stored ? 'Export video' : 'Download video', variant),
@@ -207,9 +219,7 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
 
   const hasPlugins = formats.some((format) => format !== 'core');
   const showCore = formats.includes('core');
-  const [lastAvailable, setLastAvailable] = useState(canRender);
-  const pending = download.availability === 'unknown';
-  if (!pending && lastAvailable !== canRender) setLastAvailable(canRender);
+  const { pending, lastAvailable } = useSteadyAvailability(download);
   if (((!stored && !canRender && !(pending && lastAvailable)) || !showCore) && !hasPlugins) return null;
 
   const exportText = exportLabel('Export video', variant);

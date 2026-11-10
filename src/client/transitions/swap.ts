@@ -14,6 +14,8 @@ import { currentTransition, follow, isTurn, nextTurn, setSwappingInPlace, suppor
  */
 
 const RUN_WAIT_MS = 1200;
+/** How long a started crossfade may take to apply the new run before it lands without one. */
+const COMMIT_WAIT_MS = 400;
 
 const delay = (ms: number) => new Promise<void>((done) => window.setTimeout(done, ms));
 
@@ -36,9 +38,11 @@ export function swapInPlace(update: () => void, ready: Promise<unknown>, { insta
     unnameAll();
     namePicture(viewerPicture(), 'vt-run-hero');
     root.dataset.pageTransition = 'motion-run';
+    let committed = false;
     const transition = motionView(
       () => {
-        if (!isTurn(turn)) return;
+        if (!isTurn(turn) || committed) return;
+        committed = true;
         unnameAll();
         setSwappingInPlace(true);
         try {
@@ -73,6 +77,15 @@ export function swapInPlace(update: () => void, ready: Promise<unknown>, { insta
       },
     );
     follow(transition);
+    // why: a crossfade queued behind one a quick switch cut short can wait forever; the run must still change.
+    window.setTimeout(() => {
+      if (committed || !isTurn(turn)) return;
+      committed = true;
+      transition.skipTransition();
+      unnameAll();
+      delete root.dataset.pageTransition;
+      flushSync(update);
+    }, COMMIT_WAIT_MS);
     void transition.finished
       .catch(() => {})
       .then(() => {

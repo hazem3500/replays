@@ -68,10 +68,13 @@ function attemptedRecently(now: number) {
 export function useSignInRedirect(error: unknown) {
   const needed = error instanceof SignInError;
   const [redirecting, setRedirecting] = useState(false);
-  const [tried] = useState(() => attemptedRecently(Date.now()));
+  const [tried, setTried] = useState(() => attemptedRecently(Date.now()));
   useEffect(() => {
+    if (!needed) return;
     // oxlint-disable-next-line react/set-state-in-effect -- why: latches once the redirect starts so the screen never flips back
-    if (needed && redirectToSignIn()) setRedirecting(true);
+    if (redirectToSignIn()) setRedirecting(true);
+    // why: a failure seen after mount can still hit the loop guard; then the page must offer Sign in, not wait forever.
+    else setTried(true);
   }, [needed]);
   return needed && (redirecting || (signInHref() !== undefined && !tried));
 }

@@ -1,8 +1,8 @@
 import { expect, type Locator, test } from '@playwright/test';
 
-import { createSuite, gotoHydrated, serveApp, uniqueId } from './support.ts';
+import { createSuite, gotoHydrated, serveApp, uniqueId, COMPARE_SUITE_PROFILE, compareSuiteEnv } from './support.ts';
 
-const server = serveApp();
+const server = serveApp(compareSuiteEnv);
 
 function rects(locator: Locator) {
   return locator.evaluateAll((elements) =>
@@ -24,12 +24,19 @@ function near(boxes: number[][], expected: number[][]) {
 test('a suite opened from its card loads with its runs listed and a tile where each recording lands', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   const suite = uniqueId('loading-suite');
-  await createSuite(page.request, server().origin, suite, [
-    { id: 'attempt-1', label: 'Desktop', status: 'passed', replayId: `${suite}-one` },
-    { id: 'attempt-2', label: 'Phone', status: 'failed', replayId: `${suite}-two` },
-    { id: 'attempt-3', label: 'Tablet', status: 'passed', replayId: `${suite}-three` },
-    { id: 'attempt-4', label: 'Waiting', status: 'passed' },
-  ]);
+  await createSuite(
+    page.request,
+    server().origin,
+    suite,
+    [
+      { id: 'attempt-1', label: 'Desktop', status: 'passed', replayId: `${suite}-one` },
+      { id: 'attempt-2', label: 'Phone', status: 'failed', replayId: `${suite}-two` },
+      { id: 'attempt-3', label: 'Tablet', status: 'passed', replayId: `${suite}-three` },
+      { id: 'attempt-4', label: 'Waiting', status: 'passed' },
+    ],
+    undefined,
+    { profile: COMPARE_SUITE_PROFILE },
+  );
   await gotoHydrated(page, `${server().origin}/`);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => (release = resolve));

@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { gotoHydrated, serveApp } from './support.ts';
+import { gotoHydrated, serveApp, compareSuiteEnv } from './support.ts';
 import {
   landed,
   largestOverlap,
@@ -29,7 +29,7 @@ async function replayLibrary(page: Page, base: string) {
 const heroFrames = (record: TransitionFrames | undefined) =>
   (record?.frames ?? []).flatMap((frame) => frame.layers.filter((layer) => layer.name === 'vt-page-hero' && layer.running));
 
-const server = serveApp({ REPLAYS_SSR: '1' });
+const server = serveApp(() => ({ REPLAYS_SSR: '1', ...compareSuiteEnv() }));
 
 test('suite sheets stay opaque while their pictures crossfade into the tiles', async ({ page }) => {
   const { link } = await suiteLibrary(page, server().origin);

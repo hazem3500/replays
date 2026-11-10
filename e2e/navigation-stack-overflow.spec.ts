@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
-import { createSuite, gotoHydrated, serveApp, uniqueId } from './support.ts';
+import { createSuite, gotoHydrated, serveApp, uniqueId, COMPARE_SUITE_PROFILE, compareSuiteEnv } from './support.ts';
 import { landed, routePosters } from './transition-frames.ts';
 
 const RUNS = 6;
@@ -123,6 +123,8 @@ async function sixRunSuite(page: Page, base: string, layout?: 'List' | 'Grid') {
     base,
     suiteId,
     ids.map((replayId, index) => ({ id: `run-${index}`, label: `Browser ${index + 1}`, status: 'passed' as const, replayId })),
+    undefined,
+    { profile: COMPARE_SUITE_PROFILE },
   );
   await routePosters(page, suiteId);
   await gotoHydrated(page, base);
@@ -253,7 +255,7 @@ async function returnAndCheck(page: Page, link: Locator, tiles: Awaited<ReturnTy
   }
 }
 
-const server = serveApp({ REPLAYS_SSR: '1' });
+const server = serveApp(() => ({ REPLAYS_SSR: '1', ...compareSuiteEnv() }));
 
 test.describe('a suite with more runs than its stack shows', () => {
   for (const layout of ['List', 'Grid'] as const) {

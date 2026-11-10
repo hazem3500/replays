@@ -13,7 +13,7 @@ async function openNumbers(page: Page) {
 }
 
 async function enableCaptions(page: Page) {
-  await page.addInitScript(() => localStorage.setItem('replays-view:standard:captions', '1'));
+  await page.addInitScript(() => localStorage.setItem('replays-captions', '1'));
 }
 
 for (const width of [1280, 390]) {

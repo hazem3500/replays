@@ -37,7 +37,7 @@ button.ribbon-mark:focus-visible { outline: 2px solid var(--accent); outline-off
 .ribbon-future, .ribbon-now { position: absolute; inset: 0; pointer-events: none; will-change: transform; }
 .ribbon-future { transform-origin: right center; transform: scaleX(calc(1 - var(--progress, 0))); background: color-mix(in srgb, var(--surface) 45%, transparent); }
 .ribbon-now { transform: translateX(calc(var(--progress, 0) * 100%)); }
-.ribbon-handle { position: absolute; top: 0; bottom: 0; left: 0; width: 10px; translate: -50% 0; cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; }
+.ribbon-handle { position: absolute; top: 0; bottom: 0; left: 0; width: 24px; translate: -50% 0; cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; }
 .ribbon-handle::after { content: ""; position: absolute; top: 0; left: 50%; width: 8px; height: 8px; translate: -50% 0; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface-raised), 0 1px 3px 2px rgb(0 0 0 / 0.14); }
 .ribbon-handle:focus-visible::after { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--accent); }
 .ribbon-now::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 1.5px; translate: -50% 0; background: var(--accent); }
