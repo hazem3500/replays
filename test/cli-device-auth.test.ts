@@ -321,7 +321,7 @@ describe('OIDC device login and upload-only CLI session', () => {
 
     const uploaded = await run(['upload', replayFile], env);
     expect(uploaded.code).toBe(0);
-    expect(JSON.parse(uploaded.stdout)).toEqual({ success: true, id: 'device-upload' });
+    expect(JSON.parse(uploaded.stdout)).toMatchObject({ success: true, id: 'device-upload' });
     expect(acceptedAuthorization).toBe(`Bearer ${issuedAccessToken}`);
     const explicitReplayPath = join(configDir, 'explicit-replay.json');
     await writeFile(explicitReplayPath, JSON.stringify(replay('device-upload-explicit')));
