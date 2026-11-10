@@ -76,7 +76,7 @@ function npmInstall(directory: string) {
     );
     let errors = '';
     child.stderr.on('data', (chunk: Buffer) => {
-      errors = `${errors}${chunk}`.slice(-4000);
+      errors = `${errors}${chunk.toString()}`.slice(-4000);
     });
     child.on('error', (error) => fail(new Error(`could not run npm: ${error.message}`)));
     child.on('close', (code) => (code === 0 ? done() : fail(new Error(`npm install exited with ${String(code)}\n${errors.trim()}`))));
