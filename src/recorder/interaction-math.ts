@@ -5,11 +5,15 @@ export const MAX_INTERACTIONS = 200;
 
 /**
  * INP-style phases of one Event Timing entry. invariant: the three parts add up to `duration`; a browser that rounds
- * `processingEnd` past the end of the frame leaves presentation at 0 rather than negative.
+ * `processingStart` or `processingEnd` outside the interaction is clamped to its start and end.
  */
 export function interactionBreakdown(entry: { startTime: number; duration: number; processingStart: number; processingEnd: number }) {
-  const inputDelay = Math.max(0, entry.processingStart - entry.startTime);
-  const processing = Math.max(0, entry.processingEnd - entry.processingStart);
-  const presentation = Math.max(0, entry.startTime + entry.duration - entry.processingEnd);
-  return { inputDelay, processing, presentation };
+  const end = entry.startTime + entry.duration;
+  const processingStart = Math.min(end, Math.max(entry.startTime, entry.processingStart));
+  const processingEnd = Math.min(end, Math.max(processingStart, entry.processingEnd));
+  return {
+    inputDelay: processingStart - entry.startTime,
+    processing: processingEnd - processingStart,
+    presentation: end - processingEnd,
+  };
 }

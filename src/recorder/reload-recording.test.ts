@@ -78,6 +78,31 @@ describe('recording from page load', () => {
     expect(sessionStorage.getItem(RELOAD_FLAG_KEY)).toBeNull();
   });
 
+  it.each([
+    ['a customer recorder', { diagnostics: true, by: 'customer' as const }],
+    ['a host that opts out', { diagnostics: true, fromLoad: false, privacy: ['text-masked' as const, 'masked' as const] }],
+    ['a recorder without choices', undefined],
+  ])('leaves a flag alone and still asks for consent in %s', async (_name, choices) => {
+    const flag = JSON.stringify({ exp: Date.now() + 20_000, choice: { privacy: 'visible', performance: true } });
+    sessionStorage.setItem(RELOAD_FLAG_KEY, flag);
+    const { ui, consents } = uiWith({ privacy: 'masked' });
+    const recorder = createRecorder({
+      upload: createFakeTransport().upload,
+      loadRrweb: createFakeRrweb().load,
+      activation: () => true,
+      ui,
+      privacy: { sanitize: false, blockMedia: false },
+      capture: { performance: true },
+      ...(choices ? { choices } : {}),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(recorder.getState().status).toBe('idle');
+    expect(consents).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(RELOAD_FLAG_KEY)).toBe(flag);
+    void recorder.request();
+    await vi.waitFor(() => expect(consents).toHaveBeenCalledOnce());
+  });
+
   it('does not reload again after resuming, so there is no loop', async () => {
     sessionStorage.setItem(RELOAD_FLAG_KEY, JSON.stringify({ exp: Date.now() + 20_000, choice: { performance: true, fromLoad: true } }));
     const reload = vi.fn<() => void>();

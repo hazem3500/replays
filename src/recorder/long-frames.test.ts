@@ -6,7 +6,7 @@ import type { ReplayPerformanceTrack } from '../shared/replay.ts';
 import { captureLongFrames, createLongFrameFilter, scriptOrigin, trimScripts } from './long-frames.ts';
 
 function stubObserver(types: string[]) {
-  const state: { receive?: PerformanceObserverCallback; observer?: PerformanceObserver } = {};
+  const state: { receive?: PerformanceObserverCallback; observer?: PerformanceObserver; pending?: PerformanceEntry[] } = {};
   class Observer {
     static supportedEntryTypes = types;
     constructor(callback: PerformanceObserverCallback) {
@@ -16,7 +16,7 @@ function stubObserver(types: string[]) {
     observe() {}
     disconnect() {}
     takeRecords() {
-      return [];
+      return state.pending ?? [];
     }
   }
   vi.stubGlobal('PerformanceObserver', Observer);
@@ -53,7 +53,21 @@ describe('interaction breakdown', () => {
 
   it('never reports a negative phase when the browser rounds processing past the frame', () => {
     const parts = interactionBreakdown({ startTime: 1000, duration: 100, processingStart: 1000, processingEnd: 1130 });
-    expect(parts.presentation).toBe(0);
+    expect(parts).toEqual({ inputDelay: 0, processing: 100, presentation: 0 });
+    expect(parts.inputDelay + parts.processing + parts.presentation).toBe(100);
+  });
+
+  it('keeps the parts inside the interaction when processing starts before it or after its end', () => {
+    expect(interactionBreakdown({ startTime: 1000, duration: 100, processingStart: 990, processingEnd: 1050 })).toEqual({
+      inputDelay: 0,
+      processing: 50,
+      presentation: 50,
+    });
+    expect(interactionBreakdown({ startTime: 1000, duration: 100, processingStart: 1120, processingEnd: 1130 })).toEqual({
+      inputDelay: 100,
+      processing: 0,
+      presentation: 0,
+    });
   });
 });
 
@@ -110,6 +124,17 @@ describe('long animation frame caps', () => {
     if (state.receive && state.observer) state.receive(listOf(entries), state.observer);
     expect(track.longFrames).toHaveLength(300);
     expect(track.supported).toContain('long-animation-frame');
+  });
+
+  it('keeps a frame the browser queued but had not delivered when recording stops', () => {
+    const state = stubObserver(['long-animation-frame']);
+    const track: ReplayPerformanceTrack = { supported: [], entries: [] };
+    const onFrame = vi.fn<() => void>();
+    const stop = captureLongFrames(track, () => {}, onFrame);
+    state.pending = [frame(5_000)];
+    stop();
+    expect(track.longFrames).toHaveLength(1);
+    expect(onFrame).toHaveBeenCalled();
   });
 
   it('stores nothing where the browser lacks the entry type', () => {
