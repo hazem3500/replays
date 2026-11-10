@@ -66,7 +66,6 @@ export const SPARK_WIDTH = 1000;
 export const SPARK_HEIGHT = 100;
 /** A hole wider than this between two samples breaks the line; a cut's seam sits closer than this. */
 const GAP_MS = 250;
-/** The frame-rate chart's reference lines. */
 export const FPS_GUIDES = [60, 30] as const;
 const REFERENCE_FPS = 120;
 const CEILING_STEP = 30;

@@ -33,7 +33,6 @@ export interface PerformancePeer {
   vitals: readonly Vital[];
 }
 
-/** A long task counts toward blocking time by what it spent past this. */
 const BLOCKING_AFTER_MS = 50;
 const SIDE_DETAIL_MIN_WIDTH = 760;
 
@@ -44,7 +43,6 @@ const STRINGS = {
   outside: 'Clear the time range to see every moment.',
 };
 
-/** The panel's rows, in px: what the headline, timeline, stats strip and a table of this many rows need to read as one. */
 const LEAD = 40;
 const AXIS = 24;
 const LANE = 24;

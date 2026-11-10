@@ -2,7 +2,6 @@ import { type RefObject, useEffect, useRef } from 'react';
 
 import { growTarget, useDockNeeds } from './dock-grow.ts';
 
-/** The player keeps at least this share of the viewer when the dock grows. */
 const MIN_PLAYER_SHARE = 0.4;
 
 /**

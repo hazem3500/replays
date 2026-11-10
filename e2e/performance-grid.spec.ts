@@ -28,7 +28,6 @@ async function openPerformance(page: Page, id: string, options: { details?: bool
   await expect(page.getByTestId('performance-timeline')).toBeVisible();
 }
 
-/** How many table rows end at or above the open panel's bottom edge. */
 async function rowsInsidePanel(page: Page) {
   const region = await boxOf(page.locator('.inspector-panel:not([hidden])').first());
   return page

@@ -161,7 +161,6 @@ export function VitalsBar({
   );
 }
 
-/** In the strip every note comes after every metric, as one muted group. */
 const NOTES_LAST = 10_000;
 const NO_STATS: readonly Stat[] = [];
 const GROUPS: readonly StatGroup[] = ['loading', 'responsiveness', 'smoothness'];
