@@ -72,8 +72,8 @@ pnpm capture \
 `./out/replay.json` is the whole recording. Open it by uploading it in the viewer (the upload button, or drag and
 drop), or `POST` it to `/api/replays`. The CLI prints one JSON line (`{"success":true,…}`), so agents and CI can parse it.
 
-Steps are a closed list: `click`, `hover`, `type`, `fill`, `press`, `wait`, `scroll`, `goto`. Arbitrary page scripts are
-intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/demo-shop.steps.json` is a longer one.
+Steps are a closed list: `click`, `hover`, `type`, `fill`, `press`, `wait`, `scroll`, `goto`, `shot`. Arbitrary page
+scripts are intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/demo-shop.steps.json` is a longer one.
 Use `--step-pause 1200` to hold each non-wait action for a readable beat (default: 0ms, or
 `capture.stepPauseMs` in your config). Built-in drivers type at 80ms per character; `fill` is immediate.
 Unlabelled waits execute without adding a step. Labels use selector names without typed values.
@@ -81,9 +81,29 @@ See [capture pacing](docs/extending.md#capture-pacing) for host configuration. `
 [capture defaults](docs/extension-api.md#capture-profiles) under the explicit flags; `--network bodies` also keeps redacted
 request and response bodies (off by default).
 
+A `wait` takes `ms` or a `selector` with optional `state` (`visible` by default, `attached`, or `hidden`: no visible
+match) and `timeout` in ms (15000 by default, at most 300000). A `scroll` takes `direction` with optional `pixels`, or a
+`selector` to bring into view. A `shot` takes a lowercase `name` (unique in the run) and saves
+`<output>/shots/<name>.png`; the result line lists each as `{"name","file","label","step","at"}` under `shots`, where
+`step` is the 1-based step number (`#step-<n>` in the viewer) and `at` the time in ms on the replay clock:
+
+```json
+[
+  {"kind":"click","selector":"text=Export","label":"Start the export"},
+  {"kind":"wait","selector":"[data-testid=export-done]","state":"visible","timeout":60000,"label":"Wait for the export"},
+  {"kind":"scroll","selector":"#history"},
+  {"kind":"shot","name":"export-done"}
+]
+```
+
+`--state <file>` starts the browser signed in from a Playwright storage state (`{"cookies":[…],"origins":[…]}`; for
+example `context.storageState({ path })`). agent-browser reads the same shape, so a state file written for
+`AGENT_BROWSER_STATE` works for either `--driver` as is, and with agent-browser it is loaded once at launch.
+`replays probe --state` takes the same file.
+
 ```text
 replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
-                   [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
+                   [--state storageState.json] [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
                    [--source github:owner/repo#12]… [--profile id] [--network headers|off|bodies] [--no-performance]
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed [--manual [--max-duration 3m]]]

@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -181,4 +181,72 @@ describe.skipIf(!CHROME)('probe and drivers', () => {
     expect(await runOnFirstVisible(cdp, { kind: 'click', selector: '#real' })).toBe(false);
     expect(await runOnFirstVisible(cdp, { kind: 'press', key: 'Enter' })).toBe(false);
   });
+});
+
+describe.skipIf(!CHROME)('wait, scroll and shot steps', () => {
+  const env = useBrowser();
+
+  async function withDriver<T>(run: (driver: ReturnType<typeof playwrightDriver>, cdp: CdpLike) => Promise<T>, state?: string) {
+    const driver = playwrightDriver();
+    const cdp = await driver.launch({
+      viewport: { width: 800, height: 600 },
+      harPath: join(await mkdtemp(join(tmpdir(), 'replays-wait-')), 'a.har'),
+      ...(state ? { state } : {}),
+    });
+    try {
+      await driver.open(env.url);
+      return await run(driver, cdp);
+    } finally {
+      await driver.finish();
+      await driver.close();
+    }
+  }
+
+  it('waits for each state of a selector and times out with a message naming it', async () => {
+    await withDriver(async (driver) => {
+      await driver.step({ kind: 'wait', selector: '#late' });
+      await driver.step({ kind: 'wait', selector: '#late', state: 'attached', timeout: 1000 });
+      await driver.step({ kind: 'wait', selector: '.ghost', state: 'attached', timeout: 1000 });
+      await driver.step({ kind: 'wait', selector: '.ghost', state: 'hidden', timeout: 1000 });
+      await driver.step({ kind: 'wait', selector: '.nope', state: 'hidden', timeout: 1000 });
+      const never = await driver.step({ kind: 'wait', selector: '.ghost', timeout: 300 }).catch((error: unknown) => error);
+      expect(messageOf(never)).toContain('no visible element matched ".ghost" within 0.3s');
+      const stuck = await driver.step({ kind: 'wait', selector: '.buy', state: 'hidden', timeout: 300 }).catch((error: unknown) => error);
+      expect(messageOf(stuck)).toContain('".buy" was not hidden within 0.3s');
+    });
+  }, 30_000);
+
+  it('scrolls to a selector and saves a PNG', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'replays-shot-'));
+    await withDriver(async (driver, cdp) => {
+      await evaluate(
+        cdp,
+        `document.body.style.minHeight='5000px';document.body.insertAdjacentHTML('beforeend','<p id="bottom" style="margin-top:4000px">end</p>')`,
+      );
+      expect(await evaluate(cdp, 'scrollY')).toBe(0);
+      await driver.step({ kind: 'scroll', selector: '#bottom' });
+      expect(Number(await evaluate(cdp, 'scrollY'))).toBeGreaterThan(1000);
+      const file = join(dir, 'a.png');
+      await driver.screenshot?.(file);
+      expect(readFileSync(file).subarray(1, 4).toString()).toBe('PNG');
+    });
+  }, 30_000);
+
+  it('loads a storage state into the capture context', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'replays-state-'));
+    const state = join(dir, 'state.json');
+    const cookie = {
+      name: 'session',
+      value: '1',
+      domain: '127.0.0.1',
+      path: '/',
+      expires: -1,
+      httpOnly: false,
+      secure: false,
+      sameSite: 'Lax',
+    };
+    await writeFile(state, JSON.stringify({ cookies: [cookie], origins: [] }));
+    expect(await withDriver((_driver, cdp) => evaluate(cdp, '!!document.querySelector("#account")'))).toBe(false);
+    expect(await withDriver((_driver, cdp) => evaluate(cdp, '!!document.querySelector("#account")'), state)).toBe(true);
+  }, 30_000);
 });

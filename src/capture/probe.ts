@@ -1,11 +1,9 @@
-import { access } from 'node:fs/promises';
-import { resolve } from 'node:path';
-
 import { flagMap } from './bundle-io.ts';
 import { parseViewport } from './capture.ts';
 import { assertCaptureUrl } from './capture-steps.ts';
 import { describeMatches, type MatchInfo } from './drivers/locate.ts';
 import { launchChromium } from './drivers/playwright.ts';
+import { readStateFile } from './drivers/storage-state.ts';
 import { createTerminal, reportCliFailure } from './terminal.ts';
 
 const PROBE_LIMIT = 20;
@@ -76,8 +74,7 @@ export async function runProbeCli(argv: string[], env: NodeJS.ProcessEnv = {}) {
     const { values } = flagMap(argv, new Set(['json']));
     if (!values.url || !values.selector || Object.keys(values).some((key) => !FLAGS.has(key))) throw new Error(USAGE);
     assertCaptureUrl(values.url, '--url');
-    const state = values.state ? resolve(values.state) : undefined;
-    if (state) await access(state).catch(() => Promise.reject(new Error(`--state: cannot read ${state}`)));
+    const state = values.state ? await readStateFile(values.state) : undefined;
     if (values.wait !== undefined && !/^\d+$/.test(values.wait)) throw new Error('--wait must be a whole number of milliseconds');
     const result = await probeSelector(values.url, values.selector, {
       ...(values.wait === undefined ? {} : { wait: Number(values.wait) }),

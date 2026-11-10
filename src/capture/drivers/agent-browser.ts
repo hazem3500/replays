@@ -3,9 +3,11 @@ import type { CdpLike } from '../session.ts';
 import { AgentBrowser } from './agent-browser-cli.ts';
 import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
 import { runOnFirstVisible } from './first-visible.ts';
+import { STEP_TIMEOUT } from './locate.ts';
+import { waitForSelectorOverCdp } from './wait-selector.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
 
-function stepArgs(step: RawStep) {
+function stepArgs(step: Exclude<RawStep, { kind: 'shot' | 'wait' }>) {
   switch (step.kind) {
     case 'click':
       return ['click', step.selector];
@@ -17,10 +19,8 @@ function stepArgs(step: RawStep) {
       return ['fill', step.selector, step.text];
     case 'press':
       return ['press', step.key];
-    case 'wait':
-      return ['wait', String(step.ms)];
     case 'scroll':
-      return ['scroll', step.direction, String(step.pixels ?? 720)];
+      return 'selector' in step ? ['scrollintoview', step.selector] : ['scroll', step.direction, String(step.pixels ?? 720)];
     case 'goto':
       return ['open', step.url];
   }
@@ -38,6 +38,7 @@ export function agentBrowserDriver(): CaptureDriver {
     name: 'agent-browser',
     async launch(options): Promise<CdpLike> {
       launched = options;
+      browser.loadState(options.state);
       await browser.open('about:blank');
       cdp = await CdpClient.connect(await browser.cdpUrl());
       const target = await cdp.attachToPage();
@@ -55,8 +56,18 @@ export function agentBrowserDriver(): CaptureDriver {
       await browser.open(url);
     },
     async step(step) {
+      if (step.kind === 'shot') throw new Error('a shot step is saved with screenshot(), not step()');
+      if (step.kind === 'wait') {
+        if ('selector' in step && page)
+          await waitForSelectorOverCdp(page, step.selector, step.state ?? 'visible', step.timeout ?? STEP_TIMEOUT);
+        else if ('ms' in step) await browser.command(['wait', String(step.ms)]);
+        return;
+      }
       if (page && (await runOnFirstVisible(page, step))) return;
       await browser.command(stepArgs(step));
+    },
+    async screenshot(path) {
+      await browser.command(['screenshot', path]);
     },
     async wait(ms) {
       await browser.command(['wait', String(ms)]);
