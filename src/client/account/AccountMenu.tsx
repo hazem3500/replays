@@ -75,7 +75,16 @@ export function accountMenuItems(account: Account | undefined): TopbarMenuItem[]
           ]
         : []),
     ...(signOutUrl
-      ? [{ label: STRINGS.signOut, icon: <LogOutIcon aria-hidden="true" />, href: signOutUrl, onSelect: () => {}, detail: who(account), testId: 'sign-out' }]
+      ? [
+          {
+            label: STRINGS.signOut,
+            icon: <LogOutIcon aria-hidden="true" />,
+            href: signOutUrl,
+            onSelect: () => {},
+            detail: who(account),
+            testId: 'sign-out',
+          },
+        ]
       : []),
   ];
 }

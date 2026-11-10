@@ -106,7 +106,11 @@ export function githubConnectPlugin(deps: GithubConnectDeps) {
     if (!payload || !mac || !safeEqual(mac, sign(payload))) return undefined;
     try {
       const flow = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as Flow;
-      return typeof flow.s === 'string' && typeof flow.v === 'string' && typeof flow.e === 'string' && typeof flow.n === 'string' && flow.x > now()
+      return typeof flow.s === 'string' &&
+        typeof flow.v === 'string' &&
+        typeof flow.e === 'string' &&
+        typeof flow.n === 'string' &&
+        flow.x > now()
         ? flow
         : undefined;
     } catch {
@@ -235,7 +239,10 @@ export function githubConnectPlugin(deps: GithubConnectDeps) {
         async handler({ identity }) {
           const link = identity?.email ? await links.get(identity.email) : undefined;
           // why: a login the host already vouches for needs no link; offering one would be noise.
-          const available = Boolean(identity?.email) && (deps.handles()?.some((handle) => handle.id === 'github') ?? true) && (Boolean(link) || !identity?.handles?.github);
+          const available =
+            Boolean(identity?.email) &&
+            (deps.handles()?.some((handle) => handle.id === 'github') ?? true) &&
+            (Boolean(link) || !identity?.handles?.github);
           return Response.json(
             { available, linked: link ? { login: link.login, ...(link.avatarUrl ? { avatarUrl: link.avatarUrl } : {}) } : null },
             { headers: { 'cache-control': 'no-store' } },

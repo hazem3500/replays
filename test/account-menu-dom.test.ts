@@ -46,7 +46,13 @@ function openMore() {
   });
 }
 
-const listed = (plugins: string[]): ClientConfig => ({ name: 'replays', sourceProviders: [], auth: 'plugin', plugins, editing: { enabled: false } });
+const listed = (plugins: string[]): ClientConfig => ({
+  name: 'replays',
+  sourceProviders: [],
+  auth: 'plugin',
+  plugins,
+  editing: { enabled: false },
+});
 const offer = (link: GithubLinkState, plugins = ['github-connect']) => {
   queryClient.setQueryData(configQuery.queryKey, listed(plugins));
   queryClient.setQueryData(githubLinkQuery.queryKey, link);
@@ -122,7 +128,9 @@ describe('the account menu', () => {
       renderBar(IAP);
       openAccount();
       const connect = document.querySelector('[data-testid="github-connect"]');
-      expect(connect?.getAttribute('href')).toBe(`/auth/github/start?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      expect(connect?.getAttribute('href')).toBe(
+        `/auth/github/start?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+      );
       expect(document.querySelector('[data-testid="github-disconnect"]')).toBeNull();
     });
 
@@ -131,7 +139,9 @@ describe('the account menu', () => {
       renderBar(IAP);
       openAccount();
       expect(document.querySelector('[data-testid="github-linked"]')?.textContent).toBe('GitHub: octocat');
-      expect(document.querySelector('[data-testid="github-linked"] img')?.getAttribute('src')).toBe('https://avatars.githubusercontent.com/u/1?v=4');
+      expect(document.querySelector('[data-testid="github-linked"] img')?.getAttribute('src')).toBe(
+        'https://avatars.githubusercontent.com/u/1?v=4',
+      );
       expect(document.querySelector('[data-testid="github-disconnect"]')).not.toBeNull();
       expect(document.querySelector('[data-testid="github-connect"]')).toBeNull();
     });

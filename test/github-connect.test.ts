@@ -30,8 +30,10 @@ function fakeGithub(login: string) {
   const fetchStub: typeof fetch = (input, init) => {
     const url = String(input);
     calls.push({ url, method: init?.method ?? 'GET', body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined });
-    if (url.endsWith('/login/oauth/access_token')) return Promise.resolve(Response.json({ access_token: 'gho_token', token_type: 'bearer' }));
-    if (url.endsWith('/user')) return Promise.resolve(Response.json({ login, avatar_url: `https://avatars.githubusercontent.com/u/1?v=4` }));
+    if (url.endsWith('/login/oauth/access_token'))
+      return Promise.resolve(Response.json({ access_token: 'gho_token', token_type: 'bearer' }));
+    if (url.endsWith('/user'))
+      return Promise.resolve(Response.json({ login, avatar_url: `https://avatars.githubusercontent.com/u/1?v=4` }));
     return Promise.resolve(new Response(null, { status: 204 }));
   };
   return { calls, fetchStub };
@@ -98,7 +100,10 @@ describe('Connect GitHub', () => {
 
   it('needs both environment values, and none means off', () => {
     expect(githubConnectFromEnv({})).toBeUndefined();
-    expect(githubConnectFromEnv({ REPLAYS_GITHUB_CLIENT_ID: ' id ', REPLAYS_GITHUB_CLIENT_SECRET: 's' })).toEqual({ clientId: 'id', clientSecret: 's' });
+    expect(githubConnectFromEnv({ REPLAYS_GITHUB_CLIENT_ID: ' id ', REPLAYS_GITHUB_CLIENT_SECRET: 's' })).toEqual({
+      clientId: 'id',
+      clientSecret: 's',
+    });
     expect(() => githubConnectFromEnv({ REPLAYS_GITHUB_CLIENT_ID: 'id' })).toThrow(/REPLAYS_GITHUB_CLIENT_SECRET/);
   });
 
@@ -156,7 +161,11 @@ describe('Connect GitHub', () => {
       'GET https://api.github.com/user',
       `DELETE https://api.github.com/applications/${SETTINGS.clientId}/token`,
     ]);
-    expect(github.calls[0]?.body).toMatchObject({ code: 'abc', client_id: SETTINGS.clientId, redirect_uri: 'https://replays.example.com/auth/github/callback' });
+    expect(github.calls[0]?.body).toMatchObject({
+      code: 'abc',
+      client_id: SETTINGS.clientId,
+      redirect_uri: 'https://replays.example.com/auth/github/callback',
+    });
     expect(github.calls[0]?.body?.code_verifier).toMatch(/^[\w-]{43}$/);
     expect(github.calls[2]?.body).toEqual({ access_token: 'gho_token' });
 
@@ -194,12 +203,17 @@ describe('Connect GitHub', () => {
     const roster = definePlugin({
       name: 'roster',
       setup(api) {
-        api.identity({ resolve: (identity) => (identity.email === 'ada@example.com' ? { ...identity, handles: { github: 'ada-from-roster' } } : undefined) });
+        api.identity({
+          resolve: (identity) =>
+            identity.email === 'ada@example.com' ? { ...identity, handles: { github: 'ada-from-roster' } } : undefined,
+        });
       },
     });
     const { send } = await start({ plugins: [roster] });
     expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toEqual({ available: false, linked: null });
-    expect(await (await send('GET', '/api/plugins/github-connect/link', { 'x-email': 'bob@example.com' })).json()).toMatchObject({ available: true });
+    expect(await (await send('GET', '/api/plugins/github-connect/link', { 'x-email': 'bob@example.com' })).json()).toMatchObject({
+      available: true,
+    });
   });
 
   it('offers nothing when the deployment’s people handles leave GitHub out', async () => {
