@@ -564,6 +564,12 @@ A **suite** groups the runs of one job (for example every browser flow a pull re
 `--suite-id` / `--run-id`. The viewer shows the suite's runs, status and a link to its subject. **Keep** (`PUT
 /api/replays/<id>/keep`) exempts a replay or suite from retention and records who kept it.
 
+From the CLI, `replays suite create --id <id> --title "…"` registers a suite and prints its link, `replays suite run add|set` moves a
+run from `running` to `passed` or `failed`, and `replays suite show <id>` reads the runs back. `replays suite record --plan plan.json
+--upload` does the whole job from one file ([schema](docs/formats/suite-plan.schema.json), [example](sample/suite-plan.json)): it
+registers the suite, records each run with the capture steps, uploads it to its run and marks it, carrying on past a failed run.
+`replays suite --help` lists everything.
+
 ## HTTP API
 
 | Route | |
