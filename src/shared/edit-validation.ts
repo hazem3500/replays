@@ -10,7 +10,16 @@ import {
 } from './cursor.ts';
 import { EDITS_VERSION, MAX_CUTS, MAX_HIGHLIGHTS, MAX_LABEL, MIN_EDIT_MS, type ReplayEdits, type StoredReplayEdits } from './edit-list.ts';
 import { editTimeline } from './edit-timeline.ts';
-import { BLUR_STYLES, MAX_CAPTION, MAX_EFFECTS, MAX_ZOOM_SCALE, MIN_BLUR_SIZE, MIN_ZOOM_SCALE, SPEED_RATES } from './effects.ts';
+import {
+  BLUR_STYLES,
+  MAX_CAPTION,
+  MAX_EFFECTS,
+  MAX_SPEED_RATE,
+  MAX_ZOOM_SCALE,
+  MIN_BLUR_SIZE,
+  MIN_SPEED_RATE,
+  MIN_ZOOM_SCALE,
+} from './effects.ts';
 
 type Fields = Record<string, unknown>;
 type Range = { from: number; to: number };
@@ -118,8 +127,9 @@ function assertEffects(edits: Fields, name: string, duration: number | undefined
   stretches(edits.zooms, { name: `${name}.zooms`, fields: ['scale', 'x', 'y'], duration }, checkZoom);
   const rates: number[] = [];
   const speeds = stretches(edits.speeds, { name: `${name}.speeds`, fields: ['rate'], duration }, (item, field) => {
-    const rate = SPEED_RATES.find((candidate) => candidate === item.rate);
-    if (rate === undefined) throw new Error(`${field}.rate must be one of ${SPEED_RATES.join(', ')}`);
+    const rate = item.rate;
+    if (typeof rate !== 'number' || !Number.isFinite(rate) || rate < MIN_SPEED_RATE || rate > MAX_SPEED_RATE)
+      throw new Error(`${field}.rate must be a number from ${MIN_SPEED_RATE} to ${MAX_SPEED_RATE}`);
     rates.push(rate);
   });
   const sorted = speeds.map((range, index) => ({ ...range, rate: rates[index] ?? 1 })).toSorted((a, b) => a.from - b.from);
