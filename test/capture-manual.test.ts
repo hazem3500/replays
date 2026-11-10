@@ -49,7 +49,7 @@ describe('--manual arguments', () => {
   });
 
   it('reads --max-duration as seconds, with an s or m suffix, up to ten minutes', () => {
-    expect(parseMaxDuration(undefined)).toBe(180_000);
+    expect(parseMaxDuration()).toBe(180_000);
     expect(parseMaxDuration('90')).toBe(90_000);
     expect(parseMaxDuration('90s')).toBe(90_000);
     expect(parseMaxDuration('2m')).toBe(120_000);
@@ -178,16 +178,14 @@ describe('steps of a manual recording', () => {
 });
 
 class FakeCdp implements CdpLike {
-  private pending: RecorderChunk | undefined;
+  private served = false;
 
-  constructor(chunk: RecorderChunk) {
-    this.pending = chunk;
-  }
+  constructor(private readonly chunk: RecorderChunk) {}
 
   send(method: string, params?: Record<string, unknown>) {
     if (method !== 'Runtime.evaluate' || !String(params?.expression).includes('__REPLAYS_FLUSH__?.(')) return Promise.resolve({});
-    const value = this.pending;
-    this.pending = undefined;
+    const value = this.served ? {} : this.chunk;
+    this.served = true;
     return Promise.resolve({ result: { value } });
   }
 

@@ -97,7 +97,7 @@ const BOOLEAN_FLAGS = new Set(['video', 'headed', 'manual', 'upload', 'login', '
 export { CAPTURE_USAGE };
 
 /** `--max-duration`: seconds, or a number with `s` or `m`; at most the recorder's ten minutes, default its three. */
-export function parseMaxDuration(value: string | undefined): number {
+export function parseMaxDuration(value?: string): number {
   if (value === undefined) return DEFAULT_MAX_DURATION_MS;
   const match = /^(\d+(?:\.\d+)?)([sm]?)$/.exec(value);
   const ms = match ? Number(match[1]) * (match[2] === 'm' ? 60_000 : 1000) : 0;
