@@ -103,12 +103,12 @@ describe('time axis', () => {
   });
 });
 
-describe('verdict line', () => {
-  const verdictOf = (bundle = recording()) => {
-    const { moments, requests, vitals, model } = inputs(bundle);
-    return { verdict: buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests }), moments, vitals };
-  };
+const verdictOf = (bundle = recording()) => {
+  const { moments, requests, vitals, model } = inputs(bundle);
+  return { verdict: buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests }), moments, vitals };
+};
 
+describe('verdict line', () => {
   it('names the main problem and its cause, and jumps to it', () => {
     const { verdict, moments } = verdictOf();
     expect(verdict.headline).toBe('Slow at 0:08: a long task blocked a click');

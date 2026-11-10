@@ -20,7 +20,6 @@ import {
   buildVitals,
   causeOf,
   causeText,
-  type Moment,
   type MomentOrder,
   orderMoments,
   type Vital,
