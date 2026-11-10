@@ -23,7 +23,12 @@ export function InteractionBreakdown({ interaction }: { interaction: ReplayInter
         aria-label={BREAKDOWN_PARTS.map((part) => `${BREAKDOWN_LABELS[part]} ${formatDuration(interaction[part])}`).join(', ')}
       >
         {BREAKDOWN_PARTS.map((part) => (
-          <span key={part} className="pp-breakdown-seg" data-part={part} style={{ flexGrow: Math.max(interaction[part], 0), flexBasis: 0 }} />
+          <span
+            key={part}
+            className="pp-breakdown-seg"
+            data-part={part}
+            style={{ flexGrow: Math.max(interaction[part], 0), flexBasis: 0 }}
+          />
         ))}
       </div>
       <ul className="pp-breakdown-legend">

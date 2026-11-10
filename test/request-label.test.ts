@@ -6,11 +6,24 @@ const UUID = '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b';
 
 describe('request label', () => {
   it('tells ids from names', () => {
-    expect([ '42', UUID, 'a1b2c3d4e5f60718', 'workspaces', 'v2', 'deadbeef' ].map(isIdSegment)).toEqual([true, true, true, false, false, false]);
+    expect(['42', UUID, 'a1b2c3d4e5f60718', 'workspaces', 'v2', 'deadbeef'].map(isIdSegment)).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+    ]);
   });
 
   it('drops the query and the hash and swaps ids for :id', () => {
-    expect(labelSegments(`/api/organizations/${UUID}/projects/7?include=members#top`)).toEqual(['api', 'organizations', ':id', 'projects', ':id']);
+    expect(labelSegments(`/api/organizations/${UUID}/projects/7?include=members#top`)).toEqual([
+      'api',
+      'organizations',
+      ':id',
+      'projects',
+      ':id',
+    ]);
     expect(shortenPath('/api/projects/7?x=1')).toBe('/api/projects/:id');
   });
 

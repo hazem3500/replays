@@ -55,7 +55,11 @@ describe('performance why: moments', () => {
     const bundle = recording();
     const track = must(bundle.performance);
     delete track.interactions;
-    expect(momentsOf(bundle).moments.filter((item) => item.kind === 'interaction').map((item) => item.label)).toEqual(['Click', 'Key press', 'Click']);
+    expect(
+      momentsOf(bundle)
+        .moments.filter((item) => item.kind === 'interaction')
+        .map((item) => item.label),
+    ).toEqual(['Click', 'Key press', 'Click']);
   });
 
   it('does not count a frame no long task covers as a long task in the vitals', () => {

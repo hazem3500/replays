@@ -75,7 +75,11 @@ export function scriptFunction(script: ReplayLongFrameScript) {
 
 /** The tooltip: full URL (origin and path only), the function and what started it. */
 export function scriptTitle(script: ReplayLongFrameScript) {
-  return [script.sourceURL || 'inline script', script.sourceFunctionName && `function ${script.sourceFunctionName}`, script.invoker && `started by ${script.invoker}`]
+  return [
+    script.sourceURL || 'inline script',
+    script.sourceFunctionName && `function ${script.sourceFunctionName}`,
+    script.invoker && `started by ${script.invoker}`,
+  ]
     .filter(Boolean)
     .join('\n');
 }

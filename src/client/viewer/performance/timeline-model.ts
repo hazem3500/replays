@@ -91,7 +91,9 @@ function momentItem(moment: Moment): LaneItem {
     title: moment.kind === 'task' ? 'Long task' : moment.label,
     value: formatDuration(moment.value),
     momentId: moment.id,
-    ...(interaction ? { breakdown: Object.fromEntries(BREAKDOWN_PARTS.map((part) => [part, interaction[part]])) as Record<BreakdownPart, number> } : {}),
+    ...(interaction
+      ? { breakdown: Object.fromEntries(BREAKDOWN_PARTS.map((part) => [part, interaction[part]])) as Record<BreakdownPart, number> }
+      : {}),
   };
 }
 

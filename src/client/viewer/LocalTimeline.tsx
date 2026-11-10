@@ -96,13 +96,7 @@ export function LocalTimeline({
   const left = (at: number) => `${(Math.max(0, at - from) / span) * 100}%`;
   const width = (item: LocalItem) => `${((Math.min(to, item.end) - Math.max(from, item.at)) / span) * 100}%`;
   return (
-    <div
-      ref={box}
-      className="local-timeline"
-      role="group"
-      aria-label={label}
-      style={{ '--lt-label': `${labelWidth}px` } as CSSProperties}
-    >
+    <div ref={box} className="local-timeline" role="group" aria-label={label} style={{ '--lt-label': `${labelWidth}px` } as CSSProperties}>
       <div className="lt-seam" style={{ left: `${labelWidth + 5}px` }}>
         <Splitter
           orientation="vertical"
@@ -123,7 +117,10 @@ export function LocalTimeline({
         />
       </div>
       <div className="lt-ruler" aria-hidden="true">
-        {labelledTicks(localTicks(origin, to).map((offset) => ({ offset, position: (origin - from + offset) / span })), LABEL_PX / trackPx).map((item) => (
+        {labelledTicks(
+          localTicks(origin, to).map((offset) => ({ offset, position: (origin - from + offset) / span })),
+          LABEL_PX / trackPx,
+        ).map((item) => (
           <span key={item.offset} style={{ left: `${item.position * 100}%` }}>
             {item.labelled ? <span className="lt-tick-label">{tick(item.offset)}</span> : null}
           </span>

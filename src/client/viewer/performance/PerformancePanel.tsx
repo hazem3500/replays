@@ -143,7 +143,11 @@ export function PerformancePanel({
         onPick={(vital) => (vital.moment ? select(vital.moment.id) : player.seek(vital.at ?? 0))}
       />
       {meta.captured?.fromLoad ? (
-        <p className="pp-from-load" data-testid="performance-from-load" title="The page was reloaded to record, so the load metrics cover the whole load.">
+        <p
+          className="pp-from-load"
+          data-testid="performance-from-load"
+          title="The page was reloaded to record, so the load metrics cover the whole load."
+        >
           Recorded from page load
         </p>
       ) : null}

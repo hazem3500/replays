@@ -24,7 +24,17 @@ function muted(text: string): ReactNode[] {
  * A request as "GET /api/…/workspaces/:id/search" in the room it has: no origin or query, ids as `:id`, the middle cut
  * when the path would not fit. The full URL is the tooltip. `method` is given when the label shows it itself.
  */
-export function RequestLabel({ method, path, url, showMethod = true }: { method: string; path: string; url: string; showMethod?: boolean }) {
+export function RequestLabel({
+  method,
+  path,
+  url,
+  showMethod = true,
+}: {
+  method: string;
+  path: string;
+  url: string;
+  showMethod?: boolean;
+}) {
   const box = useRef<HTMLSpanElement>(null);
   const width = useElementWidth(box, 0);
   const own = showMethod ? method.length + METHOD_GAP : 0;

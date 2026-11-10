@@ -95,10 +95,16 @@ export function interactionTitle(interaction: ReplayInteraction) {
 }
 
 function interactionMoments(why: PerfWhy) {
-  return (why.interactions ?? []).filter((item) => validDuration(item.duration)).map((item, index) => {
-    const frame = why.frames.find((candidate) => candidate.index === item.frame);
-    return { ...made('interaction', `interaction-${index}`, interactionTitle(item), item.at, item.duration), interaction: item, ...(frame ? { frame } : {}) };
-  });
+  return (why.interactions ?? [])
+    .filter((item) => validDuration(item.duration))
+    .map((item, index) => {
+      const frame = why.frames.find((candidate) => candidate.index === item.frame);
+      return {
+        ...made('interaction', `interaction-${index}`, interactionTitle(item), item.at, item.duration),
+        interaction: item,
+        ...(frame ? { frame } : {}),
+      };
+    });
 }
 
 /** Attaches each long animation frame to the long task it overlaps most; a frame no task covers becomes its own moment. */
