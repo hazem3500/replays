@@ -176,7 +176,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const queryClient = useQueryClient();
   const [pending, setPending] = useState<string>();
   const target = pending ?? selected;
-  // Play pressed (or playing) around a switch goes to the run being switched to, and the latest switch wins.
+  // why: play pressed (or playing) around a switch goes to the run being switched to, and the latest switch wins.
   const [playIntent] = useState(() => new PlayIntent());
   const switchTo = useCallback(
     (replayId: string | undefined, instant = false) => {
@@ -208,7 +208,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     return () => window.removeEventListener('popstate', onPop);
   }, [comparing, id, switchTo]);
 
-  // Until the viewer is up, its stand-in's play button and Space / K ask for play, and a failed run drops the request.
+  // why: until the viewer is up, its stand-in's play button and Space / K ask for play, and a failed run drops the request.
   const wantedRun = useWantedRun(playIntent);
   const toggleLoadingPlay = () => {
     if (!selected) return;
