@@ -12,7 +12,15 @@ const root = resolve(import.meta.dirname, '..');
 const out = process.env.REPLAYS_CLI_OUT ? resolve(process.env.REPLAYS_CLI_OUT) : join(root, 'dist/cli');
 await mkdir(out, { recursive: true });
 
-const node = { bundle: true, platform: 'node', format: 'esm', target: 'node22', logLevel: 'warning', metafile: true, minifyWhitespace: true };
+const node = {
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  target: 'node22',
+  logLevel: 'warning',
+  metafile: true,
+  minifyWhitespace: true,
+};
 // why: bundled CommonJS packages (ws) call require(), which an ES module output only has through createRequire.
 const banner = { js: "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);" };
 // why: ws loads these native accelerators when present and falls back to plain JavaScript otherwise.
