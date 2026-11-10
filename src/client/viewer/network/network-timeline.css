@@ -10,10 +10,6 @@
 .nt-tip strong { font-weight: 600; font-variant-numeric: tabular-nums; }
 .nt-tip [data-tone="failed"] { color: var(--rating-poor); }
 .nt-tip > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Collapsed: the toggle alone, where it sits when open, and none of the chart. */
-.nt[data-collapsed] { margin-bottom: 0; }
-.nt[data-collapsed] .ribbon-key { justify-content: flex-start; padding: 8px 0 0 4px; }
-.nt[data-collapsed] .ribbon-toggle { margin-left: 0; }
 @container network (max-width: 559px) {
   .nt { --pt-gutter: 40px; --pt-end: 10px; }
   .nt .pt-label { justify-content: center; padding-left: 0; }

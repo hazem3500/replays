@@ -5,7 +5,7 @@ import { useElementWidth } from '../../hooks/use-element-width.ts';
 import { usePlayheadProgress } from '../../hooks/use-playhead-progress.ts';
 import { useRibbonBrush } from '../../hooks/use-ribbon-brush.ts';
 import { usePlayer } from '../../player.ts';
-import { LaneGutter, LaneRows, Playhead, RangeAndLit, TimeAxis, TimelineToggle, Crosshair } from '../performance/PerfTimelineParts.tsx';
+import { LaneGutter, LaneRows, Playhead, RangeAndLit, TimeAxis, Crosshair } from '../performance/PerfTimelineParts.tsx';
 import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import type { RibbonRange } from '../TimeRibbon.tsx';
 import { bucketRequests, formatDuration, type NetworkRow, type RequestBucket } from './model.ts';
@@ -27,7 +27,6 @@ const DENSITY_PX = 32;
 
 export const NETWORK_TIMELINE_STRINGS = {
   hint: 'Click to seek. Drag the playhead to scrub. Drag across the timeline to filter the requests. Failed requests are rose marks, slow ones amber.',
-  toggle: 'Timeline',
 };
 
 /** Where the pointer is in the density lane: its bucket, or undefined when it is over the axis or another lane. */
@@ -93,7 +92,7 @@ function DensityLane({ buckets, total, hot }: { buckets: readonly RequestBucket[
 /**
  * When requests happened, on the Performance timeline's own axis, gutter, playhead and crosshair: a compact lane of how
  * many started in each slice of the recording, and thin lanes of the slow (amber) and failed (rose) ones. A click seeks,
- * a drag filters the table, a mark lights its row and back. Collapsed, only the toggle remains.
+ * a drag filters the table, a mark lights its row and back. Collapsed (from the toolbar's timeline button), nothing is drawn.
  */
 export function NetworkTimeline({
   rows,
@@ -122,13 +121,7 @@ export function NetworkTimeline({
   const bins = Math.min(MAX_BINS, Math.max(MIN_BINS, Math.round(width / BIN_PX)));
   const buckets = bucketRequests(rows, span, bins);
   const lanes = buildNetworkLanes(rows);
-  if (collapsed) {
-    return (
-      <div className="pt nt" data-collapsed data-testid="network-timeline">
-        <TimelineToggle collapsed tab="network" controls="network-timeline-plot" label={NETWORK_TIMELINE_STRINGS.toggle} />
-      </div>
-    );
-  }
+  if (collapsed) return null;
   const track = (event: PointerEvent<HTMLElement>) => {
     handlers.onPointerMove(event);
     if (event.pointerType === 'touch') return;
@@ -161,7 +154,6 @@ export function NetworkTimeline({
           <Playhead span={span} plot={plot} collapsed={false} />
         </div>
       </div>
-      <TimelineToggle collapsed={false} tab="network" controls="network-timeline-plot" label={NETWORK_TIMELINE_STRINGS.toggle} />
     </div>
   );
 }

@@ -151,18 +151,19 @@ test('the row under the pointer lights its mark on the timeline', async ({ page 
   await expect(ribbon.locator('.ribbon-lit')).toHaveCount(1);
 });
 
-test('the Network timeline collapses to its toggle alone and stays collapsed', async ({ page }) => {
+test('the Network timeline hides from the toolbar button and stays hidden', async ({ page }) => {
   const id = uniqueId('network-collapse');
   await seedNetworkFixture(page, id);
   await openReplay(page, `${server().origin}/r/${id}`);
   await page.getByTestId('network-tab').click();
   await expect(page.getByTestId('network-ribbon')).toBeVisible();
-  await page.getByRole('button', { name: 'Timeline' }).click();
+  await page.getByTestId('network-timeline-toggle').click();
   await expect(page.getByTestId('network-ribbon')).toHaveCount(0);
   await expect(page.locator('.pt-mark')).toHaveCount(0);
   await page.reload();
   await page.getByTestId('network-tab').click();
-  await expect(page.getByRole('button', { name: 'Timeline' })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByTestId('network-timeline-toggle')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('network-timeline')).toHaveCount(0);
 });
 
 test('the ribbon playhead follows the clock by transform without a lagging transition', async ({ page }) => {
