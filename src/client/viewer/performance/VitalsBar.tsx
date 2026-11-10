@@ -94,9 +94,7 @@ export function VitalsBar({
     const absent = items.filter((item) => item.stat.group === group && item.stat.value === undefined && item.stat.watched);
     // why: a group with nothing measured is left out; only a group that shows stats explains the ones it lacks.
     const notes: GroupNote[] =
-      ranged || !shown.length
-        ? []
-        : [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []));
+      ranged || !shown.length ? [] : [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []));
     return [
       ...(details ? [{ id: `core:group:${group}`, order: base - 10, render: () => <GroupName group={group} /> }] : []),
       ...shown.map(({ stat, vital }, index) => ({
