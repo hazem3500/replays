@@ -111,12 +111,20 @@ export interface GithubLinkState {
   linked: { login: string; avatarUrl?: string } | null;
 }
 
+function isGithubLinkState(value: unknown): value is GithubLinkState {
+  return (
+    typeof value === 'object' && value !== null && typeof Reflect.get(value, 'available') === 'boolean' && Reflect.has(value, 'linked')
+  );
+}
+
 /** Only fetched when `GET /api/config` lists the `github-connect` plugin (the host set a GitHub OAuth app); `null` when it cannot answer. */
 export const githubLinkQuery = queryOptions({
   queryKey: ['github-link'] as const,
   queryFn: async ({ signal }) => {
     const response = await fetch(apiUrl('plugins/github-connect/link'), { signal });
-    return response.ok ? ((await response.json()) as GithubLinkState) : null;
+    if (!response.ok) return null;
+    const state: unknown = await response.json();
+    return isGithubLinkState(state) ? state : null;
   },
   staleTime: Number.POSITIVE_INFINITY,
   retry: false,

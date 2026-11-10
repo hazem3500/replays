@@ -104,7 +104,7 @@ describe('Connect GitHub setup', () => {
 
   it('is hidden when no OAuth app is configured: not in the plugin list, no routes, no flow', async () => {
     const { send, begin } = await start({ configured: false });
-    expect((await configPlugins(send))).not.toContain('github-connect');
+    expect(await configPlugins(send)).not.toContain('github-connect');
     expect((await send('GET', '/api/plugins/github-connect/link')).status).toBe(404);
     const flow = await begin();
     expect(flow.response.headers.get('location')).toBeNull();
@@ -135,7 +135,6 @@ describe('Connect GitHub setup', () => {
     expect(response.headers.get('set-cookie')).toMatch(/HttpOnly; SameSite=Lax/);
     expect(cookie).toMatch(/^replays_github_oauth=/);
   });
-
 });
 
 describe('Connect GitHub callback', () => {
