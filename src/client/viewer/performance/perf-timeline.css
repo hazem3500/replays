@@ -75,7 +75,7 @@
 .pt[data-collapsed] .ribbon-handle::after { opacity: 0; }
 .pt[data-collapsed] .pt-plot { cursor: pointer; }
 @container performance (max-width: 559px) {
-  .pt { --pt-gutter: 32px; --pt-end: 10px; }
+  .pt { --pt-gutter: 40px; --pt-end: 10px; }
   .pt-label { justify-content: center; padding-left: 0; }
   .pt-label-text { display: none; }
 }
