@@ -39,9 +39,15 @@ const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 test('the CLI bundles need only playwright-core and load no server or viewer module', async () => {
   const builds = await buildCli();
   for (const name of ['cli', 'edit']) {
-    const undeclared = externalPackages(builds[name]).filter((dependency) => !Object.hasOwn(manifest.dependencies, dependency) && !optional.has(dependency));
+    const undeclared = externalPackages(builds[name]).filter(
+      (dependency) => !Object.hasOwn(manifest.dependencies, dependency) && !optional.has(dependency),
+    );
     assert.deepEqual(undeclared, [], `${name}: packages outside dependencies`);
-    assert.deepEqual(Object.keys(builds[name].inputs).filter((input) => serverOnly.test(input)), [], `${name}: server-only inputs`);
+    assert.deepEqual(
+      Object.keys(builds[name].inputs).filter((input) => serverOnly.test(input)),
+      [],
+      `${name}: server-only inputs`,
+    );
   }
 });
 
