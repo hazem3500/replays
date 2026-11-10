@@ -106,7 +106,7 @@ export function parseMaxDuration(value?: string): number {
   return ms;
 }
 
-function parseViewport(value: string | undefined) {
+export function parseViewport(value: string | undefined) {
   if (!value) return { width: 1440, height: 900 };
   const match = /^(\d{3,5})x(\d{3,5})$/.exec(value);
   if (!match) throw new Error('--viewport must look like 1440x900');
