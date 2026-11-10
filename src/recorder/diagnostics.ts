@@ -1,3 +1,4 @@
+import { observeType } from './observe.ts';
 import type { ReplayPerformanceEntry, ReplayPerformanceTrack } from '../shared/replay.ts';
 
 const KINDS: Record<string, ReplayPerformanceEntry['kind']> = {
@@ -31,6 +32,7 @@ function layoutShift(entry: PerformanceEntry) {
 export function capturePerformance(
   onEntry: (entry: ReplayPerformanceEntry) => void,
   grow: (bytes: number) => void = () => {},
+  fromLoad = false,
 ): { track: ReplayPerformanceTrack; stop: () => void } {
   const track: ReplayPerformanceTrack = { supported: [], entries: [] };
   const observers: PerformanceObserver[] = [];
@@ -46,27 +48,26 @@ export function capturePerformance(
     } else {
       const signal = timingSignal(type, entry);
       if (!signal) return;
+      track.entries.push(signal);
       onEntry(signal);
     }
     count += 1;
   };
-  const types = typeof PerformanceObserver === 'undefined' ? [] : PerformanceObserver.supportedEntryTypes;
   for (const type of ['longtask', 'event', 'paint', 'largest-contentful-paint', 'layout-shift']) {
-    if (!types.includes(type)) continue;
-    try {
-      const observer = new PerformanceObserver((list) => {
+    const observer = observeType(
+      type,
+      (entries) => {
         if (!active) return;
-        for (const entry of list.getEntries()) {
+        for (const entry of entries) {
           if (count >= 500) break;
           retain(type, entry);
         }
-      });
-      observer.observe({ type, buffered: false });
-      observers.push(observer);
-      track.supported.push(type);
-    } catch {
-      // why: advertised observer types may still be unavailable under browser policy.
-    }
+      },
+      fromLoad,
+    );
+    if (!observer) continue;
+    observers.push(observer);
+    track.supported.push(type);
   }
   return {
     track,

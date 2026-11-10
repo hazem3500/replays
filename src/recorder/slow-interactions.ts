@@ -1,6 +1,7 @@
 import { interactionBreakdown, MAX_INTERACTIONS } from './interaction-math.ts';
 import type { ReplayInteraction, ReplayInteractionTarget, ReplayPerformanceTrack } from '../shared/replay.ts';
 import { CONTROL, controlName } from './interaction-steps.ts';
+import { observeType } from './observe.ts';
 import type { RecorderPrivacy } from './recorder-privacy.ts';
 
 const DURATION_THRESHOLD_MS = 16;
@@ -66,8 +67,8 @@ export function captureInteractions(
   grow: (bytes: number) => void,
   privacy: RecorderPrivacy,
   stepAt: (wallTime: number) => number | undefined,
+  fromLoad = false,
 ): () => void {
-  if (typeof PerformanceObserver === 'undefined' || !PerformanceObserver.supportedEntryTypes.includes('event')) return () => {};
   const byId = new Map<number, ReplayInteraction>();
   let active = true;
   const retain = (entry: EventEntry) => {
@@ -105,26 +106,21 @@ export function captureInteractions(
     }
     byId.set(id, item);
   };
-  try {
-    const observer = new PerformanceObserver((list) => {
+  const observer = observeType(
+    'event',
+    (entries) => {
       if (!active) return;
-      for (const entry of list.getEntries()) retain(entry);
+      for (const entry of entries) retain(entry);
       linkInteractions(track);
-    });
-    const options: PerformanceObserverInit & { durationThreshold: number } = {
-      type: 'event',
-      durationThreshold: DURATION_THRESHOLD_MS,
-      buffered: false,
-    };
-    observer.observe(options);
-    return () => {
-      active = false;
-      for (const entry of observer.takeRecords()) retain(entry);
-      linkInteractions(track);
-      observer.disconnect();
-    };
-  } catch {
-    // why: advertised observer types may still be unavailable under browser policy.
-    return () => {};
-  }
+    },
+    fromLoad,
+    { durationThreshold: DURATION_THRESHOLD_MS },
+  );
+  if (!observer) return () => {};
+  return () => {
+    active = false;
+    for (const entry of observer.takeRecords()) retain(entry);
+    linkInteractions(track);
+    observer.disconnect();
+  };
 }

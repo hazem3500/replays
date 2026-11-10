@@ -151,8 +151,9 @@ const CAPTURED_CHECKS: Checks = {
   inputs: [oneOf(CAPTURED_INPUTS), `must be one of ${CAPTURED_INPUTS.join(', ')}`],
   choice: [isRecord, 'must be an object'],
   diagnostics: [isRecord, 'must be an object'],
+  fromLoad: [oneOf([true]), 'must be true'],
 };
-const OPTIONAL_CAPTURED = new Set(['inputs', 'choice', 'diagnostics']);
+const OPTIONAL_CAPTURED = new Set(['inputs', 'choice', 'diagnostics', 'fromLoad']);
 const DIAGNOSTICS_CHECKS: Checks = {
   performance: [isBoolean, 'must be a boolean'],
   debugging: [isBoolean, 'must be a boolean'],

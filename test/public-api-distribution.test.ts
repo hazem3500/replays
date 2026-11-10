@@ -29,6 +29,7 @@ describe('public API distribution compatibility', () => {
       './plugins/iap',
       './plugins/gcs',
       './package.json',
+      './recorder/early',
       './recorder/kit',
       './recorder/ui',
       './recorder/react',

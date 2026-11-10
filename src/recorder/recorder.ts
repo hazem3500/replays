@@ -12,6 +12,7 @@ import type { Recorder, RecorderOptions, RecorderState, RecordingChoice, Recordi
 import type { IssueReport, IssueReportReceipt } from './upload.ts';
 import { createUploadProgress } from './upload-progress.ts';
 import { toUpload } from './http-upload.ts';
+import { armReload, takeReload } from './reload-flag.ts';
 import { annotateSession, finishSessionExtras, snapshotContext } from './session-extras.ts';
 
 export {
@@ -57,6 +58,10 @@ export function createRecorder(options: RecorderOptions): Recorder {
   let stopWaiters: (() => void)[] = [];
   let destroyed = false;
   let lifecycleGeneration = 0;
+  // invariant: true only for the start() that resumes after a reload; consumed at the top of start().
+  let resumedFromLoad = false;
+  // invariant: set only by the resume below, read and cleared at the top of request(); never a public input.
+  let resumedChoice: RecordingChoice | undefined;
   let requestGeneration = 0;
   let reviewedReport: IssueReport | undefined;
   const warn = createWarner();
@@ -129,6 +134,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
         throw new Error(`Cannot start while ${state.status}`);
       }
       const trigger = startOptions.trigger ?? { source: 'user' };
+      const fromLoad = resumedFromLoad;
+      resumedFromLoad = false;
       const generation = ++lifecycleGeneration;
       recording = undefined;
       reviewedReport = undefined;
@@ -158,7 +165,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const startedAt = Date.now();
       const current = newSession(
         trigger,
-        capturedRecord(capture, Boolean(bodies), !privacy.sanitize, chosen.by === 'customer' ? chosen.mode : undefined),
+        capturedRecord(capture, Boolean(bodies), !privacy.sanitize, chosen.by === 'customer' ? chosen.mode : undefined, fromLoad),
         startedAt,
       );
       if (!privacy.sanitize) {
@@ -171,6 +178,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
           rrweb,
           bodies,
           capture,
+          fromLoad,
           privacy,
           options,
           limits: { maxDurationMs, maxBytes },
@@ -359,15 +367,17 @@ export function createRecorder(options: RecorderOptions): Recorder {
       if (destroyed || !['idle', 'uploaded', 'error'].includes(state.status) || (state.status === 'error' && state.phase === 'upload')) {
         return;
       }
+      const resumed = resumedChoice;
+      resumedChoice = undefined;
       const generation = ++requestGeneration;
       const ownsRequest = () => generation === requestGeneration;
       const product = options.app?.name;
       const facts = (privacy: RecorderPrivacy) => ({ ...privacy.facts(maxDurationMs, askToReview), ...(product ? { product } : {}) });
       // why: hosts without `choices` keep a synchronous move to the consent state.
-      const choices = options.choices ? await settings.choices() : undefined;
+      const choices = options.choices && !resumed ? await settings.choices() : undefined;
       if (!ownsRequest()) return;
       const offer = ui.chooseOptions && choices?.offer(facts);
-      let choice: RecordingChoice | undefined;
+      let choice: RecordingChoice | undefined = resumed;
       if (offer && ui.chooseOptions) {
         setState({ status: 'consent', trigger });
         const picked = await ui.chooseOptions({ trigger, offer, signal: openPrompt() }).catch(() => undefined);
@@ -378,7 +388,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         }
         choice = choices?.accept(picked);
       }
-      if (askForConsent) {
+      if (askForConsent && !resumed) {
         if (currentState().status !== 'consent') setState({ status: 'consent', trigger });
         const agreed = await ui
           .requestConsent({
@@ -395,6 +405,11 @@ export function createRecorder(options: RecorderOptions): Recorder {
         }
       }
 
+      if (choice?.fromLoad && !resumed && armReload(choice)) {
+        (options.reload ?? (() => location.reload()))();
+        return;
+      }
+      if (resumed) resumedFromLoad = true;
       const stopped = new Promise<void>((resolve) => stopWaiters.push(resolve));
       try {
         await recorder.start({ consent: true, trigger, ...(choice ? { choice } : {}) });
@@ -475,6 +490,16 @@ export function createRecorder(options: RecorderOptions): Recorder {
       listeners.clear();
     },
   };
+
+  // invariant: consent was given before the reload; the indicator shows at once and the flag is single-use and 30 s old at most.
+  const resume = ui && typeof sessionStorage !== 'undefined' ? takeReload() : undefined;
+  if (resume) {
+    queueMicrotask(() => {
+      if (destroyed) return;
+      resumedChoice = resume;
+      void recorder.request({ source: 'user' });
+    });
+  }
 
   return recorder;
 }
