@@ -42,6 +42,9 @@ else
     case 'logout':
       await (await import('./capture/upload.ts')).runLogoutCli(rest);
       break;
+    case 'edit':
+      await (await import('./edit/cli.ts')).runEditCli(rest, process.env);
+      break;
     case 'agent-guide':
       process.stdout.write(`${renderAgentGuide()}\n`);
       break;
