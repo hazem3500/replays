@@ -166,3 +166,11 @@ button.pp-chip:hover .pp-chip-value { text-decoration: underline; text-decoratio
 .pp-details-toggle[aria-expanded="true"] svg { rotate: 180deg; }
 .pp-vitals[data-details] > .pp-details-toggle { position: absolute; top: 0; right: calc(var(--pp-end) - 6px); }
 @media (prefers-reduced-motion: reduce) { .pp-details-toggle svg { transition: none; } }
+.pp-scopes { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
+.pp-scopes + .pp-details-toggle { margin-left: 4px; }
+.pp-scope { display: inline-flex; align-items: center; gap: 2px; height: 22px; padding: 0 2px 0 8px; border-radius: 999px; background: var(--surface-hover); color: var(--text); font-size: var(--text-xs); white-space: nowrap; }
+.pp-scope button { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.pp-scope button:hover { color: var(--text); background: var(--surface-active, var(--surface-hover)); }
+.pp-scope button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.pp-scope svg { width: 12px; height: 12px; }
+button.pp-chip[aria-pressed="true"] { text-decoration: underline; text-decoration-color: var(--accent, var(--text-secondary)); text-underline-offset: 3px; }

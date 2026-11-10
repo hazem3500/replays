@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, XIcon } from 'lucide-react';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 
@@ -7,15 +7,15 @@ import { setDetailsOpen } from './details-pref.ts';
 import type { Stat } from './stats.ts';
 
 /** One stat in the compact strip: its label, value and a rating dot; the tooltip carries the rating and its thresholds. */
-export function StripStat({ stat, pickable, onPick }: { stat: Stat; pickable: boolean; onPick: () => void }) {
+export function StripStat({ stat, onPick, pressed }: { stat: Stat; onPick?: (() => void) | undefined; pressed?: boolean | undefined }) {
   const word = stat.verdict ? VERDICT_WORDS[stat.verdict] : undefined;
   const tip = [word && `${word}.`, stat.hint].filter(Boolean).join(' ');
   return (
     <Tooltip>
       <TooltipTrigger
         render={
-          pickable ? (
-            <button type="button" onClick={onPick} />
+          onPick ? (
+            <button type="button" onClick={onPick} aria-pressed={pressed} />
           ) : (
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: a stat that cannot be picked is still read by keyboard, so its tooltip is reachable.
             <div tabIndex={0} />
@@ -51,5 +51,22 @@ export function DetailsToggle({ open }: { open: boolean }) {
       Details
       <ChevronDownIcon aria-hidden="true" />
     </button>
+  );
+}
+
+/** What the stats are scoped to (a time range, the blocking tasks), each with a way to clear it. */
+export function ScopeChips({ scopes }: { scopes: readonly { text: string; label: string; onClear: () => void }[] }) {
+  if (!scopes.length) return null;
+  return (
+    <span className="pp-scopes">
+      {scopes.map((scope) => (
+        <span key={scope.text} className="pp-scope">
+          {scope.text}
+          <button type="button" aria-label={scope.label} onClick={scope.onClear}>
+            <XIcon aria-hidden="true" />
+          </button>
+        </span>
+      ))}
+    </span>
   );
 }

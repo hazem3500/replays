@@ -9,7 +9,7 @@ import { GROUP_LABELS, type GroupNote, groupNote, type Stat, type StatGroup, vit
 import { HostSurfaceSlot } from '../../plugins/HostSurface.tsx';
 import { PluginContexts } from '../../plugins/PluginUi.tsx';
 import { useDetailsOpen } from './details-pref.ts';
-import { DetailsToggle, StripStat } from './VitalsStrip.tsx';
+import { DetailsToggle, ScopeChips, StripStat } from './VitalsStrip.tsx';
 
 export interface VitalPeer {
   id: string;
@@ -42,6 +42,11 @@ export function VitalsBar({
   peers,
   cadence = NO_STATS,
   onPick,
+  onSeek,
+  blocking = false,
+  onBlocking,
+  scopes = [],
+  ranged = false,
   children,
 }: {
   vitals: readonly Vital[];
@@ -49,6 +54,15 @@ export function VitalsBar({
   /** The smoothness stats (frame rate, dropped frames, layout shift). */
   cadence?: readonly Stat[];
   onPick: (vital: Vital) => void;
+  /** A stat that points at one moment in time (the slowest second, the biggest layout shift). */
+  onSeek: (at: number) => void;
+  /** Whether the table is narrowed to the long tasks that make up blocking time. */
+  blocking?: boolean;
+  onBlocking: () => void;
+  /** What the strip is scoped to, each with the way to clear it: a time range, the blocking filter. */
+  scopes?: readonly { text: string; label: string; onClear: () => void }[];
+  /** The strip shows a time range, so a stat with nothing in it is left out rather than explained. */
+  ranged?: boolean;
   /** Controls at the bar's end. */
   children?: ReactNode;
 }) {
@@ -67,10 +81,17 @@ export function VitalsBar({
       ),
     };
   });
+  const actionOf = (stat: Stat, vital: Vital | undefined) => {
+    if (vital?.id === 'tbt') return onBlocking;
+    if (vital) return vital.moment || vital.at !== undefined ? () => onPick(vital) : undefined;
+    return stat.at === undefined ? undefined : () => onSeek(stat.at ?? 0);
+  };
   const builtins = groups.flatMap(({ group, shown, note }, position) => {
     const base = (position + 1) * 1000;
     const absent = items.filter((item) => item.stat.group === group && item.stat.value === undefined && item.stat.watched);
-    const notes: GroupNote[] = shown.length
+    const notes: GroupNote[] = ranged
+      ? []
+      : shown.length
       ? [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []))
       : [note];
     return [
@@ -80,19 +101,9 @@ export function VitalsBar({
         order: base + index * 10,
         render: () => (
           <>
-            {details ? null : (
-              <StripStat
-                stat={stat}
-                pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
-                onPick={() => vital && onPick(vital)}
-              />
-            )}
+            {details ? null : <StripStat stat={stat} onPick={actionOf(stat, vital)} pressed={vital?.id === 'tbt' ? blocking : undefined} />}
             {details ? (
-              <StatTile
-                stat={stat}
-                pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
-                onPick={() => vital && onPick(vital)}
-              >
+              <StatTile stat={stat} onPick={actionOf(stat, vital)} pressed={vital?.id === 'tbt' ? blocking : undefined}>
                 {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
               </StatTile>
             ) : null}
@@ -109,12 +120,13 @@ export function VitalsBar({
         <Tooltip>
           {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: the reason is in a tooltip, so keyboard users must reach it. */}
           <TooltipTrigger render={<p tabIndex={0} />} className="pp-stats-empty">
-            No performance measurements were recorded
+            {ranged ? 'Nothing was measured in this range' : 'No performance measurements were recorded'}
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <span className="pp-stat-tip">{groups[0]?.note.reason ?? groups[0]?.note.text}</span>
           </TooltipContent>
         </Tooltip>
+        <ScopeChips scopes={scopes} />
         {children}
       </div>
     );
@@ -123,6 +135,7 @@ export function VitalsBar({
       <ul aria-label="Vitals">
         <HostSurfaceSlot slot="performance.vitals" context={context} element="li" builtins={builtins} />
       </ul>
+      <ScopeChips scopes={scopes} />
       <DetailsToggle open={details} />
       {children}
     </div>
@@ -166,7 +179,17 @@ function GroupNotes({ notes }: { notes: readonly GroupNote[] }) {
   );
 }
 
-function StatTile({ stat, pickable, onPick, children }: { stat: Stat; pickable: boolean; onPick: () => void; children?: ReactNode }) {
+function StatTile({
+  stat,
+  onPick,
+  pressed,
+  children,
+}: {
+  stat: Stat;
+  onPick?: (() => void) | undefined;
+  pressed?: boolean | undefined;
+  children?: ReactNode;
+}) {
   const word = stat.verdict ? VERDICT_WORDS[stat.verdict] : undefined;
   const body = (
     <>
@@ -189,8 +212,8 @@ function StatTile({ stat, pickable, onPick, children }: { stat: Stat; pickable: 
     <Tooltip>
       <TooltipTrigger
         render={
-          pickable ? (
-            <button type="button" onClick={onPick} />
+          onPick ? (
+            <button type="button" onClick={onPick} aria-pressed={pressed} />
           ) : (
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: a stat that cannot be picked is still read by keyboard, so its tooltip is reachable.
             <div tabIndex={0} />

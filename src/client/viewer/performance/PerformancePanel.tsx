@@ -1,6 +1,6 @@
 import { type ReactNode, useRef, useState } from 'react';
 
-import type { ReplayMeta, ReplayStep } from '../../../shared/replay.ts';
+import { formatClock, type ReplayMeta, type ReplayStep } from '../../../shared/replay.ts';
 import { useMinContentHeight } from '../dock-grow.ts';
 import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
@@ -33,6 +33,8 @@ export interface PerformancePeer {
   vitals: readonly Vital[];
 }
 
+/** A long task counts toward blocking time by what it spent past this. */
+const BLOCKING_AFTER_MS = 50;
 const SIDE_DETAIL_MIN_WIDTH = 760;
 
 const STRINGS = {
@@ -88,15 +90,26 @@ export function PerformancePanel({
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
   const [selected, setSelected] = useState<string>();
   const [order, setOrder] = useState<MomentOrder>('worst');
+  const [blocking, setBlocking] = useState(false);
   const [range, setRange] = useState<RibbonRange>();
   const [hovered, setHovered] = useState<readonly string[]>([]);
   // why: the verdict's jump lights its marks until the person picks something else.
   const [pinned, setPinned] = useState<readonly string[]>([]);
   const moments = buildMoments(model.signals);
   const vitals = buildVitals(model.signals, moments, model.track);
+  const inRange = (at: number, end = at) => !range || (end >= range.from && at <= range.to);
+  const scopedMoments = moments.filter((item) => inRange(item.at, item.end));
+  const scopedVitals = range
+    ? buildVitals(
+        model.signals.filter((signal) => inRange(signal.at)),
+        scopedMoments,
+        model.track,
+      )
+    : vitals;
   const lanes = buildLanes(moments, requests, model.shifts);
   const verdict = buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests });
-  const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
+  const rows = blocking ? scopedMoments.filter((item) => item.kind === 'task' && item.value > BLOCKING_AFTER_MS) : scopedMoments;
+  const shown = orderMoments(rows, order);
   const open = moments.find((item) => item.id === selected);
   const timelineCollapsed = useRibbonCollapsed();
   const timelineHeight =
@@ -161,10 +174,25 @@ export function PerformancePanel({
         />
       ) : null}
       <VitalsBar
-        vitals={vitals}
-        peers={vitalPeers}
-        cadence={cadenceStats(model.track, model.shifts)}
-        onPick={(vital) => (vital.moment ? select(vital.moment.id) : player.seek(vital.at ?? 0))}
+        vitals={scopedVitals}
+        peers={range ? [] : vitalPeers}
+        cadence={cadenceStats(model.track, model.shifts, model.frames, range)}
+        ranged={range !== undefined}
+        blocking={blocking}
+        onBlocking={() => setBlocking(!blocking)}
+        scopes={[
+          ...(range
+            ? [{ text: `in ${formatClock(range.from)} to ${formatClock(range.to)}`, label: 'Clear the time range', onClear: () => setRange(undefined) }]
+            : []),
+          ...(blocking ? [{ text: 'Blocking tasks', label: 'Show all moments', onClear: () => setBlocking(false) }] : []),
+        ]}
+        onSeek={(at) => player.seek(at)}
+        onPick={(vital) => {
+          if (vital.moment) {
+            player.seek(vital.moment.at);
+            select(vital.moment.id);
+          } else player.seek(vital.at ?? 0);
+        }}
       />
       {extra}
       <div className="np-body">

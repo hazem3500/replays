@@ -2,6 +2,8 @@ import { droppedVerdict, fpsVerdict, summarizeFrames } from '../../../shared/fra
 import type { ReplayPerformanceTrack } from '../../../shared/replay.ts';
 import { formatDuration } from '../network/model.ts';
 import type { LayoutShift } from '../performance.ts';
+import type { RibbonRange } from '../TimeRibbon.tsx';
+import { type FrameBand, summarizeBands } from './frames.ts';
 import { BUDGETS, type Budget, type Verdict, type Vital, type VitalId } from './model.ts';
 
 export type StatGroup = 'loading' | 'responsiveness' | 'smoothness';
@@ -32,6 +34,8 @@ export interface Stat {
   missing?: string | undefined;
   /** The browser watched for it and nothing was reported, as opposed to not being able to measure it. */
   watched?: boolean | undefined;
+  /** Where the stat seeks to when picked: the slowest second, the biggest layout shift. */
+  at?: number | undefined;
   /** The quiet sentence for a watched stat that has no value, shown when the rest of its group does. */
   absent?: string | undefined;
 }
@@ -198,9 +202,16 @@ const STRINGS = {
 };
 
 /** The smoothness group: frame rate and dropped frames from the cadence samples, then the layout shift score. */
-export function cadenceStats(track: ReplayPerformanceTrack | undefined, shifts: readonly LayoutShift[]): Stat[] {
+export function cadenceStats(
+  track: ReplayPerformanceTrack | undefined,
+  shifts: readonly LayoutShift[],
+  frames: readonly FrameBand[] = [],
+  range?: RibbonRange,
+): Stat[] {
   if (!track) return [];
-  const summary = summarizeFrames(track.frames);
+  const summary = range ? summarizeBands(frames, range) : summarizeFrames(track.frames);
+  const scoped = range ? shifts.filter((item) => item.at >= range.from && item.at <= range.to) : shifts;
+  const slowestAt = summarizeBands(frames, range)?.slowestAt;
   const missing = track.supported.includes('animation-frame') ? STRINGS.noSamples : STRINGS.none;
   const group = 'smoothness';
   const fps = (id: string, label: string, hint: string, rate: number | undefined): Stat => {
@@ -229,7 +240,8 @@ export function cadenceStats(track: ReplayPerformanceTrack | undefined, shifts: 
     : { id: 'dropped', group, label: STRINGS.dropped, hint: STRINGS.droppedHint, missing };
   const [good, poor] = SHIFT_BUDGET;
   const watched = track.supported.includes('layout-shift');
-  const score = shiftScore(shifts);
+  const score = shiftScore(scoped);
+  const biggest = scoped.filter((item) => !item.hadRecentInput).toSorted((a, b) => b.value - a.value)[0];
   const shift: Stat = watched
     ? {
         id: 'shift',
@@ -239,11 +251,12 @@ export function cadenceStats(track: ReplayPerformanceTrack | undefined, shifts: 
         value: score.toFixed(2),
         verdict: shiftVerdict(score),
         meter: risingMeter(score, good, poor, 0.4),
+        at: biggest?.at,
       }
     : { id: 'shift', group, label: STRINGS.shift, hint: STRINGS.shiftHint, missing: STRINGS.shiftsUnavailable };
   return [
     fps('median', STRINGS.median, STRINGS.medianHint, summary?.p50),
-    fps('slowest', STRINGS.slowest, STRINGS.slowestHint, summary?.min),
+    { ...fps('slowest', STRINGS.slowest, STRINGS.slowestHint, summary?.min), at: slowestAt },
     dropped,
     shift,
   ];

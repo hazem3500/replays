@@ -23,6 +23,32 @@ export function frameBands(samples: readonly FrameSample[] | undefined, timeline
   });
 }
 
+export interface BandSummary {
+  p50: number;
+  min: number;
+  dropped: number;
+  seconds: number;
+  /** Where the slowest second began. */
+  slowestAt: number;
+}
+
+/** The frame summary of the seconds that overlap `range` (all of them without one): what the stats strip shows for a selected range. */
+export function summarizeBands(bands: readonly FrameBand[], range?: { from: number; to: number }): BandSummary | undefined {
+  const inRange = range ? bands.filter((band) => band.end > range.from && band.at < range.to) : bands;
+  if (!inRange.length) return undefined;
+  const rates = inRange.map((band) => band.fps).toSorted((a, b) => a - b);
+  const middle = Math.floor(rates.length / 2);
+  const p50 = rates.length % 2 ? (rates[middle] ?? 0) : ((rates[middle - 1] ?? 0) + (rates[middle] ?? 0)) / 2;
+  const slowest = inRange.reduce((worst, band) => (band.fps < worst.fps ? band : worst));
+  return {
+    p50,
+    min: rates[0] ?? 0,
+    dropped: inRange.reduce((sum, band) => sum + band.dropped, 0),
+    seconds: inRange.length,
+    slowestAt: slowest.at,
+  };
+}
+
 /** The band holding `time`, or undefined in a gap. */
 export function bandAt(bands: readonly FrameBand[], time: number) {
   return bands.find((band) => time >= band.at && time < band.end);
