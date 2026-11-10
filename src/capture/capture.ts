@@ -30,6 +30,8 @@ import { networkEntries, sanitizeReplayBundle, sanitizeUrl } from './sanitize.ts
 import { RecorderSession } from './session.ts';
 import { assertCaptureUrl, readSteps } from './capture-steps.ts';
 import { labelFor } from './step-labels.ts';
+import { waitForManualStop, type ManualStopOptions, type ManualStopReason } from './manual.ts';
+import { DEFAULT_MAX_DURATION_MS, MAX_DURATION_CEILING_MS } from '../recorder/recorder-limits.ts';
 
 export type { RawStep } from './drivers/types.ts';
 export { createPullGate, normalizeConsole, normalizePerformance } from './session.ts';
@@ -79,11 +81,30 @@ export interface CaptureArgs extends CapturePacingOptions {
   performanceChosen?: boolean;
   /** Console levels kept; default all. */
   console?: readonly ConsoleLevel[];
+  /** A manual recording: the person drives the browser and `steps` is empty; it ends at `maxDurationMs` at the latest. */
+  manual?: { maxDurationMs: number };
 }
 
-const BOOLEAN_FLAGS = new Set(['video', 'headed', 'upload', 'login', 'performance', 'no-performance']);
+/** What a manual recording listens to and tells the person; tests swap each for a fake. */
+export interface ManualHooks extends Pick<ManualStopOptions, 'stdin' | 'signals' | 'abort'> {
+  onRecording?: () => void;
+  onTick?: (elapsedMs: number) => void;
+  onStopped?: (reason: ManualStopReason) => void;
+}
+
+const BOOLEAN_FLAGS = new Set(['video', 'headed', 'manual', 'upload', 'login', 'performance', 'no-performance']);
 
 export { CAPTURE_USAGE };
+
+/** `--max-duration`: seconds, or a number with `s` or `m`; at most the recorder's ten minutes, default its three. */
+export function parseMaxDuration(value?: string): number {
+  if (value === undefined) return DEFAULT_MAX_DURATION_MS;
+  const match = /^(\d+(?:\.\d+)?)([sm]?)$/.exec(value);
+  const ms = match ? Number(match[1]) * (match[2] === 'm' ? 60_000 : 1000) : 0;
+  if (!(ms >= 1000 && ms <= MAX_DURATION_CEILING_MS))
+    throw new Error(`--max-duration must be 1 to ${MAX_DURATION_CEILING_MS / 1000} seconds (for example 90, 90s or 2m)`);
+  return ms;
+}
 
 function parseViewport(value: string | undefined) {
   if (!value) return { width: 1440, height: 900 };
@@ -127,7 +148,12 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   const { values, lists, booleans } = flagMap(argv, BOOLEAN_FLAGS);
   if (!values.url) throw new Error('required: --url <https-url>');
   assertCaptureUrl(values.url, '--url');
-  if (!values.output) throw new Error('required: --output <directory>');
+  const manual = booleans.has('manual');
+  if (manual && !booleans.has('headed')) throw new Error('--manual requires --headed');
+  if (manual && values.steps !== undefined) throw new Error('--manual cannot be combined with --steps');
+  if (manual && values.driver !== undefined && values.driver !== 'playwright') throw new Error('--manual needs the playwright driver');
+  if (!manual && values['max-duration'] !== undefined) throw new Error('--max-duration requires --manual');
+  if (!values.output && !manual) throw new Error('required: --output <directory>');
   if (booleans.has('login') && !booleans.has('upload') && !values['upload-url'])
     throw new Error('--login requires --upload or --upload-url');
   const id = assertReplayId(values.id ?? defaultId(values.url));
@@ -159,7 +185,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   );
   const args = {
     url: values.url,
-    output: resolve(values.output),
+    output: resolve(values.output ?? id),
     id,
     steps: await readSteps(values.steps),
     stepPauseMs: pause,
@@ -181,6 +207,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
     ...(booleans.has('upload') ? { upload: true } : {}),
     ...(booleans.has('login') ? { login: true } : {}),
+    ...(manual ? { manual: { maxDurationMs: parseMaxDuration(values['max-duration']) } } : {}),
     ...(values.server ? { serverName: values.server } : {}),
     ...(context !== undefined ? { context } : {}),
     ...(schema !== undefined ? { contextSchema: schema } : {}),
@@ -213,7 +240,7 @@ export function createDriver(name: DriverName, options: { headed?: boolean } = {
   return name === 'agent-browser' ? agentBrowserDriver() : playwrightDriver({ headless: !options.headed });
 }
 
-export async function capture(args: CaptureArgs, driver: CaptureDriver = createDriver(args.driver)) {
+export async function capture(args: CaptureArgs, driver: CaptureDriver = createDriver(args.driver), hooks: ManualHooks = {}) {
   const pause = stepPauseMs(args.stepPauseMs);
   await prepareOutputDirectory(args.output);
   const scratch = await mkdtemp(join(tmpdir(), 'replays-'));
@@ -221,6 +248,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
   const rawVideoPath = join(scratch, 'session.mp4');
   const rawSteps: Array<ReplayStep & { epoch: number }> = [];
   let session: RecorderSession | undefined;
+  let release: (() => void) | undefined;
   try {
     const wantsBodies = args.network === 'bodies';
     const bodiesRecorded = wantsBodies && driver.recordsBodies === true;
@@ -234,7 +262,10 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       ...(bodiesRecorded ? { bodies: true } : {}),
       ...(args.video ? { videoPath: rawVideoPath } : {}),
     });
-    session = await RecorderSession.start(cdp, args.redaction ? { redaction: args.redaction } : {});
+    session = await RecorderSession.start(cdp, {
+      ...(args.redaction ? { redaction: args.redaction } : {}),
+      ...(args.manual ? { steps: true } : {}),
+    });
 
     rawSteps.push({
       at: 0,
@@ -247,7 +278,8 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     await driver.wait(700);
     await session.flush();
 
-    for (const step of args.steps) {
+    let stoppedBy: ManualStopReason | undefined;
+    for (const step of args.manual ? [] : args.steps) {
       await session.flush();
       if (step.kind !== 'wait' || step.label?.trim())
         rawSteps.push({
@@ -263,14 +295,30 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       if (step.kind !== 'wait' && pause > 0) await driver.wait(pause);
       await session.flush();
     }
-    await driver.wait(900);
+    if (args.manual) {
+      if (!driver.closed) throw new Error(`--manual needs a driver that reports when the window closes; ${driver.name} does not`);
+      const waiting = waitForManualStop({
+        closed: driver.closed(),
+        maxDurationMs: args.manual.maxDurationMs,
+        ...hooks,
+      });
+      release = waiting.release;
+      hooks.onRecording?.();
+      stoppedBy = await waiting.reason;
+      hooks.onStopped?.(stoppedBy);
+    }
+    // why: a closed window has no page left to wait on.
+    if (stoppedBy !== 'closed') await driver.wait(900);
     const tracks = await session.stop();
     session = undefined;
     await driver.finish();
 
     const har: unknown = JSON.parse(await readFile(harPath, 'utf8'));
     const { origin } = tracks;
-    const steps = rawSteps.map(({ epoch, ...step }) => ({ ...step, at: Math.max(0, epoch - origin) }));
+    const steps = [
+      ...rawSteps.map(({ epoch, ...step }) => ({ ...step, at: Math.max(0, epoch - origin) })),
+      ...tracks.steps.map((step) => ({ ...step, at: Math.max(0, step.at - origin) })),
+    ].sort((a, b) => a.at - b.at);
     const { duration } = tracks;
     const context = buildContext(args, new Date(origin).toISOString());
     const profile = profileOf(args);
@@ -334,15 +382,38 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       performanceCount: bundle.performance?.entries.length ?? 0,
       duration,
       video: args.video ? join(args.output, 'session.mp4') : undefined,
+      ...(stoppedBy ? { stoppedBy } : {}),
       networkRequested: args.network ?? 'headers',
       networkMode: args.network === 'off' ? 'off' : bodiesRecorded ? 'bodies' : 'headers',
       ...(uploaded ? { upload: uploaded } : {}),
     };
   } finally {
+    release?.();
     session?.dispose();
     await driver.close().catch(() => undefined);
     await rm(scratch, { recursive: true, force: true });
   }
+}
+
+const clock = (ms: number) => `${Math.floor(ms / 60_000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
+
+/** The line a manual recording prints once the browser is up, with a running timer for a person at a terminal. */
+function manualHooks(args: CaptureArgs, { json, spinner }: { json: boolean; spinner: { stop(): void } }): ManualHooks {
+  if (!args.manual) return {};
+  const enter = Boolean(process.stdin.isTTY);
+  const line = `Recording… do your thing in the browser, then ${enter ? 'press Enter here (or close the window)' : 'close the window'} to stop`;
+  const live = Boolean(process.stdout.isTTY) && !json;
+  return {
+    stdin: process.stdin,
+    signals: process,
+    onRecording: () => {
+      spinner.stop();
+      process.stderr.write(live ? `${line} [0:00]` : `${line}\n`);
+    },
+    ...(live
+      ? { onTick: (ms: number) => process.stderr.write(`\r${line} [${clock(ms)}]`), onStopped: () => process.stderr.write('\n') }
+      : {}),
+  };
 }
 
 /** `replays capture …`: one JSON line on success or failure for agents and CI; a spinner and summary for a person at a terminal. */
@@ -355,7 +426,7 @@ export async function runCaptureCli(argv: string[], env: NodeJS.ProcessEnv = {})
   const spinner = createTerminal({ env, stream: process.stderr, json }).spinner('Recording the page');
   try {
     const args = await parseArgs(argv.filter((arg) => arg !== '--json'));
-    const result = await capture(args, createDriver(args.driver, { headed: args.headed }));
+    const result = await capture(args, createDriver(args.driver, { headed: args.headed }), manualHooks(args, { json, spinner }));
     spinner.stop();
     const out = createTerminal({ env, stream: process.stdout, json });
     if (out.fancy) {
