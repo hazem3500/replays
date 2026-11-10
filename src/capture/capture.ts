@@ -262,7 +262,10 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       ...(bodiesRecorded ? { bodies: true } : {}),
       ...(args.video ? { videoPath: rawVideoPath } : {}),
     });
-    session = await RecorderSession.start(cdp, { ...(args.redaction ? { redaction: args.redaction } : {}), ...(args.manual ? { steps: true } : {}) });
+    session = await RecorderSession.start(cdp, {
+      ...(args.redaction ? { redaction: args.redaction } : {}),
+      ...(args.manual ? { steps: true } : {}),
+    });
 
     rawSteps.push({
       at: 0,
@@ -407,7 +410,9 @@ function manualHooks(args: CaptureArgs, { json, spinner }: { json: boolean; spin
       spinner.stop();
       process.stderr.write(live ? `${line} [0:00]` : `${line}\n`);
     },
-    ...(live ? { onTick: (ms: number) => process.stderr.write(`\r${line} [${clock(ms)}]`), onStopped: () => process.stderr.write('\n') } : {}),
+    ...(live
+      ? { onTick: (ms: number) => process.stderr.write(`\r${line} [${clock(ms)}]`), onStopped: () => process.stderr.write('\n') }
+      : {}),
   };
 }
 

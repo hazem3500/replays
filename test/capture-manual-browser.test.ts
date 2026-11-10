@@ -68,7 +68,7 @@ describe.skipIf(!CHROME)('a manual capture in a real browser', () => {
     expect(bundle.events.length).toBeGreaterThan(5);
   });
 
-  it('names the person\'s clicks and the page they opened, with no selectors', () => {
+  it("names the person's clicks and the page they opened, with no selectors", () => {
     const labels = bundle.steps.map((step) => step.label);
     expect(labels[0]).toBe(`Open ${new URL(demo.origin).hostname}`);
     expect(labels.some((label) => label.startsWith('Clicked'))).toBe(true);

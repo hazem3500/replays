@@ -162,10 +162,13 @@ describe('steps of a manual recording', () => {
   });
 
   it('names the home page, and uses one click for only one load', () => {
-    const steps = deriveManualSteps([step(1000, 'Clicked button')], [
-      { at: 1200, url: 'https://example.com/' },
-      { at: 1300, url: 'https://example.com/a' },
-    ]);
+    const steps = deriveManualSteps(
+      [step(1000, 'Clicked button')],
+      [
+        { at: 1200, url: 'https://example.com/' },
+        { at: 1300, url: 'https://example.com/a' },
+      ],
+    );
     expect(steps.map((s) => s.label)).toEqual(['Opened home', 'Opened A']);
   });
 

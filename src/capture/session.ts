@@ -215,7 +215,9 @@ export class RecorderSession {
     await cdp.send('Runtime.enable');
     await cdp.send('Page.enable');
     await cdp.send('Runtime.addBinding', { name: BINDING });
-    await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: recorderScript(await recorderSource(), options.redaction, { steps: session.stepsWanted }) });
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: recorderScript(await recorderSource(), options.redaction, { steps: session.stepsWanted }),
+    });
     session.timer = setInterval(() => void session.pull(), options.pullIntervalMs ?? 1000);
     return session;
   }
