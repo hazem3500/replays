@@ -124,7 +124,11 @@ export function VitalsBar({
       id: 'core:note:capture',
       order: NOTES_LAST + 100,
       render: () => (
-        <p className="pp-group-note" data-testid="performance-from-load" title="The page was reloaded to record, so the load metrics cover the whole load.">
+        <p
+          className="pp-group-note"
+          data-testid="performance-from-load"
+          title="The page was reloaded to record, so the load metrics cover the whole load."
+        >
           Recorded from page load
         </p>
       ),
