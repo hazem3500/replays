@@ -1,6 +1,7 @@
 import type { ResolvedCapture } from './capture-options.ts';
 import { PUBLIC_SELECTOR } from './privacy.ts';
 import type { RecorderPrivacy } from './recorder-privacy.ts';
+import { fromLoadAllowed } from './reload-flag.ts';
 import type {
   PrivacyFacts,
   RecorderOptions,
@@ -177,13 +178,6 @@ function assertCustomerUnmask(host: Host): void {
   const unmask = host.privacy?.unmaskTextSelector;
   if (host.choices?.by !== 'customer' || unmask === undefined || unmask === PUBLIC_SELECTOR) return;
   throw new Error(`choices.by "customer" allows only privacy.unmaskTextSelector "${PUBLIC_SELECTOR}"; mark product text with it`);
-}
-
-/** Whether a recording from load is offered: staff by default, a customer only when the host sets it, and only with Performance on offer. */
-function fromLoadAllowed(host: Host): boolean {
-  return (
-    host.choices?.diagnostics === true && host.capture?.performance === true && (host.choices.fromLoad ?? host.choices.by !== 'customer')
-  );
 }
 
 function settledDiagnostic(host: Host, key: 'performance' | 'debugging', choice: LooseChoice, explicit: boolean): boolean {

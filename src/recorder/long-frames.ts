@@ -95,18 +95,19 @@ export function captureLongFrames(
 ): () => void {
   const keep = createLongFrameFilter();
   let active = true;
+  const retain = (entry: PerformanceEntry) => {
+    if (!keep(entry)) return;
+    const frame = longFrame(entry);
+    const frames = track.longFrames ?? [];
+    if (!track.longFrames) Object.assign(track, { longFrames: frames });
+    frames.push(frame);
+    grow(JSON.stringify(frame).length);
+  };
   const observer = observeType(
     'long-animation-frame',
     (entries) => {
       if (!active) return;
-      for (const entry of entries) {
-        if (!keep(entry)) continue;
-        const frame = longFrame(entry);
-        const frames = track.longFrames ?? [];
-        if (!track.longFrames) Object.assign(track, { longFrames: frames });
-        frames.push(frame);
-        grow(JSON.stringify(frame).length);
-      }
+      for (const entry of entries) retain(entry);
       onFrame();
     },
     fromLoad,
@@ -115,6 +116,9 @@ export function captureLongFrames(
   track.supported.push('long-animation-frame');
   return () => {
     active = false;
+    // why: frames the browser queued but has not delivered yet include the one holding the last slow interaction.
+    for (const entry of observer.takeRecords()) retain(entry);
+    onFrame();
     observer.disconnect();
   };
 }
