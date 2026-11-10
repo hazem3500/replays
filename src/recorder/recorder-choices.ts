@@ -14,7 +14,7 @@ import type {
  * What a recording may show beyond the parts core always protects (passwords, hidden inputs, credentials). `interface`:
  * the text of elements marked `data-replay-public`.
  */
-type Exposure = { text: boolean; inputs: boolean; media: boolean; interface: boolean };
+export type Exposure = { text: boolean; inputs: boolean; media: boolean; interface: boolean };
 /** The host cap: what any recording may show, and whether its `capture` reads request and response bodies. */
 type Cap = Exposure & { bodies: boolean };
 type Host = Pick<RecorderOptions, 'choices' | 'privacy' | 'capture'>;
@@ -78,7 +78,7 @@ const capped = (mode: RecorderPrivacyMode, cap: Exposure): Exposure => {
  * The host's privacy with `mode` applied. invariant: each field is the stricter of the mode and the host, and a
  * customer recording unmasks no text but the public marker, only in `interface-visible`.
  */
-function modePrivacy(host: Host, mode: RecorderPrivacyMode, cap: Exposure): RecorderPrivacyOptions {
+export function modePrivacy(host: Pick<Host, 'privacy' | 'choices'>, mode: RecorderPrivacyMode, cap: Exposure): RecorderPrivacyOptions {
   const shown = capped(mode, cap);
   const privacy: RecorderPrivacyOptions = { ...host.privacy, sanitize: !shown.inputs, maskAllText: !shown.text, blockMedia: !shown.media };
   if (shown.interface) privacy.unmaskTextSelector = PUBLIC_SELECTOR;

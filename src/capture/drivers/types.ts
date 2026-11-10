@@ -25,6 +25,8 @@ export interface LaunchOptions {
   bodies?: boolean;
   /** A Playwright storage state file (cookies and local storage) to start the browser signed in; see `readStateFile`. */
   state?: string;
+  /** Per-character delay of a `type` step in ms (`--type-delay`); a driver without one types at its default pace. */
+  typeDelayMs?: number;
 }
 
 /**

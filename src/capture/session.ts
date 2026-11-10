@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import type { ReplayConsoleEntry, ReplayPerformanceEntry, ReplayPerformanceTrack, ReplayStep } from '../shared/replay.ts';
 import { MAX_PERFORMANCE_ENTRIES } from '../shared/replay.ts';
 import { compileRedaction, type RedactionRules } from '../shared/redaction.ts';
+import type { RecorderPrivacyMode } from '../recorder/types.ts';
+import { assertHideSelectors, hideScript } from './hide-selectors.ts';
 import { deriveManualSteps, type PageLoad } from './manual-steps.ts';
 import { redactConsoleMessage, redactEvents, sanitizeEmbeddedUrls, sanitizeUrl, sanitizeUrlFields } from './sanitize.ts';
 
@@ -95,11 +97,16 @@ export function normalizeConsole(entries: RecorderChunk['console'], origin: numb
  * The page script with the host's mask selectors set before it runs (rrweb `maskTextSelector`). The selector list is a
  * JSON string literal, never code.
  */
-export function recorderScript(source: string, redaction?: RedactionRules, options: { steps?: boolean } = {}) {
+export function recorderScript(
+  source: string,
+  redaction?: RedactionRules,
+  options: { steps?: boolean; privacy?: RecorderPrivacyMode } = {},
+) {
   const selectors = compileRedaction(redaction).maskSelectors;
   const settings = [
     ...(selectors.length ? [`window.__REPLAYS_MASK_TEXT__=${JSON.stringify(selectors.join(', '))};`] : []),
     ...(options.steps ? ['window.__REPLAYS_STEPS__=true;'] : []),
+    ...(options.privacy ? [`window.__REPLAYS_PRIVACY__=${JSON.stringify(options.privacy)};`] : []),
   ];
   return settings.length ? `${settings.join('\n')}\n${source}` : source;
 }
@@ -208,7 +215,18 @@ export class RecorderSession {
    * `redaction`: the host's rules (src/shared/redaction.ts). Mask selectors go to the recorder in the page; the other
    * rules apply to the events and console entries as they are collected.
    */
-  static async start(cdp: CdpLike, options: { pullIntervalMs?: number; redaction?: RedactionRules; steps?: boolean } = {}) {
+  static async start(
+    cdp: CdpLike,
+    options: {
+      pullIntervalMs?: number;
+      redaction?: RedactionRules;
+      steps?: boolean;
+      /** The recorder's privacy mode (`--privacy`); without it the recorder masks inputs and nothing else. */
+      privacy?: RecorderPrivacyMode;
+      /** CSS selectors hidden from the first frame (`--hide`), before the recorder snapshots the page. */
+      hide?: readonly string[];
+    } = {},
+  ) {
     if (options.redaction) compileRedaction(options.redaction);
     const session = new RecorderSession(cdp, options.redaction, options.steps === true);
     cdp.on('Runtime.bindingCalled', session.onBinding);
@@ -216,8 +234,16 @@ export class RecorderSession {
     await cdp.send('Runtime.enable');
     await cdp.send('Page.enable');
     await cdp.send('Runtime.addBinding', { name: BINDING });
+    if (options.hide?.length) {
+      await assertHideSelectors(cdp, options.hide);
+      // why: registered first, so the style is in the page before the recorder's first snapshot.
+      await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: hideScript(options.hide) });
+    }
     await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
-      source: recorderScript(await recorderSource(), options.redaction, { steps: session.stepsWanted }),
+      source: recorderScript(await recorderSource(), options.redaction, {
+        steps: session.stepsWanted,
+        ...(options.privacy ? { privacy: options.privacy } : {}),
+      }),
     });
     session.timer = setInterval(() => void session.pull(), options.pullIntervalMs ?? 1000);
     return session;

@@ -101,9 +101,25 @@ example `context.storageState({ path })`). agent-browser reads the same shape, s
 `AGENT_BROWSER_STATE` works for either `--driver` as is, and with agent-browser it is loaded once at launch.
 `replays probe --state` takes the same file.
 
+`--hide <selector>` (repeatable) hides every match from the first frame, so a cookie banner or chat widget is out of the
+replay, the video and each `shot`: it adds a style rule before the recorder snapshots the page and never clicks or
+answers anything. A selector the browser rejects stops the capture before it records.
+
+`--privacy <mode>` picks what the recording shows, with the [recorder's own modes](docs/recorder.md#options-step-for-internal-hosts):
+`inputs-masked` (the default: typed values hidden, page text shown), `visible` (typed values too; passwords and hidden
+inputs stay masked, and the bundle says `meta.captured.inputs: "visible"`, which a server keeps only for a host that
+allows it), `text-masked`, `interface-visible` (text only where the page marks `data-replay-public`, media blocked) and
+`masked`. A profile that masks all text refuses a mode that shows it.
+
+`--type-delay <ms>` (default 80) paces `type` steps, `--shot-delay <ms>` holds after a `shot` (default: the step pause),
+and `--step-delay` is another name for `--step-pause`. `--compress-waits` plays an unlabelled `{"kind":"wait","ms":n}`
+over 5 seconds as 2 seconds of replay, captioned "Waited n s, sped up here"; label the wait to keep it whole. It cannot
+be combined with `--video`, which keeps real time.
+
 ```text
 replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
-                   [--state storageState.json] [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
+                   [--state storageState.json] [--hide selector]… [--privacy mode] [--viewport 1440x900]
+                   [--step-pause 0..10000] [--type-delay 0..1000] [--shot-delay 0..10000] [--compress-waits] [--video] [--tag t]… [--person role:email[:handle=value]]…
                    [--source github:owner/repo#12]… [--profile id] [--network headers|off|bodies] [--no-performance]
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed [--manual [--max-duration 3m]]]

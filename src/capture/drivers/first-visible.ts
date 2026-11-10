@@ -50,7 +50,7 @@ async function press(cdp: CdpLike, point: Point) {
  * Runs a selector step on the first visible match when a hidden element precedes it. Returns false when the CLI should run
  * the step itself (no selector, one match, nothing visible, or a selector that is not plain CSS).
  */
-export async function runOnFirstVisible(cdp: CdpLike, step: RawStep): Promise<boolean> {
+export async function runOnFirstVisible(cdp: CdpLike, step: RawStep, typeDelayMs = TYPE_DELAY_MS): Promise<boolean> {
   if (step.kind !== 'click' && step.kind !== 'hover' && step.kind !== 'type' && step.kind !== 'fill') return false;
   const point = await locate(cdp, step.selector);
   if (!point) return false;
@@ -65,7 +65,7 @@ export async function runOnFirstVisible(cdp: CdpLike, step: RawStep): Promise<bo
   if (step.kind === 'type')
     for (const char of step.text) {
       await cdp.send('Input.dispatchKeyEvent', { type: 'char', text: char });
-      await new Promise((resolve) => setTimeout(resolve, TYPE_DELAY_MS));
+      await new Promise((resolve) => setTimeout(resolve, typeDelayMs));
     }
   return true;
 }

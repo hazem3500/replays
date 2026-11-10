@@ -175,6 +175,8 @@ const recorder = createGuidedRecorder({
 | `interface-visible` (Your data hidden) | Masked, except [public product text](#public-product-text) | Masked | Blocked | `sanitize: true`, `maskAllText: true`, `blockMedia: true`, `unmaskTextSelector: '[data-replay-public]'` |
 | `masked` (Fully masked) | Masked, public text too | Masked | Blocked | `sanitize: true`, `maskAllText: true`, `blockMedia: true` |
 
+`replays capture --privacy <mode>` applies the same five modes to a scripted or manual capture, with no host cap: the mode is exactly what the table says, and a profile that masks all text refuses a mode that shows text. `visible` declares `meta.captured.inputs: 'visible'`, with no `choice`, so a server keeps the typed values only under its `keepVisibleInputs` rule.
+
 The core enforces the cap, not the UI:
 
 - Each setting is the stricter of the mode and the host's own `privacy` (and `capture.privacy`). A mode never shows more than the host allows; modes the cap makes identical are offered once, under the stricter name. With `privacy: { sanitize: false }` (media blocked), `visible` records text and typed values but no media, `inputs-masked` records text but no media, and `text-masked` becomes `masked`. Inputs hidden needs the host to allow page text (`maskAllText: false`, or `sanitize: false`); with the default privacy it becomes `masked`. A stored or passed `text-masked` choice stays valid when the host lists it and is otherwise reduced to the strictest offered mode, never to a looser one.

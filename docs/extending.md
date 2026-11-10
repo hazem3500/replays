@@ -373,7 +373,11 @@ import { defineConfig } from '@hazem3500/replays/config';
 export default defineConfig({ capture: { stepPauseMs: 1200 } });
 ```
 
-Both built-in drivers type at 80ms per character; `fill` stays immediate. Custom drivers continue to own
+Both built-in drivers type at 80ms per character (`--type-delay <ms>` or `typeDelayMs` in `capture()` and
+`LaunchOptions` changes it, 0–1000); `fill` stays immediate. `--shot-delay <ms>` (`shotDelayMs`) sets the hold
+after a `shot` step, which otherwise takes the step pause, and `--step-delay` is another name for `--step-pause`.
+`--compress-waits` (`compressWaits`) plays an unlabelled fixed wait over 5 seconds as 2 seconds of replay on every
+track and captions it "Waited n s, sped up here"; it is off by default and refused with `--video`. Custom drivers continue to own
 how they implement `type`. Automatic labels derive readable names from selectors (text, accessibility
 attributes, test IDs), never from typed values. Explicit labels remain the producer's responsibility.
 Unlabelled waits execute but are omitted from the step rail; label a wait to make it a visible step.
