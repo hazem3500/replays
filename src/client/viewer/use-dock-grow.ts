@@ -1,6 +1,6 @@
-import { type RefObject, useEffect, useRef } from 'react';
+import { type RefObject, useEffect, useRef } from "react";
 
-import { growTarget, useDockNeeds } from './dock-grow.ts';
+import { growTarget, useDockNeeds } from "./dock-grow.ts";
 
 /** The player keeps at least this share of the viewer when the dock grows. */
 const MIN_PLAYER_SHARE = 0.4;
@@ -32,13 +32,13 @@ export function useDockGrow({
   useEffect(() => {
     const element = shell.current;
     if (!element || !active) return;
-    const panel = element.querySelector<HTMLElement>('.inspector-panel:not([hidden]):not([data-ending-style])');
-    const dock = element.querySelector<HTMLElement>('.inspector');
+    const panel = element.querySelector<HTMLElement>(
+      ".inspector-panel:not([hidden]):not([data-ending-style])",
+    );
+    const dock = element.querySelector<HTMLElement>(".inspector");
     if (!panel || !dock) return;
     const chrome = Math.max(0, dock.offsetHeight - panel.clientHeight);
-    const topbar = element.querySelector<HTMLElement>('.app-topbar')?.offsetHeight ?? 0;
-    const transport = element.querySelector<HTMLElement>('.transport')?.offsetHeight ?? 0;
-    const room = Math.round(element.clientHeight - topbar - transport - element.clientHeight * MIN_PLAYER_SHARE);
+    const room = Math.round(element.clientHeight * (1 - MIN_PLAYER_SHARE));
     const to = growTarget({
       content,
       chrome,
