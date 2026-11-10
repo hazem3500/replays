@@ -24,19 +24,20 @@ export function performanceFixture() {
   return bundle;
 }
 
+const script = (sourceURL: string, sourceFunctionName: string, invoker: string, duration: number, forced = 0) => ({
+  sourceURL,
+  sourceFunctionName,
+  invoker,
+  invokerType: 'event-listener',
+  duration,
+  forcedStyleAndLayoutDuration: forced,
+});
+
 /**
  * The "why" track of a short checkout session: three interactions (the "Plan time" click is slow and sits in a long
  * animation frame with two scripts), four long tasks, three long animation frames and one frame-rate band per second.
  */
 export function whyTrack(): NonNullable<ReplayBundle['performance']> {
-  const script = (sourceURL: string, sourceFunctionName: string, invoker: string, duration: number, forced = 0) => ({
-    sourceURL,
-    sourceFunctionName,
-    invoker,
-    invokerType: 'event-listener',
-    duration,
-    forcedStyleAndLayoutDuration: forced,
-  });
   return {
     supported: ['paint', 'largest-contentful-paint', 'longtask', 'event', 'layout-shift', 'animation-frame', 'long-animation-frame'],
     entries: [
