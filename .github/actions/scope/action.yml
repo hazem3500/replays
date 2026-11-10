@@ -1,5 +1,10 @@
 name: Select browser-backed suites
 description: Run a suite when this event wants it and no pass marker for its exact input hash exists (forced runs ignore markers)
+inputs:
+  changed-files:
+    description: Newline-separated paths a pull request changes; viewer or spec changes run the end-to-end shards
+    required: false
+    default: ''
 outputs:
   e2e_shards:
     description: JSON array of the end-to-end shard numbers that run
@@ -34,23 +39,24 @@ runs:
         CI_EVENT: ${{ github.event_name }}
         CI_REF: ${{ github.ref }}
         NODE_VERSION: ${{ env.NODE_VERSION }}
+        CI_CHANGED_FILES: ${{ inputs.changed-files }}
       run: node scripts/ci-scope.mjs
     - id: e2e-1
-      if: steps.keys.outputs.wanted == 'true' && steps.keys.outputs.force != 'true'
+      if: steps.keys.outputs.wanted_e2e == 'true' && steps.keys.outputs.force != 'true'
       uses: actions/cache/restore@v4
       with:
         path: .ci-pass
         key: ${{ steps.keys.outputs.e2e-1 }}
         lookup-only: true
     - id: e2e-2
-      if: steps.keys.outputs.wanted == 'true' && steps.keys.outputs.force != 'true'
+      if: steps.keys.outputs.wanted_e2e == 'true' && steps.keys.outputs.force != 'true'
       uses: actions/cache/restore@v4
       with:
         path: .ci-pass
         key: ${{ steps.keys.outputs.e2e-2 }}
         lookup-only: true
     - id: e2e-3
-      if: steps.keys.outputs.wanted == 'true' && steps.keys.outputs.force != 'true'
+      if: steps.keys.outputs.wanted_e2e == 'true' && steps.keys.outputs.force != 'true'
       uses: actions/cache/restore@v4
       with:
         path: .ci-pass
@@ -74,6 +80,7 @@ runs:
       shell: bash
       env:
         WANTED: ${{ steps.keys.outputs.wanted }}
+        WANTED_E2E: ${{ steps.keys.outputs.wanted_e2e }}
         FORCE: ${{ steps.keys.outputs.force }}
         HIT_E2E_1: ${{ steps.e2e-1.outputs.cache-hit }}
         HIT_E2E_2: ${{ steps.e2e-2.outputs.cache-hit }}
@@ -82,17 +89,17 @@ runs:
         HIT_DOCKER: ${{ steps.docker.outputs.cache-hit }}
       run: |
         # invariant: a wanted suite reruns unless an exact key hit exists; a forced run, a miss or a lookup error runs it.
-        runs() { [ "$WANTED" = true ] && { [ "$FORCE" = true ] || [ "$1" != true ]; }; }
+        runs() { [ "${2:-$WANTED}" = true ] && { [ "$FORCE" = true ] || [ "$1" != true ]; }; }
         report() {
-          if runs "$2"; then echo "- $1: runs" >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$WANTED" != true ]; then echo "- $1: not needed for this pull request" >> "$GITHUB_STEP_SUMMARY"
+          if runs "$2" "${3:-$WANTED}"; then echo "- $1: runs" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${3:-$WANTED}" != true ]; then echo "- $1: not needed for this pull request" >> "$GITHUB_STEP_SUMMARY"
           else echo "- $1: reused: identical inputs passed in an earlier run" >> "$GITHUB_STEP_SUMMARY"; fi
         }
         flag() { if runs "$1"; then echo true; else echo false; fi; }
         shards=()
         for shard in 1 2 3; do
           hit="HIT_E2E_$shard"
-          if runs "${!hit}"; then shards+=("$shard"); fi
+          if runs "${!hit}" "$WANTED_E2E"; then shards+=("$shard"); fi
         done
         {
           echo "browser=$(flag "$HIT_BROWSER")"
@@ -100,8 +107,8 @@ runs:
           echo "e2e_shards=[$(IFS=,; echo "${shards[*]}")]"
         } >> "$GITHUB_OUTPUT"
         echo '### Suites' >> "$GITHUB_STEP_SUMMARY"
-        report 'End-to-end (1/3)' "$HIT_E2E_1"
-        report 'End-to-end (2/3)' "$HIT_E2E_2"
-        report 'End-to-end (3/3) and single-page app' "$HIT_E2E_3"
+        report 'End-to-end (1/3)' "$HIT_E2E_1" "$WANTED_E2E"
+        report 'End-to-end (2/3)' "$HIT_E2E_2" "$WANTED_E2E"
+        report 'End-to-end (3/3) and single-page app' "$HIT_E2E_3" "$WANTED_E2E"
         report 'Recorder, render, plugins, distribution and Agent-Native' "$HIT_BROWSER"
         report 'Docker build (not pushed)' "$HIT_DOCKER"
