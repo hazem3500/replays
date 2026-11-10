@@ -208,7 +208,7 @@ export type RecorderChoices = {
   by?: 'staff' | 'customer';
   /**
    * Offer "Include network request and response content", off until picked. Only with `capture.network: 'bodies'`;
-   * otherwise the option is shown disabled. With it, a recording reads bodies only when the option is on.
+   * otherwise the option is not shown. With it, a recording reads bodies only when the option is on.
    */
   networkBodies?: boolean;
   /** Modes to offer. Each is capped by `privacy`; modes the cap makes identical are offered once. */
@@ -230,12 +230,13 @@ export type RecordingChoiceOffer = {
   /** Who picks (`choices.by`). A customer offer lists only allowed modes, in display order. */
   by: 'staff' | 'customer';
   /**
-   * In display order: loosest first for staff; for a customer the default, then Fully masked, then any looser mode.
+   * Only the modes the host lists and its privacy cap allows, in display order: loosest first for staff; for a customer
+   * the default, then Fully masked, then any looser mode.
    * `facts` is what a recording in that mode captures.
    */
   privacy: readonly { mode: RecorderPrivacyMode; facts: PrivacyFacts }[];
   profiles: readonly { id: string; label: string; description?: string }[];
-  /** Present when the host offers the body option; `allowed` is false when its `capture` reads no body. */
+  /** Present when the host offers the body option; `allowed` is false when its `capture` reads no body, and the UI then hides it. */
   networkBodies?: { allowed: boolean };
   /** The remembered choice when it is still offered, else the defaults. Always the defaults for `by: 'customer'`. */
   initial: RecordingChoice;

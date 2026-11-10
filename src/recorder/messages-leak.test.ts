@@ -189,7 +189,6 @@ const OPTIONS_KEYS = new Set([
   'optionsSummary',
   'privacyLabel',
   'profileLabel',
-  'privacyUnavailable',
   'privacyMode',
   'privacyHint',
   'networkLabel',
@@ -199,8 +198,10 @@ const OPTIONS_KEYS = new Set([
   'networkBodies',
   'record',
 ]);
+// why: `privacyUnavailable` is deprecated and no longer rendered; the menu hides modes the host does not allow.
+const NEVER_RENDERED = new Set(['startFailed', 'privacyUnavailable']);
 const rendered = [
-  ...Object.keys(defaultRecorderMessages).filter((key) => key !== 'startFailed'),
+  ...Object.keys(defaultRecorderMessages).filter((key) => !NEVER_RENDERED.has(key)),
   'format.elapsed',
   'profile.label',
   'profile.description',
