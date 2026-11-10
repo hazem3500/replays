@@ -25,8 +25,8 @@ const key = (email: string) => `_identity/github/${emailDigest(email)}.json`;
 
 function valid(value: unknown): value is GithubLink {
   if (!value || typeof value !== 'object') return false;
-  const link = value as Record<string, unknown>;
-  return typeof link.login === 'string' && GITHUB_LOGIN.test(link.login) && typeof link.linkedAt === 'string';
+  const login: unknown = Reflect.get(value, 'login');
+  return typeof login === 'string' && GITHUB_LOGIN.test(login) && typeof Reflect.get(value, 'linkedAt') === 'string';
 }
 
 /**
@@ -48,7 +48,7 @@ export class GithubLinkStore {
     this.now = now;
   }
 
-  private remember(email: string, link: GithubLink | undefined) {
+  private remember(email: string, link?: GithubLink) {
     if (this.cache.size >= CACHE_MAX) this.cache.clear();
     this.cache.set(key(email), { link, at: this.now() });
   }
@@ -69,6 +69,6 @@ export class GithubLinkStore {
 
   async remove(email: string) {
     await this.storage.delete(key(email));
-    this.remember(email, undefined);
+    this.remember(email);
   }
 }

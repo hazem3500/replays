@@ -12,9 +12,11 @@ import { ReplayStore } from '../src/server/store.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
 const servers: Array<ReturnType<typeof createServer>> = [];
-afterEach(async () => {
-  await Promise.all(servers.splice(0).map((server) => new Promise<void>((done) => server.close(() => done()))));
-});
+function closeServersAfterEach() {
+  afterEach(async () => {
+    await Promise.all(servers.splice(0).map((server) => new Promise<void>((done) => server.close(() => done()))));
+  });
+}
 
 const SETTINGS = { clientId: 'Iv1.test-client', clientSecret: 'test-secret' };
 
@@ -24,12 +26,23 @@ interface GithubCall {
   body: Record<string, unknown> | undefined;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+async function configPlugins(send: (method: string, path: string) => Promise<Response>) {
+  const config: unknown = await (await send('GET', '/api/config')).json();
+  const plugins: unknown = isRecord(config) ? config.plugins : undefined;
+  return Array.isArray(plugins) ? plugins.filter((name): name is string => typeof name === 'string') : [];
+}
+
 /** GitHub's two endpoints, answered locally: a code becomes a token, the token names `login`. */
 function fakeGithub(login: string) {
   const calls: GithubCall[] = [];
   const fetchStub: typeof fetch = (input, init) => {
-    const url = String(input);
-    calls.push({ url, method: init?.method ?? 'GET', body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined });
+    const url = input instanceof Request ? input.url : String(input);
+    const sent: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
+    calls.push({ url, method: init?.method ?? 'GET', body: isRecord(sent) ? sent : undefined });
     if (url.endsWith('/login/oauth/access_token'))
       return Promise.resolve(Response.json({ access_token: 'gho_token', token_type: 'bearer' }));
     if (url.endsWith('/user'))
@@ -73,14 +86,12 @@ async function start(options: { configured?: boolean; login?: string; plugins?: 
       headers: { 'content-type': 'application/json', ...headers },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
-  /** Starts the flow and returns what GitHub would be sent, and the cookie the browser keeps. */
   const begin = async (headers: Record<string, string> = {}, next = '/r/demo') => {
     const response = await send('GET', `/auth/github/start?next=${encodeURIComponent(next)}`, headers);
     const authorize = new URL(response.headers.get('location') ?? 'http://missing.test/');
     const cookie = (response.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
     return { response, authorize, cookie };
   };
-  /** The full round trip: GitHub sends the person back with the state they were given. */
   const connect = async (headers: Record<string, string> = {}, next = '/r/demo') => {
     const { authorize, cookie } = await begin(headers, next);
     return send('GET', `/auth/github/callback?code=abc&state=${authorize.searchParams.get('state')}`, { ...headers, cookie });
@@ -88,10 +99,12 @@ async function start(options: { configured?: boolean; login?: string; plugins?: 
   return { send, begin, connect, github };
 }
 
-describe('Connect GitHub', () => {
+describe('Connect GitHub setup', () => {
+  closeServersAfterEach();
+
   it('is hidden when no OAuth app is configured: not in the plugin list, no routes, no flow', async () => {
     const { send, begin } = await start({ configured: false });
-    expect(((await (await send('GET', '/api/config')).json()) as { plugins: string[] }).plugins).not.toContain('github-connect');
+    expect((await configPlugins(send))).not.toContain('github-connect');
     expect((await send('GET', '/api/plugins/github-connect/link')).status).toBe(404);
     const flow = await begin();
     expect(flow.response.headers.get('location')).toBeNull();
@@ -109,7 +122,7 @@ describe('Connect GitHub', () => {
 
   it('sends the person to GitHub with a state, a PKCE challenge, our callback and no scopes', async () => {
     const { begin, send } = await start();
-    expect(((await (await send('GET', '/api/config')).json()) as { plugins: string[] }).plugins).toContain('github-connect');
+    expect(await configPlugins(send)).toContain('github-connect');
     const { response, authorize, cookie } = await begin();
     expect(response.status).toBe(302);
     expect(`${authorize.origin}${authorize.pathname}`).toBe('https://github.com/login/oauth/authorize');
@@ -122,6 +135,11 @@ describe('Connect GitHub', () => {
     expect(response.headers.get('set-cookie')).toMatch(/HttpOnly; SameSite=Lax/);
     expect(cookie).toMatch(/^replays_github_oauth=/);
   });
+
+});
+
+describe('Connect GitHub callback', () => {
+  closeServersAfterEach();
 
   it('refuses a callback whose state does not match, and stores nothing', async () => {
     const { begin, send, github } = await start();
@@ -169,17 +187,16 @@ describe('Connect GitHub', () => {
     expect(github.calls[0]?.body?.code_verifier).toMatch(/^[\w-]{43}$/);
     expect(github.calls[2]?.body).toEqual({ access_token: 'gho_token' });
 
-    const me = (await (await send('GET', '/api/me')).json()) as { handles?: Record<string, string>; avatarUrl?: string };
-    expect(me.handles).toEqual({ github: 'octocat' });
-    expect(me.avatarUrl).toBe('https://avatars.githubusercontent.com/u/1?v=4');
+    expect(await (await send('GET', '/api/me')).json()).toMatchObject({
+      handles: { github: 'octocat' },
+      avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
+    });
     expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toEqual({
       available: true,
       linked: { login: 'octocat', avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4' },
     });
-    const mine = (await (await send('GET', '/api/replays?for=me')).json()) as Array<{ id: string; reason: string }>;
-    expect(mine.map(({ id, reason }) => [id, reason])).toEqual([['shipped', 'reviewer']]);
-    const someoneElse = (await (await send('GET', '/api/me', { 'x-email': 'bob@example.com' })).json()) as { handles?: unknown };
-    expect(someoneElse.handles).toBeUndefined();
+    expect(await (await send('GET', '/api/replays?for=me')).json()).toMatchObject([{ id: 'shipped', reason: 'reviewer' }]);
+    expect(await (await send('GET', '/api/me', { 'x-email': 'bob@example.com' })).json()).not.toHaveProperty('handles');
   });
 
   it('returns only to a path inside the app', async () => {
@@ -188,14 +205,26 @@ describe('Connect GitHub', () => {
     expect((await connect({}, 'https://evil.example.com/')).headers.get('location')).toBe('/');
   });
 
+  it('answers a GitHub failure without storing a link', async () => {
+    const { begin, send } = await start({ login: 'not a login!' });
+    const { authorize, cookie } = await begin();
+    const failed = await send('GET', `/auth/github/callback?code=abc&state=${authorize.searchParams.get('state')}`, { cookie });
+    expect(failed.status).toBe(502);
+    expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toMatchObject({ linked: null });
+  });
+});
+
+describe('Connect GitHub link', () => {
+  closeServersAfterEach();
+
   it('disconnects: the handle and avatar go, and Connect is offered again', async () => {
     const { connect, send } = await start();
     await connect();
     const removed = await send('DELETE', '/api/plugins/github-connect/link');
     expect(removed.status).toBe(204);
-    const me = (await (await send('GET', '/api/me')).json()) as { handles?: unknown; avatarUrl?: unknown };
-    expect(me.handles).toBeUndefined();
-    expect(me.avatarUrl).toBeUndefined();
+    const me: unknown = await (await send('GET', '/api/me')).json();
+    expect(me).not.toHaveProperty('handles');
+    expect(me).not.toHaveProperty('avatarUrl');
     expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toEqual({ available: true, linked: null });
   });
 
@@ -225,13 +254,5 @@ describe('Connect GitHub', () => {
     });
     const { send } = await start({ plugins: [people] });
     expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toMatchObject({ available: false });
-  });
-
-  it('answers a GitHub failure without storing a link', async () => {
-    const { begin, send } = await start({ login: 'not a login!' });
-    const { authorize, cookie } = await begin();
-    const failed = await send('GET', `/auth/github/callback?code=abc&state=${authorize.searchParams.get('state')}`, { cookie });
-    expect(failed.status).toBe(502);
-    expect(await (await send('GET', '/api/plugins/github-connect/link')).json()).toMatchObject({ linked: null });
   });
 });
