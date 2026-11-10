@@ -24,12 +24,17 @@ export const FIRST_VISIBLE_SOURCE = `(selector) => {
 
 type Point = { x: number; y: number };
 
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
+const isPoint = (value: unknown): value is Point => isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number';
+
 async function locate(cdp: CdpLike, selector: string): Promise<Point | undefined> {
-  const answer = (await cdp.send('Runtime.evaluate', {
+  const answer = await cdp.send('Runtime.evaluate', {
     expression: `(${FIRST_VISIBLE_SOURCE})(${JSON.stringify(selector)})`,
     returnByValue: true,
-  })) as { result?: { value?: Point | null } };
-  return answer.result?.value ?? undefined;
+  });
+  const value = isRecord(answer) && isRecord(answer.result) ? answer.result.value : undefined;
+  return isPoint(value) ? value : undefined;
 }
 
 const mouse = (cdp: CdpLike, type: string, point: Point, extra: object = {}) =>

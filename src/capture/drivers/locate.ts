@@ -29,7 +29,7 @@ export async function describeMatches(page: Page, selector: string, limit = MAX_
     const element = all.nth(index);
     const [tag, text, visible, box] = await Promise.all([
       element.evaluate((node) => node.tagName.toLowerCase()).catch(() => '?'),
-      element.evaluate((node) => (node as HTMLElement).innerText ?? node.textContent ?? '').catch(() => ''),
+      element.evaluate((node) => (node instanceof HTMLElement ? node.innerText : (node.textContent ?? ''))).catch(() => ''),
       element.isVisible().catch(() => false),
       element.boundingBox().catch(() => null),
     ]);
