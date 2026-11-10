@@ -139,7 +139,8 @@ export function SpeedChoice({
             aria-pressed={tidy(value) === mark}
             onClick={() => onChange(mark, false)}
           >
-            {mark}×
+            {/* why: 1.5× sits one step from 2×, so its label would touch; the mark still snaps, and its name stays for screen readers. */}
+            {mark === 1.5 ? null : `${mark}×`}
           </button>
         ))}
       </div>
