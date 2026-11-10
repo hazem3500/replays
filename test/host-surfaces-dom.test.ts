@@ -104,8 +104,8 @@ describe('host diagnostic surfaces', () => {
     await render(
       createElement(VitalsBar, {
         vitals: [
-          { id: 'fcp', value: 100, at: 100 },
-          { id: 'lcp', value: 200, at: 200 },
+          { id: 'fcp', value: 100, at: 100, verdict: 'good' },
+          { id: 'lcp', value: 200, at: 200, verdict: 'good' },
         ],
         peers: [],
         onPick: noop,
