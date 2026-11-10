@@ -23,7 +23,7 @@ test('performance leads with verdicts, ranks slow moments worst first, and opens
   const vitals = page.getByTestId('performance-vitals');
   await expect(vitals).toContainText('First paint500 msGood');
   await expect(vitals).toContainText('Slowest interaction620 msPoor');
-  await expect(vitals).toContainText('Largest paintNot captured');
+  await expect(vitals).toContainText('Largest paint—Not captured');
   const events = page.getByTestId('performance-events');
   const rows = events.locator('[data-performance-id]');
   await expect(rows).toHaveCount(2);
@@ -49,7 +49,8 @@ test('performance leads with verdicts, ranks slow moments worst first, and opens
   await page.keyboard.press('Escape');
   await expect(evidence).toBeHidden();
 
-  await page.getByRole('button', { name: 'In order', exact: true }).click();
+  await page.getByRole('button', { name: 'Sort by when' }).click();
+  await expect(page.getByRole('columnheader', { name: 'Sort by when' })).toHaveAttribute('aria-sort', 'ascending');
   await expect(rows.first()).toContainText('Long task');
 
   await page.getByTestId('console-tab').click();

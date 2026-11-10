@@ -17,6 +17,22 @@ export interface PerformanceModel {
   track: ReplayBundle['performance'];
   /** Foreground frame rate per second of recording, on the player's clock; empty when frame timing was not recorded. */
   frames: FrameBand[];
+  /** Layout shifts on the player's clock (after edits); empty when none were captured or the browser could not observe them. */
+  shifts: LayoutShift[];
+}
+
+/** One layout shift: its score (`value`) and whether it followed an input, which the layout shift score excludes. */
+export interface LayoutShift {
+  at: number;
+  value: number;
+  hadRecentInput: boolean;
+}
+
+function layoutShifts(shifts: ReplayBundle['performance'], timeline?: EditTimeline): LayoutShift[] {
+  return (shifts?.layoutShifts ?? []).flatMap((shift) => {
+    if (timeline && (timeline.isRemoved(shift.at) || shift.at > timeline.originalDuration)) return [];
+    return [{ at: timeline ? timeline.toEdited(shift.at) : shift.at, value: shift.value, hadRecentInput: shift.hadRecentInput }];
+  });
 }
 
 /** Reuse the source → edited span mapping; metric values always retain their captured meaning. */
@@ -33,7 +49,7 @@ export function buildPerformance(bundle: ReplayBundle, timeline?: EditTimeline):
     .filter((row) => row.entry.kind === 'largest-contentful-paint' && validDuration(row.entry.value))
     .reduce<PerformanceSignal | undefined>((latest, row) => (!latest || row.sourceAt >= latest.sourceAt ? row : latest), undefined);
   const frames = frameBands(bundle.performance?.frames, timeline);
-  return { ...model, signals, moments, longestTask, slowestInteraction, largestPaint, track: bundle.performance, frames };
+  return { ...model, signals, moments, longestTask, slowestInteraction, largestPaint, track: bundle.performance, frames, shifts: layoutShifts(bundle.performance, timeline) };
 }
 
 export function missingPerformanceLabel(model: PerformanceModel, api: string, kind: ReplayPerformanceKind) {

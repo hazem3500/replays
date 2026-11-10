@@ -1,27 +1,33 @@
 import { formatClock, type ReplayStep } from '../../../shared/replay.ts';
+import { usePlayer } from '../../player.ts';
 import { type LocalItem, LocalTimeline } from '../LocalTimeline.tsx';
 import { DetailHead } from '../network/DetailHead.tsx';
 import { formatDuration, type NetworkRow, stepAt } from '../network/model.ts';
 import type { RibbonTone } from '../TimeRibbon.tsx';
-import { BudgetBar, MOMENT_DETAIL_ID } from './MomentList.tsx';
-import { BUDGETS, causeOf, causeText, type Moment, VERDICT_WORDS, type Verdict } from './model.ts';
+import { MOMENT_DETAIL_ID } from './MomentList.tsx';
+import { BUDGETS, causeOf, type Moment, VERDICT_WORDS, type Verdict } from './model.ts';
 
 const STRINGS = {
   close: 'Close moment',
-  interaction: 'From the input to the next frame. People notice a delay over 200 ms; over 500 ms feels broken.',
-  task: 'The main thread was busy the whole time, so clicks, typing and rendering waited for it.',
   budget: (good: number, poor: number) => `Good under ${formatDuration(good)}, poor over ${formatDuration(poor)}`,
   when: 'When',
   during: 'During',
-  waited: 'Waited on',
+  why: 'Why',
   after: (ms: number) => `${formatDuration(ms)} after it began`,
   around: 'Around this moment',
-  attribution: 'Script attribution isn’t captured, so which code ran is not known.',
+  blockedBy: (ms: number) => `A ${formatDuration(ms)} long task blocked the page`,
+  seekTask: 'Go to the long task',
+  inFlight: (count: number) => `${count} ${count === 1 ? 'request was' : 'requests were'} in flight`,
+  more: (count: number) => `and ${count} more in the Network tab`,
+  page: 'No request was in flight, so the page’s own code ran long.',
+  taskIdle: 'The main thread was busy the whole time, so clicks, typing and rendering waited for it.',
+  attribution: 'Which script ran is not captured.',
 };
 
 /** Margin around a moment for its neighbourhood chart, in ms. */
 const AROUND_PAD_MS = 300;
 const AROUND_MAX_REQUESTS = 8;
+const WHY_MAX_REQUESTS = 4;
 
 const TONES: Readonly<Record<Verdict, RibbonTone>> = { poor: 'danger', 'needs-work': 'warning', good: 'neutral' };
 
@@ -104,12 +110,8 @@ export function MomentDetail({
           {VERDICT_WORDS[moment.verdict]}
         </span>
       </DetailHead>
-      <div className="pp-meaning">
-        <p>{moment.kind === 'task' ? STRINGS.task : STRINGS.interaction}</p>
-        <BudgetBar moment={moment} />
-        <p className="np-aside">{STRINGS.budget(good, poor)}</p>
-      </div>
-      <MomentFacts moment={moment} moments={moments} requests={requests} steps={steps} />
+      <p className="np-aside pp-budget-line">{STRINGS.budget(good, poor)}</p>
+      <MomentFacts moment={moment} moments={moments} requests={requests} steps={steps} onOpenRequest={onOpenRequest} />
       <section className="np-section">
         <h3>{STRINGS.around}</h3>
         <LocalTimeline
@@ -121,7 +123,6 @@ export function MomentDetail({
           onPick={(id) => (id.startsWith('request:') ? onOpenRequest(id.slice('request:'.length)) : onSelect(id))}
         />
       </section>
-      <p className="np-note">{STRINGS.attribution}</p>
     </section>
   );
 }
@@ -131,14 +132,17 @@ function MomentFacts({
   moments,
   requests,
   steps,
+  onOpenRequest,
 }: {
   moment: Moment;
   moments: readonly Moment[];
   requests: readonly NetworkRow[];
   steps: readonly ReplayStep[];
+  onOpenRequest: (id: string) => void;
 }) {
+  const player = usePlayer();
   const step = stepAt(steps, moment.at);
-  const cause = causeText(causeOf(moment, moments, requests));
+  const cause = causeOf(moment, moments, requests);
   return (
     <dl className="np-facts">
       <dt>{STRINGS.when}</dt>
@@ -147,17 +151,52 @@ function MomentFacts({
         <>
           <dt>{STRINGS.during}</dt>
           <dd>
-            {step.label}
+            <button type="button" className="pp-link" onClick={() => player.seek(step.at)}>
+              {step.label}
+            </button>
             <span className="np-aside">{STRINGS.after(Math.max(0, moment.at - step.at))}</span>
           </dd>
         </>
       ) : null}
-      {cause ? (
-        <>
-          <dt>{STRINGS.waited}</dt>
-          <dd>{`${cause.charAt(0).toUpperCase()}${cause.slice(1)}`}</dd>
-        </>
-      ) : null}
+      <dt>{STRINGS.why}</dt>
+      <dd>
+        {cause.kind === 'task' ? (
+          <>
+            <button type="button" className="pp-link" onClick={() => player.seek(cause.task.at)}>
+              {STRINGS.blockedBy(cause.task.value)}
+            </button>
+            <span className="np-aside">{STRINGS.attribution}</span>
+          </>
+        ) : null}
+        {cause.kind === 'network' ? (
+          <>
+            {STRINGS.inFlight(cause.requests.length)}
+            <ul className="pp-inflight">
+              {cause.requests.slice(0, WHY_MAX_REQUESTS).map((row) => (
+                <li key={row.id}>
+                  <button type="button" className="pp-link" onClick={() => onOpenRequest(row.id)}>
+                    {row.entry.method} {row.name.path}
+                  </button>
+                  <span className="np-aside">{row.measured === undefined ? '' : formatDuration(row.measured)}</span>
+                </li>
+              ))}
+            </ul>
+            {cause.requests.length > WHY_MAX_REQUESTS ? <span className="np-aside">{STRINGS.more(cause.requests.length - WHY_MAX_REQUESTS)}</span> : null}
+          </>
+        ) : null}
+        {cause.kind === 'page' ? (
+          <>
+            {STRINGS.page}
+            <span className="np-aside">{STRINGS.attribution}</span>
+          </>
+        ) : null}
+        {cause.kind === 'none' ? (
+          <>
+            {STRINGS.taskIdle}
+            <span className="np-aside">{STRINGS.attribution}</span>
+          </>
+        ) : null}
+      </dd>
     </dl>
   );
 }

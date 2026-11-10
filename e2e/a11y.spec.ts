@@ -19,12 +19,14 @@ interface Violation {
 
 /**
  * target-size nodes that are not pointer targets of their own: ribbon marks take no pointer input (pointer-events: none;
- * the strip scrubs and the rows select), and a list row the playhead scrolled partly under the list's sticky header.
+ * the strip scrubs and the rows select), timeline marks (a few pixels wide by design; each is a row of the table below, and
+ * its hit area extends past the drawn bar), and a list row the playhead scrolled partly under the list's sticky header.
  */
 function pointerExempt(violation: Violation): Violation {
   if (violation.id !== 'target-size') return violation;
   const exempt = (node: Violation['nodes'][number]) =>
     node.html.includes('class="ribbon-mark"') ||
+    node.html.includes('class="pt-mark"') ||
     (/partially obscured/.test(node.failureSummary ?? '') && /class="seek-time"|id="request-switch-/.test(node.html));
   return { ...violation, nodes: violation.nodes.filter((node) => !exempt(node)) };
 }

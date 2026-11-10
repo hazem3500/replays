@@ -1,29 +1,13 @@
 import { use, type ReactNode } from 'react';
 
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 
 import { formatDuration } from '../network/model.ts';
 import { VERDICT_WORDS, type Vital, type VitalId } from './model.ts';
+import { GROUP_LABELS, type Stat, type StatGroup, vitalStat } from './stats.ts';
 import { HostSurfaceSlot } from '../../plugins/HostSurface.tsx';
 import { PluginContexts } from '../../plugins/PluginUi.tsx';
-
-const LABELS: Readonly<Record<VitalId, string>> = {
-  fcp: 'First paint',
-  lcp: 'Largest paint',
-  interaction: 'Slowest interaction',
-  task: 'Longest task',
-  tbt: 'Blocking time',
-};
-
-const HINTS: Readonly<Record<VitalId, string>> = {
-  fcp: 'First contentful paint: when anything first appeared. Good under 1.8 s, poor over 3 s.',
-  lcp: 'Largest contentful paint: the latest candidate the browser reported. Good under 2.5 s, poor over 4 s.',
-  interaction: 'The slowest response to a click, key or input. Good under 200 ms, poor over 500 ms.',
-  task: 'The longest stretch the main thread could not respond. Good under 100 ms, poor over 250 ms.',
-  tbt: 'Every long task’s time past 50 ms, summed. Good under 200 ms, poor over 600 ms.',
-};
-
-const MISSING = { 'not-captured': 'Not captured', none: 'None' } as const;
 
 export interface VitalPeer {
   id: string;
@@ -46,54 +30,138 @@ function deltaTone(difference: number) {
 }
 
 /**
- * Selected recording's measurements, with pairwise differences inline or larger comparisons available on demand.
- * A vital with a moment behind it selects that moment; a paint seeks to when it happened.
+ * The recording's measurements as one grid of stats: Loading, Responsiveness, Smoothness. Each is a label, a number, and
+ * a thin meter of its good, needs work and poor bands with a marker at the value; the rating word is in the tooltip and
+ * read aloud. A stat with a moment behind it selects that moment; a paint seeks to when it happened; pairwise
+ * differences show inline or as a larger comparison on demand.
  */
 export function VitalsBar({
   vitals,
   peers,
+  cadence = NO_STATS,
   onPick,
   children,
 }: {
   vitals: readonly Vital[];
   peers: readonly VitalPeer[];
+  /** The smoothness stats (frame rate, dropped frames, layout shift). */
+  cadence?: readonly Stat[];
   onPick: (vital: Vital) => void;
-  /** Controls at the bar's end (the list order). */
+  /** Controls at the bar's end. */
   children?: ReactNode;
 }) {
   const viewer = use(PluginContexts)?.('');
   const context = viewer ? { replay: viewer.replay, seek: viewer.seek.bind(viewer) } : {};
+  const items = [
+    ...vitals.map((vital) => ({ stat: vitalStat(vital), vital })),
+    ...cadence.map((stat) => ({ stat, vital: undefined })),
+  ];
+  const started = new Set<StatGroup>();
+  const builtins = items.map(({ stat, vital }, index) => {
+    const start = !started.has(stat.group);
+    started.add(stat.group);
+    return {
+      id: `core:${stat.id}`,
+      order: (index + 1) * 100,
+      render: () => (
+        <>
+          <StatTile
+            stat={stat}
+            start={start}
+            pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
+            onPick={() => vital && onPick(vital)}
+          >
+            {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
+          </StatTile>
+          {vital && peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
+        </>
+      ),
+    };
+  });
   return (
     <div className="pp-vitals" data-testid="performance-vitals">
       <ul aria-label="Vitals">
-        <HostSurfaceSlot
-          slot="performance.vitals"
-          context={context}
-          element="li"
-          builtins={vitals.map((vital, index) => ({
-            id: `core:${vital.id}`,
-            order: (index + 1) * 100,
-            render: () => (
-              <>
-                <button
-                  type="button"
-                  className="pp-vital"
-                  title={HINTS[vital.id]}
-                  disabled={!vital.moment && vital.at === undefined}
-                  onClick={() => onPick(vital)}
-                >
-                  <span className="pp-vital-label">{LABELS[vital.id]}</span>
-                  <VitalValue vital={vital} />
-                  {peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
-                </button>
-                {peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
-              </>
-            ),
-          }))}
-        />
+        <HostSurfaceSlot slot="performance.vitals" context={context} element="li" builtins={builtins} />
       </ul>
       {children}
     </div>
+  );
+}
+
+const NO_STATS: readonly Stat[] = [];
+
+function StatTile({
+  stat,
+  start,
+  pickable,
+  onPick,
+  children,
+}: {
+  stat: Stat;
+  start: boolean;
+  pickable: boolean;
+  onPick: () => void;
+  children?: ReactNode;
+}) {
+  const word = stat.verdict ? VERDICT_WORDS[stat.verdict] : undefined;
+  const body = (
+    <>
+      <span className="pp-stat-group" aria-hidden="true">
+        {start ? GROUP_LABELS[stat.group] : ''}
+      </span>
+      <span className="pp-vital-label">{stat.label}</span>
+      {stat.value === undefined ? (
+        <span className="pp-stat-value pp-missing">
+          <span aria-hidden="true">—</span>
+          <span className="visually-hidden">{stat.missing}</span>
+        </span>
+      ) : (
+        <span className="pp-stat-value">
+          {stat.value}
+          {stat.unit ? <span className="pp-unit"> {stat.unit}</span> : null}
+        </span>
+      )}
+      <StatMeter stat={stat} />
+      {word ? <span className="pp-stat-word" data-verdict={stat.verdict}>{word}</span> : null}
+      {children}
+    </>
+  );
+  const tip = [word && `${word}.`, stat.missing, stat.hint].filter(Boolean).join(' ');
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          pickable ? (
+            <button type="button" onClick={onPick} />
+          ) : (
+            // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: a stat that cannot be picked is still read by keyboard, so its tooltip is reachable.
+            <div tabIndex={0} />
+          )
+        }
+        className="pp-stat pp-vital"
+        data-group={stat.group}
+        data-group-start={start || undefined}
+        data-verdict={stat.verdict}
+      >
+        {body}
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <span className="pp-stat-tip">{tip}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function StatMeter({ stat }: { stat: Stat }) {
+  const { meter } = stat;
+  if (!meter) return <span className="pp-meter" data-empty="" aria-hidden="true" />;
+  return (
+    <span className="pp-meter" aria-hidden="true">
+      {meter.bands.map((band) => (
+        <span key={band.verdict} className="pp-meter-band" data-verdict={band.verdict} style={{ flexGrow: band.share }} />
+      ))}
+      <span className="pp-meter-mark" style={{ left: `${meter.at * 100}%` }} />
+    </span>
   );
 }
 
@@ -116,13 +184,13 @@ function VitalComparisons({ vital, peers }: { vital: Vital; peers: readonly Vita
     <Popover>
       <PopoverTrigger
         className="pp-compare"
-        aria-label={`Compare ${LABELS[vital.id].toLowerCase()} with ${measured.length} ${measured.length === 1 ? 'recording' : 'recordings'}`}
+        aria-label={`Compare ${vitalStat(vital).label.toLowerCase()} with ${measured.length} ${measured.length === 1 ? 'recording' : 'recordings'}`}
       >
         {measured.length} other {measured.length === 1 ? 'recording' : 'recordings'}
       </PopoverTrigger>
-      <PopoverContent className="pp-comparisons" align="start" aria-label={`${LABELS[vital.id]} comparison`}>
-        <PopoverTitle className="text-xs" aria-label={`${LABELS[vital.id]} comparison`}>
-          {LABELS[vital.id]}
+      <PopoverContent className="pp-comparisons" align="start" aria-label={`${vitalStat(vital).label} comparison`}>
+        <PopoverTitle className="text-xs" aria-label={`${vitalStat(vital).label} comparison`}>
+          {vitalStat(vital).label}
         </PopoverTitle>
         <p>Current recording: {formatDuration(currentValue)}</p>
         <table>
@@ -155,19 +223,5 @@ function VitalComparisons({ vital, peers }: { vital: Vital; peers: readonly Vita
         </table>
       </PopoverContent>
     </Popover>
-  );
-}
-
-function VitalValue({ vital }: { vital: Vital }) {
-  if (vital.value === undefined || !vital.verdict)
-    return <span className="pp-vital-value pp-missing">{MISSING[vital.missing ?? 'not-captured']}</span>;
-  return (
-    <span className="pp-vital-value">
-      {formatDuration(vital.value)}
-      <span className="pp-verdict" data-verdict={vital.verdict}>
-        <span className="pp-dot" aria-hidden="true" />
-        {VERDICT_WORDS[vital.verdict]}
-      </span>
-    </span>
   );
 }

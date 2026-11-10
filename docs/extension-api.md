@@ -961,7 +961,7 @@ listeners and subscriptions when the surface changes or the plugin unloads.
 | Slot | Core item ids | Additional context |
 | --- | --- | --- |
 | `inspector.network.columns` | `core:time`, `core:request`, `core:status`, `core:duration`, `core:during` | Each cell renderer receives `request`; the factory describes the whole column. Optional `width` is a CSS grid track, defaulting to `120px`. Custom column layouts scroll horizontally on narrow screens. |
-| `performance.vitals` | `core:fcp`, `core:lcp`, `core:interaction`, `core:task`, `core:tbt`, when provided by the active panel | Replay and seek when mounted in the viewer. Contributions render inside a metric list item. |
+| `performance.vitals` | `core:fcp`, `core:lcp`, `core:interaction`, `core:task`, `core:tbt`, `core:median`, `core:slowest`, `core:dropped`, `core:shift`, when provided by the active panel | Replay and seek when mounted in the viewer. Contributions render inside a metric list item. |
 | `editor.topbar.actions` | `core:history`, `core:export` | Replay, current edits, selection, duration, `seek` and validated `changeEdits`. Both desktop and phone bars mount this slot. |
 | `editor.inspector.sections` | `core:replay` with no selection; `core:selection` with a selection | The same editor context. Phone users open host-only sections through **Replay settings** in More. |
 | `editor.timeline.lanes` | `core:clip`, `core:zoom`, `core:speed`, `core:blur`, `core:caption`; effect lanes depend on available edits and controls | The editor context plus `scale.width`, `scale.x(time)` and `scale.timeAt(clientX)` in timeline pixels. Both timeline layouts mount this slot. |

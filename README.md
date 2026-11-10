@@ -217,11 +217,15 @@ and the action it belongs to. Select a row for its detail beside the list (in it
 against the recording's median, the step it belongs to, what else was in flight on the request's own scale, the
 retained headers, Copy URL and Copy as cURL. ↑/↓, Home/End and Escape work from the keyboard.
 
-**Performance** leads with verdicts: first and largest paint, the slowest interaction, the longest task and total
-blocking time, each marked Good, Needs work or Poor, or "Not captured" when the browser couldn't observe it. Below
-them are the slow moments, worst first or in time order. A click's pointer, key and input events count as one moment,
-and each moment says what it was during and what it most likely waited on: a long task, requests in flight, or the
-page's own code. Script attribution is not captured, so the detail says so instead of guessing.
+**Performance** answers "was this slow, where, and why?". A one-line verdict leads, and each phrase in it seeks to its
+moment. Below it, the stats are grouped as Loading (first and largest paint), Responsiveness (slowest interaction,
+longest task, blocking time) and Smoothness (median frame rate, slowest second, dropped frames, layout shift), each with a
+threshold meter and a dash with a reason when the browser couldn't observe it. A swimlane timeline shares the frame-rate
+chart's time axis and hover crosshair: interactions, long tasks (the first 50 ms muted), slow requests and layout shifts,
+with crowded stretches merged into one counted mark. Hovering a mark lights its table row and the reverse; clicking seeks.
+The table sorts by When or Took from its header. A click's pointer, key and input events count as one moment, and each
+moment says what it was during and why: the long task that blocked it, the requests in flight, or the page's own code.
+Script attribution is not captured, so the detail says so instead of guessing.
 
 With saved edits, rows follow the edited replay clock through trims, cuts and speed-ups, and details keep the source
 measurements. Missing responses have unknown duration. Older bundles work with the tracks they contain; no additional

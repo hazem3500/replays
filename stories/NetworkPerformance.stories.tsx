@@ -180,8 +180,8 @@ export const PerformanceMoments: Story = {
     const canvas = within(canvasElement);
     const rows = canvas.getByTestId('performance-events').querySelectorAll('[data-performance-id]');
     await expect(rows[0]).toHaveTextContent('Long task');
-    await userEvent.click(canvas.getByRole('button', { name: 'In order' }));
-    await expect(canvas.getByRole('button', { name: 'In order' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(canvas.getByRole('button', { name: 'Sort by when' }));
+    await expect(canvas.getByRole('columnheader', { name: 'Sort by when' })).toHaveAttribute('aria-sort', 'ascending');
   },
 };
 
