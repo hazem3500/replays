@@ -18,7 +18,7 @@ const needsRuntime = serverCommands.includes(args[0]) && !wantsHelp;
 if (needsRuntime && !existsSync(source) && existsSync(built)) {
   try {
     const { prepareViewerRuntime } = await import('../dist/cli/viewer-runtime.mjs');
-    const runtime = await prepareViewerRuntime({ packageRoot });
+    const runtime = await prepareViewerRuntime({ packageRoot, env: process.env });
     if (args[0] === 'serve') {
       const { startServer } = await import(pathToFileURL(`${runtime}/dist/lib/server.mjs`).href);
       await startServer({ handleSignals: true });

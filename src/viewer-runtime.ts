@@ -6,6 +6,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
 import { createTerminal, type TerminalStream } from './capture/terminal.ts';
+import { PRODUCT_SLUG } from './shared/brand.ts';
 
 /** Package directories the server runs from; they are copied beside the installed dependencies. */
 const APP_PATHS = ['package.json', 'bin', 'dist/cli', 'dist/lib', 'dist/client', 'dist/start', 'sample'];
@@ -13,7 +14,7 @@ const APP_PATHS = ['package.json', 'bin', 'dist/cli', 'dist/lib', 'dist/client',
 export interface ViewerRuntimeOptions {
   /** The installed package (or checkout) that holds `dist/lib/server.mjs`. */
   packageRoot: string;
-  env?: NodeJS.ProcessEnv;
+  env: NodeJS.ProcessEnv;
   stream?: TerminalStream;
   /** Installs `dependencies` into `directory`; defaults to `npm install`. Injectable for tests. */
   install?: (directory: string, dependencies: Record<string, string>) => Promise<void>;
@@ -25,6 +26,21 @@ interface Manifest {
   devDependencies?: Record<string, string>;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
+const stringMap = (value: unknown) =>
+  isRecord(value) ? Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) : {};
+
+function parseManifest(text: string): Manifest {
+  const parsed: unknown = JSON.parse(text);
+  if (!isRecord(parsed)) throw new Error('package.json is not an object');
+  return {
+    ...(typeof parsed.version === 'string' ? { version: parsed.version } : {}),
+    peerDependencies: stringMap(parsed.peerDependencies),
+    devDependencies: stringMap(parsed.devDependencies),
+  };
+}
+
 /** The server and viewer dependencies: the package's peer dependencies, pinned to the versions it is tested with. */
 export function viewerDependencies(manifest: Manifest) {
   const result: Record<string, string> = {};
@@ -34,9 +50,12 @@ export function viewerDependencies(manifest: Manifest) {
 }
 
 export function cacheRoot(env: NodeJS.ProcessEnv, platform: NodeJS.Platform = process.platform) {
-  if (env.REPLAYS_VIEWER_CACHE) return resolve(env.REPLAYS_VIEWER_CACHE);
-  if (platform === 'win32' && env.LOCALAPPDATA) return join(env.LOCALAPPDATA, 'replays');
-  return join(env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'replays');
+  const override = env.REPLAYS_VIEWER_CACHE;
+  if (override !== undefined && override !== '') return resolve(override);
+  const local = env.LOCALAPPDATA;
+  if (platform === 'win32' && local !== undefined && local !== '') return join(local, PRODUCT_SLUG);
+  const xdg = env.XDG_CACHE_HOME;
+  return join(xdg !== undefined && xdg !== '' ? xdg : join(homedir(), '.cache'), PRODUCT_SLUG);
 }
 
 /** Whether `name` resolves from `directory` the way Node would find it, walking up through `node_modules` folders. */
@@ -60,7 +79,7 @@ function npmInstall(directory: string) {
       errors = `${errors}${chunk}`.slice(-4000);
     });
     child.on('error', (error) => fail(new Error(`could not run npm: ${error.message}`)));
-    child.on('close', (code) => (code === 0 ? done() : fail(new Error(`npm install exited with ${code}\n${errors.trim()}`))));
+    child.on('close', (code) => (code === 0 ? done() : fail(new Error(`npm install exited with ${String(code)}\n${errors.trim()}`))));
   });
 }
 
@@ -70,8 +89,8 @@ function npmInstall(directory: string) {
  * dependencies in the user cache, so `npm install` of the CLI stays small and `serve` pays for the viewer once.
  */
 export async function prepareViewerRuntime(options: ViewerRuntimeOptions) {
-  const { packageRoot, env = process.env, stream = process.stderr } = options;
-  const manifest = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8')) as Manifest;
+  const { packageRoot, env, stream = process.stderr } = options;
+  const manifest = parseManifest(await readFile(join(packageRoot, 'package.json'), 'utf8'));
   const dependencies = viewerDependencies(manifest);
   if (Object.keys(dependencies).every((name) => isInstalled(name, packageRoot))) return packageRoot;
 
@@ -93,7 +112,7 @@ export async function prepareViewerRuntime(options: ViewerRuntimeOptions) {
     await mkdir(staging, { recursive: true });
     await writeFile(
       join(staging, 'package.json'),
-      `${JSON.stringify({ name: 'replays-viewer-runtime', private: true, dependencies }, null, 2)}\n`,
+      `${JSON.stringify({ name: `${PRODUCT_SLUG}-viewer-runtime`, private: true, dependencies }, null, 2)}\n`,
     );
     await (options.install ?? npmInstall)(staging, dependencies);
     for (const path of APP_PATHS) {

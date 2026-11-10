@@ -13,22 +13,22 @@ const manifest = {
   devDependencies: { zod: '4.6.7', react: '19.3.0' },
 };
 
-let work = '';
-let packageRoot = '';
-beforeEach(async () => {
-  work = await mkdtemp(join(tmpdir(), 'viewer-runtime-'));
-  packageRoot = join(work, 'pkg');
-  await mkdir(join(packageRoot, 'dist/lib'), { recursive: true });
-  await writeFile(join(packageRoot, 'package.json'), JSON.stringify(manifest));
-  await writeFile(join(packageRoot, 'dist/lib/server.mjs'), 'export {};');
-});
-afterEach(() => rm(work, { recursive: true, force: true }));
-
 const silent = { write: () => true };
 const failingInstall = () => Promise.reject(new Error('offline'));
 const forbiddenInstall = () => Promise.reject(new Error('must not install'));
 
 describe('viewer runtime', () => {
+  let work = '';
+  let packageRoot = '';
+  beforeEach(async () => {
+    work = await mkdtemp(join(tmpdir(), 'viewer-runtime-'));
+    packageRoot = join(work, 'pkg');
+    await mkdir(join(packageRoot, 'dist/lib'), { recursive: true });
+    await writeFile(join(packageRoot, 'package.json'), JSON.stringify(manifest));
+    await writeFile(join(packageRoot, 'dist/lib/server.mjs'), 'export {};');
+  });
+  afterEach(() => rm(work, { recursive: true, force: true }));
+
   it('pins peer dependencies to the versions the package is tested with', () => {
     expect(viewerDependencies(manifest)).toEqual({ react: '19.3.0', zod: '4.6.7' });
   });

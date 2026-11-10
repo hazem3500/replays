@@ -3,14 +3,14 @@
   "headroomPercent": 3,
   "files": {
     "bin/replays.mjs": {
-      "raw": 1557,
-      "gzip": 742,
-      "brotli": 624
+      "raw": 2159,
+      "gzip": 942,
+      "brotli": 804
     },
     "dist/cli/cli.mjs": {
-      "raw": 491739,
-      "gzip": 126695,
-      "brotli": 103147
+      "raw": 780795,
+      "gzip": 170180,
+      "brotli": 139019
     },
     "dist/cli/edit.mjs": {
       "raw": 115200,
@@ -21,6 +21,16 @@
       "raw": 190449,
       "gzip": 60897,
       "brotli": 39084
+    },
+    "dist/cli/server-HASH.mjs": {
+      "raw": 377210,
+      "gzip": 98026,
+      "brotli": 80963
+    },
+    "dist/cli/viewer-runtime.mjs": {
+      "raw": 8253,
+      "gzip": 3183,
+      "brotli": 2812
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1998,
@@ -935,7 +945,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1079,14 +1089,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/166"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 491739
-      },
-      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
-      "pr": "https://github.com/hazem3500/replays/pull/284"
-    },
-    {
       "file": "dist/client/assets/step-caption-HASH.css",
       "cap": {
         "raw": 2923,
@@ -1139,7 +1141,7 @@
       "cap": {
         "gzip": 4113
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1149,7 +1151,7 @@
         "gzip": 1328,
         "brotli": 1128
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -2072,15 +2074,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "gzip": 126695,
-        "brotli": 103217
-      },
-      "reason": "Baseline refresh: caps carry the standard 3% headroom over the bytes measured on main 330ed76 so small feature growth does not trip them.",
-      "pr": "https://github.com/hazem3500/replays/pull/284"
-    },
-    {
       "file": "dist/client/assets/edits-HASH.js",
       "cap": {
         "raw": 39237
@@ -2207,6 +2200,46 @@
       },
       "reason": "New on-demand bundle for the replay edit commands, kept out of cli.mjs so the other commands load without it.",
       "pr": "https://github.com/hazem3500/replays/pull/310"
+    },
+    {
+      "file": "bin/replays.mjs",
+      "cap": {
+        "raw": 2159,
+        "gzip": 942,
+        "brotli": 804
+      },
+      "reason": "The launcher routes serve and the other server commands through the on-demand viewer runtime.",
+      "pr": "https://github.com/hazem3500/replays/pull/320"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 780795,
+        "gzip": 170180,
+        "brotli": 139019
+      },
+      "reason": "The CLI bundles its own dependencies (ajv, zod, ws) so installing it needs only playwright-core; the server commands moved to server-commands.",
+      "pr": "https://github.com/hazem3500/replays/pull/320"
+    },
+    {
+      "file": "dist/cli/server-HASH.mjs",
+      "cap": {
+        "raw": 377210,
+        "gzip": 98026,
+        "brotli": 80963
+      },
+      "reason": "New: the server-side commands (migrate, mcp, build-static, plugin check) split out of cli.mjs; loaded only once the viewer dependencies resolve.",
+      "pr": "https://github.com/hazem3500/replays/pull/320"
+    },
+    {
+      "file": "dist/cli/viewer-runtime.mjs",
+      "cap": {
+        "raw": 8253,
+        "gzip": 3183,
+        "brotli": 2812
+      },
+      "reason": "New: installs the viewer dependencies into the user cache on the first serve.",
+      "pr": "https://github.com/hazem3500/replays/pull/320"
     }
   ]
 }
