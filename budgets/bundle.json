@@ -8,9 +8,9 @@
       "brotli": 804
     },
     "dist/cli/cli.mjs": {
-      "raw": 780795,
-      "gzip": 170180,
-      "brotli": 139019
+      "raw": 567395,
+      "gzip": 145748,
+      "brotli": 122743
     },
     "dist/cli/edit.mjs": {
       "raw": 115200,
@@ -23,14 +23,14 @@
       "brotli": 39084
     },
     "dist/cli/server-HASH.mjs": {
-      "raw": 377210,
-      "gzip": 98026,
-      "brotli": 80963
+      "raw": 300016,
+      "gzip": 86298,
+      "brotli": 73370
     },
     "dist/cli/viewer-runtime.mjs": {
-      "raw": 8253,
-      "gzip": 3183,
-      "brotli": 2812
+      "raw": 7386,
+      "gzip": 3113,
+      "brotli": 2780
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1998,
@@ -2214,9 +2214,9 @@
     {
       "file": "dist/cli/cli.mjs",
       "cap": {
-        "raw": 780795,
-        "gzip": 170180,
-        "brotli": 139019
+        "raw": 567395,
+        "gzip": 145748,
+        "brotli": 122743
       },
       "reason": "The CLI bundles its own dependencies (ajv, zod, ws) so installing it needs only playwright-core; the server commands moved to server-commands.",
       "pr": "https://github.com/hazem3500/replays/pull/320"
@@ -2224,9 +2224,9 @@
     {
       "file": "dist/cli/server-HASH.mjs",
       "cap": {
-        "raw": 377210,
-        "gzip": 98026,
-        "brotli": 80963
+        "raw": 300016,
+        "gzip": 86298,
+        "brotli": 73370
       },
       "reason": "New: the server-side commands (migrate, mcp, build-static, plugin check) split out of cli.mjs; loaded only once the viewer dependencies resolve.",
       "pr": "https://github.com/hazem3500/replays/pull/320"
@@ -2234,9 +2234,9 @@
     {
       "file": "dist/cli/viewer-runtime.mjs",
       "cap": {
-        "raw": 8253,
-        "gzip": 3183,
-        "brotli": 2812
+        "raw": 7386,
+        "gzip": 3113,
+        "brotli": 2780
       },
       "reason": "New: installs the viewer dependencies into the user cache on the first serve.",
       "pr": "https://github.com/hazem3500/replays/pull/320"
