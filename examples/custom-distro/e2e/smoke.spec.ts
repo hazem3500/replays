@@ -408,13 +408,18 @@ test.describe('index slots: summary fields, a server filter, and a column, filte
   test('the column, the section and the filter menu control are drawn by the browser entry', async ({ page }) => {
     await page.goto(`${origin}${BASE}/`);
     const row = (id: string) => page.locator(`.feed-list [data-entry-id="session:${id}"]`);
+    // why: a viewer with replays of their own lands on For you; the column and filter checks need every row (All).
+    const tabs = page.getByRole('radiogroup', { name: 'Profile' });
+    await expect(tabs.getByRole('radio', { name: 'For you' })).toBeChecked();
+    await tabs.locator('label', { hasText: 'All' }).click();
+    await expect(tabs.getByRole('radio', { name: /^All/ })).toBeChecked();
     await expect(row(production).getByTestId('plugin-column:acme-distro:environment')).toHaveText('env production');
     await expect(row(staging).getByTestId('plugin-column:acme-distro:environment')).toHaveText('env staging');
     const section = page.getByTestId('plugin-section:acme-distro:mine');
     await expect(section).toContainText('Uploaded by you');
     await expect(section).toContainText(/\d+ of \d+ listed replays are yours/);
 
-    await page.getByRole('button', { name: 'Filter' }).click();
+    await page.getByRole('button', { name: 'Filter', exact: true }).click();
     await page.getByTestId('plugin-filter:acme-distro:environment').click();
     await page.getByRole('option', { name: 'Production', exact: true }).click();
     await expect.poll(() => new URL(page.url()).searchParams.get('x-env')).toBe('production');

@@ -13,13 +13,14 @@ FROM node:${NODE_VERSION}-bookworm-slim AS base
 RUN corepack enable
 WORKDIR /app
 
-# Production dependencies only (the server runs from TypeScript sources with Node's type stripping).
+# The server's dependencies (it runs from TypeScript sources with Node's type stripping). Since the CLI ships without
+# them (#320) they are optional peers pinned in devDependencies, so a --prod install would leave them out.
 # The lockfile covers the workspace (examples/custom-distro): its manifest must be present, but only this package is installed.
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY examples/custom-distro/package.json ./examples/custom-distro/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prefer-offline --prod --ignore-scripts --filter @hazem3500/replays
+    pnpm install --frozen-lockfile --prefer-offline --ignore-scripts --filter @hazem3500/replays
 
 # The viewer: Vite output in dist/client.
 FROM base AS build
