@@ -23,6 +23,19 @@ export function suiteOverallStatus(runs: Array<Pick<ReviewSuiteRun, 'status' | '
   return 'Complete';
 }
 
+/** Longest `summary` a suite or run may carry. */
+export const MAX_SUMMARY_LENGTH = 4000;
+
+/**
+ * A summary is plain text: paragraphs split by blank lines and `- ` bullet lines. It is never parsed as HTML, so it
+ * may not carry control characters; the viewer renders it as text.
+ */
+export function assertSummary(value: unknown, name: string): asserts value is string {
+  if (typeof value !== 'string' || !value.trim() || value.length > MAX_SUMMARY_LENGTH) throw new Error(`${name} is invalid`);
+  // oxlint-disable-next-line no-control-regex
+  if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)) throw new Error(`${name} contains control characters`);
+}
+
 export interface ReviewSuiteRun {
   id: string;
   sequence: number;
@@ -30,6 +43,8 @@ export interface ReviewSuiteRun {
   status: ReviewRunStatus;
   startedAt: string;
   finishedAt?: string;
+  /** What this run checked and found, as plain text (see `assertSummary`); shown in the run's Context tab. */
+  summary?: string;
   replayId?: string;
   recording?: { title: string; duration: number; steps: number; viewport: { width: number; height: number } };
   /** Per-run snapshot overrides shared suite context without rewriting its capture time. */
@@ -50,6 +65,8 @@ export interface ReviewSuite {
   people?: ReplayPerson[];
   /** The suite's profile id: its `view` is what the suite opens in (src/shared/views.ts). */
   profile?: string;
+  /** What the suite found and what it did not cover, as plain text (see `assertSummary`); shown in the sidebar header. */
+  summary?: string;
   runs: ReviewSuiteRun[];
 }
 
@@ -76,7 +93,7 @@ export interface ReviewSuiteSummary {
 /** One run as the index lists it: registration fields plus its replay's summary when uploaded. */
 export interface ReviewSuiteIndexRun extends Pick<
   ReviewSuiteRun,
-  'id' | 'sequence' | 'label' | 'status' | 'startedAt' | 'finishedAt' | 'replayId'
+  'id' | 'sequence' | 'label' | 'status' | 'startedAt' | 'finishedAt' | 'replayId' | 'summary'
 > {
   replay?: ReplaySummary;
 }
@@ -113,7 +130,18 @@ function date(value: unknown, label: string) {
 }
 
 export function assertReviewSuite(value: unknown): asserts value is ReviewSuite {
-  const suite = record(value, 'suite', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people', 'profile', 'runs']);
+  const suite = record(value, 'suite', [
+    'version',
+    'id',
+    'title',
+    'createdAt',
+    'subject',
+    'context',
+    'people',
+    'profile',
+    'summary',
+    'runs',
+  ]);
   if (suite.version !== 1) throw new Error('suite.version is unsupported');
   if (typeof suite.id !== 'string') throw new Error('suite.id is invalid');
   assertReplayId(suite.id);
@@ -128,12 +156,24 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
   if (suite.context !== undefined) assertReplayContext(suite.context);
   if (suite.people !== undefined) assertReplayPeople(suite.people, 'suite.people');
   if (suite.profile !== undefined && !isProfileId(suite.profile)) throw new Error('suite.profile is invalid');
+  if (suite.summary !== undefined) assertSummary(suite.summary, 'suite.summary');
   if (!Array.isArray(suite.runs) || suite.runs.length > 100) throw new Error('suite.runs must contain at most 100 entries');
   const ids = new Set<string>();
   const sequences = new Set<number>();
   for (const [index, raw] of suite.runs.entries()) {
     const name = `suite.runs[${index}]`;
-    const run = record(raw, name, ['id', 'sequence', 'label', 'status', 'startedAt', 'finishedAt', 'replayId', 'recording', 'context']);
+    const run = record(raw, name, [
+      'id',
+      'sequence',
+      'label',
+      'status',
+      'startedAt',
+      'finishedAt',
+      'summary',
+      'replayId',
+      'recording',
+      'context',
+    ]);
     if (typeof run.id !== 'string' || !RUN_ID.test(run.id) || ids.has(run.id)) throw new Error(`${name}.id is invalid or duplicated`);
     ids.add(run.id);
     if (!Number.isSafeInteger(run.sequence) || Number(run.sequence) < 1 || sequences.has(Number(run.sequence))) {
@@ -160,6 +200,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
       if (!run.replayId) throw new Error(`${name}.recording requires replayId`);
     }
     if (run.context !== undefined) assertReplayContext(run.context);
+    if (run.summary !== undefined) assertSummary(run.summary, `${name}.summary`);
   }
 }
 
@@ -175,6 +216,8 @@ export interface ReviewSuiteRegistration {
   people?: ReplayPerson[];
   /** A profile id; the suite opens in that profile's view. */
   profile?: string;
+  /** Not identity: registering again replaces it (absent keeps the stored one). */
+  summary?: string;
 }
 
 /** A registration after the server resolved the subject reference into a link. */
@@ -187,11 +230,23 @@ export interface ReviewRunRegistration {
   status: ReviewRunStatus;
   startedAt: string;
   finishedAt?: string;
+  /** Not identity: registering again replaces it (absent keeps the stored one). */
+  summary?: string;
   context?: ReplayContext;
 }
 
 export function assertReviewSuiteRegistration(value: unknown, suiteId: string): asserts value is ReviewSuiteRegistration {
-  const input = record(value, 'suite registration', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people', 'profile']);
+  const input = record(value, 'suite registration', [
+    'version',
+    'id',
+    'title',
+    'createdAt',
+    'subject',
+    'context',
+    'people',
+    'profile',
+    'summary',
+  ]);
   if (input.id !== suiteId) throw new Error('suite ID does not match path');
   const { subject, ...rest } = input;
   if (subject !== undefined) record(subject, 'suite.subject', ['provider', 'ref', 'url', 'label']);
@@ -200,7 +255,7 @@ export function assertReviewSuiteRegistration(value: unknown, suiteId: string): 
 }
 
 export function assertReviewRunRegistration(value: unknown, runId: string): asserts value is ReviewRunRegistration {
-  const input = record(value, 'run registration', ['id', 'sequence', 'label', 'status', 'startedAt', 'finishedAt', 'context']);
+  const input = record(value, 'run registration', ['id', 'sequence', 'label', 'status', 'startedAt', 'finishedAt', 'summary', 'context']);
   if (input.id !== runId) throw new Error('run ID does not match path');
   assertReviewSuite({
     version: 1,

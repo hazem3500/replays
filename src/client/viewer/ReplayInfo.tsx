@@ -33,6 +33,8 @@ export interface SuiteDetails {
   href: string;
   /** What the suite is about (a pull request, a ticket), when it names one. */
   subject?: { provider: string; url: string; label: string };
+  /** The selected run's own summary; the Context tab shows it. */
+  runSummary?: string;
 }
 
 function splitUrl(url: string) {

@@ -158,6 +158,10 @@ always checked; without `api.people` a role is free text and any handle id is ac
 `POST /api/replays/import` takes the same as repeatable `?person=`. Registering a suite again with only `people` changed replaces them
 (absent keeps them); anything else that differs is still a `409`.
 
+A suite registration and a run registration may also carry an optional `summary`: plain text of at most 4000 characters, paragraphs split
+by blank lines and `- ` bullet lines, no control characters, never HTML. The suite's summary is shown, collapsible, in the suite sidebar header
+and the run's in that run's Context tab. Like `people`, it is not identity: registering again replaces it (absent keeps it).
+
 ```ts
 api.people({
   roles: ['pr-author', 'reviewer', 'requester', 'assignee', 'uploader', 'mentioned'], // priority order for "For me"

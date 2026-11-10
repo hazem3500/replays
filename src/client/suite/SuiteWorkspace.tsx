@@ -29,6 +29,7 @@ import { editsQuery } from '../edits.ts';
 import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
 import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
+import { SummaryText } from '../viewer/SummaryText.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import {
   initialRunReplayId,
@@ -72,12 +73,13 @@ function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
         const duration = run.replay?.duration ?? recordings.get(run.id);
         return duration === undefined ? run : { ...run, duration };
       })
-    : suite.runs.map(({ id, sequence, label, status, startedAt, finishedAt, replayId, recording }) => ({
+    : suite.runs.map(({ id, sequence, label, status, startedAt, finishedAt, replayId, recording, summary }) => ({
         id,
         sequence,
         label,
         status,
         startedAt,
+        ...(summary ? { summary } : {}),
         ...(finishedAt ? { finishedAt } : {}),
         ...(replayId ? { replayId } : {}),
         ...(recording ? { duration: recording.duration } : {}),
@@ -254,8 +256,9 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const suiteDetails = useMemo<SuiteDetails | undefined>(() => {
     if (!suite) return undefined;
     const subject = subjectLink(suite);
-    return { title: suite.title, href: suiteHref(id), ...(subject ? { subject } : {}) };
-  }, [id, suite]);
+    const runSummary = runs.find((item) => item.replayId === selected)?.summary;
+    return { title: suite.title, href: suiteHref(id), ...(subject ? { subject } : {}), ...(runSummary ? { runSummary } : {}) };
+  }, [id, suite, runs, selected]);
   const keep = useKeepSuite(id);
   // Phones: no sidebar; the title is the run switcher (tap "Run 1 of 2 · label ⌄").
   const runMenu = useMemo(
@@ -488,6 +491,12 @@ function SuiteSidebar({
                 <PinIcon aria-hidden="true" />
                 Kept by {keep.retention?.kept?.by ?? 'someone'}
               </p>
+            ) : null}
+            {suite.summary ? (
+              <details className="suite-sidebar-summary" open data-testid="suite-summary">
+                <summary>Review summary</summary>
+                <SummaryText summary={suite.summary} />
+              </details>
             ) : null}
           </>
         )}
