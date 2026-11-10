@@ -71,6 +71,10 @@ export interface FileConfig {
   theme?: BrandingConfig['theme'];
   /** Links to other tools; `traceUrlTemplate` (TRACE_URL_TEMPLATE) turns a request's trace ID into a link. */
   integrations?: BrandingConfig['integrations'];
+  /** CLI commands for Settings › CLI & agents when the host publishes its own CLI (src/server/branding.ts `CliConfig`). */
+  cli?: BrandingConfig['cli'];
+  /** Where the viewer's help links point; `false` hides one (src/server/branding.ts `LinksConfig`). */
+  links?: BrandingConfig['links'];
   basePath?: string;
   /** A different base per request host (`Host`, or `X-Forwarded-Host` when trusted); other hosts get `basePath`. */
   hosts?: Readonly<Record<string, HostConfig>>;
@@ -138,6 +142,8 @@ export const CONFIG_KEYS = new Set([
   'logoUrl',
   'theme',
   'integrations',
+  'cli',
+  'links',
   'basePath',
   'hosts',
   'trustForwardedHost',
@@ -184,6 +190,8 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     name: pick('PRODUCT_NAME') ?? file.name,
     ...((pick('LOGO_URL') ?? file.logoUrl) ? { logoUrl: (pick('LOGO_URL') ?? file.logoUrl)! } : {}),
     ...(file.theme ? { theme: file.theme } : {}),
+    ...(file.cli ? { cli: file.cli } : {}),
+    ...(file.links ? { links: file.links } : {}),
     ...((pick('TRACE_URL_TEMPLATE') ?? file.integrations?.traceUrlTemplate)
       ? { integrations: { traceUrlTemplate: (pick('TRACE_URL_TEMPLATE') ?? file.integrations?.traceUrlTemplate)! } }
       : {}),

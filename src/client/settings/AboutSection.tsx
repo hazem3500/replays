@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { productName } from '../config.ts';
 import { configQuery } from '../queries.ts';
-import { serverUrl, SETTINGS_LINKS } from './config-query.ts';
+import { helpLink, serverUrl } from './config-query.ts';
 import { ExternalLink, SettingsGroup, SettingsRow } from './rows.tsx';
 import { strings } from './strings.ts';
 
@@ -10,6 +10,8 @@ export function AboutSection() {
   const config = useQuery(configQuery);
   const data = config.data;
   const missing = config.isPending ? '…' : strings.about.unknown;
+  const docs = helpLink(data, 'docs');
+  const issues = helpLink(data, 'issues');
   const version = data?.core ?? missing;
   const auth = data ? (strings.about.auth[data.auth] ?? data.auth) : missing;
   return (
@@ -33,10 +35,12 @@ export function AboutSection() {
         />
         <SettingsRow label={strings.about.signIn} control={<span className="settings-value">{auth}</span>} />
       </SettingsGroup>
-      <nav className="settings-links" aria-label={strings.about.links}>
-        <ExternalLink href={SETTINGS_LINKS.docs}>{strings.about.docs}</ExternalLink>
-        <ExternalLink href={SETTINGS_LINKS.issues}>{strings.about.issues}</ExternalLink>
-      </nav>
+      {docs || issues ? (
+        <nav className="settings-links" aria-label={strings.about.links}>
+          {docs ? <ExternalLink href={docs}>{strings.about.docs}</ExternalLink> : null}
+          {issues ? <ExternalLink href={issues}>{strings.about.issues}</ExternalLink> : null}
+        </nav>
+      ) : null}
     </>
   );
 }
