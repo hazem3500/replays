@@ -1,4 +1,5 @@
 export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output <dir> [options]
+       replays capture --url <https-url> --headed --manual [--output <dir>] [options]
 
   --url <url>              page to open (https, or http on localhost)
   --output <dir>           empty directory for replay.json (and session.mp4)
@@ -28,6 +29,12 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --server <name>          use a saved server name with --upload
   --header-file <file>     JSON object of headers for the upload (e.g. Authorization)
   --headed                 show the browser window (playwright driver)
+  --manual                 record what you do yourself in the headed browser instead of running steps; it
+                           stops when you close the window or page, press Enter in the terminal, or send
+                           SIGINT/SIGTERM (a second SIGINT aborts). Needs --headed, cannot use --steps.
+                           Steps come from your clicks, form submits and page changes. Without a terminal
+                           on stdin it never waits for Enter. --output defaults to ./<id>
+  --max-duration <time>    with --manual, stop after this long: 90, 90s or 2m (default 3m, at most 10m)
   --json                   print the result as JSON, with no colour or spinner (the default when not at a terminal)
   --config <file>          replays.config.* whose redaction rules apply (default: REPLAYS_CONFIG, else
                            replays.config.* in the working directory)`;

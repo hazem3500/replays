@@ -19,7 +19,7 @@ interface CommandDefinition {
 
 /** Every command, once: the help screens, `--help` per command and `agent-guide` are all generated from this list. */
 export const COMMANDS: readonly CommandDefinition[] = [
-  { name: 'capture', summary: 'record a page with scripted steps into replay.json', captureOnly: true, details: CAPTURE_USAGE },
+  { name: 'capture', summary: 'record a page into replay.json, with scripted steps or by hand (--manual)', captureOnly: true, details: CAPTURE_USAGE },
   {
     name: 'probe',
     summary: 'open a page headless and list what a selector matches (visibility, boxes)',

@@ -113,15 +113,17 @@ function decoded(segment: string): string {
 }
 
 /** The last meaningful path segment of the page the route changed to, humanized: `/projects/` → Projects. */
-function routeName(): string {
-  const path = location.hash.startsWith('#/') ? location.hash.slice(1) : location.pathname;
+export function routeNameOf(route: { hash: string; pathname: string }): string {
+  const path = route.hash.startsWith('#/') ? route.hash.slice(1) : route.pathname;
   const segments = path.split(/[?#]/)[0]?.split('/').filter(Boolean) ?? [];
   if (!segments.length) return 'home';
   const words = humanized(decoded(segments.at(-1) ?? '').replace(/\.[a-z0-9]+$/i, ''));
   return words ? redactText(words, Number.MAX_SAFE_INTEGER) : '';
 }
 
-const FOLD_MS = 1000;
+const routeName = () => routeNameOf(location);
+
+export const FOLD_MS = 1000;
 
 type Click = { step: RawStep; control: Element; at: number; consumed: boolean };
 
