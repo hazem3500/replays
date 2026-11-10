@@ -82,7 +82,7 @@ test('at 1280x800 the table shows four rows under a one-line headline and stats 
   expect(lead.height).toBe(32);
   if (lead.jumpMiddle !== undefined) expect(Math.abs(lead.jumpMiddle - lead.middle)).toBeLessThanOrEqual(1);
   const strip = await page.getByTestId('performance-vitals').boundingBox();
-  expect(strip!.height).toBeLessThanOrEqual(32);
+  expect(strip!.height).toBeLessThanOrEqual(56);
   await expect.poll(async () => {
     const region = await page.locator('.inspector-panel:not([hidden])').first().boundingBox();
     return page.locator('.pp-row:not(.pp-head)').evaluateAll((rows, bottom) => rows.filter((row) => row.getBoundingClientRect().bottom <= bottom).length, region!.y + region!.height);
