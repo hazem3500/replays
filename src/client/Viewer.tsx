@@ -335,8 +335,7 @@ export function Viewer({
     }
   }, [panelMotion, roomForRequest, setInspectorHeight]);
 
-  // why: a tab that declares the content height it needs (Performance: headline, timeline, a few rows) grows a short panel to
-  // fit, animated; a drag or a saved height ends it for good.
+  // why: a tab that declares the height it needs (Performance: headline, timeline, rows) grows a short panel to fit; a drag or saved height ends it.
   const growDock = useCallback(
     (to: number) => {
       if (shell.current) panelMotion(shell.current, 'rows');
