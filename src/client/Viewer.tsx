@@ -1,4 +1,6 @@
 import { useReplayDeletion } from './hooks/use-replay-deletion.tsx';
+import { useRunPlayIntent } from './hooks/use-play-intent.ts';
+import type { PlayIntent } from './suite/play-intent.ts';
 import { usePanelMotion } from './hooks/use-panel-motion.ts';
 import { usePluginShortcuts } from './hooks/use-plugin-shortcuts.ts';
 import { useHasKeyboard } from './hooks/use-has-keyboard.ts';
@@ -126,6 +128,7 @@ export function Viewer({
   onCompareWith,
   suiteProfile,
   compareSummary,
+  playIntent,
 }: {
   bundle: ReplayBundle;
   /** Original diagnostics for the waterfall's measured spans when playback has saved edits. */
@@ -176,6 +179,8 @@ export function Viewer({
   suiteProfile?: string | undefined;
   /** Comparing: the per-recording chips the Compare view's headline shows. */
   compareSummary?: ReactNode;
+  /** A suite run: whether this run should start playing as soon as it is ready (a switch carries "was playing"). */
+  playIntent?: PlayIntent | undefined;
 }) {
   const errors = useMemo(() => collectErrors(bundle), [bundle]);
   const profile = useMemo(() => replayProfile(bundle), [bundle]);
@@ -210,6 +215,7 @@ export function Viewer({
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- effects only change with the bundle (EditedViewer remounts)
   }, [bundle, sharedPlayer]);
   const player: Playback = opened.controller;
+  useRunPlayIntent(playIntent, bundle.meta.id, player);
   // Resuming from the editor: play as soon as the replay is mounted (it mounts after the page transition).
   useEffect(() => {
     if (!opened.resume) return;

@@ -1,6 +1,7 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { type CSSProperties, createContext, type ReactNode, use } from 'react';
 
 import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
+import { PlaySpinner } from '@/components/play-spinner.tsx';
 import { buttonVariants } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 
@@ -38,6 +39,16 @@ const MAX_RAIL_ROWS = 8;
 const RAIL_WIDTHS = [64, 52, 72, 44, 58, 68, 48, 60];
 /** Stable keys for stand-ins that only differ by position. */
 const SLOTS = Array.from({ length: 24 }, (_, slot) => `slot-${slot}`);
+
+/**
+ * A suite's loading run keeps its play button live: a press is remembered and the run starts the moment it is ready
+ * (suite/play-intent.ts), so `wanted` turns the button into a spinner until then.
+ */
+export interface LoadingPlay {
+  wanted: boolean;
+  toggle(): void;
+}
+export const LoadingPlayContext = createContext<LoadingPlay | undefined>(undefined);
 
 /** A control the viewer will enable: the real button, disabled and out of the tab order until it is there. */
 function InertButton({ className, children }: { className: string; children: ReactNode }) {
@@ -114,11 +125,26 @@ export function LoadingTopbar({
 /** The transport's row: play, the clock at zero and the seek bar's track, cut into the replay's steps when known. */
 export function LoadingTransport({ steps }: { steps: number | undefined }) {
   const segments = Math.max(1, Math.min(steps ?? 1, 24));
+  const play = use(LoadingPlayContext);
   return (
     <div className="transport sk-transport" aria-hidden="true">
-      <InertButton className={cn(ICON_BUTTON, 'play-button')}>
-        <AnimatedIcon name="play" className="filled-icon" />
-      </InertButton>
+      {play ? (
+        // why: the transport is hidden from assistive tech while loading, so Space and K carry the keyboard path.
+        <button
+          type="button"
+          className={cn(ICON_BUTTON, 'play-button')}
+          tabIndex={-1}
+          aria-label={play.wanted ? 'Cancel play' : 'Play'}
+          aria-busy={play.wanted || undefined}
+          onClick={play.toggle}
+        >
+          {play.wanted ? <PlaySpinner /> : <AnimatedIcon name="play" className="filled-icon" />}
+        </button>
+      ) : (
+        <InertButton className={cn(ICON_BUTTON, 'play-button')}>
+          <AnimatedIcon name="play" className="filled-icon" />
+        </InertButton>
+      )}
       <span className="transport-time">
         <strong>{STRINGS.time}</strong>
       </span>
