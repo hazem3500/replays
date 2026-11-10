@@ -110,7 +110,7 @@ describe('replay prefetch cache', () => {
 
   it('leaves a preload a viewer has picked up to finish', () => {
     const client = new QueryClient();
-    const observer = client.getQueryCache().build(client, { ...replayQuery('a'), queryFn: never });
+    const observer = client.getQueryCache().build(client, { queryKey: ['replay', 'a'], queryFn: never });
     void observer.fetch();
     const watch = vi.spyOn(observer, 'getObserversCount').mockReturnValue(1);
     cancelReplayPrefetch(client, 'a');
