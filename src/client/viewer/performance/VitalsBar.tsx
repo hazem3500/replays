@@ -89,14 +89,14 @@ export function VitalsBar({
     if (vital) return vital.moment || vital.at !== undefined ? () => onPick(vital) : undefined;
     return stat.at === undefined || !onSeek ? undefined : () => onSeek(stat.at ?? 0);
   };
-  const builtins = groups.flatMap(({ group, shown, note }, position) => {
+  const builtins = groups.flatMap(({ group, shown }, position) => {
     const base = (position + 1) * 1000;
     const absent = items.filter((item) => item.stat.group === group && item.stat.value === undefined && item.stat.watched);
-    const notes: GroupNote[] = ranged
-      ? []
-      : shown.length
-        ? [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []))
-        : [note];
+    // why: a group with nothing measured is left out; only a group that shows stats explains the ones it lacks.
+    const notes: GroupNote[] =
+      ranged || !shown.length
+        ? []
+        : [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []));
     return [
       ...(details ? [{ id: `core:group:${group}`, order: base - 10, render: () => <GroupName group={group} /> }] : []),
       ...shown.map(({ stat, vital }, index) => ({
