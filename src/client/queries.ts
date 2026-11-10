@@ -105,6 +105,31 @@ export const configQuery = queryOptions({
   retry: false,
 });
 
+/** `GET /api/plugins/github-connect/link`: whether Connect GitHub is on offer to this person, and the account they linked. */
+export interface GithubLinkState {
+  available: boolean;
+  linked: { login: string; avatarUrl?: string } | null;
+}
+
+function isGithubLinkState(value: unknown): value is GithubLinkState {
+  return (
+    typeof value === 'object' && value !== null && typeof Reflect.get(value, 'available') === 'boolean' && Reflect.has(value, 'linked')
+  );
+}
+
+/** Only fetched when `GET /api/config` lists the `github-connect` plugin (the host set a GitHub OAuth app); `null` when it cannot answer. */
+export const githubLinkQuery = queryOptions({
+  queryKey: ['github-link'] as const,
+  queryFn: async ({ signal }) => {
+    const response = await fetch(apiUrl('plugins/github-connect/link'), { signal });
+    if (!response.ok) return null;
+    const state: unknown = await response.json();
+    return isGithubLinkState(state) ? state : null;
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+  retry: false,
+});
+
 /** `GET /api/me`'s session: whether a person is signed in, and where they sign out (when the auth mode has a way). */
 export interface Account {
   id: string;
@@ -112,6 +137,8 @@ export interface Account {
   email?: string;
   avatarUrl?: string;
   session?: { signedIn: boolean; signOutUrl?: string };
+  /** Connect GitHub (src/server/github-connect.ts), joined in by `useSignedIn`; absent when the host does not offer it. */
+  github?: GithubLinkState;
 }
 
 /** `GET /api/me`: who is signed in; `null` when the server answers without one (401/403). */

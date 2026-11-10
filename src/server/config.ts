@@ -9,6 +9,7 @@ import { type ContextSchema, loadContextSchema } from './context-schema.ts';
 import { type HostConfig, type HostRouting, normalizeBasePath, normalizeHosts } from './base-path.ts';
 import { type BetaFlags, betaFromEnv, parseFlag } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
+import { type GithubConnectSettings, githubConnectFromEnv } from './github-connect-config.ts';
 import { type EditingSettings, editingFromEnv } from './editing-config.ts';
 import { type PrivacyConfig, privacyFromConfig, type PrivacySettings } from './privacy-config.ts';
 import type { PluginSpec } from '../plugin/types.ts';
@@ -122,6 +123,8 @@ export interface AppSettings {
   malleable: MalleablePolicy;
   distribution?: HostVersions['distribution'];
   comments: CommentsSettings;
+  /** A GitHub OAuth app for Connect GitHub, from the environment; absent means the feature is off. */
+  githubConnect?: GithubConnectSettings;
   /** The config file's `redaction` rules, checked (plugins' rules are merged in by the app). */
   redaction?: RedactionRules;
   /** The config file's `privacy` switches, checked; absent means all off. */
@@ -217,6 +220,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   if (enabled !== undefined && betaFile?.malleable !== undefined && betaFile.malleable !== enabled)
     throw new Error("the config file's malleable.enabled and beta.malleable disagree: set one of them");
   const signIn = file.signIn === false ? false : normalizeSignIn(file.signIn);
+  const githubConnect = githubConnectFromEnv(env);
   return {
     ...(signIn !== undefined ? { signIn } : {}),
     branding,
@@ -231,6 +235,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     malleable,
     ...(distribution ? { distribution } : {}),
     comments: commentsFromEnv(env, file.comments),
+    ...(githubConnect ? { githubConnect } : {}),
     editing: editingFromEnv(env, file.editing),
     privacy,
     ...(contextSchema ? { contextSchema } : {}),

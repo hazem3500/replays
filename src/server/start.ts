@@ -280,6 +280,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     editing: settings.editing,
     ...(bridgeHub ? { bridgeHub } : {}),
     comments: settings.comments,
+    ...(settings.githubConnect ? { githubConnect: settings.githubConnect } : {}),
     plugins: registry,
     ...(settings.redaction ? { redaction: settings.redaction } : {}),
     ...(settings.privacy ? { privacy: settings.privacy } : {}),

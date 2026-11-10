@@ -3,7 +3,8 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { type Account, meQuery, queryClient } from '../src/client/queries.ts';
+import type { ClientConfig } from '../src/client/config.ts';
+import { type Account, configQuery, githubLinkQuery, type GithubLinkState, meQuery, queryClient } from '../src/client/queries.ts';
 import { IndexPhoneMenu, phoneMenuItems } from '../src/client/index/IndexPhoneMenu.tsx';
 import { Topbar } from '../src/client/Topbar.tsx';
 
@@ -23,6 +24,8 @@ function tearDown() {
   });
   host.remove();
   queryClient.removeQueries({ queryKey: meQuery.queryKey });
+  queryClient.removeQueries({ queryKey: configQuery.queryKey });
+  queryClient.removeQueries({ queryKey: githubLinkQuery.queryKey });
   vi.unstubAllGlobals();
 }
 
@@ -42,6 +45,25 @@ function openMore() {
     more.click();
   });
 }
+
+const listed = (plugins: string[]): ClientConfig => ({
+  name: 'replays',
+  sourceProviders: [],
+  auth: 'plugin',
+  plugins,
+  editing: { enabled: false },
+});
+const offer = (link: GithubLinkState, plugins = ['github-connect']) => {
+  queryClient.setQueryData(configQuery.queryKey, listed(plugins));
+  queryClient.setQueryData(githubLinkQuery.queryKey, link);
+};
+const openAccount = () => {
+  const trigger = host.querySelector<HTMLButtonElement>('[data-testid="account-menu"]');
+  if (!trigger) throw new Error('the account menu is not rendered');
+  act(() => {
+    trigger.click();
+  });
+};
 
 describe('the account menu', () => {
   beforeEach(setUp);
@@ -96,5 +118,45 @@ describe('the account menu', () => {
     const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Menu"]');
     expect(trigger?.querySelector('svg.lucide-user-round')).toBeNull();
     expect(trigger?.querySelector('[data-icon="ellipsis"]')).not.toBeNull();
+  });
+
+  describe('Connect GitHub', () => {
+    const IAP: Account = { id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } };
+
+    it('gives an account without a sign-out URL a menu with Connect GitHub, which starts the server flow from this page', () => {
+      offer({ available: true, linked: null });
+      renderBar(IAP);
+      openAccount();
+      const connect = document.querySelector('[data-testid="github-connect"]');
+      expect(connect?.getAttribute('href')).toBe(
+        `/auth/github/start?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+      );
+      expect(document.querySelector('[data-testid="github-disconnect"]')).toBeNull();
+    });
+
+    it('shows the linked account with its avatar and Disconnect instead', () => {
+      offer({ available: true, linked: { login: 'octocat', avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4' } });
+      renderBar(IAP);
+      openAccount();
+      expect(document.querySelector('[data-testid="github-linked"]')?.textContent).toBe('GitHub: octocat');
+      expect(document.querySelector('[data-testid="github-linked"] img')?.getAttribute('src')).toBe(
+        'https://avatars.githubusercontent.com/u/1?v=4',
+      );
+      expect(document.querySelector('[data-testid="github-disconnect"]')).not.toBeNull();
+      expect(document.querySelector('[data-testid="github-connect"]')).toBeNull();
+    });
+
+    it('is absent when the host did not list the plugin, whatever was cached', () => {
+      offer({ available: true, linked: null }, []);
+      renderBar(IAP);
+      expect(host.querySelector('[data-testid="account-menu"]')).toBeNull();
+    });
+
+    it('is offered on phones in More', () => {
+      offer({ available: true, linked: null });
+      renderBar(IAP, true);
+      openMore();
+      expect(document.querySelector('[data-testid="github-connect"]')).not.toBeNull();
+    });
   });
 });
