@@ -60,7 +60,7 @@ export async function onFirstVisible(page: Page, selector: string, timeout: numb
     await action(firstVisible(page, selector));
   } catch (error) {
     if (!(error instanceof Error) || error.name !== 'TimeoutError') throw error;
-    const found = await describeMatches(page, selector).catch(() => undefined);
+    const found = await describeMatches(page, selector).catch(() => null);
     if (!found) throw error;
     throw new Error(timeoutMessage(selector, timeout / 1000, found), { cause: error });
   }
