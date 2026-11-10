@@ -30,6 +30,7 @@ const PAGE = `<!doctype html><body>
 <button class="buy" onclick="document.title='second'">Buy later</button>
 <input class="name" style="display:none"><input class="name" id="real">
 <div class="ghost" style="display:none">a</div><div class="ghost" style="display:none">b</div>
+<script>setTimeout(()=>{const b=document.createElement('button');b.id='late';b.textContent='Late';document.body.append(b)},800)</script>
 <style>#narrow{display:none}@media (max-width:500px){#narrow{display:block}}</style><p id="narrow">narrow</p>
 </body>`;
 
@@ -143,6 +144,14 @@ describe.skipIf(!CHROME)('probe and drivers', () => {
     expect((await probeSelector(env.url, selector, { state })).count).toBe(1);
     expect((await probeSelector(env.url, '#narrow', { viewport: { width: 400, height: 700 } })).visibleCount).toBe(1);
     expect((await probeSelector(env.url, '#narrow')).visibleCount).toBe(0);
+  }, 30_000);
+
+  it('waits for an element that renders after load', async () => {
+    expect((await probeSelector(env.url, '#late', { wait: 0 })).count).toBe(0);
+    expect((await probeSelector(env.url, '#late')).count).toBe(1);
+    expect((await probeSelector(env.url, '#nothing-here', { wait: 200 })).count).toBe(0);
+    const viaOther = await probeSelector(env.url, '.buy', { wait: 3000, waitFor: '#late' });
+    expect(viaOther.count).toBe(4);
   }, 30_000);
 
   it('runs a Playwright driver step on the first visible match', async () => {
