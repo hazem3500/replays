@@ -364,6 +364,8 @@ export function createDefaultUi(
                 spinner?.node.replaceWith(restingIcon);
                 spinner?.stop();
                 spinner = undefined;
+                updateText(current.label, text);
+                current.live.textContent = text;
               },
             });
             renderCleanup = () => {

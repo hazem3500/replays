@@ -323,6 +323,7 @@ describe('capture with --compress-waits', () => {
       driver,
     );
     const bundle = await readBundle(result.replayPath);
+    expect(result.duration).toBe(12_000);
     expect(metaOf(bundle).duration).toBe(12_000);
     expect(stepLabels(bundle)).toContain('Waited 20 s, sped up here');
     expect(result.shots?.[0]?.at).toBe(5000);
