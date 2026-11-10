@@ -401,6 +401,15 @@ function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
 }
 
 /**
+ * A tab is a client-side filter over the loaded list: the selection and the rows change in one commit, with no page
+ * transition (a root cross-fade lit up the header and showed two tabs selected). The tab's own indicator glides.
+ */
+function switchTab(apply: () => void) {
+  feedTransition(apply, 'instant');
+  if (window.scrollY > 0) window.scrollTo(0, 0);
+}
+
+/**
  * `search` is the address it opens on (Back to other filters, a link: the page remounts on it); `onSearch` gets the
  * filters, sort and view it shows now, for the address and "back to Replays" links.
  */
@@ -667,7 +676,7 @@ export function ReplayIndex({
   // Feed changes cross-fade (feed-transition.ts).
   const changeSort = (next: Sort) => feedTransition(() => setSort(next));
   const changeKind = (next: IndexKind | undefined) => feedTransition(() => setKind(next));
-  const changeProfile = (next: string | undefined) => feedTransition(() => setProfile(next));
+  const changeProfile = (next: string | undefined) => switchTab(() => setProfile(next));
   const probing = useRef(false);
   const rememberTab = (choice: TabChoice) => {
     probing.current = false;
@@ -675,7 +684,7 @@ export function ReplayIndex({
   };
   const changeTab = (next: string | undefined) => {
     rememberTab(next === FOR_YOU ? FOR_YOU : 'all');
-    feedTransition(() => {
+    switchTab(() => {
       setProfile(next === FOR_YOU ? undefined : next);
       setForMe(next === FOR_YOU);
     });

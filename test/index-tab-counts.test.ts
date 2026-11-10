@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -36,6 +36,22 @@ const sessions = [
   summary('d', [reviewer('ada@example.com')]),
 ];
 const entries = buildIndexEntries(sessions, [], {});
+
+const profileTabs: ProfileInfo[] = [
+  { id: 'triage', label: 'Triage', order: 0 },
+  { id: 'walkthrough', label: 'Walkthrough', order: 1 },
+];
+const tabCountsFor = tabCounts([], me);
+
+function Harness() {
+  const [value, setValue] = useState<string | undefined>(FOR_YOU);
+  return createElement(ProfileSegments, { profiles: profileTabs, value, counts: tabCountsFor, onChange: setValue, forYou: true });
+}
+
+const selected = (host: Element) =>
+  [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')]
+    .filter((radio) => radio.checked)
+    .map((radio) => radio.closest('.profile-segment')?.getAttribute('data-segment'));
 
 describe('tab counts come from one list', () => {
   it('counts every tab, For you included, from the same entries', () => {
@@ -89,5 +105,18 @@ describe('profile tabs', () => {
     const slots = host.querySelectorAll('.profile-segment-count');
     expect(slots).toHaveLength(4);
     expect([...slots].every((slot) => slot.getAttribute('data-ready') === 'false')).toBe(true);
+  });
+
+  it('selects exactly one tab in the same commit as the click, never two at once', () => {
+    act(() => {
+      root.render(createElement(Harness));
+    });
+    expect(selected(host)).toEqual([FOR_YOU]);
+    for (const next of ['triage', 'walkthrough', '']) {
+      act(() => {
+        host.querySelector<HTMLInputElement>(`.profile-segment[data-segment="${next}"] input`)?.click();
+      });
+      expect(selected(host)).toEqual([next]);
+    }
   });
 });
