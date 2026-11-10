@@ -18,6 +18,13 @@ export function fpsVerdict(fps: number): FrameVerdict {
   return fps >= NEEDS_WORK_FPS ? 'needs-work' : 'poor';
 }
 
+/** Missed frames as a share of the 60 Hz frames a recording of this length would show: up to 5 % good, 15 % noticeable. */
+export function droppedVerdict(dropped: number, seconds: number): FrameVerdict {
+  const share = dropped / Math.max(1, seconds * 60);
+  if (share <= 0.05) return 'good';
+  return share <= 0.15 ? 'needs-work' : 'poor';
+}
+
 interface FrameSummary {
   /** Median of the per-second frame rates. */
   p50: number;

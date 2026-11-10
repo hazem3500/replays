@@ -9,7 +9,6 @@ import type { NetworkRow } from '../network/model.ts';
 import type { PerformanceModel } from '../performance.ts';
 import { type RibbonMark, type RibbonRange, type RibbonTone, TimeRibbon } from '../TimeRibbon.tsx';
 import { CadenceSummary } from './CadenceSummary.tsx';
-import { FpsLane } from './FpsLane.tsx';
 import { MomentDetail } from './MomentDetail.tsx';
 import { MomentList } from './MomentList.tsx';
 import {
@@ -161,7 +160,7 @@ export function PerformancePanel({
       </VitalsBar>
       {extra}
       {model.track ? <CadenceSummary track={model.track} /> : null}
-      {marks.length ? (
+      {marks.length || model.frames.length ? (
         <TimeRibbon
           testId="performance-ribbon"
           duration={duration}
@@ -169,9 +168,9 @@ export function PerformancePanel({
           range={range}
           onRange={setRange}
           highlight={hovered ?? selected}
+          frames={model.frames}
         />
       ) : null}
-      {model.frames.length ? <FpsLane bands={model.frames} duration={duration} /> : null}
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
           <MomentList
