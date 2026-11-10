@@ -435,7 +435,9 @@ export function ProfileSegments({
               />
               <span className="profile-segment-label">
                 {segment.label}
-                {count === undefined ? null : <span className="profile-segment-count">{count}</span>}
+                <span className="profile-segment-count" data-ready={count !== undefined}>
+                  {count}
+                </span>
               </span>
             </label>
           );

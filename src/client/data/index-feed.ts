@@ -59,11 +59,11 @@ export function suitesCollection(client: QueryClient, request: string) {
 
 export interface IndexListsInput {
   filters: ReplayFilters;
-  /** What the server filters: For me and plugin params (`withForMe(searchFromFilters({ params }), forMe, linked)`). */
+  /** What the server filters: plugin params (`searchFromFilters({ params })`). */
   baseSearch: string;
   /** Every filter, as the server would take it: the first paint of a filtered link, and lists too big to filter here. */
   listSearch: string;
-  /** The suites request, with For me. */
+  /** The suites request. */
   suitesRequest: string;
 }
 
