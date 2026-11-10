@@ -27,6 +27,14 @@ const UPLOAD_HINTS: Record<Exclude<SignInMode, 'managed'>, string> = { open: str
 /** Host-managed sign-in: what headers.json carries depends on the auth adapter. */
 const MANAGED_UPLOAD_HINTS: Partial<Record<string, string>> = { oidc: strings.cli.uploadOidc, header: strings.cli.uploadHeader };
 
+/** Omit the prop when a host gave no hint (exactOptionalPropertyTypes). */
+const hintProp = (hint: string | undefined) => (hint ? { hint } : {});
+
+function uploadHint(mode: SignInMode, auth: string): string {
+  if (mode === 'managed') return MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther;
+  return UPLOAD_HINTS[mode];
+}
+
 export function CliSection() {
   const config = useQuery(configQuery);
   if (config.isPending)
@@ -79,14 +87,14 @@ export function CliSection() {
         <CommandField
           label={strings.cli.installCommand}
           command={host.install ?? 'pnpm install --frozen-lockfile && pnpm build && pnpm build:cli && npm install -g .'}
-          hint={host.install ? host.installHint : strings.cli.installHint}
+          {...hintProp(host.install ? host.installHint : strings.cli.installHint)}
         />
       </SettingsGroup>
       <SettingsGroup title={strings.cli.connect}>
         <CommandField
           label={host.connect ? strings.cli.signInCommand : strings.cli.connectCommand}
           command={host.connect ?? `replays connect ${shellQuote(serverUrl())} && replays doctor`}
-          hint={host.connect ? host.connectHint : strings.cli.connectHint}
+          {...hintProp(host.connect ? host.connectHint : strings.cli.connectHint)}
         />
       </SettingsGroup>
       {deviceLogin && !host.connect ? (
@@ -98,13 +106,7 @@ export function CliSection() {
         <CommandField
           label={strings.cli.uploadCommand}
           command={host.upload ?? `replays upload replay.json${anonymous || deviceLogin ? '' : ' --header-file headers.json'}`}
-          hint={
-            host.upload
-              ? host.uploadHint
-              : mode === 'managed'
-                ? (MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther)
-                : UPLOAD_HINTS[mode]
-          }
+          {...hintProp(host.upload ? host.uploadHint : uploadHint(mode, auth))}
         />
       </SettingsGroup>
       <Disclosure className="settings-group settings-credentials" summary={strings.cli.agentsAdvanced}>

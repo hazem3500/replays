@@ -1,9 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import { useId } from 'react';
 
 import { EmptyState } from '@/components/ui/empty-state.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 
 import { type BetaFlag, labsFlags } from '../../shared/beta-flags.ts';
+import { configQuery } from '../queries.ts';
 import { helpLink } from './config-query.ts';
 import { betaAllowedFlags, useBetaFlag } from './labs.ts';
 import { ExternalLink, SettingsGroup, SettingsRow } from './rows.tsx';

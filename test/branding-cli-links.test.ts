@@ -15,7 +15,7 @@ describe('host CLI and links branding', () => {
         },
       }),
     ).toEqual({
-      name: 'Replays',
+      name: 'replays',
       cli: { install: 'npm i -g @example/cli', connect: 'example login' },
       links: {
         source: false,

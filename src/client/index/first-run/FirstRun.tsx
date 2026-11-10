@@ -105,13 +105,13 @@ function Profiles({ profiles }: { profiles: readonly ProfileInfo[] }) {
 export function FirstRun({ onUpload, profiles = NO_PROFILES }: { onUpload: () => void; profiles?: readonly ProfileInfo[] }) {
   // why: a server render has no location; the commands take the page's origin once hydrated, so both renders agree.
   const origin = useHydrated() ? location.origin : '';
-  const config = useQuery(configQuery);
+  const recorderGuide = helpLink(useQuery(configQuery).data, 'recorderGuide');
   const context: FirstRunContext = {
     origin,
     uploadUrl: `${origin}${apiUrl(`replays`)}`,
     chooseFile: onUpload,
     profiles,
-    recorderGuide: helpLink(config.data, 'recorderGuide'),
+    ...(recorderGuide ? { recorderGuide } : {}),
   };
   const ways = resolveSlot<FirstRunContext, FirstRunWay>(FIRST_RUN_SLOT, coreWays, context);
   return (

@@ -37,19 +37,30 @@ export type LinkKey = (typeof LINK_KEYS)[number];
 export type LinksConfig = Partial<Record<LinkKey, string | false>>;
 
 const CLI_KEYS = ['install', 'installHint', 'connect', 'connectHint', 'upload', 'uploadHint'] as const;
+type CliKey = (typeof CLI_KEYS)[number];
+
+const isCliKey = (key: string): key is CliKey => CLI_KEYS.some((known) => known === key);
+const isLinkKey = (key: string): key is LinkKey => LINK_KEYS.some((known) => known === key);
 
 function validateCli(input: unknown): CliConfig | undefined {
   if (input === undefined) return undefined;
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('cli must be an object');
   const out: CliConfig = {};
   for (const [key, value] of Object.entries(input)) {
-    if (!(CLI_KEYS as readonly string[]).includes(key)) throw new Error(`cli.${key} is not a CLI setting (${CLI_KEYS.join(', ')})`);
+    if (!isCliKey(key)) throw new Error(`cli.${key} is not a CLI setting (${CLI_KEYS.join(', ')})`);
     if (value === undefined) continue;
     const text = typeof value === 'string' ? value.trim() : '';
     if (!text || text.length > 300 || /[\r\n]/.test(text)) throw new Error(`cli.${key} must be one line of 1-300 characters`);
-    out[key as (typeof CLI_KEYS)[number]] = text;
+    out[key] = text;
   }
   return Object.keys(out).length ? out : undefined;
+}
+
+function linkValue(key: string, value: unknown): string | false {
+  if (value === false) return false;
+  const url = typeof value === 'string' ? value.trim() : '';
+  if (!/^https:\/\/\S+$/i.test(url)) throw new Error(`links.${key} must be an https URL or false`);
+  return url;
 }
 
 function validateLinks(input: unknown): LinksConfig | undefined {
@@ -57,12 +68,9 @@ function validateLinks(input: unknown): LinksConfig | undefined {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('links must be an object');
   const out: LinksConfig = {};
   for (const [key, value] of Object.entries(input)) {
-    if (!(LINK_KEYS as readonly string[]).includes(key)) throw new Error(`links.${key} is not a link (${LINK_KEYS.join(', ')})`);
+    if (!isLinkKey(key)) throw new Error(`links.${key} is not a link (${LINK_KEYS.join(', ')})`);
     if (value === undefined) continue;
-    const url = typeof value === 'string' ? value.trim() : value;
-    if (url !== false && (typeof url !== 'string' || !/^https:\/\/\S+$/i.test(url)))
-      throw new Error(`links.${key} must be an https URL or false`);
-    out[key as LinkKey] = url;
+    out[key] = linkValue(key, value);
   }
   return Object.keys(out).length ? out : undefined;
 }
