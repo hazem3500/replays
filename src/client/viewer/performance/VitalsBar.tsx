@@ -8,6 +8,8 @@ import { VERDICT_WORDS, type Vital, type VitalId } from './model.ts';
 import { GROUP_LABELS, type GroupNote, groupNote, type Stat, type StatGroup, vitalStat } from './stats.ts';
 import { HostSurfaceSlot } from '../../plugins/HostSurface.tsx';
 import { PluginContexts } from '../../plugins/PluginUi.tsx';
+import { useDetailsOpen } from './details-pref.ts';
+import { DetailsToggle, StripStat } from './VitalsStrip.tsx';
 
 export interface VitalPeer {
   id: string;
@@ -50,6 +52,7 @@ export function VitalsBar({
   /** Controls at the bar's end. */
   children?: ReactNode;
 }) {
+  const details = useDetailsOpen();
   const viewer = use(PluginContexts)?.('');
   const context = viewer ? { replay: viewer.replay, seek: viewer.seek.bind(viewer) } : {};
   const items = [...vitals.map((vital) => ({ stat: vitalStat(vital), vital })), ...cadence.map((stat) => ({ stat, vital: undefined }))];
@@ -71,19 +74,22 @@ export function VitalsBar({
       ? [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []))
       : [note];
     return [
-      { id: `core:group:${group}`, order: base - 10, render: () => <GroupName group={group} /> },
+      ...(details ? [{ id: `core:group:${group}`, order: base - 10, render: () => <GroupName group={group} /> }] : []),
       ...shown.map(({ stat, vital }, index) => ({
         id: `core:${stat.id}`,
         order: base + index * 10,
         render: () => (
           <>
-            <StatTile
+            {details ? null : (
+              <StripStat stat={stat} pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false} onPick={() => vital && onPick(vital)} />
+            )}
+            {details ? <StatTile
               stat={stat}
               pickable={vital ? Boolean(vital.moment) || vital.at !== undefined : false}
               onPick={() => vital && onPick(vital)}
             >
               {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
-            </StatTile>
+            </StatTile> : null}
             {vital && peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
           </>
         ),
@@ -107,10 +113,11 @@ export function VitalsBar({
       </div>
     );
   return (
-    <div className="pp-vitals" data-testid="performance-vitals">
+    <div className="pp-vitals" data-testid="performance-vitals" data-details={details || undefined}>
       <ul aria-label="Vitals">
         <HostSurfaceSlot slot="performance.vitals" context={context} element="li" builtins={builtins} />
       </ul>
+      <DetailsToggle open={details} />
       {children}
     </div>
   );

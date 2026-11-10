@@ -143,6 +143,18 @@ describe('verdict line', () => {
     expect(verdict.jump?.label).toMatch(/^Jump to 0:0\d$/);
   });
 
+  it('jumps to the worst long task of a cluster, not the middle one', () => {
+    const bundle = recording();
+    must(bundle.performance).entries = [
+      { at: 100, kind: 'long-task', value: 300 },
+      { at: 3200, kind: 'long-task', value: 900 },
+      { at: 6000, kind: 'long-task', value: 400 },
+    ];
+    const { verdict } = verdictOf(bundle);
+    expect(verdict.jump?.at).toBe(3200);
+    expect(verdict.headline).toContain('0:03');
+  });
+
   it('says nothing was slow when nothing was', () => {
     const verdict = buildVerdict({ moments: [], vitals: [], frames: [], shifts: [], requests: [] });
     expect(verdict).toEqual({ tone: 'good', headline: 'No slowdowns found' });

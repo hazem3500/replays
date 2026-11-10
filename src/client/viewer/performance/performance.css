@@ -1,16 +1,17 @@
 /* Performance tab (PerformancePanel.tsx): the vitals bar, an optional ribbon, the moments and their detail. It shares
    network.css's panel frame (.np, .np-body, .np-detail) so both tabs read as one family. */
-.pp { --pp-edge: 14px; --pp-end: 14px; container: performance / inline-size; }
+.pp { --pp-edge: 14px; --pp-end: 14px; --pp-gap: 8px; container: performance / inline-size; }
 /* The tab's grid: one left gutter (names of lanes and stat groups) then the plot and the stat cells at the same x. */
 .pp-lead, .pp-vitals, .pt { --pp-gutter: 128px; }
 /* The stats: one grid in three groups, no boxes. Each stat is a label, a large value and a thin meter of its thresholds. */
-.pp-vitals { flex: none; margin-bottom: 24px; }
-.pp-vitals > ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 24px; margin: 0 var(--pp-end) -16px var(--pp-gutter); padding: 0; list-style: none; }
-.pp-vitals > ul > li { min-width: 0; display: flex; flex-direction: column; margin-bottom: 16px; }
+.pp-vitals { flex: none; position: relative; margin-bottom: var(--pp-gap); }
+.pp-vitals[data-details] { margin-bottom: 16px; }
+.pp-vitals[data-details] > ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 24px; margin: 0 var(--pp-end) -16px var(--pp-gutter); padding: 0; list-style: none; }
+.pp-vitals[data-details] > ul > li { min-width: 0; display: flex; flex-direction: column; margin-bottom: 16px; }
 /* why: the group's name hangs in the gutter on a zero-height row of its own, so the cells under it stay on one row of equal columns. */
-.pp-vitals > ul > li:has(> .pp-group-name) { grid-column: 1 / -1; height: 0; margin: 0 0 0 calc(var(--pp-edge) - var(--pp-gutter)); }
-.pp-vitals > ul > li:has(> .pp-group-note) { grid-column: 1 / -1; margin-top: -8px; }
-.pp-vitals > ul > li:has(> .pp-group-name) + li:has(> .pp-group-note) { margin-top: 0; }
+.pp-vitals[data-details] > ul > li:has(> .pp-group-name) { grid-column: 1 / -1; height: 0; margin: 0 0 0 calc(var(--pp-edge) - var(--pp-gutter)); }
+.pp-vitals[data-details] > ul > li:has(> .pp-group-note) { grid-column: 1 / -1; margin-top: -8px; }
+.pp-vitals[data-details] > ul > li:has(> .pp-group-name) + li:has(> .pp-group-note) { margin-top: 0; }
 .pp-group-name { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; line-height: 16px; white-space: nowrap; }
 .pp-group-note { margin: 0; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 16px; }
 .pp-footnote-reason { text-decoration: underline dotted; text-underline-offset: 3px; cursor: default; }
@@ -92,9 +93,9 @@ button.pp-stat:hover { box-shadow: 0 0 0 4px var(--surface-hover); }
 }
 @container performance (max-width: 719px) {
   .pp-lead, .pp-vitals, .pt { --pp-gutter: 44px; }
-  .pp-vitals > ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .pp-vitals > ul > li:has(> .pp-group-name) { height: auto; margin-bottom: 8px; }
-  .pp-vitals > ul > li:has(> .pp-group-name) + li:has(> .pp-group-note) { margin-top: 0; }
+  .pp-vitals[data-details] > ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pp-vitals[data-details] > ul > li:has(> .pp-group-name) { height: auto; margin-bottom: 8px; }
+  .pp-vitals[data-details] > ul > li:has(> .pp-group-name) + li:has(> .pp-group-note) { margin-top: 0; }
 }
 @container performance (max-width: 559px) {
   .pp-row:not(.pp-head) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "moment took" "why when"; row-gap: 2px; min-height: 48px; padding: 5px var(--pp-end) 5px var(--pp-edge); }
@@ -126,7 +127,7 @@ button.pp-stat:hover { box-shadow: 0 0 0 4px var(--surface-hover); }
 .pp-inflight .pp-link { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pp-detail .np-detail-status { gap: 8px; color: var(--text); }
 .pp-pending .pp-pending-vitals { width: 60%; margin: auto 14px; }
-.pp-lead { flex: none; display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 40px; margin-bottom: 24px; padding: 16px var(--pp-end) 0 var(--pp-edge); color: var(--text); font-size: var(--text-sm); line-height: 20px; }
+.pp-lead { flex: none; display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 32px; margin-bottom: var(--pp-gap); padding: 0 var(--pp-end) 0 var(--pp-edge); color: var(--text); font-size: var(--text-sm); line-height: 20px; }
 .pp-lead p { margin: 0; min-width: 0; font-weight: 500; }
 .pp-lead-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--rating-good); }
 .pp-lead[data-tone="needs-work"] .pp-lead-dot { background: var(--rating-needs-work); }
@@ -147,5 +148,22 @@ button.pp-stat:hover { box-shadow: 0 0 0 4px var(--surface-hover); }
   .pp .np-body { flex: none; }
   .pp .pp-scroll { flex: none; overflow: visible; }
 }
-.pp-lead[data-inline] { height: 24px; margin: 0; padding: 0; gap: 6px; font-size: var(--text-2xs); line-height: 16px; white-space: nowrap; }
-.pp-lead[data-inline] .pp-lead-dot { width: 6px; height: 6px; }
+
+/* The compact strip: every stat as `label value dot` on one line, notes muted beside them; Details opens the grouped grid. */
+.pp-vitals:not([data-details]) { display: flex; align-items: flex-start; gap: 8px; min-height: 24px; padding: 0 var(--pp-end) 0 var(--pp-edge); }
+.pp-vitals:not([data-details]) > ul { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; margin: 0; padding: 0; list-style: none; }
+.pp-vitals:not([data-details]) > ul > li { min-width: 0; display: flex; align-items: center; min-height: 24px; }
+.pp-chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; font-size: var(--text-xs); white-space: nowrap; }
+button.pp-chip { cursor: pointer; border-radius: var(--radius-sm); }
+button.pp-chip:hover .pp-chip-value { text-decoration: underline; text-decoration-color: var(--r-border); text-underline-offset: 3px; }
+.pp-chip:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.pp-chip-label { color: var(--text-secondary); }
+.pp-chip-value { font-variant-numeric: tabular-nums; font-weight: 500; }
+.pp-vitals:not([data-details]) .pp-group-note { line-height: 24px; }
+.pp-details-toggle { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 24px; margin: 0 -6px 0 auto; padding: 0 6px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); font: inherit; font-size: var(--text-xs); cursor: pointer; }
+.pp-details-toggle:hover { color: var(--text); background: var(--surface-hover); }
+.pp-details-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.pp-details-toggle svg { width: 12px; height: 12px; transition: rotate var(--motion-fast) var(--ease-out); }
+.pp-details-toggle[aria-expanded="true"] svg { rotate: 180deg; }
+.pp-vitals[data-details] > .pp-details-toggle { position: absolute; top: 0; right: calc(var(--pp-end) - 6px); }
+@media (prefers-reduced-motion: reduce) { .pp-details-toggle svg { transition: none; } }

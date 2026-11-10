@@ -1,6 +1,8 @@
 import { type ReactNode, useRef, useState } from 'react';
 
 import type { ReplayMeta, ReplayStep } from '../../../shared/replay.ts';
+import { useMinContentHeight } from '../dock-grow.ts';
+import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { usePlayer } from '../../player.ts';
 import { Empty } from '../Empty.tsx';
@@ -31,7 +33,6 @@ export interface PerformancePeer {
 }
 
 const SIDE_DETAIL_MIN_WIDTH = 760;
-const INLINE_QUIET_HEADLINE = true;
 
 const STRINGS = {
   calmTitle: 'No slow activity captured',
@@ -39,6 +40,16 @@ const STRINGS = {
   outsideTitle: 'Nothing slow in this stretch',
   outside: 'Clear the time range to see every moment.',
 };
+
+/** The panel's rows, in px: what the headline, timeline, stats strip and a table of this many rows need to read as one. */
+const LEAD = 40;
+const AXIS = 24;
+const LANE = 24;
+const FPS = 72;
+const STRIP = 32;
+const TABLE_HEAD = 28;
+const ROW = 30;
+export const MIN_TABLE_ROWS = 4;
 
 /** Something was measured: a vital has a value or was watched (`None`), or there is a moment. */
 function recorded(vitals: readonly Vital[], moments: number) {
@@ -86,6 +97,9 @@ export function PerformancePanel({
   const verdict = buildVerdict({ moments, vitals, frames: model.frames, shifts: model.shifts, requests });
   const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
   const open = moments.find((item) => item.id === selected);
+  const timelineCollapsed = useRibbonCollapsed();
+  const timelineHeight = lanes.length || model.frames.length ? (timelineCollapsed ? AXIS : AXIS + lanes.length * LANE + (model.frames.length ? FPS : 0)) + 8 : 0;
+  useMinContentHeight(LEAD + timelineHeight + STRIP + TABLE_HEAD + MIN_TABLE_ROWS * ROW);
   const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
     id: peer.id,
     name: peer.name,
@@ -107,8 +121,6 @@ export function PerformancePanel({
   ) : (
     <Empty title={STRINGS.calmTitle}>{STRINGS.calm}</Empty>
   );
-  // why: with nothing slow the headline is quiet, so it rides the timeline's axis row instead of taking a row of its own.
-  const inlineLead = INLINE_QUIET_HEADLINE && verdict.tone === 'good' && !verdict.jump && Boolean(lanes.length || model.frames.length);
   const lit = [hovered, pinned, selected ? [selected] : []].find((ids) => ids.length) ?? [];
   const select = (id?: string) => {
     setPinned([]);
@@ -117,7 +129,6 @@ export function PerformancePanel({
   const verdictLine = (
     <VerdictLine
       verdict={verdict}
-      inline={inlineLead}
       onJump={(jump) => {
         player.seek(jump.at);
         setSelected(undefined);
@@ -127,7 +138,7 @@ export function PerformancePanel({
   );
   return (
     <div ref={panel} className="np pp" data-testid="performance-diagnostics" data-stacked={stacked || undefined}>
-      {inlineLead ? null : verdictLine}
+      {verdictLine}
       {lanes.length || model.frames.length ? (
         <PerfTimeline
           duration={duration}
@@ -135,7 +146,6 @@ export function PerformancePanel({
           frames={model.frames}
           range={range}
           onRange={setRange}
-          lead={inlineLead ? verdictLine : undefined}
           lit={lit}
           onLight={setHovered}
           onPick={(mark) => {

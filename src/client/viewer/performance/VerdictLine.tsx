@@ -6,16 +6,13 @@ import type { PerformanceVerdict, VerdictJump } from './verdict.ts';
 export function VerdictLine({
   verdict,
   onJump,
-  inline,
 }: {
   verdict: PerformanceVerdict;
   onJump: (jump: VerdictJump) => void;
-  /** On the timeline's axis row rather than its own row. */
-  inline?: boolean;
 }) {
   const { jump } = verdict;
   return (
-    <div className="pp-lead" data-testid="performance-verdict" data-tone={verdict.tone} data-inline={inline || undefined}>
+    <div className="pp-lead" data-testid="performance-verdict" data-tone={verdict.tone}>
       <span className="pp-lead-dot" aria-hidden="true" />
       <p>{verdict.headline}</p>
       {jump ? (

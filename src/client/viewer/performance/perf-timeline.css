@@ -1,6 +1,6 @@
 /* The performance timeline: lanes and the frame-rate plot in one plot column, so gridlines, crosshair and playhead cross
    all of them. Shares the ribbon's playhead, veil and range classes (time-ribbon.css). */
-.pt { --pt-gutter: var(--pp-gutter); --pt-end: var(--pp-end); --pt-lane: 24px; position: relative; flex: none; margin-bottom: 24px; background: var(--surface); }
+.pt { --pt-gutter: var(--pp-gutter); --pt-end: var(--pp-end); --pt-lane: 24px; position: relative; flex: none; margin-bottom: var(--pp-gap); background: var(--surface); }
 .pt-body { display: grid; grid-template-columns: var(--pt-gutter) minmax(0, 1fr) var(--pt-end); }
 .pt-gutter { display: flex; flex-direction: column; min-width: 0; }
 .pt-axis-gap { display: flex; align-items: center; height: 24px; padding-left: var(--pp-edge); }
@@ -49,9 +49,6 @@
 .pt .ribbon-lit { top: 24px; border-inline: 0; background: color-mix(in srgb, var(--text) 5%, transparent); }
 /* why: the toggle sits in the gutter beside the axis, so the playhead handle (24px, in the axis row) never covers it or is covered by it. */
 .pt:not([data-collapsed]) .ribbon-key { position: absolute; top: 0; left: calc(var(--pp-edge) - 6px); padding: 0; }
-.pt:has(.pp-lead[data-inline]):not([data-collapsed]) .ribbon-key { left: calc(var(--pt-gutter) - 44px); }
-.pt[data-collapsed] .ribbon-key { justify-content: flex-end; padding: 0 4px 2px; }
-.pt[data-collapsed] .ribbon-toggle svg { transform: rotate(180deg); }
 /* The frame-rate plot: one accent line and light fill on a 0 to 120 scale, guides at 60 and 30 labelled in the gutter, the fill under 30 tinted danger. */
 .pt-fps { position: relative; height: 72px; }
 .fps-plot { position: absolute; inset: 4px 0; }
@@ -61,21 +58,12 @@
 .fps-area { fill: color-mix(in srgb, var(--accent) 9%, transparent); stroke: none; }
 .fps-danger { fill: color-mix(in oklch, var(--rating-poor) 24%, var(--surface)); stroke: none; }
 
-/* Collapsed: one slim strip of the rated marks over a thin frame-rate line; the playhead stays, click seeks. */
-.pt[data-collapsed] { --pt-gutter: 0px; --pt-end: 0px; }
-.pt[data-collapsed] .pt-gutter { height: 0; overflow: hidden; visibility: hidden; }
-.pt[data-collapsed] :is(.pt-axis, .pt-grid, .pt-cursor, .pt-readout, .fps-guide, .fps-area, .fps-danger, .pt-lane::before) { display: none; }
-.pt[data-collapsed] .pt-lanes { height: 6px; }
-.pt[data-collapsed] .pt-lane { position: absolute; inset: 0; height: 6px; }
-.pt[data-collapsed] .pt-mark { top: 0; bottom: 0; height: auto; border-radius: 1px; pointer-events: none; }
-.pt[data-collapsed] .pt-mark[data-lane="shift"] { width: 3px !important; height: auto !important; translate: none; border-radius: 1px; }
-.pt[data-collapsed] .pt-mark:is([data-verdict="good"], [data-quiet]) { display: none; }
-.pt[data-collapsed] .pt-fps { height: 12px; }
-.pt[data-collapsed] .fps-plot { inset: 1px 0; }
-.pt[data-collapsed] .fps-line { stroke-width: 1px; }
-.pt[data-collapsed] .ribbon-handle { pointer-events: none; }
-.pt[data-collapsed] .ribbon-handle::after { opacity: 0; }
-.pt[data-collapsed] .pt-plot { cursor: pointer; }
+/* Collapsed: no plot, lanes or marks, only this header row: the name and chevron in the gutter. */
+.pt[data-collapsed] { height: 24px; }
+.pt[data-collapsed] .ribbon-key { position: static; padding: 0 0 0 calc(var(--pp-edge) - 6px); }
+.pt-head-label { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
+.pt[data-collapsed] .ribbon-toggle { width: auto; gap: 4px; padding: 0 6px; }
+.pt[data-collapsed] .ribbon-toggle svg { transform: rotate(-90deg); }
 @container performance (max-width: 719px) {
   .pt-label { padding-left: var(--pp-edge); }
   .pt-label-text { display: none; }

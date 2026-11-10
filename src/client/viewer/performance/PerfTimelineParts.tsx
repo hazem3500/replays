@@ -1,5 +1,5 @@
 import { ChevronDownIcon, GaugeIcon, GlobeIcon, HourglassIcon, LayoutPanelLeftIcon, MousePointerClickIcon } from 'lucide-react';
-import { type ReactNode, type RefObject, useRef } from 'react';
+import { type RefObject, useRef } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
 import { usePlayheadAria } from '../../hooks/use-playhead-aria.ts';
@@ -58,10 +58,10 @@ function FpsGutter({ frames }: { frames: readonly FrameBand[] }) {
   );
 }
 
-export function LaneGutter({ lanes, frames, lead }: { lanes: readonly Lane[]; frames: readonly FrameBand[]; lead?: ReactNode }) {
+export function LaneGutter({ lanes, frames }: { lanes: readonly Lane[]; frames: readonly FrameBand[] }) {
   return (
     <div className="pt-gutter">
-      <span className="pt-axis-gap">{lead}</span>
+      <span className="pt-axis-gap" />
       {lanes.map((lane) => (
         <LaneLabel key={lane.id} id={lane.id} text={lane.label} />
       ))}
@@ -225,10 +225,11 @@ export function TimelineToggle({ collapsed }: { collapsed: boolean }) {
         className="ribbon-toggle"
         aria-label={TIMELINE_STRINGS.toggle}
         aria-expanded={!collapsed}
-        aria-controls="performance-timeline-plot"
+        aria-controls={collapsed ? undefined : 'performance-timeline-plot'}
         onClick={toggleRibbonCollapsed}
       >
         <ChevronDownIcon aria-hidden="true" />
+        {collapsed ? <span className="pt-head-label">{TIMELINE_STRINGS.toggle}</span> : null}
       </button>
     </div>
   );
