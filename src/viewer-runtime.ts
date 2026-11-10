@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, statSync } from 'node:fs';
-import { cp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -56,6 +56,23 @@ export function viewerDependencies(manifest: Manifest) {
   return Object.fromEntries(Object.entries(result).sort(([a], [b]) => a.localeCompare(b)));
 }
 
+async function appFiles(root: string, path: string): Promise<string[]> {
+  const from = join(root, path);
+  if (!existsSync(from)) return [];
+  const entries = await readdir(from, { withFileTypes: true }).catch(() => undefined);
+  if (!entries) return [path];
+  const nested = await Promise.all(entries.map((entry) => appFiles(root, join(path, entry.name))));
+  return nested.flat();
+}
+
+/** Digest of the files copied into the cache, so a new build of the same version never reuses an older copy. */
+async function appDigest(packageRoot: string, version: string | undefined, dependencies: Record<string, string>) {
+  const hash = createHash('sha256').update(JSON.stringify([version, dependencies]));
+  const files = (await Promise.all(APP_PATHS.map((path) => appFiles(packageRoot, path)))).flat().sort();
+  for (const file of files) hash.update(`\0${file.replaceAll('\\', '/')}\0`).update(await readFile(join(packageRoot, file)));
+  return hash.digest('hex').slice(0, 8);
+}
+
 export function cacheRoot(env: NodeJS.ProcessEnv, platform: NodeJS.Platform = process.platform) {
   const override = env.REPLAYS_VIEWER_CACHE;
   if (override !== undefined && override !== '') return resolve(override);
@@ -101,11 +118,7 @@ export async function prepareViewerRuntime(options: ViewerRuntimeOptions) {
   const dependencies = viewerDependencies(manifest);
   if (Object.keys(dependencies).every((name) => isInstalled(name, packageRoot))) return packageRoot;
 
-  const server = join(packageRoot, 'dist/lib/server.mjs');
-  const key = createHash('sha256')
-    .update(JSON.stringify([manifest.version, dependencies, existsSync(server) ? statSync(server).size : 0]))
-    .digest('hex')
-    .slice(0, 8);
+  const key = await appDigest(packageRoot, manifest.version, dependencies);
   const directory = join(cacheRoot(env), `viewer-${manifest.version ?? 'dev'}-${key}`);
   const app = join(directory, 'app');
   if (existsSync(join(directory, '.ready'))) return app;
