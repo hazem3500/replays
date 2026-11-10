@@ -5,6 +5,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- CLI upload: a video that cannot be read or sent no longer fails the command once the replay JSON is saved. Human output reads "Replay uploaded · video skipped: <reason>" and `--json` carries `"video":{"uploaded":false,"error":"..."}`. The result also carries `url`, the viewer link (the server's own receipt `url`, else `<server>/r/<id>`), for `upload` and `capture --upload`.
+
+- Bundles carry `meta.formatVersion` (currently 1). An upload the server rejects with 400 or 422 answers with the server's format in `x-replays-format`, and the CLI prints "This CLI writes format X; the server expects Y. Update with `replays update`, or the server needs a newer pin." A bundle from a newer format than the server reads is refused naming `replay.meta.formatVersion`.
+
 - Viewer: people on a replay (any role, matched by signed-in email) and admins can rename a step by double-clicking it in the Steps list (or F2 on a focused row) or the caption on the player. Names are stored in the edits sidecar as `stepNames` (see [edits.schema.json](docs/formats/edits.schema.json)) and show in the list, seek bar, captions and exports; "Reset" restores the automatic name. `PUT /api/replays/<id>/edits` answers 403 when `stepNames` change and the caller is not related to the replay.
 
 - Request policies: an optional `originPatterns` list of anchored host patterns (such as `^https://[0-9]+-web\.pull\.example\.com$`) for trusted origins that vary by subdomain, validated at registration so none can be broad. A refused cross-origin request now answers `403` with `Vary: Origin` and a JSON body, and a listed origin can read the refusal of a method or header it may not use.

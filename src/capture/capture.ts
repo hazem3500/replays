@@ -8,7 +8,7 @@ import type { CaptureNetwork, NetworkBodyLimits } from '../shared/capture-profil
 import { type ProfileConfig, profileOf, profilesOf } from '../shared/profiles.ts';
 import type { ConsoleLevel } from '../shared/replay.ts';
 import { captureSettings, capturedRecord, networkFlag, profileCapture } from './capture-settings.ts';
-import { assertReplayId, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
+import { assertReplayId, REPLAY_FORMAT_VERSION, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
 import { assertReplayTags, type ReplayPerson } from '../shared/replay.ts';
 import { parsePeopleFlags } from '../shared/people.ts';
 import { SourceProviders, type TemplateProviderConfig } from '../shared/source-providers.ts';
@@ -21,6 +21,7 @@ import { defaultId, flagMap, prepareOutputDirectory, profileFlag } from './bundl
 import { CAPTURE_USAGE } from './capture-usage.ts';
 import { createTerminal, reportCliFailure } from './terminal.ts';
 import { uploadConfigured } from './upload.ts';
+import { uploadSummary } from './upload-report.ts';
 import { buildReplayContext, readContextFile } from './context.ts';
 import { agentBrowserDriver } from './drivers/agent-browser.ts';
 import { playwrightDriver } from './drivers/playwright.ts';
@@ -278,6 +279,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
         viewport: args.viewport,
         eventCount: tracks.events.length,
         version: 1,
+        formatVersion: REPLAY_FORMAT_VERSION,
         source: 'agent',
         ...(args.video ? { videoFile: 'session.mp4' } : {}),
         ...(args.tags.length ? { tags: args.tags } : {}),
@@ -305,13 +307,15 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     const replayPath = join(args.output, 'replay.json');
     await writeFile(replayPath, `${JSON.stringify(bundle)}\n`, { flag: 'wx' });
     if (args.video) await copyFile(rawVideoPath, join(args.output, 'session.mp4'), constants.COPYFILE_EXCL);
-    if (args.upload || args.uploadUrl)
-      await uploadConfigured(bundle, args.output, {
-        ...(args.uploadUrl ? { uploadUrl: args.uploadUrl } : {}),
-        ...(args.serverName ? { serverName: args.serverName } : {}),
-        ...(args.headerFile ? { headerFile: args.headerFile } : {}),
-        ...(args.login ? { forceLogin: true } : {}),
-      });
+    const uploaded =
+      args.upload || args.uploadUrl
+        ? await uploadConfigured(bundle, args.output, {
+            ...(args.uploadUrl ? { uploadUrl: args.uploadUrl } : {}),
+            ...(args.serverName ? { serverName: args.serverName } : {}),
+            ...(args.headerFile ? { headerFile: args.headerFile } : {}),
+            ...(args.login ? { forceLogin: true } : {}),
+          })
+        : undefined;
     return {
       replayPath,
       eventCount: tracks.events.length,
@@ -320,6 +324,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       performanceCount: bundle.performance?.entries.length ?? 0,
       duration,
       video: args.video ? join(args.output, 'session.mp4') : undefined,
+      ...(uploaded ? { upload: uploaded } : {}),
     };
   } finally {
     session?.dispose();
@@ -350,8 +355,9 @@ export async function runCaptureCli(argv: string[], env: NodeJS.ProcessEnv = {})
         ['Console', String(result.consoleCount)],
         ...(result.video ? ([['Video', result.video]] as Array<[string, string]>) : []),
       ];
+      const receipt = result.upload ? `\n\n${uploadSummary(out, result.upload)}` : '';
       process.stdout.write(
-        `${out.header()}\n\n${out.ok(`Captured ${result.eventCount} events in ${seconds}s`)}\n\n${out.keyValue(rows)}\n`,
+        `${out.header()}\n\n${out.ok(`Captured ${result.eventCount} events in ${seconds}s`)}\n\n${out.keyValue(rows)}${receipt}\n`,
       );
     } else process.stdout.write(`${JSON.stringify({ success: true, ...result })}\n`);
   } catch (error) {
