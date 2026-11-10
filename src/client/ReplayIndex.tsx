@@ -5,10 +5,12 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedText } from '@/components/animated-text.tsx';
 
 import { PRODUCT_SLUG } from '../shared/brand.ts';
+import { personMatch, type PersonIdentity } from '../shared/people.ts';
 import { matchesFilters, type ReplayFilters, type ReplaySummary } from '../shared/replay.ts';
 import {
   type ReviewSuiteIndexEntry,
   type ReviewSuiteIndexRun,
+  suitePersonMatch,
   type SuiteOverallStatus,
   suiteOverallStatus,
 } from '../shared/review-suite.ts';
@@ -82,17 +84,6 @@ export function forMeFromSearch(search: string) {
   return new URLSearchParams(search).get('for') === 'me';
 }
 
-/**
- * The query the server filters For me by: `for=me` plus the handles linked in this browser (`handle.<id>=value`),
- * appended to a request path that may already have a query. Unchanged when For me is off.
- */
-export function withForMe(path: string, forMe: boolean, linked: Readonly<Record<string, string>> = {}) {
-  if (!forMe) return path;
-  const params = new URLSearchParams({ for: 'me' });
-  for (const [id, value] of Object.entries(linked).sort(([a], [b]) => a.localeCompare(b))) if (value) params.set(`handle.${id}`, value);
-  return `${path}${path.includes('?') ? '&' : '?'}${params}`;
-}
-
 const LINKED_KEY = `${PRODUCT_SLUG}-linked-handles`;
 
 /** The handles this browser linked for For me (`{ github: 'octocat' }`), from localStorage. */
@@ -149,6 +140,17 @@ export function profileCounts(entries: readonly IndexEntry[]): ProfileCounts {
   const counts: ProfileCounts = { all: entries.length };
   for (const entry of entries) for (const profile of entryProfiles(entry)) counts[profile] = (counts[profile] ?? 0) + 1;
   return counts;
+}
+
+/** Whether the viewer is on a row: a replay's people, or a suite's own and its runs' (the rule `?for=me` applies on the server). */
+export function entryIsMine(entry: IndexEntry, me: PersonIdentity): boolean {
+  if (!me.email && !Object.keys(me.handles ?? {}).length) return false;
+  return (entry.kind === 'session' ? personMatch(entry.summary.people, me) : suitePersonMatch(entry.suite, me)) !== undefined;
+}
+
+/** Every tab's count from the one list: All, each profile, and For you (the rows the viewer is on). */
+export function tabCounts(entries: readonly IndexEntry[], me: PersonIdentity): ProfileCounts {
+  return { ...profileCounts(entries), [FOR_YOU]: entries.filter((entry) => entryIsMine(entry, me)).length };
 }
 
 export function indexSearch(
@@ -417,14 +419,12 @@ export function ReplayIndex({
   const [linked, setLinked] = useState(storedLinkedHandles);
   const [me, setMe] = useState<Me>();
   /** The sessions request (and the Back cache's key): the filters, plus For me. */
-  const listSearch = withForMe(searchFromFilters(filters), forMe, linked);
+  const listSearch = searchFromFilters(filters);
   const queryClient = useQueryClient();
   // why: lists a server render put in the page (or this tab already loaded) show at once, without the first-load stagger.
-  const [restored] = useState(
-    () => cachedIndex(queryClient, listSearch, withForMe(INDEX_SUITES_URL, forMe, linked)) ?? restoredIndex(listSearch),
-  );
+  const [restored] = useState(() => cachedIndex(queryClient, listSearch, INDEX_SUITES_URL) ?? restoredIndex(listSearch));
   // why: lists a server render fetched moments ago are what the server has; the first fetch would only repeat them.
-  const [renderedFresh] = useState(() => freshIndex(queryClient, listSearch, withForMe(INDEX_SUITES_URL, forMe, linked)));
+  const [renderedFresh] = useState(() => freshIndex(queryClient, listSearch, INDEX_SUITES_URL));
   const skipFirstFetch = useRef({ sessions: renderedFresh, suites: renderedFresh });
   const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(opened));
   const profiles = pageProfiles();
@@ -570,7 +570,7 @@ export function ReplayIndex({
     const controller = new AbortController();
     // Default cache mode so index.html's preload of this exact URL is reused; the server answers
     // `Cache-Control: no-store`, so the list is never stale.
-    fetchPage(apiUrl(withForMe(INDEX_SUITES_URL, forMe, linked)), { signal: controller.signal })
+    fetchPage(apiUrl(INDEX_SUITES_URL), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Review suites failed to load (${response.status})`);
         return (await response.json()) as ReviewSuiteIndexEntry[];
@@ -590,7 +590,7 @@ export function ReplayIndex({
         setSuites([]);
       });
     return () => controller.abort();
-  }, [forMe, linked]);
+  }, []);
 
   const unsegmented = useMemo(
     () => (items && suites ? sortEntries(buildIndexEntries(items, suites, settledFilters ?? filters, kind), sort) : undefined),
@@ -598,12 +598,15 @@ export function ReplayIndex({
     [items, suites, settledFilters, filters, kind, sort],
   );
   // The profile segment narrows what the other filters keep (client-side, so every tab can show its count).
-  const counts = useMemo(() => (profiles.length && unsegmented ? profileCounts(unsegmented) : undefined), [profiles, unsegmented]);
+  const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: { ...linked, ...me?.handles } }), [me, linked]);
+  const counts = useMemo(() => (unsegmented ? tabCounts(unsegmented, meContext) : undefined), [unsegmented, meContext]);
   const tabs = indexProfiles(profiles, counts, profile);
-  const entries = useMemo(
-    () => (profile && unsegmented ? unsegmented.filter((entry) => entryProfiles(entry).includes(profile)) : unsegmented),
-    [unsegmented, profile],
-  );
+  // For you is one more segment over the same list: it narrows to the rows the viewer is on, like a profile tab.
+  const entries = useMemo(() => {
+    if (!unsegmented) return unsegmented;
+    const mine = forMe ? unsegmented.filter((entry) => entryIsMine(entry, meContext)) : unsegmented;
+    return profile ? mine.filter((entry) => entryProfiles(entry).includes(profile)) : mine;
+  }, [unsegmented, profile, forMe, meContext]);
   const listed = Boolean(entries);
   // Effects re-run when the index is shown again behind a viewer page (routing/KeptIndex.tsx keeps it in an Activity).
   const entered = useRef(false);
@@ -635,7 +638,6 @@ export function ReplayIndex({
     Boolean(items?.some((summary) => summary.people?.length)) ||
     Boolean(suites?.some((suite) => suite.people?.length || suite.runDetails.some((run) => run.replay?.people?.length)));
   const forYouTab = Boolean(me) && (Boolean(me?.email) || Object.keys(me?.handles ?? {}).length > 0 || Object.keys(linked).length > 0);
-  const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: { ...linked, ...me?.handles } }), [me, linked]);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   // why: a retry re-runs the request with a fresh filters object; the failure stays on screen while it runs.
   const error = settledFilters === filters || retriedFilters === filters ? loadError : '';
@@ -676,7 +678,6 @@ export function ReplayIndex({
     feedTransition(() => {
       setProfile(next === FOR_YOU ? undefined : next);
       setForMe(next === FOR_YOU);
-      setFilters((current) => ({ ...current }));
     });
   };
   const update = <K extends keyof ReplayFilters>(key: K, value: ReplayFilters[K] | undefined) =>
@@ -705,19 +706,13 @@ export function ReplayIndex({
       setForMe(false);
       setFilters((current) => (current.q ? { q: current.q } : {}));
     });
-  // For me and the linked handles change the sessions request: a fresh `filters` object re-runs it (and its pending state).
-  const changeForMe = (next: boolean) =>
-    feedTransition(() => {
-      setForMe(next);
-      setFilters((current) => ({ ...current }));
-    });
+  const changeForMe = (next: boolean) => feedTransition(() => setForMe(next));
   const changeLinked = (id: string, value: string) => {
     const next = { ...linked };
     if (value) next[id] = value;
     else delete next[id];
     writeStorage(LINKED_KEY, JSON.stringify(next));
     setLinked(next);
-    if (forMe) setFilters((current) => ({ ...current }));
   };
   // The landing tab: a stored choice wins; otherwise For you, unless the link has its own view or For you comes up empty.
   const landed = useRef(false);
@@ -725,7 +720,7 @@ export function ReplayIndex({
     if (!me || landed.current) return;
     landed.current = true;
     const explicit = [...new URLSearchParams(opened).keys()].some((key) => key !== 'sort');
-    const canMatch = Boolean(me.email) || Object.keys(linked).length > 0;
+    const canMatch = Boolean(me.email) || Object.keys(me.handles ?? {}).length > 0 || Object.keys(linked).length > 0;
     const landing = landingTab({ explicit, canMatch, stored: parseTabChoice(readStorage(tabChoiceKey(me.id))) });
     probing.current = landing.probe;
     if (landing.forYou) changeForMe(true);
@@ -835,7 +830,7 @@ export function ReplayIndex({
                 <ProfileSegments
                   profiles={tabs}
                   value={forMe ? FOR_YOU : profile}
-                  counts={forMe ? undefined : counts}
+                  counts={counts}
                   onChange={changeTab}
                   forYou={forYouTab}
                 />
