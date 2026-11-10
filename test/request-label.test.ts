@@ -43,7 +43,7 @@ describe('request label', () => {
   });
 
   it('cuts nothing without a budget, and measures a budget from a width', () => {
-    expect(shortenPath('/api/a/b/c/d/e/f/g/h/i/j/k', undefined)).toBe('/api/a/b/c/d/e/f/g/h/i/j/k');
+    expect(shortenPath('/api/a/b/c/d/e/f/g/h/i/j/k')).toBe('/api/a/b/c/d/e/f/g/h/i/j/k');
     expect(charBudget(0, 7)).toBeUndefined();
     expect(charBudget(140, 7)).toBe(20);
     expect(charBudget(20, 7)).toBe(8);

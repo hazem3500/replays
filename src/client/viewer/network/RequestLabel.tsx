@@ -9,15 +9,18 @@ const METHOD_GAP = 1;
 
 /** `:id` and `…` are muted: they are placeholders, not part of the endpoint's name. */
 function muted(text: string): ReactNode[] {
-  return text.split(/(:id|…)/).map((part, index) =>
-    part === ':id' || part === '…' ? (
-      <span key={index} className="rl-muted">
+  let offset = 0;
+  return text.split(/(:id|…)/).map((part) => {
+    const key = offset;
+    offset += part.length;
+    return part === ':id' || part === '…' ? (
+      <span key={key} className="rl-muted">
         {part}
       </span>
     ) : (
       part
-    ),
-  );
+    );
+  });
 }
 
 /**

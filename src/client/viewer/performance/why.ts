@@ -43,9 +43,9 @@ const VERBS: Readonly<Record<string, string>> = {
 };
 
 /** "button 'Plan time'": the role (or tag) and the name where the privacy mode kept it; empty without a target. */
-export function describeTarget(target: ReplayInteractionTarget | undefined) {
+export function describeTarget(target?: ReplayInteractionTarget) {
   if (!target) return '';
-  const kind = target.role || target.tag;
+  const kind = firstText(target.role, target.tag) ?? '';
   return target.name ? `${kind} '${target.name}'` : kind;
 }
 
@@ -68,15 +68,20 @@ export function scriptFileName(sourceURL: string) {
   }
 }
 
+/** The first value that is not empty. */
+function firstText(...values: readonly (string | undefined)[]) {
+  return values.find((value) => value !== undefined && value !== '');
+}
+
 /** The function to name: its own name, else what invoked it, else a placeholder. */
 export function scriptFunction(script: ReplayLongFrameScript) {
-  return script.sourceFunctionName || script.invoker || 'anonymous function';
+  return firstText(script.sourceFunctionName, script.invoker) ?? 'anonymous function';
 }
 
 /** The tooltip: full URL (origin and path only), the function and what started it. */
 export function scriptTitle(script: ReplayLongFrameScript) {
   return [
-    script.sourceURL || 'inline script',
+    firstText(script.sourceURL) ?? 'inline script',
     script.sourceFunctionName && `function ${script.sourceFunctionName}`,
     script.invoker && `started by ${script.invoker}`,
   ]
@@ -86,7 +91,7 @@ export function scriptTitle(script: ReplayLongFrameScript) {
 
 /** The time after style and layout began until the frame ended, as ms and a share of the frame; undefined when not reported. */
 export function styleLayoutShare(frame: ReplayLongFrame) {
-  if (!(frame.styleAndLayoutStart > 0) || frame.styleAndLayoutStart >= frame.duration || !(frame.duration > 0)) return undefined;
+  if (!(frame.styleAndLayoutStart > 0) || frame.styleAndLayoutStart >= frame.duration || !(frame.duration > 0)) return;
   const ms = frame.duration - frame.styleAndLayoutStart;
   return { ms, share: ms / frame.duration };
 }

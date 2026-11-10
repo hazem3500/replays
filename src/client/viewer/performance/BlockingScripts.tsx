@@ -29,8 +29,8 @@ export function BlockingScripts({ frame }: { frame: ReplayLongFrame }) {
       </p>
       {frame.scripts.length ? (
         <ul className="pp-scripts-list">
-          {frame.scripts.map((script, index) => (
-            <li key={`${script.sourceURL}:${script.sourceFunctionName}:${index}`} title={scriptTitle(script)}>
+          {frame.scripts.map((script) => (
+            <li key={scriptTitle(script) + script.duration} title={scriptTitle(script)}>
               <code className="pp-script-file">{scriptFileName(script.sourceURL)}</code>
               <span className="pp-script-fn">{scriptFunction(script)}</span>
               <strong className="pp-script-ms">{formatDuration(script.duration)}</strong>

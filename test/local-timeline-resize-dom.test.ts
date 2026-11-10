@@ -19,8 +19,14 @@ function render() {
   });
 }
 
-const seam = () => host.querySelector<HTMLElement>('[data-testid="lt-label-seam"]')!;
-const labelWidth = () => Number.parseInt(host.querySelector<HTMLElement>('.local-timeline')!.style.getPropertyValue('--lt-label'), 10);
+function found(selector: string) {
+  const element = host.querySelector<HTMLElement>(selector);
+  if (!element) throw new Error(`missing ${selector}`);
+  return element;
+}
+
+const seam = () => found('[data-testid="lt-label-seam"]');
+const labelWidth = () => Number.parseInt(found('.local-timeline').style.getPropertyValue('--lt-label'), 10);
 const pointer = (type: string, clientX: number) =>
   act(() => {
     seam().dispatchEvent(new PointerEvent(type, { clientX, button: 0, pointerId: 1, bubbles: true, cancelable: true }));

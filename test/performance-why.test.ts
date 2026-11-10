@@ -97,7 +97,7 @@ describe('performance why: wording', () => {
   it('describes the target and the action', () => {
     expect(describeTarget({ tag: 'button', role: 'button', name: 'Plan time' })).toBe("button 'Plan time'");
     expect(describeTarget({ tag: 'div' })).toBe('div');
-    expect(describeTarget(undefined)).toBe('');
+    expect(describeTarget()).toBe('');
     const click = { at: 0, interactionId: 1, eventType: 'click', duration: 8, inputDelay: 0, processing: 0, presentation: 8 };
     expect(interactionSentence({ ...click, target: { tag: 'button', name: 'Plan time' } })).toBe("Clicked button 'Plan time'");
     expect(interactionSentence(click)).toBe('Clicked');
