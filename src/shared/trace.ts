@@ -1,8 +1,3 @@
-/** Opaque distributed-trace identifiers carried by network headers; never credentials. */
-
-/** Headers a capture keeps so a request can be linked to a backend trace. */
-export const TRACE_HEADERS: readonly string[] = ['traceparent', 'x-trace-id', 'server-timing'];
-
 const TRACEPARENT = /^[\da-f]{2}-([\da-f]{32})-[\da-f]{16}-[\da-f]{2}$/i;
 const TRACE_ID = /^[\da-f]{32}$/i;
 const ZERO_TRACE = /^0{32}$/;

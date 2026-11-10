@@ -1,4 +1,4 @@
-/** Port of `src/shared/trace.ts` (the recorder bundle may only include `src/recorder/`); test/trace.test.ts keeps them equal. */
+// why: the recorder bundle may only include src/recorder/, so this ports src/shared/trace.ts; test/trace.test.ts keeps them equal.
 
 const TRACEPARENT = /^[\da-f]{2}-([\da-f]{32})-[\da-f]{16}-[\da-f]{2}$/i;
 const TRACE_ID = /^[\da-f]{32}$/i;

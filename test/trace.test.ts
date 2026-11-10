@@ -6,6 +6,7 @@ import { normalizeTraceId, traceIdFromHeaders, traceOnlyServerTiming, traceUrl }
 import { validateBranding } from '../src/server/branding.ts';
 import { loadSettings } from '../src/server/config.ts';
 import type { ReplayBundle } from '../src/shared/replay.ts';
+import { replay } from './fixtures.ts';
 
 const ID = '4bf92f3577b34da6a3ce929d0e0e4736';
 const TRACEPARENT = `00-${ID}-00f067aa0ba902b7-01`;
@@ -69,17 +70,11 @@ describe('recorder header allow-list', () => {
   });
 });
 
-function withNetwork(network: unknown[]): ReplayBundle {
-  return {
-    meta: { captured: { console: false, network: 'headers', performance: false, video: false } },
-    events: [],
-    console: [],
-    steps: [],
-    network,
-  } as unknown as ReplayBundle;
+function withNetwork(network: ReplayBundle['network']): ReplayBundle {
+  return { ...replay('trace'), network };
 }
 
-const entry = (extra: object) => ({
+const entry = (extra: Partial<ReplayBundle['network'][number]>): ReplayBundle['network'][number] => ({
   id: 'request-1',
   at: 0,
   duration: 1,
@@ -138,7 +133,7 @@ describe('recorder port', () => {
   const timing = [`db;dur=3, traceparent;desc="${TRACEPARENT}"`, 'db;dur=3', `traceid;desc=${ID}`, ''];
   const headers = [
     [[{ name: 'traceparent', value: TRACEPARENT }], [{ name: 'x-trace-id', value: 'b'.repeat(32) }]],
-    [[], [{ name: 'server-timing', value: timing[0]! }]],
+    [[], [{ name: 'server-timing', value: timing[0] ?? '' }]],
     [[{ name: 'traceparent', value: `00-${'0'.repeat(32)}-00f067aa0ba902b7-01` }], []],
     [[], []],
   ] as const;
@@ -153,7 +148,6 @@ describe('recorder port', () => {
   });
 
   it('normalizes IDs the same way', () => {
-    for (const value of [TRACEPARENT, ID.toUpperCase(), 'nope', undefined])
-      expect(recorder.normalizeTraceId(value)).toBe(normalizeTraceId(value));
+    for (const value of [TRACEPARENT, ID.toUpperCase(), 'nope', '']) expect(recorder.normalizeTraceId(value)).toBe(normalizeTraceId(value));
   });
 });
