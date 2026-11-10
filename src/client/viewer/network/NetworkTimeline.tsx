@@ -5,11 +5,12 @@ import { useElementWidth } from '../../hooks/use-element-width.ts';
 import { usePlayheadProgress } from '../../hooks/use-playhead-progress.ts';
 import { useRibbonBrush } from '../../hooks/use-ribbon-brush.ts';
 import { usePlayer } from '../../player.ts';
+import type { Lane } from '../performance/timeline-model.ts';
 import { LaneGutter, LaneRows, Playhead, RangeAndLit, TimeAxis, Crosshair } from '../performance/PerfTimelineParts.tsx';
 import { useRibbonCollapsed } from '../ribbon-collapse.ts';
 import type { RibbonRange } from '../TimeRibbon.tsx';
 import { bucketRequests, formatDuration, type NetworkRow, type RequestBucket } from './model.ts';
-import { buildNetworkLanes, NETWORK_LANE_NAMES, networkGutter } from './timeline-lanes.ts';
+import { buildNetworkLanes, networkGutter } from './timeline-lanes.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the timeline reuses the ribbon's playhead, veil and range styles, loaded with the lazy inspector.
 import '../time-ribbon.css';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the timeline's shared styles load with the lazy inspector chunk, not with every page.
@@ -36,6 +37,12 @@ function bucketUnder(event: PointerEvent<HTMLElement>, bins: number) {
   if (y < AXIS_PX || y > AXIS_PX + DENSITY_PX) return;
   return Math.min(bins - 1, Math.max(0, Math.floor(((event.clientX - box.left) / Math.max(1, box.width)) * bins)));
 }
+
+const countOf = (lanes: readonly Lane[], id: Lane['id']) => lanes.find((lane) => lane.id === id)?.items.length ?? 0;
+
+/** The gist for a screen reader: the table has each request, the marks are for the pointer. */
+const summary = (total: number, lanes: readonly Lane[]) =>
+  `Request timeline: ${total} requests, ${countOf(lanes, 'failed')} failed, ${countOf(lanes, 'request')} slow`;
 
 const noop = () => {};
 
@@ -65,10 +72,10 @@ function BucketTip({ bucket, bin, bins, span }: { bucket: RequestBucket; bin: nu
   );
 }
 
-function DensityLane({ buckets, total, hot }: { buckets: readonly RequestBucket[]; total: number; hot: number | undefined }) {
+function DensityLane({ buckets, hot }: { buckets: readonly RequestBucket[]; hot: number | undefined }) {
   const most = Math.max(1, ...buckets.map((bucket) => bucket.count));
   return (
-    <div className="pt-lane" data-lane="density" role="img" aria-label={`${NETWORK_LANE_NAMES.requests}: ${total} over the recording`}>
+    <div className="pt-lane" data-lane="density" aria-hidden="true">
       <svg className="nt-density" viewBox={`0 0 ${buckets.length} 100`} preserveAspectRatio="none" focusable="false" aria-hidden="true">
         {buckets.map((bucket) => {
           // why: a square-root scale keeps one request visible next to a burst of sixty.
@@ -131,7 +138,7 @@ export function NetworkTimeline({
   const hoverBin = pointer?.bin;
   const tipped = hoverBin === undefined ? undefined : buckets[hoverBin];
   return (
-    <div className="pt nt" data-testid="network-timeline">
+    <section className="pt nt" data-testid="network-timeline" aria-label={summary(rows.length, lanes)}>
       <div className="pt-body">
         <LaneGutter lanes={networkGutter(lanes)} withFrames={false} />
         <div
@@ -145,8 +152,8 @@ export function NetworkTimeline({
           onPointerLeave={() => setPointer(null)}
         >
           <TimeAxis span={span} width={width} hint={NETWORK_TIMELINE_STRINGS.hint} />
-          <LaneRows lanes={lanes} span={span} width={width} lit={lit} focusable onLight={onLight} onPick={noop}>
-            <DensityLane buckets={buckets} total={rows.length} hot={hoverBin} />
+          <LaneRows lanes={lanes} span={span} width={width} lit={lit} focusable pointerOnly onLight={onLight} onPick={noop}>
+            <DensityLane buckets={buckets} hot={hoverBin} />
           </LaneRows>
           <RangeAndLit lanes={lanes} lit={lit} span={span} shown={brush ?? range} brushing={Boolean(brush)} />
           <Crosshair hover={pointer?.at} frames={[]} span={span} collapsed={false} />
@@ -154,6 +161,6 @@ export function NetworkTimeline({
           <Playhead span={span} plot={plot} collapsed={false} />
         </div>
       </div>
-    </div>
+    </section>
   );
 }

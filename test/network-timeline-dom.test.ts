@@ -64,6 +64,18 @@ describe('the Network timeline', () => {
     expect(host.textContent).not.toContain('Click to seek');
   });
 
+  it('is one labelled region, with the marks left to the pointer', () => {
+    render();
+    expect(host.querySelector('section')?.getAttribute('aria-label')).toBe('Request timeline: 3 requests, 1 failed, 1 slow');
+    const marks = [...host.querySelectorAll<HTMLElement>('.pt-mark')];
+    expect(marks.length).toBeGreaterThan(0);
+    for (const mark of marks) {
+      expect(mark.getAttribute('aria-hidden')).toBe('true');
+      expect(mark.tabIndex).toBe(-1);
+      expect(mark.hasAttribute('aria-label')).toBe(false);
+    }
+  });
+
   it('renders nothing when collapsed, and remembers it per tab', () => {
     setRibbonCollapsed(true, 'network');
     render();

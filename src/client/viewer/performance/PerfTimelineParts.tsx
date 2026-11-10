@@ -102,6 +102,7 @@ export function LaneRows({
   width,
   lit,
   focusable,
+  pointerOnly = false,
   onLight,
   onPick,
   children,
@@ -112,6 +113,8 @@ export function LaneRows({
   width: number;
   lit: readonly string[];
   focusable: boolean;
+  /** Marks are for the pointer only: hidden from assistive tech and the tab order, since the page has another way to each one. */
+  pointerOnly?: boolean;
   onLight: (ids: readonly string[]) => void;
   onPick: (mark: LaneMark) => void;
 }) {
@@ -119,7 +122,14 @@ export function LaneRows({
     <div className="pt-lanes">
       {children}
       {lanes.map((lane) => (
-        <div key={lane.id} className="pt-lane" data-lane={lane.id} role="group" aria-label={lane.label}>
+        <div
+          key={lane.id}
+          className="pt-lane"
+          data-lane={lane.id}
+          role={pointerOnly ? undefined : 'group'}
+          aria-label={pointerOnly ? undefined : lane.label}
+          aria-hidden={pointerOnly || undefined}
+        >
           {clusterMarks(lane.items, span, width).map((mark) => (
             <LaneMarkButton
               key={mark.id}
@@ -127,7 +137,8 @@ export function LaneRows({
               span={span}
               width={width}
               lit={mark.items.some((item) => item.momentId && lit.includes(item.momentId))}
-              focusable={focusable}
+              focusable={focusable && !pointerOnly}
+              pointerOnly={pointerOnly}
               onLight={onLight}
               onPick={onPick}
             />

@@ -86,6 +86,7 @@ export function LaneMarkButton({
   width,
   lit,
   focusable,
+  pointerOnly,
   onLight,
   onPick,
 }: {
@@ -94,6 +95,7 @@ export function LaneMarkButton({
   width: number;
   lit: boolean;
   focusable: boolean;
+  pointerOnly?: boolean;
   onLight: (ids: readonly string[]) => void;
   onPick: (mark: LaneMark) => void;
 }) {
@@ -109,7 +111,8 @@ export function LaneMarkButton({
           <button
             type="button"
             tabIndex={focusable ? undefined : -1}
-            aria-label={markLabel(mark)}
+            aria-label={pointerOnly ? undefined : markLabel(mark)}
+            aria-hidden={pointerOnly || undefined}
             onPointerDown={(event) => event.stopPropagation()}
             onPointerEnter={() => onLight(ids)}
             onPointerLeave={() => onLight([])}
