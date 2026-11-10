@@ -84,6 +84,26 @@ describe('upload recovery', () => {
   });
 });
 
+describe('notice errors', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('uses a neutral lock instead of the red alert', () => {
+    const ui = createDefaultUi();
+    ui.showResult({
+      status: 'error',
+      error: Object.assign(new Error('x'), { notice: true, userMessage: 'Sign in to upload.' }),
+      retry() {},
+    });
+    expect(root().querySelector('.icon-lock')).not.toBeNull();
+    expect(root().querySelector('.icon-alert')).toBeNull();
+    ui.showResult({ status: 'error', error: new Error('x'), retry() {} });
+    expect(root().querySelector('.icon-alert')).not.toBeNull();
+    ui.dismiss();
+  });
+});
+
 describe('recovery pending state', () => {
   afterEach(() => {
     document.body.innerHTML = '';
