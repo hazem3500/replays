@@ -124,7 +124,7 @@ function popupOpen() {
 }
 
 /** Motion owns snapshot morphs and interruption; stable part names pair nested suite thumbnails across layouts. */
-export function feedTransition(update: () => void, layers: 'item' | 'poster' = 'item') {
+export function feedTransition(update: () => void, layers: 'item' | 'poster' | 'instant' = 'item') {
   const current = ++generation;
   let applied = false;
   const apply = () => {
@@ -134,6 +134,8 @@ export function feedTransition(update: () => void, layers: 'item' | 'poster' = '
     update();
   };
   if (
+    // why: an "instant" change (a tab switch) is a filter over the loaded list; no page-level capture, so no cross-fade.
+    layers === 'instant' ||
     typeof document.startViewTransition !== 'function' ||
     reducedMotion() ||
     popupOpen() ||
