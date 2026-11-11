@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import type { ReplayBundle } from '../shared/replay.ts';
 import { assertReplayId } from '../shared/replay.ts';
-import { MAX_SUMMARY_LENGTH, type ReviewRunStatus, type ReviewSuite } from '../shared/review-suite.ts';
+import { MAX_SUMMARY_LENGTH, measureMsOf, type ReviewRunStatus, type ReviewSuite } from '../shared/review-suite.ts';
 import { isTerminal } from './lifecycle.ts';
 import type { RunExpectations, SuitePlan, SuitePlanRun } from './plan.ts';
 import { ensureSuite, putRun } from './service.ts';
@@ -34,6 +34,8 @@ export interface RecordedRun {
   bundle: ReplayBundle;
   /** An earlier recording found on disk and used instead of a new capture. */
   reused: boolean;
+  /** When each labelled step completed, on the recording's clock; absent for a reused recording. */
+  stepEnds?: ReadonlyArray<{ label: string; at: number }> | undefined;
 }
 
 export interface RecordDeps {
@@ -99,6 +101,7 @@ interface Attempt {
   bundle: ReplayBundle;
   base: RunOutcome;
   problems: string[];
+  stepEnds?: RecordedRun['stepEnds'] | undefined;
 }
 
 interface Linked {
@@ -133,6 +136,7 @@ class SuiteRecorder {
           source: plan.source,
           people: plan.people,
           summary: plan.summary,
+          baseline: plan.baseline,
           createdAt: plan.createdAt,
         },
         this.now,
@@ -145,10 +149,14 @@ class SuiteRecorder {
     return connection && this.suite ? { connection, suite: this.suite } : undefined;
   }
 
-  private async mark(run: SuitePlanRun, update: { status: ReviewRunStatus; summary?: string | undefined; title?: string }) {
+  private async mark(
+    run: SuitePlanRun,
+    update: { status: ReviewRunStatus; summary?: string | undefined; title?: string; measureMs?: number | undefined },
+  ) {
     const link = this.linked();
     if (!link) return;
-    this.suite = (await putRun(link.connection.api, link.suite, { id: run.id, ...update }, this.now)).suite;
+    const { group, target, measure } = run;
+    this.suite = (await putRun(link.connection.api, link.suite, { id: run.id, group, target, measure, ...update }, this.now)).suite;
   }
 
   private finishedOutcome(run: SuitePlanRun): RunOutcome | undefined {
@@ -182,7 +190,7 @@ class SuiteRecorder {
   }
 
   private async upload(attempt: Attempt, link: Linked): Promise<RunOutcome> {
-    const { run, bundle, base, problems } = attempt;
+    const { run, bundle, base, problems, stepEnds } = attempt;
     const retry = this.deps.retryCommand(run);
     const verdict = base.status === 'failed' ? 'failed' : 'passed';
     const attached = link.suite.runs.find((item) => item.id === run.id)?.replayId === bundle.meta.id;
@@ -194,7 +202,10 @@ class SuiteRecorder {
     }
     const summary = composeSummary(run, problems, 'Expectations not met:');
     try {
-      await this.mark(run, { status: verdict, summary });
+      const measureMs = run.measure
+        ? (stepEnds?.find((end) => end.label === run.measure)?.at ?? measureMsOf(bundle, run.measure))
+        : undefined;
+      await this.mark(run, { status: verdict, summary, measureMs });
       return { ...base, uploaded: true, replayUrl: url, ...(summary ? { summary } : {}) };
     } catch (error) {
       return {
@@ -235,7 +246,7 @@ class SuiteRecorder {
       ...(problems.length ? { error: `expectations not met: ${problems.join('; ')}` } : {}),
     };
     const link = this.linked();
-    return link ? this.upload({ run, bundle: recorded.bundle, base, problems }, link) : base;
+    return link ? this.upload({ run, bundle: recorded.bundle, base, problems, stepEnds: recorded.stepEnds }, link) : base;
   }
 }
 

@@ -811,6 +811,21 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-run .run-copy { grid-template-columns: minmax(0, 1fr); }
 .run-label { min-width: 0; display: -webkit-box; overflow: hidden; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .run-meta { min-width: 0; grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; color: var(--text-tertiary); font-size: var(--text-2xs); white-space: nowrap; }
+.suite-group + .suite-group { margin-top: 10px; }
+.suite-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; margin: 0; padding: 6px 10px 4px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; line-height: 1.4; }
+.suite-group-name { color: var(--text); font-weight: 600; font-size: var(--text-xs); }
+.suite-group-name { flex-basis: 100%; }
+.suite-baseline { color: var(--text-tertiary); font-weight: 400; font-style: italic; }
+.suite-target .run-meta { flex-direction: column; align-items: flex-start; gap: 1px; }
+.suite-target .run-meta > span + span::before { content: none; }
+.run-meta strong { color: var(--text-secondary); font-weight: 600; }
+.target-delta { grid-column: 2; grid-row: 1; font-size: var(--text-2xs); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.target-delta[data-tone="good"], .run-headline [data-tone="good"] { color: var(--success); }
+.target-delta[data-tone="poor"], .run-headline [data-tone="poor"] { color: var(--danger); }
+.suite-samples { display: grid; gap: 2px; margin: 2px 0 4px 18px; }
+.suite-sample { min-height: 28px; padding-block: 4px; }
+.run-headline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; margin: 0; padding: 6px 14px; border-bottom: 1px solid var(--line); color: var(--text-secondary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.run-headline strong { color: var(--text); font-weight: 600; }
 .run-perf { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0 8px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .run-perf strong { color: var(--text-secondary); font-weight: 600; }
 .run-perf [data-verdict="needs-work"] strong { color: var(--warning); }

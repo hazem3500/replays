@@ -338,3 +338,41 @@ test.describe('Add a recording', () => {
     await expect(page.getByTestId('compare-with')).toHaveCount(0);
   });
 });
+
+const timed = (group: string, target: string, ms: number) => ({ group, target, measure: 'Entries visible', measureMs: ms });
+
+test('a grouped suite lists targets per group with medians and the change from the baseline', async ({ page }) => {
+  const suite = uniqueId('suite');
+  const id = (name: string) => `${suite}-${name}`;
+  await createSuite(
+    page.request,
+    server().origin,
+    suite,
+    [
+      { id: 'a1', label: 'Cold open: main 1', status: 'passed', replayId: id('a1'), ...timed('Cold open', 'main', 2600) },
+      { id: 'a2', label: 'Cold open: main 2', status: 'passed', replayId: id('a2'), ...timed('Cold open', 'main', 2800) },
+      { id: 'b1', label: 'Cold open: change 1', status: 'passed', replayId: id('b1'), ...timed('Cold open', '#6879', 1900) },
+      { id: 'b2', label: 'Cold open: change 2', status: 'passed', replayId: id('b2'), ...timed('Cold open', '#6879', 2000) },
+      { id: 'b3', label: 'Cold open: change 3', status: 'passed', replayId: id('b3'), ...timed('Cold open', '#6879', 2100) },
+      { id: 'c1', label: 'Smoke', status: 'passed', replayId: id('c1') },
+    ],
+    undefined,
+    { baseline: 'main' },
+  );
+  await page.goto(`${server().origin}/s/${suite}`);
+  const sidebar = page.getByRole('complementary', { name: 'Review suite' });
+  await expect(sidebar.getByTestId('suite-group-head')).toHaveText([/Cold open.*main.*baseline.*vs.*#6879/, /Other runs/]);
+  const summaries = sidebar.getByTestId('target-summary');
+  await expect(summaries.nth(0)).toContainText('2 samples');
+  await expect(summaries.nth(1)).toContainText('3 samples');
+  await expect(summaries.nth(1)).toContainText('Entries visible');
+  await expect(summaries.nth(1)).toContainText('2.0 s');
+  await expect(sidebar.getByTestId('target-delta')).toHaveText('−26%');
+
+  await sidebar.getByRole('button', { name: /#6879, 3 samples/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/r/${id('b1')}$`));
+  await expect(sidebar.getByRole('button', { name: /sample 3, 2\.1 s/ })).toBeVisible();
+  await expect(page.getByTestId('run-headline')).toContainText('Cold open on #6879: Entries visible after 1.9 s');
+  await expect(page.getByTestId('run-headline')).toContainText('median of 3: 2.0 s');
+  await expect(page.getByTestId('run-headline')).toContainText('main 2.7 s (−26%)');
+});

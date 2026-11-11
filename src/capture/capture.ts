@@ -286,6 +286,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
   const rawVideoPath = join(scratch, 'session.mp4');
   const rawSteps: Array<ReplayStep & { epoch: number }> = [];
   const shotFiles: Array<{ name: string; file: string; step: number }> = [];
+  const stepEnds: Array<{ label: string; epoch: number }> = [];
   let session: RecorderSession | undefined;
   let release: (() => void) | undefined;
   try {
@@ -338,6 +339,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       if (step.kind === 'shot')
         shotFiles.push({ name: step.name, file: await saveShot(driver, args.output, step.name), step: rawSteps.length });
       else await driver.step(step);
+      if (step.label) stepEnds.push({ label: step.label, epoch: Date.now() });
       if (compressWaits && isPacingWait(step)) {
         const span = { from: startedAt, to: Date.now() };
         pacingSpans.push(span);
@@ -446,6 +448,10 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       duration: bundle.meta.duration,
       video: args.video ? join(args.output, 'session.mp4') : undefined,
       ...(shots.length ? { shots } : {}),
+      // why: a labelled step's completion on the recording's clock, before the pause that follows it (the suite's `measure`).
+      ...(stepEnds.length
+        ? { stepEnds: stepEnds.map(({ label, epoch }) => ({ label, at: replayClock(Math.max(0, epoch - origin)) })) }
+        : {}),
       ...(stoppedBy ? { stoppedBy } : {}),
       networkRequested: args.network ?? 'headers',
       networkMode: args.network === 'off' ? 'off' : bodiesRecorded ? 'bodies' : 'headers',

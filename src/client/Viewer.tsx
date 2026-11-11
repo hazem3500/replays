@@ -129,6 +129,7 @@ export function Viewer({
   onCompareWith,
   suiteProfile,
   compareSummary,
+  headline,
   playIntent,
 }: {
   bundle: ReplayBundle;
@@ -180,6 +181,8 @@ export function Viewer({
   suiteProfile?: string | undefined;
   /** Comparing: the per-recording chips the Compare view's headline shows. */
   compareSummary?: ReactNode;
+  /** One line above the player: what this run measured (a grouped suite run). */
+  headline?: ReactNode;
   /** A suite run: whether this run should start playing as soon as it is ready (a switch carries "was playing"). */
   playIntent?: PlayIntent | undefined;
 }) {
@@ -694,6 +697,7 @@ export function Viewer({
           style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
         >
           <section ref={playerRegion} className="player-region" aria-label="Replay">
+            {headline}
             {defaults.headline.length ? (
               <Suspense fallback={null}>
                 <ViewHeadline
