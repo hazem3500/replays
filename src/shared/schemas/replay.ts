@@ -23,6 +23,7 @@ export const replaySummarySchema = z.looseObject({
   steps: z.number(),
   consoleErrors: z.number(),
   failedRequests: z.number(),
+  firstError: z.exactOptional(z.object({ kind: z.enum(['console', 'request']), message: z.string() })),
   source: z.enum(['agent', 'human']),
   summaryVersion: z.exactOptional(z.number()),
   viewport: z.exactOptional(z.object({ width: z.number(), height: z.number() })),

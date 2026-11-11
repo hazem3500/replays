@@ -210,6 +210,18 @@ export function bucketRequests(rows: readonly NetworkRow[], duration: number, bi
   return buckets;
 }
 
+/** A step's name without the page's host: "Open https://host/path?x" reads "Open /path"; other labels stay as they are. */
+export function stepName(label: string) {
+  return label.replace(/^(Open )(https?:\/\/\S+)$/, (whole, verb: string, address: string) => {
+    try {
+      const { pathname } = new URL(address);
+      return `${verb}${pathname}`;
+    } catch {
+      return whole;
+    }
+  });
+}
+
 /**
  * The action a moment belongs to: the latest step that started at or before it, else the first one after it. Waits
  * ("Wait for the page") are skipped when an action exists, since the action is what made the request.

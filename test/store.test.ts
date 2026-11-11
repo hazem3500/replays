@@ -158,6 +158,7 @@ describe('replay summaries', () => {
       steps: 1,
       consoleErrors: 1,
       failedRequests: 1,
+      firstError: { kind: 'request', message: 'GET https://example.com/x 503' },
       source: 'agent',
       summaryVersion: SUMMARY_VERSION,
       viewport: { width: 1440, height: 900 },

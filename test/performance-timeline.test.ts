@@ -186,6 +186,14 @@ describe('stats', () => {
     expect(groupNote('loading', [notCaptured]).reason).toContain('Not captured');
   });
 
+  it('says nothing about a missing paint, or about long tasks the table lists', () => {
+    expect(vitalStat({ id: 'lcp', missing: 'none' }).absent).toBeUndefined();
+    expect(vitalStat({ id: 'fcp', missing: 'none' }).absent).toBeUndefined();
+    expect(vitalStat({ id: 'task', missing: 'none' }).absent).toBe('No long tasks were reported');
+    expect(vitalStat({ id: 'task', missing: 'none', listed: true }).absent).toBeUndefined();
+    expect(vitalStat({ id: 'tbt', missing: 'none', listed: true }).absent).toBeUndefined();
+  });
+
   it('uses the web-vitals thresholds for paints', () => {
     expect([BUDGETS.fcp, BUDGETS.lcp]).toEqual([
       [1800, 3000],

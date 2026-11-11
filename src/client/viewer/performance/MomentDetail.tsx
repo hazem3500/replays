@@ -3,7 +3,7 @@ import { usePlayer } from '../../player.ts';
 import { type LocalItem, LocalTimeline } from '../LocalTimeline.tsx';
 import { DetailHead } from '../network/DetailHead.tsx';
 import { RequestLabel } from '../network/RequestLabel.tsx';
-import { formatDuration, type NetworkRow, stepAt } from '../network/model.ts';
+import { formatDuration, type NetworkRow, stepAt, stepName } from '../network/model.ts';
 import type { RibbonTone } from '../TimeRibbon.tsx';
 import { BlockingScripts } from './BlockingScripts.tsx';
 import { InteractionBreakdown } from './InteractionBreakdown.tsx';
@@ -170,7 +170,7 @@ function MomentFacts({
           <dt>{STRINGS.during}</dt>
           <dd>
             <button type="button" className="pp-link" onClick={() => player.seek(step.at)}>
-              {step.label}
+              {stepName(step.label)}
             </button>
             <span className="np-aside">{STRINGS.after(Math.max(0, moment.at - step.at))}</span>
           </dd>

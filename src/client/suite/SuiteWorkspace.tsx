@@ -101,6 +101,14 @@ function runErrors(run: ReviewSuiteIndexRun) {
   return (run.replay?.consoleErrors ?? 0) + (run.replay?.failedRequests ?? 0);
 }
 
+const ERROR_KIND = { console: 'Console error', request: 'Failed request' } as const;
+
+/** What the run's first error was, for the count's tooltip; undefined for a summary that only has counts. */
+function firstErrorTitle(run: ReviewSuiteIndexRun) {
+  const first = run.replay?.firstError;
+  return first ? `${ERROR_KIND[first.kind]}: ${first.message}` : undefined;
+}
+
 function sequenceLabel(run: Pick<ReviewSuiteIndexRun, 'sequence'>) {
   return String(run.sequence).padStart(2, '0');
 }
@@ -602,7 +610,11 @@ function RunCopy({
         {run.duration !== undefined ? <span className="run-duration">{formatClock(run.duration)}</span> : null}
         <span className="run-meta">
           <span className={`run-status tone-${tone}`}>{status}</span>
-          {errors > 0 ? <span className="run-errors">{plural(errors, 'error')}</span> : null}
+          {errors > 0 ? (
+            <span className="run-errors" title={firstErrorTitle(run)}>
+              {plural(errors, 'error')}
+            </span>
+          ) : null}
         </span>
         {metrics ? <RunPerf metrics={metrics} /> : null}
       </span>

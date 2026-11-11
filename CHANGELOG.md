@@ -5,7 +5,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
-## [Unreleased]
+- Viewer: the Performance tab no longer contradicts itself. A paint that was not recorded shows nothing when the other paint was (no more "Recording started after the largest paint" beside a recorded First paint), and "No long tasks were reported" no longer appears while the table lists long tasks. The long-task table's During column names the step without the page's host ("Open /reports" instead of "Open https://host/reports"). Suite run rows say what the first error was: hover "1 error" for "Console error: ..." or "Failed request: GET ... 500". Replay summaries gain `firstError` (summary version 11).
 
 - Viewer: a paused replay at 0:00, and the opening still on the list, now show the frame at the first contentful paint instead of the first snapshot, which for CLI recordings was often blank or unstyled (a cookie dialog before its CSS loaded). The playhead and timeline still start at 0:00 and play starts from there. Opening stills are made again (version 2).
 - Capture: CLI recordings now record frame rate, so the player and suite runs show FPS instead of n/a.

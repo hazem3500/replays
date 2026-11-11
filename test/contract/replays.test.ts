@@ -49,7 +49,7 @@ const listAnswer = {
       id: 'contract-a',
       source: 'agent',
       steps: 1,
-      summaryVersion: 10,
+      summaryVersion: 11,
       timeline: {
         errors: [],
         steps: [0],
@@ -93,7 +93,7 @@ const listBrAnswer = {
       id: 'contract-a',
       source: 'agent',
       steps: 1,
-      summaryVersion: 10,
+      summaryVersion: 11,
       timeline: {
         errors: [],
         steps: [0],

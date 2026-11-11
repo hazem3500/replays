@@ -6,7 +6,7 @@ import { useRevealRow } from '../../hooks/use-reveal-row.ts';
 import { useRowHeight } from '../../hooks/use-row-height.ts';
 import { usePlayhead } from '../../player.ts';
 import { useWindowedRows } from '../../windowing.ts';
-import { formatDuration, stepAt } from '../network/model.ts';
+import { formatDuration, stepAt, stepName } from '../network/model.ts';
 import { HEADER_HEIGHT, SeekTime } from '../TrackList.tsx';
 import { BUDGETS, type Moment, type MomentOrder, VERDICT_WORDS } from './model.ts';
 import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
@@ -130,7 +130,7 @@ export function MomentList({
                 rowIndex={start + offset + 2}
                 selected={item.id === selected}
                 lit={hovered.includes(item.id)}
-                why={[stepAt(steps, item.at)?.label, explain(item)].filter(Boolean).join(' · ')}
+                why={[stepName(stepAt(steps, item.at)?.label ?? ''), explain(item)].filter(Boolean).join(' · ')}
                 onSelect={onSelect}
                 onStep={step}
               />
