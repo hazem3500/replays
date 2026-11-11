@@ -56,7 +56,7 @@ export interface OpenHint {
 }
 
 /** The opening still's format version (src/server/posters.ts); bumping it refetches every cached still. */
-export const OPEN_STILL_VERSION = 1;
+export const OPEN_STILL_VERSION = 2;
 
 /** A replay's opening still by id: what the player paints first, for loads that no card's poster describes. */
 function openStillUrl(id: string) {

@@ -21,7 +21,7 @@ import { traceHeaders } from './tracing.ts';
  *   `<file>.json` sidecar says whether it was cut short and how much it covers.
  * One job at a time (posters before previews), only while no video export is
  * running, so list media never slow an export. Made in a local temporary directory,
- * then stored (src/server/storage/) as <id>/poster.v2.jpg, open.v1.jpg and preview.v2.mp4, pruned with
+ * then stored (src/server/storage/) as <id>/poster.v2.jpg, open.v2.jpg and preview.v2.mp4, pruned with
  * the replay. List requests never wait for them. A poster taken at a non-default moment (a purpose's `poster`, a
  * plugin's `posterAt`) is stored as poster.v2-<moment>.jpg (ReplayStore.posterKey), so a changed choice remakes it.
  */
