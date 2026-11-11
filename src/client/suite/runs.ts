@@ -1,6 +1,7 @@
 import { type FrameVerdict, fpsVerdict, type ReplayPerfSummary } from '../../shared/frame-timing.ts';
 import type { ReviewSuiteIndexRun } from '../../shared/review-suite.ts';
 import { tileColour } from '../compare/tiles.ts';
+import { BUDGETS, verdictFor } from '../viewer/performance/model.ts';
 
 type RunRecording = Pick<ReviewSuiteIndexRun, 'replayId' | 'replay'>;
 
@@ -90,8 +91,15 @@ export function runMetrics(perf: ReplayPerfSummary | undefined): RunMetric[] {
   const metrics: RunMetric[] = [];
   if (perf.fpsP50 !== undefined) metrics.push(fpsMetric('fps', 'FPS', perf.fpsP50));
   if (perf.fpsMin !== undefined) metrics.push(fpsMetric('min', 'min', perf.fpsMin));
-  if (perf.longestTask !== undefined) metrics.push({ id: 'task', label: 'task', value: millis(perf.longestTask) });
-  if (perf.blocking !== undefined) metrics.push({ id: 'tbt', label: 'TBT', value: millis(perf.blocking) });
+  if (perf.longestTask !== undefined)
+    metrics.push({
+      id: 'task',
+      label: 'Longest task',
+      value: millis(perf.longestTask),
+      verdict: verdictFor(perf.longestTask, BUDGETS.task),
+    });
+  if (perf.blocking !== undefined)
+    metrics.push({ id: 'tbt', label: 'Blocking', value: millis(perf.blocking), verdict: verdictFor(perf.blocking, BUDGETS.tbt) });
   return metrics;
 }
 

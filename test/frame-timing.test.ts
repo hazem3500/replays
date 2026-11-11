@@ -108,8 +108,8 @@ describe('run metrics', () => {
     expect(runMetrics({ fpsP50: 58.4, fpsMin: 22, longestTask: 180, blocking: 1480 })).toEqual([
       { id: 'fps', label: 'FPS', value: '58', verdict: 'good' },
       { id: 'min', label: 'min', value: '22', verdict: 'poor' },
-      { id: 'task', label: 'task', value: '180 ms' },
-      { id: 'tbt', label: 'TBT', value: '1.5 s' },
+      { id: 'task', label: 'Longest task', value: '180 ms', verdict: 'needs-work' },
+      { id: 'tbt', label: 'Blocking', value: '1.5 s', verdict: 'poor' },
     ]);
     expect(runMetrics({ longestTask: 90 }).map((metric) => metric.id)).toEqual(['task']);
   });

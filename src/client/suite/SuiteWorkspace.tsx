@@ -505,12 +505,7 @@ function SuiteSidebar({
                 Kept by {keep.retention?.kept?.by ?? 'someone'}
               </p>
             ) : null}
-            {suite.summary ? (
-              <details className="suite-sidebar-summary" open data-testid="suite-summary">
-                <summary>Review summary</summary>
-                <SummaryText summary={suite.summary} />
-              </details>
-            ) : null}
+            {suite.summary ? <SidebarSummary summary={suite.summary} /> : null}
           </>
         )}
       </div>
@@ -615,9 +610,49 @@ function RunCopy({
   );
 }
 
-/** A performance-focused suite's comparison row: what the run recorded, and a plain note for what it did not. */
+/** The suite's review summary, a few lines tall until opened, so the runs stay in view. */
+function SidebarSummary({ summary }: { summary: string }) {
+  const [open, setOpen] = useState(false);
+  const [clipped, setClipped] = useState(false);
+  const body = useRef<HTMLDivElement>(null);
+  // why: the sidebar width and the text both change what fits, so it is measured whenever the box resizes.
+  useLayoutEffect(() => {
+    const node = body.current;
+    const measure = () => setClipped(node ? node.scrollHeight > node.clientHeight + 1 : false);
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (node) observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <section
+      className="suite-sidebar-summary"
+      data-testid="suite-summary"
+      data-open={open || undefined}
+      data-clipped={clipped || undefined}
+      aria-label="Review summary"
+    >
+      <h2>Review summary</h2>
+      <div ref={body} id="suite-summary-text">
+        <SummaryText summary={summary} />
+      </div>
+      {clipped || open ? (
+        <button
+          type="button"
+          className="suite-summary-toggle"
+          aria-expanded={open}
+          aria-controls="suite-summary-text"
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? 'Show less' : 'Show more'}
+        </button>
+      ) : null}
+    </section>
+  );
+}
+
+/** A performance-focused suite's comparison row: only what the run recorded. */
 function RunPerf({ metrics }: { metrics: RunMetric[] }) {
-  const noFps = metrics.length > 0 && !metrics.some((metric) => metric.id === 'fps');
   return (
     <span className="run-perf" data-testid="run-perf">
       {metrics.map((metric) => (
@@ -626,7 +661,6 @@ function RunPerf({ metrics }: { metrics: RunMetric[] }) {
         </span>
       ))}
       {metrics.length === 0 ? <span>No performance data</span> : null}
-      {noFps ? <span>FPS not recorded</span> : null}
     </span>
   );
 }
