@@ -201,15 +201,47 @@ jobs:
         with:
           changed-files: ${{ steps.changed.outputs.files }}
 
+  # why: every shard used to rebuild the same viewer and server bundle (about 50 s each); one build is shared instead.
+  e2e-build:
+    name: End-to-end build
+    needs: smoke-scope
+    if: ${{ !cancelled() && needs.smoke-scope.outputs.e2e_shards != '' && needs.smoke-scope.outputs.e2e_shards != '[]' }}
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: ./.github/actions/task-cache
+        with:
+          namespace: ci-e2e-build
+      - run: pnpm exec vp run cached:build --logLevel warn && pnpm exec vp run cached:start --logLevel warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e2e-dist-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            dist/client/
+            dist/start/
+          include-hidden-files: true
+          retention-days: 1
+          compression-level: 1
+
   e2e:
     name: End-to-end (${{ matrix.shard }}/3)
-    needs: smoke-scope
+    needs: [smoke-scope, e2e-build]
     if: ${{ !cancelled() && needs.smoke-scope.outputs.e2e_shards != '' && needs.smoke-scope.outputs.e2e_shards != '[]' }}
     strategy:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.smoke-scope.outputs.e2e_shards) }}
-    runs-on: ubicloud-standard-2
+    # why: four cores run four workers; each shard now spends its time on tests instead of waiting on two cores.
+    runs-on: ubicloud-standard-4
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -220,20 +252,26 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - id: install
-        run: pnpm install --frozen-lockfile --prefer-offline
-      - uses: ./.github/actions/task-cache
-        with:
-          namespace: ci-e2e-shards-${{ matrix.shard }}
-      # why: the runner's package index usually resolves FFmpeg already; refresh it only when that install fails.
+      # why: only the encoded-export spec needs FFmpeg, so it installs in the background while dependencies and the browser are prepared.
       - name: Install FFmpeg for encoded export coverage
         run: >-
-          sudo apt-get install --no-install-recommends -y ffmpeg
-          || { sudo apt-get update && sudo apt-get install --no-install-recommends -y ffmpeg; }
+          nohup bash -c 'sudo apt-get install --no-install-recommends -y ffmpeg
+          || { sudo apt-get update && sudo apt-get install --no-install-recommends -y ffmpeg; }' > "$RUNNER_TEMP/ffmpeg.log" 2>&1 &
+      - id: install
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: actions/download-artifact@v4
+        with:
+          name: e2e-dist-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist
       - id: browser
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         uses: ./.github/actions/browser
-      - run: pnpm test:e2e --shard=${{ matrix.shard }}/3
+      - name: Wait for FFmpeg
+        run: |
+          # why: the cursor export spec shells out to ffmpeg, so the background install must have landed before any spec starts.
+          for i in $(seq 1 120); do command -v ffmpeg > /dev/null && exit 0; sleep 1; done
+          cat "$RUNNER_TEMP/ffmpeg.log"; exit 1
+      - run: pnpm exec playwright test --shard=${{ matrix.shard }}/3
         env:
           # GitHub's Ubuntu runners block unprivileged user namespaces, so Chromium's own sandbox cannot start
           # there. Server-side rendering runs it with --no-sandbox, like the Docker image does.
@@ -255,7 +293,7 @@ jobs:
         id: spa
         if: ${{ !cancelled() && matrix.shard == 3 && steps.install.outcome == 'success' && steps.browser.outcome == 'success' }}
         run: >-
-          pnpm test:e2e e2e/smoke.spec.ts e2e/navigation.spec.ts e2e/skeleton.spec.ts e2e/branding-and-base-path.spec.ts
+          pnpm exec playwright test e2e/smoke.spec.ts e2e/navigation.spec.ts e2e/skeleton.spec.ts e2e/branding-and-base-path.spec.ts
           e2e/hosts-and-static.spec.ts e2e/sign-in.spec.ts e2e/settings-mobile.spec.ts e2e/suite-workspace.spec.ts
         env:
           REPLAYS_SSR: '0'
@@ -279,16 +317,18 @@ jobs:
   # The one required end-to-end check: green when every selected shard passed, or when none was needed or all were reused.
   e2e-result:
     name: End-to-end result
-    needs: [smoke-scope, e2e]
+    needs: [smoke-scope, e2e-build, e2e]
     if: ${{ always() }}
     runs-on: ubicloud-standard-2
     timeout-minutes: 2
     steps:
       - env:
           SCOPE: ${{ needs.smoke-scope.result }}
+          BUILD: ${{ needs.e2e-build.result }}
           E2E: ${{ needs.e2e.result }}
         run: |
-          echo "Scope: $SCOPE, end-to-end: $E2E"
+          echo "Scope: $SCOPE, build: $BUILD, end-to-end: $E2E"
+          case "$BUILD" in success | skipped) ;; *) echo "::error::End-to-end build $BUILD."; exit 1 ;; esac
           case "$SCOPE" in success | skipped) ;; *) echo '::error::Suite selection did not finish.'; exit 1 ;; esac
           case "$E2E" in success | skipped) ;; *) echo "::error::End-to-end $E2E."; exit 1 ;; esac
 
@@ -432,7 +472,7 @@ jobs:
   # A failing main is loud: the run is red and one tracking issue gets a comment per failing run; green closes it.
   main-health:
     name: Main health
-    needs: [gate, smoke-scope, e2e, browser, docker]
+    needs: [gate, smoke-scope, e2e-build, e2e, browser, docker]
     if: ${{ always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
     runs-on: ubicloud-standard-2
     timeout-minutes: 5

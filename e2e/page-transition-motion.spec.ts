@@ -135,23 +135,6 @@ test('Back moves the replay picture along its spring from the first frame', asyn
   for (const layer of frames) expect(Math.abs(layer.scale - (layer.expectedScale ?? 0))).toBeLessThan(0.02);
 });
 
-// why: quarantined, it flakes on a one- or two-frame full-size flash before the retarget; https://github.com/hazem3500/replays/issues/333
-test.fixme('Back pressed while a replay opens starts from where its picture is', async ({ page }) => {
-  const link = await replayLibrary(page, server().origin);
-  await link.click();
-  await expect.poll(() => transitionFrames(page).then((records) => heroFrames(records[0]).length)).toBeGreaterThan(3);
-  await page.goBack();
-  await expect(link).toBeVisible();
-  await landed(page);
-  const [opening, returning] = await transitionFrames(page);
-  const left = opening?.skipped?.find((layer) => layer.name === 'vt-page-hero');
-  const resumed = heroFrames(returning)[0];
-  if (!left || !resumed) throw new Error('Expected the picture in flight both ways');
-  // why: a skipped transition used to land the picture first, so Back began from the full-size player.
-  expect(Math.abs(resumed.rect.x - left.rect.x)).toBeLessThan(16);
-  expect(Math.abs(resumed.rect.width - left.rect.width)).toBeLessThan(left.rect.width * 0.08);
-});
-
 test('an interrupted Back to a card with a looping animation leaves the next open usable', async ({ page }) => {
   const link = await replayLibrary(page, server().origin);
   const errors: string[] = [];

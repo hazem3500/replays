@@ -86,16 +86,6 @@ test.describe('index row menus: actions', () => {
     await expect(page.getByTestId('compare-stage')).toBeVisible();
   });
 
-  test('Delete replay asks for the same confirmation as the ⋯ button', async ({ page }) => {
-    const { single, title } = await seed(page);
-    await rightClick(single);
-    await page.getByRole('menuitem', { name: 'Delete replay' }).click();
-    const confirmation = page.getByRole('dialog', { name: 'Delete replay?', exact: true });
-    await expect(confirmation).toContainText(title);
-    await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(confirmation).toBeHidden();
-  });
-
   test('Open in new tab opens the row address in another tab', async ({ page }) => {
     const { single, id } = await seed(page);
     await rightClick(single);

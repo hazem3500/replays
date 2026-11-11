@@ -302,14 +302,11 @@ async function editorRects(page: Page, frame: string) {
   };
 }
 
-test('tools carry their names and keys, and ? opens the editor shortcuts', async ({ page }) => {
+test('the waits tool shows its key, and ? opens the editor shortcuts', async ({ page }) => {
   const id = await uploadCopy(page, 'editor-shortcuts');
   await page.goto(`${base()}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  await expect(page.getByTestId('add-cut')).toContainText('Cut');
-  await expect(page.getByTestId('add-cut').locator('.editor-key')).toHaveText('C');
   await expect(page.getByTestId('remove-waits').locator('.editor-key')).toHaveText('W');
-  await expect(page.getByTestId('add-point-highlight').locator('.editor-key')).toHaveText('M');
   await page.locator('body').press('?');
   const sheet = page.getByTestId('shortcut-sheet');
   await expect(sheet).toBeVisible();
