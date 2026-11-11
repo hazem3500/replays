@@ -42,18 +42,22 @@ export function follow(transition: PageTransition) {
 }
 
 const waiting = new Map<PageTransition, Set<() => void>>();
+/** why: the browser's own transition (document.activeViewTransition) cannot be abandoned, so no wait outlives this. */
+const WAIT_CAP_MS = 3000;
 
-/** Waits for `promise` or for the transition to be abandoned, whichever comes first. */
+/** Waits for `promise`, for the transition to be abandoned or for WAIT_CAP_MS, whichever comes first. */
 function untilSettledOrAbandoned(transition: PageTransition, promise: Promise<unknown>): Promise<void> {
   return new Promise((resolve) => {
     const waiters = waiting.get(transition) ?? new Set<() => void>();
     waiting.set(transition, waiters);
     waiters.add(resolve);
     const done = () => {
+      window.clearTimeout(timer);
       waiters.delete(resolve);
       if (waiters.size === 0) waiting.delete(transition);
       resolve();
     };
+    const timer = window.setTimeout(done, WAIT_CAP_MS);
     void promise.then(done, done);
   });
 }
