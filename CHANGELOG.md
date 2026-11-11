@@ -5,6 +5,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Viewer: a run's player no longer waits forever on a page transition the browser never finishes. After 3 s it mounts anyway, so a switched run cannot stay stuck on a black stage and a spinning play button.
 - Viewer: switching runs in a suite while a replay plays, or in quick succession, no longer leaves the new run stuck with a spinning play button and an empty player. The player now stops waiting on a run-switch crossfade that never finishes.
 - Viewer: the steps panel now starts collapsed, and your choice to open it is remembered per view. The play button's spinner stays round while a replay starts.
 - Viewer: the Performance tab no longer contradicts itself. A paint that was not recorded shows nothing when the other paint was (no more "Recording started after the largest paint" beside a recorded First paint), and "No long tasks were reported" no longer appears while the table lists long tasks. The long-task table's During column names the step without the page's host ("Open /reports" instead of "Open https://host/reports"). Suite run rows say what the first error was: hover "1 error" for "Console error: ..." or "Failed request: GET ... 500". Replay summaries gain `firstError` (summary version 11).
