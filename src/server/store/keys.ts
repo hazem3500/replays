@@ -4,7 +4,7 @@ import { assertReplayId } from '../../shared/replay.ts';
 /** Bump when the poster moment or format changes (the client's poster URL carries it too). */
 export const POSTER_VERSION = 2;
 /** Bump when the opening still's moment or format changes (the client's URL carries it too). */
-export const OPEN_STILL_VERSION = 1;
+export const OPEN_STILL_VERSION = 2;
 /** Bump when the preview's speed, cap or encoding changes. */
 export const PREVIEW_VERSION = 2;
 

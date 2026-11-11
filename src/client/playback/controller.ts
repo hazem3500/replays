@@ -9,7 +9,7 @@ import type { ReplayBundle } from '../../shared/replay.ts';
 import { NO_EFFECTS, type PlaybackEffects } from '../../shared/effects.ts';
 import { EffectsLayer } from '../effects-layer.ts';
 import { ReplayCursor } from '../replay-cursor.ts';
-import { renderOffset, type SnapshotGroup, snapshotGroups } from '../snapshots.ts';
+import { firstPaintOffset, renderOffset, type SnapshotGroup, snapshotGroups } from '../snapshots.ts';
 import { clampTime } from '../timeline.ts';
 import { type IdleGap, idleGaps, INACTIVE_SKIP_SPEED } from '../../shared/skip.ts';
 
@@ -38,6 +38,8 @@ export class ReplayController {
   private readonly groups: SnapshotGroup[];
   /** Stretches without interaction that "skip inactive" fast-forwards (src/shared/skip.ts). */
   readonly idleGaps: IdleGap[];
+  /** The frame shown for 0:00 while paused: the first paint, not the possibly unstyled first snapshot. */
+  private readonly firstPaint: number;
   private replayer: Replayer | undefined;
   /** Zoom, blur and caption effects (src/shared/effects.ts); zoom and blur are drawn by `layer` while mounted. */
   private effects: PlaybackEffects;
@@ -69,6 +71,7 @@ export class ReplayController {
     this.source = bundle.meta.source;
     this.duration = eventSpan(bundle.events, bundle.meta.duration);
     this.groups = snapshotGroups(bundle.events, bundle.network);
+    this.firstPaint = firstPaintOffset(bundle.performance, this.groups, this.duration);
     this.idleGaps = idleGaps(
       bundle.events.map((event) => ({
         type: typeof event.type === 'number' ? event.type : -1,
@@ -343,7 +346,8 @@ export class ReplayController {
   private pauseAt(time: number) {
     const replayer = this.replayer;
     if (!replayer) return;
-    replayer.pause(this.offsetFor(time));
+    // invariant: only the picture changes; the playhead stays at `time`, and play() starts from it.
+    replayer.pause(this.offsetFor(time === 0 ? this.firstPaint : time));
     settleAnimations(replayer.iframe.contentDocument);
   }
 

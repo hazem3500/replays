@@ -72,7 +72,7 @@ function policyFrom(retention: number | Partial<RetentionPolicy> | undefined): R
  *   <id>/edits.json                its edit list (src/shared/edits.ts): trims and cuts applied on playback and export
  *   <id>/overrides.json            title, tags and profile changed after upload
  *   <id>/trash.json                present while it is soft-deleted
- *   <id>/poster.v2[-<moment>].jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
+ *   <id>/poster.v2[-<moment>].jpg, open.v2.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
  *   _suites/<id>.json              a review suite
  *   _suites/<id>.keep.json         kept suite
  *   _expired/<id>.json             what is left of a replay retention removed, for RETENTION_EXPIRED_DAYS (expired.ts)

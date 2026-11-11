@@ -60,7 +60,7 @@ describe('the poster queue with render hooks', () => {
     expect(await posters.key('test-replay')).toBe('test-replay/poster.v2-t400.jpg');
     await expect(readFile(store.posterFile('test-replay', 400), 'utf8')).resolves.toBe('jpeg');
     await expect(posters.request('test-replay')).resolves.toBe('ready');
-    expect(done).toEqual(['poster:test-replay/poster.v2-t400.jpg', 'open:test-replay/open.v1.jpg']);
+    expect(done).toEqual(['poster:test-replay/poster.v2-t400.jpg', 'open:test-replay/open.v2.jpg']);
   });
 
   it('fails a vetoed job without running it', async () => {

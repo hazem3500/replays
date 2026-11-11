@@ -7,6 +7,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Viewer: a paused replay at 0:00, and the opening still on the list, now show the frame at the first contentful paint instead of the first snapshot, which for CLI recordings was often blank or unstyled (a cookie dialog before its CSS loaded). The playhead and timeline still start at 0:00 and play starts from there. Opening stills are made again (version 2).
 - Capture: CLI recordings now record frame rate, so the player and suite runs show FPS instead of n/a.
 - Viewer: the Network timeline's lane names (Requests, Slow, Failed) sit in the left column beside their lanes again; they stacked above the chart because the timeline borrowed spacing that only the Performance tab defines.
 - Viewer: the Performance tab's stat strip leaves out a group that has nothing measured (for example "Frame rate wasn't recorded") instead of saying so, and with Details open it gets no heading. A tab with no measurements at all still says so.
