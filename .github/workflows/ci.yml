@@ -206,7 +206,7 @@ jobs:
     name: End-to-end build
     needs: smoke-scope
     if: ${{ !cancelled() && needs.smoke-scope.outputs.e2e_shards != '' && needs.smoke-scope.outputs.e2e_shards != '[]' }}
-    runs-on: ubicloud-standard-2
+    runs-on: ubicloud-standard-4
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
