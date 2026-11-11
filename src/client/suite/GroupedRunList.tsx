@@ -34,28 +34,29 @@ export function deltaTone(delta: number) {
 const swatch = (colours: ReadonlyMap<string, number>, replayId: string) =>
   cssVars({ '--run-colour': `var(--tile-${colours.get(replayId)}, var(--text-tertiary))` });
 
+/** How a row stands: the open run, a disclosure's state, and whether the row is the list's tab stop. */
+interface RowState {
+  current: boolean;
+  tabbable: boolean;
+  expanded?: boolean | undefined;
+}
+
 /** A row that opens a recording, or sits disabled when the run has none. */
 function RowButton({
   replayId,
   className,
-  current,
   label,
-  expanded,
-  tabbable,
-  colours,
+  state,
   onOpen,
-  onKeyDown,
+  list,
   children,
 }: {
   replayId: string | undefined;
   className: string;
-  current: boolean;
   label: string;
-  expanded?: boolean | undefined;
-  tabbable: boolean;
-  colours: ReadonlyMap<string, number>;
+  state: RowState;
   onOpen: () => void;
-  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  list: GroupedListProps;
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
@@ -71,15 +72,15 @@ function RowButton({
       type="button"
       className={className}
       data-replay-id={replayId}
-      style={swatch(colours, replayId)}
-      aria-current={current ? 'page' : undefined}
-      aria-expanded={expanded}
+      style={swatch(list.colours, replayId)}
+      aria-current={state.current ? 'page' : undefined}
+      aria-expanded={state.expanded}
       aria-label={label}
-      tabIndex={tabbable ? 0 : -1}
+      tabIndex={state.tabbable ? 0 : -1}
       onPointerEnter={prefetch}
       onFocus={prefetch}
       onClick={onOpen}
-      onKeyDown={onKeyDown}
+      onKeyDown={list.onKeyDown}
     >
       {children}
     </button>
@@ -135,18 +136,17 @@ function SampleRow({ run, index, target, props }: { run: Run; index: number; tar
   const playable = playableReplayId(run, props.detailed);
   const tone = props.statusOf(run);
   const time = run.measureMs === undefined ? undefined : formatMs(run.measureMs);
+  const isSelected = playable !== undefined && playable === props.selected;
   const label = `${target} sample ${index + 1}${time ? `, ${time}` : ''}, ${tone}`;
   return (
     <div role="listitem">
       <RowButton
         replayId={playable}
         className="suite-run-item suite-sample"
-        current={playable !== undefined && playable === props.selected}
         label={label}
-        tabbable={playable !== undefined && playable === props.selected}
-        colours={props.colours}
+        state={{ current: isSelected, tabbable: isSelected }}
         onOpen={() => props.onSelect(playable)}
-        onKeyDown={props.onKeyDown}
+        list={props}
       >
         <span className="run-swatch" aria-hidden="true" />
         <span className="run-copy">
@@ -175,13 +175,10 @@ function TargetRow({ group, entry, first, props }: { group: string; entry: Targe
       <RowButton
         replayId={firstId}
         className="suite-run-item"
-        current={open && single}
         label={label}
-        expanded={single ? undefined : open}
-        tabbable={open || (props.selected === undefined && first)}
-        colours={props.colours}
+        state={{ current: open && single, expanded: single ? undefined : open, tabbable: open || (props.selected === undefined && first) }}
         onOpen={() => props.onSelect(single || !open ? firstId : undefined)}
-        onKeyDown={props.onKeyDown}
+        list={props}
       >
         <TargetCopy entry={entry} />
       </RowButton>
@@ -212,12 +209,10 @@ function OtherRuns({ props }: { props: GroupedListProps }) {
               <RowButton
                 replayId={playable}
                 className="suite-run-item"
-                current={current}
                 label={`Run ${String(run.sequence).padStart(2, '0')}: ${run.label}, ${props.statusOf(run)}`}
-                tabbable={current}
-                colours={props.colours}
+                state={{ current, tabbable: current }}
                 onOpen={() => props.onSelect(playable)}
-                onKeyDown={props.onKeyDown}
+                list={props}
               >
                 {props.renderOtherRow(run, names[index] ?? run.label)}
               </RowButton>
