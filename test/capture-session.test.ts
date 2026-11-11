@@ -253,6 +253,9 @@ describe('stop', () => {
   });
 });
 
+const batch = (from: number) =>
+  Array.from({ length: 400 }, (_, index) => ({ at: from + index * 1000, elapsed: 1000, frames: 60, dropped: 0 }));
+
 describe('frame samples', () => {
   it('merges samples across navigations onto the replay clock and marks animation-frame supported', async () => {
     const cdp = new FakeCdp();
@@ -287,8 +290,6 @@ describe('frame samples', () => {
 
   it('keeps at most 600 samples', async () => {
     const cdp = new FakeCdp();
-    const batch = (from: number) =>
-      Array.from({ length: 400 }, (_, index) => ({ at: from + index * 1000, elapsed: 1000, frames: 60, dropped: 0 }));
     cdp.chunks = [{ events: events(0, 10), frames: batch(0) }, { frames: batch(400_000) }];
     const session = await RecorderSession.start(cdp, LONG_INTERVAL);
     await session.flush();
