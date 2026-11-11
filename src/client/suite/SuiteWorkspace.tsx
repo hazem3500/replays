@@ -48,14 +48,7 @@ import {
   type RunMetric,
   runRowMetrics,
 } from './runs.ts';
-import {
-  formatMs,
-  formatPercent,
-  groupRuns,
-  isGrouped,
-  runHeadline,
-  type TargetSummary,
-} from '../../shared/suite-groups.ts';
+import { formatMs, formatPercent, groupRuns, isGrouped, runHeadline, type TargetSummary } from '../../shared/suite-groups.ts';
 import { isPerformanceFocused } from '../../shared/performance-focus.ts';
 import { pageProfiles } from '../profiles.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
