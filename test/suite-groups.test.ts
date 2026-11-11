@@ -23,7 +23,7 @@ interface Row {
   measureMs?: number;
 }
 
-const row = (sequence: number, group: string | undefined, target: string | undefined, measureMs?: number): Row => ({
+const row = (sequence: number, group?: string, target?: string, measureMs?: number): Row => ({
   sequence,
   replayId: `r${sequence}`,
   ...(group ? { group } : {}),
@@ -39,7 +39,7 @@ const runs: Row[] = [
   row(5, 'Cold open', 'main', 2800),
   row(6, 'Warm open', '#6879', 900),
   row(7, 'Warm open', 'main', 1000),
-  row(8, undefined, undefined),
+  row(8),
 ];
 
 describe('median and change', () => {
@@ -80,7 +80,7 @@ describe('grouping', () => {
   it('orders the display and detects grouped suites', () => {
     expect(displayOrder(grouped).map((run) => run.sequence)).toEqual([4, 5, 1, 2, 3, 7, 6, 8]);
     expect(isGrouped(runs)).toBe(true);
-    expect(isGrouped([row(1, undefined, undefined)])).toBe(false);
+    expect(isGrouped([row(1)])).toBe(false);
   });
 
   it('picks the median sample as the typical one', () => {

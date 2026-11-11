@@ -48,7 +48,8 @@ import {
   type RunMetric,
   runRowMetrics,
 } from './runs.ts';
-import { formatMs, formatPercent, groupRuns, isGrouped, runHeadline, type TargetSummary } from '../../shared/suite-groups.ts';
+import { groupRuns, isGrouped, runHeadline } from '../../shared/suite-groups.ts';
+import { GroupedRunList, deltaTone } from './GroupedRunList.tsx';
 import { isPerformanceFocused } from '../../shared/performance-focus.ts';
 import { pageProfiles } from '../profiles.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
@@ -120,6 +121,12 @@ function firstErrorTitle(run: ReviewSuiteIndexRun) {
 
 function sequenceLabel(run: Pick<ReviewSuiteIndexRun, 'sequence'>) {
   return String(run.sequence).padStart(2, '0');
+}
+
+/** The status words a row shows: the tone for a recording, else why there is none. */
+function otherStatus(run: ReviewSuiteIndexRun, detailed: boolean) {
+  if (playableReplayId(run, detailed)) return statusTone(run, detailed);
+  return isExpired(run, detailed) ? 'Expired' : 'No recording';
 }
 
 function statusTone(run: ReviewSuiteIndexRun, detailed: boolean) {
@@ -548,7 +555,16 @@ function SuiteSidebar({
             colours={colours}
             onSelect={onSelect}
             onKeyDown={onKeyDown}
-            performanceFocused={performanceFocused}
+            statusOf={(run) => statusTone(run, detailed)}
+            renderOtherRow={(run, name) => (
+              <RunCopy
+                run={run}
+                name={name}
+                status={otherStatus(run, detailed)}
+                tone={statusTone(run, detailed)}
+                metrics={runRowMetrics(run, performanceFocused)}
+              />
+            )}
           />
         ) : null}
         {grouped
@@ -615,214 +631,6 @@ function SuiteSidebar({
             })}
       </div>
     </aside>
-  );
-}
-
-const samplesLabel = (count: number) => `${count} ${count === 1 ? 'sample' : 'samples'}`;
-
-const deltaTone = (delta: number) => (delta < 0 ? 'good' : delta > 0 ? 'poor' : 'same');
-
-/** A group's header: its name and the targets it compares, the baseline first and marked. */
-function GroupHeading({ name, targets }: { name: string; targets: ReadonlyArray<TargetSummary<WorkspaceRun>> }) {
-  return (
-    <h3 className="suite-group-head" data-testid="suite-group-head">
-      <span className="suite-group-name">{name}</span>
-      <span className="suite-group-targets">
-        {targets.map((entry, index) => (
-          <span key={entry.target}>
-            {index > 0 ? ' vs ' : ''}
-            {entry.target}
-            {entry.baseline ? <span className="suite-baseline"> baseline</span> : null}
-          </span>
-        ))}
-      </span>
-    </h3>
-  );
-}
-
-/** A grouped suite's runs: per group, one row per target (samples, median, change from the baseline) that opens to its samples. */
-function GroupedRunList({
-  groups,
-  detailed,
-  selected,
-  colours,
-  onSelect,
-  onKeyDown,
-  performanceFocused,
-}: {
-  groups: ReturnType<typeof groupRuns<WorkspaceRun>>;
-  detailed: boolean;
-  selected: string | undefined;
-  colours: ReadonlyMap<string, number>;
-  onSelect: (replayId: string | undefined) => void;
-  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  performanceFocused: boolean;
-}) {
-  const queryClient = useQueryClient();
-  const otherNames = shortNames(groups.other.map((run) => run.label));
-  const prefetch = (replayId: string) => void prefetchReplay(queryClient, replayId);
-  return (
-    <>
-      {groups.groups.map((group) => (
-        <div role="listitem" key={group.name} className="suite-group">
-          <GroupHeading name={group.name} targets={group.targets} />
-          <div role="list" aria-label={group.name}>
-            {group.targets.map((entry) => {
-              const first = entry.samples.flatMap((run) => playableReplayId(run, detailed) ?? [])[0];
-              const open = entry.samples.some((run) => playableReplayId(run, detailed) === selected && selected !== undefined);
-              const single = entry.samples.length === 1;
-              const colour = first ? colours.get(first) : undefined;
-              const label = `${group.name}, ${entry.target}${entry.baseline ? ', baseline' : ''}, ${samplesLabel(entry.samples.length)}${entry.median === undefined ? '' : `, ${formatMs(entry.median)} median`}`;
-              const content = (
-                <>
-                  <span className="run-swatch" aria-hidden="true" />
-                  <span className="run-copy">
-                    <span className="run-label" title={entry.target}>
-                      {entry.target}
-                      {entry.baseline ? <span className="suite-baseline"> baseline</span> : null}
-                    </span>
-                    {entry.delta === undefined ? null : (
-                      <span className="target-delta" data-tone={deltaTone(entry.delta)} data-testid="target-delta">
-                        {formatPercent(entry.delta)}
-                      </span>
-                    )}
-                    <span className="run-meta" data-testid="target-summary">
-                      <span>{samplesLabel(entry.samples.length)}</span>
-                      {entry.median === undefined ? null : (
-                        <span>
-                          {entry.measure ? `${entry.measure} · ` : ''}
-                          <strong>{formatMs(entry.median)}</strong> {single ? '' : 'median'}
-                        </span>
-                      )}
-                    </span>
-                  </span>
-                </>
-              );
-              return (
-                <div role="listitem" key={entry.target} className="suite-target" data-open={open || undefined}>
-                  {first ? (
-                    <button
-                      type="button"
-                      className="suite-run-item"
-                      data-replay-id={first}
-                      style={cssVars({ '--run-colour': `var(--tile-${colour}, var(--text-tertiary))` })}
-                      aria-current={open && single ? 'page' : undefined}
-                      aria-expanded={single ? undefined : open}
-                      aria-label={label}
-                      tabIndex={open || (!selected && entry === group.targets[0]) ? 0 : -1}
-                      onPointerEnter={() => prefetch(first)}
-                      onFocus={() => prefetch(first)}
-                      onClick={() => onSelect(single || !open ? first : undefined)}
-                      onKeyDown={onKeyDown}
-                    >
-                      {content}
-                    </button>
-                  ) : (
-                    <div className="suite-run-item" aria-disabled="true" title={label}>
-                      {content}
-                    </div>
-                  )}
-                  {open && !single ? (
-                    <div role="list" aria-label={`${entry.target} samples`} className="suite-samples">
-                      {entry.samples.map((run, index) => {
-                        const playable = playableReplayId(run, detailed);
-                        const tone = statusTone(run, detailed);
-                        const row = (
-                          <>
-                            <span className="run-swatch" aria-hidden="true" />
-                            <span className="run-copy">
-                              <span className="run-label">Sample {index + 1}</span>
-                              {run.measureMs === undefined ? null : <span className="run-duration">{formatMs(run.measureMs)}</span>}
-                              {tone === 'passed' ? null : (
-                                <span className="run-meta">
-                                  <span className={`run-status tone-${tone}`}>{playable ? tone : 'No recording'}</span>
-                                </span>
-                              )}
-                            </span>
-                          </>
-                        );
-                        return (
-                          <div role="listitem" key={run.id}>
-                            {playable ? (
-                              <button
-                                type="button"
-                                className="suite-run-item suite-sample"
-                                data-replay-id={playable}
-                                style={cssVars({ '--run-colour': `var(--tile-${colours.get(playable)}, var(--text-tertiary))` })}
-                                aria-current={playable === selected ? 'page' : undefined}
-                                aria-label={`${entry.target} sample ${index + 1}${run.measureMs === undefined ? '' : `, ${formatMs(run.measureMs)}`}, ${tone}`}
-                                tabIndex={playable === selected ? 0 : -1}
-                                onPointerEnter={() => prefetch(playable)}
-                                onFocus={() => prefetch(playable)}
-                                onClick={() => onSelect(playable)}
-                                onKeyDown={onKeyDown}
-                              >
-                                {row}
-                              </button>
-                            ) : (
-                              <div className="suite-run-item suite-sample" aria-disabled="true">
-                                {row}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-      {groups.other.length ? (
-        <div role="listitem" className="suite-group">
-          <h3 className="suite-group-head" data-testid="suite-group-head">
-            <span className="suite-group-name">Other runs</span>
-          </h3>
-          <div role="list" aria-label="Other runs">
-            {groups.other.map((run, index) => {
-              const playable = playableReplayId(run, detailed);
-              const tone = statusTone(run, detailed);
-              const copy = (
-                <RunCopy
-                  run={run}
-                  name={otherNames[index] ?? run.label}
-                  status={playable ? tone : isExpired(run, detailed) ? 'Expired' : 'No recording'}
-                  tone={tone}
-                  metrics={runRowMetrics(run, performanceFocused)}
-                />
-              );
-              return (
-                <div role="listitem" key={run.id}>
-                  {playable ? (
-                    <button
-                      type="button"
-                      className="suite-run-item"
-                      data-replay-id={playable}
-                      style={cssVars({ '--run-colour': `var(--tile-${colours.get(playable)}, var(--text-tertiary))` })}
-                      aria-current={playable === selected ? 'page' : undefined}
-                      aria-label={`Run ${sequenceLabel(run)}: ${run.label}, ${tone}`}
-                      tabIndex={playable === selected ? 0 : -1}
-                      onPointerEnter={() => prefetch(playable)}
-                      onFocus={() => prefetch(playable)}
-                      onClick={() => onSelect(playable)}
-                      onKeyDown={onKeyDown}
-                    >
-                      {copy}
-                    </button>
-                  ) : (
-                    <div className="suite-run-item" aria-disabled="true">
-                      {copy}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-    </>
   );
 }
 

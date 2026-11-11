@@ -142,6 +142,14 @@ export interface RunHeadline {
   baseline?: { text: string; delta: number };
 }
 
+const medianNote = (own: TargetSummary<GroupableRun> | undefined) =>
+  own && own.samples.length > 1 && own.median !== undefined ? { median: `median of ${own.samples.length}: ${formatMs(own.median)}` } : {};
+
+const baselineNote = (own: TargetSummary<GroupableRun> | undefined, base: TargetSummary<GroupableRun> | undefined) =>
+  base?.median !== undefined && own?.delta !== undefined
+    ? { baseline: { text: `${base.target} ${formatMs(base.median)} (${formatPercent(own.delta)})`, delta: own.delta } }
+    : {};
+
 /** The one line a grouped run opens with; undefined without a group, a measure and its time. */
 export function runHeadline<T extends GroupableRun>(runs: readonly T[], run: T, baseline?: string): RunHeadline | undefined {
   if (run.group === undefined || !run.measure || run.measureMs === undefined) return undefined;
@@ -149,15 +157,10 @@ export function runHeadline<T extends GroupableRun>(runs: readonly T[], run: T, 
   const own = group?.targets.find((entry) => entry.target === targetOf(run));
   const base = group?.targets.find((entry) => entry.baseline && entry !== own);
   const named = run.target === undefined ? '' : ` on ${run.target}`;
-  const lead = `${run.group}${named}: ${run.measure} after ${formatMs(run.measureMs)}`;
-  const samples = own?.samples.length ?? 1;
-  const typical = own?.median;
   return {
-    lead,
-    ...(samples > 1 && typical !== undefined ? { median: `median of ${samples}: ${formatMs(typical)}` } : {}),
-    ...(base?.median !== undefined && own?.delta !== undefined
-      ? { baseline: { text: `${base.target} ${formatMs(base.median)} (${formatPercent(own.delta)})`, delta: own.delta } }
-      : {}),
+    lead: `${run.group}${named}: ${run.measure} after ${formatMs(run.measureMs)}`,
+    ...medianNote(own),
+    ...baselineNote(own, base),
   };
 }
 
