@@ -351,9 +351,11 @@ export interface ReplaySourceLink {
 }
 
 // why: bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily.
+// why: version 11 adds `firstError`, so a suite's error count can name the first error.
 // why: version 10 adds `perf`, the performance numbers a suite compares runs by.
 // why: version 9 renames purpose to profile (8 combined purposes, people, source attributes and plugin summary fields).
-export const SUMMARY_VERSION = 10;
+export const SUMMARY_VERSION = 11;
+const FIRST_ERROR_TEXT = 120;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
 const SUMMARY_SOURCE_ATTRS = 4;
@@ -361,6 +363,12 @@ const SUMMARY_ATTR_TEXT = 80;
 
 /** One value a plugin's `summaryFields` derives into the summary (src/server/summary-fields.ts). */
 export type SummaryFieldValue = string | number | boolean | null;
+
+/** The earliest console error or failed request, for a row that says what its error count is made of. */
+export interface ReplayFirstError {
+  kind: 'console' | 'request';
+  message: string;
+}
 
 /** The small sidecar (`meta.json`) the index lists and filters without loading bundles. */
 export interface ReplaySummary {
@@ -373,6 +381,8 @@ export interface ReplaySummary {
   steps: number;
   consoleErrors: number;
   failedRequests: number;
+  /** The earliest error of either kind, its message cut to 120 characters; absent when there is none. */
+  firstError?: ReplayFirstError;
   source: ReplaySource;
   /** SUMMARY_VERSION the sidecar was built with; absent on version 1 sidecars. */
   summaryVersion?: number;
@@ -474,11 +484,24 @@ export function summarizeTimeline(bundle: Pick<ReplayBundle, 'meta' | 'steps' | 
   return { steps, errors: mergeErrorTimes(errorTimes, Math.max(1, duration * 0.005)) };
 }
 
+function firstErrorOf(bundle: ReplayBundle): ReplayFirstError | undefined {
+  const logged = bundle.console.filter((entry) => entry.level === 'error').toSorted((a, b) => a.at - b.at)[0];
+  const failed = bundle.network.filter(isFailedRequest).toSorted((a, b) => a.at - b.at)[0];
+  const cut = (text: string) => {
+    const line = text.trim().replace(/\s+/g, ' ');
+    return line.length > FIRST_ERROR_TEXT ? `${line.slice(0, FIRST_ERROR_TEXT - 1)}…` : line;
+  };
+  if (logged && (!failed || logged.at <= failed.at)) return { kind: 'console', message: cut(logged.message) };
+  if (!failed) return undefined;
+  return { kind: 'request', message: cut(`${failed.method} ${failed.url} ${failed.status || failed.statusText}`) };
+}
+
 export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
   const { meta } = bundle;
   const consoleErrors = bundle.console.filter((entry) => entry.level === 'error').length;
   const failedRequests = bundle.network.filter(isFailedRequest).length;
   const perf = summarizePerformanceTrack(bundle.performance);
+  const firstError = firstErrorOf(bundle);
   const sources = (bundle.context?.sources ?? []).slice(0, MAX_SOURCE_LINKS).map((source) => {
     const attrs = sourceAttrs(source.attrs, SUMMARY_SOURCE_ATTRS, SUMMARY_ATTR_TEXT);
     return { provider: source.provider, label: source.label ?? source.ref ?? '', url: source.url, ...(attrs ? { attrs } : {}) };
@@ -493,6 +516,7 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
     steps: bundle.steps.length,
     consoleErrors,
     failedRequests,
+    ...(firstError ? { firstError } : {}),
     source: meta.source ?? 'agent',
     summaryVersion: SUMMARY_VERSION,
     ...(meta.viewport?.width > 0 && meta.viewport.height > 0

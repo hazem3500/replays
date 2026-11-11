@@ -5,7 +5,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
-## [Unreleased]
+- Viewer: the Performance tab no longer contradicts itself. A paint that was not recorded shows nothing when the other paint was (no more "Recording started after the largest paint" beside a recorded First paint), and "No long tasks were reported" no longer appears while the table lists long tasks. The long-task table's During column names the step without the page's host ("Open /reports" instead of "Open https://host/reports"). Suite run rows say what the first error was: hover "1 error" for "Console error: ..." or "Failed request: GET ... 500". Replay summaries gain `firstError` (summary version 11).
 
 - Capture: CLI recordings now record frame rate, so the player and suite runs show FPS instead of n/a.
 - Viewer: the Network timeline's lane names (Requests, Slow, Failed) sit in the left column beside their lanes again; they stacked above the chart because the timeline borrowed spacing that only the Performance tab defines.

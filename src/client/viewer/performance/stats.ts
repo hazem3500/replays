@@ -132,9 +132,8 @@ const VITAL_META: Readonly<Record<VitalId, { group: StatGroup; label: string; hi
   },
 };
 
-const VITAL_ABSENT: Readonly<Record<VitalId, string>> = {
-  fcp: 'Recording started after the first paint',
-  lcp: 'Recording started after the largest paint',
+// why: a missing paint says nothing; the group's own note covers a recording that began after load, and a missing second paint beside a recorded one is just not shown.
+const VITAL_ABSENT: Readonly<Partial<Record<VitalId, string>>> = {
   interaction: 'No interaction was slow enough to report',
   task: 'No long tasks were reported',
   tbt: 'No long tasks were reported',
@@ -155,7 +154,7 @@ export function vitalStat(vital: Vital): Stat {
       hint,
       missing: VITAL_MISSING[vital.missing ?? 'not-captured'],
       watched: vital.missing === 'none',
-      absent: VITAL_ABSENT[vital.id],
+      absent: vital.listed ? undefined : VITAL_ABSENT[vital.id],
     };
   const [good, poor]: Budget = BUDGETS[vital.id];
   const [value, unit] = splitDuration(vital.value);

@@ -73,7 +73,7 @@ const listUnderBaseAnswer = {
       id: 'contract-b',
       source: 'agent',
       steps: 1,
-      summaryVersion: 10,
+      summaryVersion: 11,
       timeline: {
         errors: [],
         steps: [0],
@@ -133,7 +133,7 @@ const listOnDefaultHostAnswer = {
       id: 'contract-h',
       source: 'agent',
       steps: 1,
-      summaryVersion: 10,
+      summaryVersion: 11,
       timeline: {
         errors: [],
         steps: [0],

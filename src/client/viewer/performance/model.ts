@@ -214,6 +214,8 @@ export interface Vital {
   at?: number | undefined;
   /** Why there is no value: the observer was unavailable, or it watched and nothing crossed its threshold. */
   missing?: 'not-captured' | 'none' | undefined;
+  /** The table lists moments of this kind even though the tile has no value, so no "none reported" note is true. */
+  listed?: boolean | undefined;
 }
 
 const OBSERVER: Readonly<Record<VitalId, string>> = {
@@ -234,7 +236,7 @@ export function buildVitals(signals: readonly PerformanceSignal[], moments: read
   const watched = (id: VitalId) => Boolean(track?.supported.includes(OBSERVER[id]));
   const judged = (id: VitalId, value: number | undefined, extra: Partial<Vital> = {}): Vital =>
     value === undefined
-      ? { id, missing: watched(id) ? 'none' : 'not-captured' }
+      ? { id, missing: watched(id) ? 'none' : 'not-captured', ...(extra.listed ? { listed: true } : {}) }
       : { id, value, verdict: verdictFor(value, BUDGETS[id]), ...extra };
   const paints = (kind: PerformanceSignal['entry']['kind']) =>
     signals.filter((signal) => signal.entry.kind === kind && validDuration(signal.entry.value)).toSorted((a, b) => a.sourceAt - b.sourceAt);
@@ -244,13 +246,14 @@ export function buildVitals(signals: readonly PerformanceSignal[], moments: read
   const tasks = moments.filter((item) => item.kind === 'task' && item.origin !== 'frame');
   const interaction = longestOf(moments.filter((item) => item.kind === 'interaction'));
   const task = longestOf(tasks);
+  const listedTasks = moments.some((item) => item.kind === 'task') || undefined;
   const blocking = watched('tbt') || tasks.length ? totalBlockingTime(tasks) : undefined;
   return [
     judged('fcp', fcp?.entry.value, { at: fcp?.at }),
     judged('lcp', lcp?.entry.value, { at: lcp?.at }),
     judged('interaction', interaction?.value, { moment: interaction }),
-    judged('task', task?.value, { moment: task }),
-    judged('tbt', blocking),
+    judged('task', task?.value, { moment: task, listed: listedTasks }),
+    judged('tbt', blocking, { listed: listedTasks }),
   ];
 }
 
