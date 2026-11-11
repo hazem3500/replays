@@ -41,6 +41,35 @@ export function follow(transition: PageTransition) {
     });
 }
 
+const waiting = new Map<PageTransition, Set<() => void>>();
+
+/** Waits for `promise` or for the transition to be abandoned, whichever comes first. */
+function untilSettledOrAbandoned(transition: PageTransition, promise: Promise<unknown>): Promise<void> {
+  return new Promise((resolve) => {
+    const waiters = waiting.get(transition) ?? new Set<() => void>();
+    waiting.set(transition, waiters);
+    waiters.add(resolve);
+    const done = () => {
+      waiters.delete(resolve);
+      if (waiters.size === 0) waiting.delete(transition);
+      resolve();
+    };
+    void promise.then(done, done);
+  });
+}
+
+/**
+ * Forgets a transition that will never report finished (Motion's view queue never started it) and releases whatever
+ * waits on it.
+ * why: the player's mount waits on the page transition; a stuck one left the next run's replay unmounted, play spinning.
+ */
+export function abandon(transition: PageTransition) {
+  if (active === transition) active = undefined;
+  if (animating === transition) setAnimating(undefined);
+  for (const release of waiting.get(transition) ?? []) release();
+  waiting.delete(transition);
+}
+
 /** Subscribes to the captured page transition starting and landing. */
 export function subscribeAnimating(listener: () => void) {
   listeners.add(listener);
@@ -66,23 +95,13 @@ export const isTurn = (turn: number) => turn === sequence;
 /** Resolves when the running page transition has started animating (at once when none runs). */
 export function afterMorphStart(): Promise<void> {
   const transition = currentTransition();
-  return transition
-    ? transition.ready.then(
-        () => {},
-        () => {},
-      )
-    : Promise.resolve();
+  return transition ? untilSettledOrAbandoned(transition, transition.ready) : Promise.resolve();
 }
 
 /** Resolves when the running page transition has finished (at once when none runs). */
 export function afterPageTransition(): Promise<void> {
   const transition = currentTransition();
-  return transition
-    ? transition.finished.then(
-        () => {},
-        () => {},
-      )
-    : Promise.resolve();
+  return transition ? untilSettledOrAbandoned(transition, transition.finished) : Promise.resolve();
 }
 
 export const pageTransitionRunning = () => Boolean(currentTransition());

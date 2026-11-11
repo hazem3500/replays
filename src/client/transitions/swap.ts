@@ -4,7 +4,7 @@ import { flushSync } from 'react-dom';
 import { motionView } from './motion-view.ts';
 import { forgetHint } from './open-hint.ts';
 import { namePicture, unnameAll, viewerPicture } from './shared-elements.ts';
-import { currentTransition, follow, isTurn, nextTurn, setSwappingInPlace, supportsTransitions } from './state.ts';
+import { abandon, currentTransition, follow, isTurn, nextTurn, setSwappingInPlace, supportsTransitions } from './state.ts';
 
 /* why: in-place swaps (a suite's runs). The runs sidebar stays perfectly still (its live layer, so only its selection
  * glides), the frame crossfades between the two runs at its rect (resizing smoothly if the aspect differs), the top
@@ -16,6 +16,9 @@ import { currentTransition, follow, isTurn, nextTurn, setSwappingInPlace, suppor
 const RUN_WAIT_MS = 1200;
 /** How long a started crossfade may take to apply the new run before it lands without one. */
 const COMMIT_WAIT_MS = 400;
+
+/** How long a crossfade may take to finish before the swap stops waiting on it. */
+const FINISH_WAIT_MS = 2000;
 
 const delay = (ms: number) => new Promise<void>((done) => window.setTimeout(done, ms));
 
@@ -82,16 +85,27 @@ export function swapInPlace(update: () => void, ready: Promise<unknown>, { insta
       if (committed || !isTurn(turn)) return;
       committed = true;
       transition.skipTransition();
+      // why: a transition stuck in Motion's queue never finishes, and the new run's player waits for it to mount.
+      abandon(transition);
       unnameAll();
       delete root.dataset.pageTransition;
       flushSync(update);
     }, COMMIT_WAIT_MS);
-    void transition.finished
-      .catch(() => {})
-      .then(() => {
-        if (!isTurn(turn)) return;
-        delete root.dataset.pageTransition;
-        unnameAll();
-      });
+    // why: Motion can leave a crossfade unfinished (its layers never settle); the next run's player waits on it to mount.
+    void Promise.race([
+      transition.finished.then(
+        () => true,
+        () => true,
+      ),
+      delay(FINISH_WAIT_MS).then(() => false),
+    ]).then((finished) => {
+      if (!finished) {
+        transition.skipTransition();
+        abandon(transition);
+      }
+      if (!isTurn(turn)) return;
+      delete root.dataset.pageTransition;
+      unnameAll();
+    });
   });
 }
