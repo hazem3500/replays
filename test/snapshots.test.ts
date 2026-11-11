@@ -77,7 +77,6 @@ describe('nearest full snapshot at or before t', () => {
   });
 });
 
-
 const track = (...ats: number[]) => ({
   supported: [],
   entries: ats.map((at) => ({ at, kind: 'first-contentful-paint' as const, value: 1 })),
