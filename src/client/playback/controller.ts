@@ -71,7 +71,7 @@ export class ReplayController {
     this.source = bundle.meta.source;
     this.duration = eventSpan(bundle.events, bundle.meta.duration);
     this.groups = snapshotGroups(bundle.events, bundle.network);
-    this.firstPaint = firstPaintOffset(bundle.performance, bundle.events, this.groups, this.duration);
+    this.firstPaint = firstPaintOffset(bundle.performance, this.groups, this.duration);
     this.idleGaps = idleGaps(
       bundle.events.map((event) => ({
         type: typeof event.type === 'number' ? event.type : -1,

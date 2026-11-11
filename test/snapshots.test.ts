@@ -84,21 +84,27 @@ const track = (...ats: number[]) => ({
 });
 
 describe('first painted frame', () => {
-  const events = [event(4, 1000, { href: 'https://a.test/' }), event(2, 1010), event(3, 1500), event(4, 3000, { href: 'https://b.test/' }), event(2, 3100)];
+  const events = [
+    event(4, 1000, { href: 'https://a.test/' }),
+    event(2, 1010),
+    event(3, 1500),
+    event(4, 3000, { href: 'https://b.test/' }),
+    event(2, 3100),
+  ];
   const groups = snapshotGroups(events);
 
   it('is the earliest first contentful paint, as an offset from the first event', () => {
-    expect(firstPaintOffset(track(1900, 1400), events, groups, 2100)).toBe(400);
+    expect(firstPaintOffset(track(900, 400), groups, 2100)).toBe(400);
   });
 
   it('is 0 without a paint entry or a track', () => {
-    expect(firstPaintOffset(undefined, events, groups, 2100)).toBe(0);
-    expect(firstPaintOffset({ supported: [], entries: [] }, events, groups, 2100)).toBe(0);
+    expect(firstPaintOffset(undefined, groups, 2100)).toBe(0);
+    expect(firstPaintOffset({ supported: [], entries: [] }, groups, 2100)).toBe(0);
   });
 
   it('stays inside the first document and the replay', () => {
-    expect(firstPaintOffset(track(9000), events, groups, 2100)).toBe(2000 - 1);
-    expect(firstPaintOffset(track(500), events, groups, 2100)).toBe(0);
-    expect(firstPaintOffset(track(1900), events, groups.slice(0, 1), 1000)).toBe(900);
+    expect(firstPaintOffset(track(9000), groups, 2100)).toBe(2000 - 1);
+    expect(firstPaintOffset(track(0), groups, 2100)).toBe(0);
+    expect(firstPaintOffset(track(1900), groups.slice(0, 1), 1000)).toBe(999);
   });
 });

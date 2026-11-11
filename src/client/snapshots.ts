@@ -92,22 +92,15 @@ export function renderOffset(groups: readonly SnapshotGroup[], time: number) {
 }
 
 /**
- * When the first document painted, as an offset on the replay timeline (0 when the recording has no paint entry).
+ * When the first document painted, as an offset on the replay timeline (0 when the recording has no paint entry; entries are already offsets from the first event).
  * why: the first full snapshot is often taken before a late stylesheet lands, so the frame at 0:00 can be blank or
  * unstyled; the first contentful paint is the first moment the page looked like something. Kept inside the first
  * document so a later page's paint never stands in for it.
  */
-export function firstPaintOffset(
-  track: ReplayBundle['performance'],
-  events: ReplayBundle['events'],
-  groups: readonly SnapshotGroup[],
-  duration: number,
-) {
-  const origin = events[0]?.timestamp;
-  if (origin === undefined) return 0;
+export function firstPaintOffset(track: ReplayBundle['performance'], groups: readonly SnapshotGroup[], duration: number) {
   const paints = (track?.entries ?? []).filter((entry) => entry.kind === 'first-contentful-paint' && Number.isFinite(entry.at));
   if (paints.length === 0) return 0;
-  const offset = Math.min(...paints.map((entry) => entry.at)) - origin;
+  const offset = Math.min(...paints.map((entry) => entry.at));
   const nextDocument = groups[1]?.start ?? duration;
   return Math.max(0, Math.min(offset, nextDocument - 1, duration));
 }

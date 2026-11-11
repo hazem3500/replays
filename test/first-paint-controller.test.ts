@@ -35,7 +35,7 @@ describe('the paused frame at 0:00', () => {
       { type: 2, timestamp: 1010, data: {} },
       { type: 3, timestamp: 4000, data: {} },
     ];
-    bundle.performance = { supported: [], entries: [{ at: 1600, kind: 'first-contentful-paint', value: 600 }] };
+    bundle.performance = { supported: [], entries: [{ at: 600, kind: 'first-contentful-paint', value: 600 }] };
     pauses.length = 0;
     const player = new ReplayController(bundle);
     const unmount = player.mount(document.createElement('div'));
