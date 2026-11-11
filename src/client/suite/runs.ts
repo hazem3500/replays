@@ -1,7 +1,7 @@
 import { type FrameVerdict, fpsVerdict, type ReplayPerfSummary } from '../../shared/frame-timing.ts';
 import type { ReviewSuiteIndexRun } from '../../shared/review-suite.ts';
 import { tileColour } from '../compare/tiles.ts';
-import { BUDGETS, verdictFor } from '../viewer/performance/model.ts';
+import { BUDGETS, verdictFor } from '../viewer/performance/budgets.ts';
 
 type RunRecording = Pick<ReviewSuiteIndexRun, 'replayId' | 'replay'>;
 
