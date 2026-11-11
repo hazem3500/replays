@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { openReplay, serveApp } from './support.ts';
+import { openReplay, openStepsRail, serveApp } from './support.ts';
 
 const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
 const replay = () => `${server().origin}/r/demo-shop`;
@@ -55,6 +55,7 @@ test('compared recordings share the caption display settings', async ({ page }) 
 test('captions default to unnumbered; numbering toggles, persists, and survives visibility shortcuts', async ({ page }) => {
   await enableCaptions(page);
   await openReplay(page, `${replay()}#step-2`);
+  await openStepsRail(page);
   await page.getByTestId('step-timeline').locator('[data-step-index="1"]').click();
   const caption = page.getByTestId('step-caption');
   await expect(caption).toBeVisible();
@@ -116,6 +117,7 @@ test('numbering follows the edited rail after cuts, including repeated labels', 
     route.fulfill({ json: { version: 1, revision: 1, cuts: [{ id: 'opening', from: 0, to: 1000 }] } }),
   );
   await openReplay(page, replay());
+  await openStepsRail(page);
   await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   for (const index of [0, 1, 2]) {
     await page.getByTestId('step-timeline').locator(`[data-step-index="${index}"]`).click();
@@ -159,6 +161,7 @@ test('blocked preference storage still allows toggling numbers for this visit', 
     };
   });
   await openReplay(page, `${replay()}#step-2`);
+  await openStepsRail(page);
   await page.getByTestId('captions-switch').click();
   await (await openNumbers(page)).click();
   await page.keyboard.press('Escape');
@@ -190,6 +193,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       }),
     );
     await openReplay(page, replay());
+    await openStepsRail(page);
     const caption = page.getByTestId('edit-caption');
     const steps = page.getByTestId('step-timeline');
     await steps.locator('[data-step-index="0"]').click();

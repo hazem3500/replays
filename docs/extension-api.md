@@ -369,6 +369,9 @@ views: [
 | `headline` | `viewer.headline` slot ids shown above the stage |
 | `speed` | Playback speed on open, 0.25 to 4 |
 
+The steps rail starts collapsed (`stage.steps` defaults to `'collapsed'`); a view that wants it open says `steps: 'open'`,
+and a person's own fold is remembered over the view's default.
+
 A suite names its profile with `profile` on its registration (`PUT /api/suites/<id>`); its view wins over the runs'.
 In the viewer, **View:** in the top bar (in More on phones) and `V` / `Shift V` switch the view; the choice lives in
 `?view=`, which a copied link keeps only when it differs from what the page opens in. Switching never remounts a player.

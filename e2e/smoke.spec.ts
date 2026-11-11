@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { openReplay, origin, gotoHydrated } from './support.ts';
+import { openReplay, openStepsRail, origin, gotoHydrated } from './support.ts';
 
 const viewer = (id = 'demo-shop', query = '') => `${origin()}/r/${id}${query}`;
 const playhead = (page: Page) => page.getByTestId('playhead');
@@ -81,6 +81,7 @@ test.describe('viewer', () => {
 
   test('clicking a step seeks to it', async ({ page }) => {
     await openReplay(page, viewer());
+    await openStepsRail(page);
     await step(page, 5).click();
     await expect(playhead(page)).toHaveText('0:03.0');
     await expect(step(page, 5)).toHaveAttribute('aria-current', 'step');

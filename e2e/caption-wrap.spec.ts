@@ -1,12 +1,12 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { isRecord } from '../src/shared/validate.ts';
-import { boxOf, openReplay, origin } from './support.ts';
+import { boxOf, openReplay, openStepsRail, origin } from './support.ts';
 
 const LONG_LABEL = `Clicked “asdadasd, 10:00 AM–1:15 PM, 3h 15m ${'asdadasd asdasd '.repeat(10)}…”`;
 
 // why: a person-written label (auto: false) keeps its full length; generated click names are capped (step-names.ts).
-async function openLongCaption(page: Page) {
+async function openLongCaption(page: Page, hasRail: boolean) {
   await page.route('**/api/replays/demo-shop', async (route) => {
     const response = await route.fetch();
     const bundle: unknown = await response.json();
@@ -15,6 +15,7 @@ async function openLongCaption(page: Page) {
   });
   await page.addInitScript(() => localStorage.setItem('replays-captions', '1'));
   await openReplay(page, `${origin()}/r/demo-shop`);
+  if (hasRail) await openStepsRail(page);
   await page.getByTestId('step-timeline').locator('[data-step-index="0"]').click();
   const caption = page.getByTestId('step-caption');
   await expect(caption).toHaveAttribute('data-active', 'true');
@@ -39,7 +40,7 @@ for (const [width, height, mobile] of [
     test.use({ viewport: { width, height }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1, reducedMotion: 'reduce' });
 
     test('a long step caption wraps to at most two lines and never shows an ellipsis', async ({ page }) => {
-      const caption = await openLongCaption(page);
+      const caption = await openLongCaption(page, !mobile);
       const label = caption.locator('.step-caption-label');
       await expect(label).not.toContainText('…');
       const styles = await captionOverflow(caption);
