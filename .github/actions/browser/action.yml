@@ -1,5 +1,5 @@
 name: Pinned Chromium
-description: Cache locked browser binaries while checking system dependencies on every runner
+description: Cache locked browser binaries; install system libraries only when the runner image lacks them
 runs:
   using: composite
   steps:
@@ -7,5 +7,18 @@ runs:
       with:
         path: ~/.cache/ms-playwright
         key: chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+    # why: the runner image already carries Chromium's libraries, and `--with-deps` spent 12 to 22 s in apt on every
+    # job (and flaked on runner DNS). Only a binary that cannot resolve its libraries pays for the apt install.
     - shell: bash
-      run: pnpm exec playwright install --with-deps chromium
+      run: |
+        pnpm exec playwright install chromium
+        missing=0
+        for binary in ~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome ~/.cache/ms-playwright/chromium_headless_shell-*/chrome-linux*/headless_shell; do
+          [ -x "$binary" ] || continue
+          if ldd "$binary" 2>/dev/null | grep -q 'not found'; then missing=1; fi
+        done
+        if [ "$missing" = 1 ]; then
+          # invariant: another background apt (FFmpeg) may hold the dpkg lock; wait it out instead of failing.
+          while sudo fuser /var/lib/dpkg/lock-frontend > /dev/null 2>&1; do sleep 1; done
+          pnpm exec playwright install --with-deps chromium
+        fi

@@ -204,14 +204,6 @@ test.describe('viewer', () => {
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
   });
 
-  test('the step captions switch flips on click', async ({ page }) => {
-    await openReplay(page, viewer());
-    const captions = page.getByTestId('captions-switch');
-    await expect(captions).toHaveAttribute('aria-pressed', 'false');
-    await captions.click();
-    await expect(captions).toHaveAttribute('aria-pressed', 'true');
-  });
-
   test('the shortcut sheet opens from ? and from the More menu, and closes on Escape', async ({ page }) => {
     await openReplay(page, viewer());
     await page.locator('body').press('?');

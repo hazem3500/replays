@@ -8,11 +8,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : 1,
+  // why: CI shards run on four-core runners; each spec drives its own Chromium and the server stays on one core.
+  workers: process.env.CI ? 4 : 1,
   timeout: 30_000,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    trace: 'retain-on-failure',
+    // why: a passing test's trace is never read; the retry of a failure records the one that is.
+    trace: 'on-first-retry',
     launchOptions: {
       ...(executablePath ? { executablePath } : {}),
       ...(process.env.CHROMIUM_NO_SANDBOX === '1' ? { args: ['--no-sandbox'] } : {}),
