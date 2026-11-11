@@ -22,6 +22,32 @@ const FINISH_WAIT_MS = 2000;
 
 const delay = (ms: number) => new Promise<void>((done) => window.setTimeout(done, ms));
 
+type RunView = Parameters<Parameters<typeof motionView>[1]>[0];
+
+function describeRunTransition(view: RunView) {
+  view.old({ opacity: [1, 1] }).new({ opacity: [0, 1] }, { duration: 0.2 });
+  view
+    .add('[style*="view-transition-name: vt-run-hero"]')
+    .group(false)
+    .crop(true)
+    .layout({ type: spring, duration: 0.28, bounce: 0.06 })
+    .old({ opacity: [1, 1] }, { duration: 0.2 })
+    .new({ opacity: [0, 1] }, { duration: 0.2 });
+  for (const panel of ['.app-shell .timeline-panel', '.app-shell .inspector']) {
+    view
+      .add(panel, panel)
+      .layout({ duration: 0 })
+      .old({ opacity: [1, 1] })
+      .new({ opacity: [0, 1], transform: ['translateY(4px)', 'translateY(0px)'] }, { duration: 0.22 });
+  }
+  const sidebar = '.suite-sidebar';
+  view
+    .add(sidebar, sidebar)
+    .layout({ duration: 0 })
+    .old({ opacity: [0, 0] })
+    .new({ opacity: [1, 1] });
+}
+
 export function swapInPlace(update: () => void, ready: Promise<unknown>, { instant = false }: { instant?: boolean } = {}) {
   const root = document.documentElement;
   root.dataset.navigated = '';
@@ -42,43 +68,18 @@ export function swapInPlace(update: () => void, ready: Promise<unknown>, { insta
     namePicture(viewerPicture(), 'vt-run-hero');
     root.dataset.pageTransition = 'motion-run';
     let committed = false;
-    const transition = motionView(
-      () => {
-        if (!isTurn(turn) || committed) return;
-        committed = true;
-        unnameAll();
-        setSwappingInPlace(true);
-        try {
-          flushSync(update);
-        } finally {
-          setSwappingInPlace(false);
-        }
-        namePicture(viewerPicture(), 'vt-run-hero');
-      },
-      (view) => {
-        view.old({ opacity: [1, 1] }).new({ opacity: [0, 1] }, { duration: 0.2 });
-        view
-          .add('[style*="view-transition-name: vt-run-hero"]')
-          .group(false)
-          .crop(true)
-          .layout({ type: spring, duration: 0.28, bounce: 0.06 })
-          .old({ opacity: [1, 1] }, { duration: 0.2 })
-          .new({ opacity: [0, 1] }, { duration: 0.2 });
-        for (const panel of ['.app-shell .timeline-panel', '.app-shell .inspector']) {
-          view
-            .add(panel, panel)
-            .layout({ duration: 0 })
-            .old({ opacity: [1, 1] })
-            .new({ opacity: [0, 1], transform: ['translateY(4px)', 'translateY(0px)'] }, { duration: 0.22 });
-        }
-        const sidebar = '.suite-sidebar';
-        view
-          .add(sidebar, sidebar)
-          .layout({ duration: 0 })
-          .old({ opacity: [0, 0] })
-          .new({ opacity: [1, 1] });
-      },
-    );
+    const transition = motionView(() => {
+      if (!isTurn(turn) || committed) return;
+      committed = true;
+      unnameAll();
+      setSwappingInPlace(true);
+      try {
+        flushSync(update);
+      } finally {
+        setSwappingInPlace(false);
+      }
+      namePicture(viewerPicture(), 'vt-run-hero');
+    }, describeRunTransition);
     follow(transition);
     // why: a crossfade queued behind one a quick switch cut short can wait forever; the run must still change.
     window.setTimeout(() => {

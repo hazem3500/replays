@@ -31,6 +31,94 @@ function deltaTone(difference: number) {
   return difference > 0 ? 'worse' : 'better';
 }
 
+type VitalItem = { stat: Stat; vital: Vital | undefined };
+
+function statGroup(group: StatGroup, items: readonly VitalItem[]) {
+  const inGroup = items.filter((item) => item.stat.group === group);
+  return {
+    group,
+    shown: inGroup.filter((item) => item.stat.value !== undefined),
+    note: groupNote(
+      group,
+      inGroup.filter((item) => item.stat.value === undefined).map((item) => item.stat),
+    ),
+  };
+}
+
+function VitalCell({
+  stat,
+  vital,
+  details,
+  peers,
+  onPick,
+  pressed,
+}: {
+  stat: Stat;
+  vital: Vital | undefined;
+  details: boolean;
+  peers: readonly VitalPeer[];
+  onPick: (() => void) | undefined;
+  pressed: boolean | undefined;
+}) {
+  return (
+    <>
+      {details ? null : <StripStat stat={stat} onPick={onPick} pressed={pressed} />}
+      {details ? (
+        <StatTile stat={stat} onPick={onPick} pressed={pressed}>
+          {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
+        </StatTile>
+      ) : null}
+      {vital && peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
+    </>
+  );
+}
+
+/** Why a group lacks some stats it watches, one note per distinct reason. */
+function absentNotes(group: StatGroup, items: readonly VitalItem[]): GroupNote[] {
+  const absent = items.filter((item) => item.stat.group === group && item.stat.value === undefined && item.stat.watched);
+  return [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []));
+}
+
+function FromLoadNote() {
+  return (
+    <p
+      className="pp-group-note"
+      data-testid="performance-from-load"
+      title="The page was reloaded to record, so the load metrics cover the whole load."
+    >
+      Recorded from page load
+    </p>
+  );
+}
+
+function NoVitals({
+  ranged,
+  reason,
+  scopes,
+  children,
+}: {
+  ranged: boolean;
+  reason: string | undefined;
+  scopes: readonly { text: string; label: string; onClear: () => void }[];
+  children?: ReactNode;
+}) {
+  return (
+    <div className="pp-vitals" data-testid="performance-vitals">
+      <Tooltip>
+        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: the reason is in a tooltip, so keyboard users must reach it. */}
+        <TooltipTrigger render={<p tabIndex={0} />} className="pp-stats-empty">
+          {ranged ? 'Nothing was measured in this range' : 'No performance measurements were recorded'}
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <span className="pp-stat-tip">{reason}</span>
+        </TooltipContent>
+      </Tooltip>
+      <ScopeChips scopes={scopes} />
+      {children}
+    </div>
+  );
+}
+
 /**
  * The recording's measurements as one grid of stats: Loading, Responsiveness, Smoothness. Each is a label, a number, and
  * a thin meter of its good, needs work and poor bands with a marker at the value; the rating word is in the tooltip and
@@ -73,17 +161,7 @@ export function VitalsBar({
   const viewer = use(PluginContexts)?.('');
   const context = viewer ? { replay: viewer.replay, seek: viewer.seek.bind(viewer) } : {};
   const items = [...vitals.map((vital) => ({ stat: vitalStat(vital), vital })), ...cadence.map((stat) => ({ stat, vital: undefined }))];
-  const groups = GROUPS.map((group) => {
-    const inGroup = items.filter((item) => item.stat.group === group);
-    return {
-      group,
-      shown: inGroup.filter((item) => item.stat.value !== undefined),
-      note: groupNote(
-        group,
-        inGroup.filter((item) => item.stat.value === undefined).map((item) => item.stat),
-      ),
-    };
-  });
+  const groups = GROUPS.map((group) => statGroup(group, items));
   const actionOf = (stat: Stat, vital: Vital | undefined) => {
     if (vital?.id === 'tbt') return onBlocking;
     if (vital) return vital.moment || vital.at !== undefined ? () => onPick(vital) : undefined;
@@ -91,25 +169,21 @@ export function VitalsBar({
   };
   const builtins = groups.flatMap(({ group, shown }, position) => {
     const base = (position + 1) * 1000;
-    const absent = items.filter((item) => item.stat.group === group && item.stat.value === undefined && item.stat.watched);
-    // why: a group with nothing measured is left out; only a group that shows stats explains the ones it lacks.
-    const notes: GroupNote[] =
-      ranged || !shown.length ? [] : [...new Set(absent.map((item) => item.stat.absent))].flatMap((text) => (text ? [{ text }] : []));
+    const notes = ranged || !shown.length ? [] : absentNotes(group, items);
     return [
       ...(details && shown.length ? [{ id: `core:group:${group}`, order: base - 10, render: () => <GroupName group={group} /> }] : []),
       ...shown.map(({ stat, vital }, index) => ({
         id: `core:${stat.id}`,
         order: base + index * 10,
         render: () => (
-          <>
-            {details ? null : <StripStat stat={stat} onPick={actionOf(stat, vital)} pressed={vital?.id === 'tbt' ? blocking : undefined} />}
-            {details ? (
-              <StatTile stat={stat} onPick={actionOf(stat, vital)} pressed={vital?.id === 'tbt' ? blocking : undefined}>
-                {vital && peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
-              </StatTile>
-            ) : null}
-            {vital && peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
-          </>
+          <VitalCell
+            stat={stat}
+            vital={vital}
+            details={details}
+            peers={peers}
+            onPick={actionOf(stat, vital)}
+            pressed={vital?.id === 'tbt' ? blocking : undefined}
+          />
         ),
       })),
       ...(notes.length
@@ -117,35 +191,12 @@ export function VitalsBar({
         : []),
     ];
   });
-  if (fromLoad)
-    builtins.push({
-      id: 'core:note:capture',
-      order: NOTES_LAST + 100,
-      render: () => (
-        <p
-          className="pp-group-note"
-          data-testid="performance-from-load"
-          title="The page was reloaded to record, so the load metrics cover the whole load."
-        >
-          Recorded from page load
-        </p>
-      ),
-    });
+  if (fromLoad) builtins.push({ id: 'core:note:capture', order: NOTES_LAST + 100, render: () => <FromLoadNote /> });
   if (groups.every(({ shown }) => !shown.length))
     return (
-      <div className="pp-vitals" data-testid="performance-vitals">
-        <Tooltip>
-          {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: the reason is in a tooltip, so keyboard users must reach it. */}
-          <TooltipTrigger render={<p tabIndex={0} />} className="pp-stats-empty">
-            {ranged ? 'Nothing was measured in this range' : 'No performance measurements were recorded'}
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <span className="pp-stat-tip">{groups[0]?.note.reason ?? groups[0]?.note.text}</span>
-          </TooltipContent>
-        </Tooltip>
-        <ScopeChips scopes={scopes} />
+      <NoVitals ranged={ranged} reason={groups[0]?.note.reason ?? groups[0]?.note.text} scopes={scopes}>
         {children}
-      </div>
+      </NoVitals>
     );
   return (
     <div className="pp-vitals" data-testid="performance-vitals" data-details={details || undefined}>

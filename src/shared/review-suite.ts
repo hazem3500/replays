@@ -187,6 +187,13 @@ function date(value: unknown, label: string) {
   if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) throw new Error(`${label} is invalid`);
 }
 
+function assertSubject(value: unknown) {
+  const subject = record(value, 'suite.subject', ['provider', 'ref', 'url', 'label']);
+  if (typeof subject.provider !== 'string' || !/^[a-z0-9][a-z0-9_-]*$/.test(subject.provider))
+    throw new Error('suite.subject.provider is invalid');
+  assertSafeUrl(subject.url, 'suite.subject.url');
+}
+
 export function assertReviewSuite(value: unknown): asserts value is ReviewSuite {
   const suite = record(value, 'suite', [
     'version',
@@ -206,12 +213,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
   assertReplayId(suite.id);
   if (typeof suite.title !== 'string' || !suite.title.trim() || suite.title.length > 160) throw new Error('suite.title is invalid');
   date(suite.createdAt, 'suite.createdAt');
-  if (suite.subject !== undefined) {
-    const subject = record(suite.subject, 'suite.subject', ['provider', 'ref', 'url', 'label']);
-    if (typeof subject.provider !== 'string' || !/^[a-z0-9][a-z0-9_-]*$/.test(subject.provider))
-      throw new Error('suite.subject.provider is invalid');
-    assertSafeUrl(subject.url, 'suite.subject.url');
-  }
+  if (suite.subject !== undefined) assertSubject(suite.subject);
   if (suite.context !== undefined) assertReplayContext(suite.context);
   if (suite.people !== undefined) assertReplayPeople(suite.people, 'suite.people');
   if (suite.profile !== undefined && !isProfileId(suite.profile)) throw new Error('suite.profile is invalid');

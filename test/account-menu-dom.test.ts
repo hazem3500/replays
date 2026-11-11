@@ -119,62 +119,65 @@ describe('the account menu', () => {
     expect(trigger?.querySelector('svg.lucide-user-round')).toBeNull();
     expect(trigger?.querySelector('[data-icon="ellipsis"]')).not.toBeNull();
   });
+});
 
-  describe('Connect GitHub', () => {
-    const IAP: Account = { id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } };
+describe('the account menu: Connect GitHub', () => {
+  beforeEach(setUp);
+  afterEach(tearDown);
 
-    it('gives an account without a sign-out URL a menu with Connect GitHub, which starts the server flow from this page', () => {
-      offer({ available: true, linked: null });
-      renderBar(IAP);
-      openAccount();
-      const connect = document.querySelector('[data-testid="github-connect"]');
-      expect(connect?.getAttribute('href')).toBe(
-        `/auth/github/start?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
-      );
-      expect(document.querySelector('[data-testid="github-disconnect"]')).toBeNull();
-    });
+  const IAP: Account = { id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } };
 
-    it('on another host, starts the flow on the public origin and asks to come back to this page', () => {
-      offer({ available: true, linked: null, start: 'https://replays.example.com/auth/github/start' });
-      renderBar(IAP);
-      openAccount();
-      expect(document.querySelector('[data-testid="github-connect"]')?.getAttribute('href')).toBe(
-        `https://replays.example.com/auth/github/start?return=${encodeURIComponent(window.location.href)}`,
-      );
-    });
+  it('gives an account without a sign-out URL a menu with Connect GitHub, which starts the server flow from this page', () => {
+    offer({ available: true, linked: null });
+    renderBar(IAP);
+    openAccount();
+    const connect = document.querySelector('[data-testid="github-connect"]');
+    expect(connect?.getAttribute('href')).toBe(
+      `/auth/github/start?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+    );
+    expect(document.querySelector('[data-testid="github-disconnect"]')).toBeNull();
+  });
 
-    it('on the public origin itself, keeps the same-origin start', () => {
-      offer({ available: true, linked: null, start: `${window.location.origin}/auth/github/start` });
-      renderBar(IAP);
-      openAccount();
-      expect(document.querySelector('[data-testid="github-connect"]')?.getAttribute('href')).toBe(
-        `/auth/github/start?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
-      );
-    });
+  it('on another host, starts the flow on the public origin and asks to come back to this page', () => {
+    offer({ available: true, linked: null, start: 'https://replays.example.com/auth/github/start' });
+    renderBar(IAP);
+    openAccount();
+    expect(document.querySelector('[data-testid="github-connect"]')?.getAttribute('href')).toBe(
+      `https://replays.example.com/auth/github/start?return=${encodeURIComponent(window.location.href)}`,
+    );
+  });
 
-    it('shows the linked account with its avatar and Disconnect instead', () => {
-      offer({ available: true, linked: { login: 'octocat', avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4' } });
-      renderBar(IAP);
-      openAccount();
-      expect(document.querySelector('[data-testid="github-linked"]')?.textContent).toBe('GitHub: octocat');
-      expect(document.querySelector('[data-testid="github-linked"] img')?.getAttribute('src')).toBe(
-        'https://avatars.githubusercontent.com/u/1?v=4',
-      );
-      expect(document.querySelector('[data-testid="github-disconnect"]')).not.toBeNull();
-      expect(document.querySelector('[data-testid="github-connect"]')).toBeNull();
-    });
+  it('on the public origin itself, keeps the same-origin start', () => {
+    offer({ available: true, linked: null, start: `${window.location.origin}/auth/github/start` });
+    renderBar(IAP);
+    openAccount();
+    expect(document.querySelector('[data-testid="github-connect"]')?.getAttribute('href')).toBe(
+      `/auth/github/start?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+    );
+  });
 
-    it('is absent when the host did not list the plugin, whatever was cached', () => {
-      offer({ available: true, linked: null }, []);
-      renderBar(IAP);
-      expect(host.querySelector('[data-testid="account-menu"]')).toBeNull();
-    });
+  it('shows the linked account with its avatar and Disconnect instead', () => {
+    offer({ available: true, linked: { login: 'octocat', avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4' } });
+    renderBar(IAP);
+    openAccount();
+    expect(document.querySelector('[data-testid="github-linked"]')?.textContent).toBe('GitHub: octocat');
+    expect(document.querySelector('[data-testid="github-linked"] img')?.getAttribute('src')).toBe(
+      'https://avatars.githubusercontent.com/u/1?v=4',
+    );
+    expect(document.querySelector('[data-testid="github-disconnect"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="github-connect"]')).toBeNull();
+  });
 
-    it('is offered on phones in More', () => {
-      offer({ available: true, linked: null });
-      renderBar(IAP, true);
-      openMore();
-      expect(document.querySelector('[data-testid="github-connect"]')).not.toBeNull();
-    });
+  it('is absent when the host did not list the plugin, whatever was cached', () => {
+    offer({ available: true, linked: null }, []);
+    renderBar(IAP);
+    expect(host.querySelector('[data-testid="account-menu"]')).toBeNull();
+  });
+
+  it('is offered on phones in More', () => {
+    offer({ available: true, linked: null });
+    renderBar(IAP, true);
+    openMore();
+    expect(document.querySelector('[data-testid="github-connect"]')).not.toBeNull();
   });
 });
