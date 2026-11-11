@@ -1039,7 +1039,15 @@ svg.lucide.lucide { stroke-width: 2; }
 .topbar-compact .topbar-source-chip { width: 40px; height: 40px; justify-content: center; margin-left: 0; padding: 0; border: 0; border-radius: var(--radius); }
 .topbar-compact .topbar-source-chip > span, .topbar-compact .topbar-source-chip > svg:last-child { display: none; }
 .topbar-compact .topbar-source-chip > svg:first-child { width: 16px; height: 16px; }
+/* why: the status row shrinks first (the edit text truncates) but never below its dot, a chevron and the source mark. */
 .topbar-compact .topbar-status { margin-right: 0; }
+.topbar-compact .topbar-status:has(.edited-chip) { flex-shrink: 1; min-width: 120px; }
+/* why: the title floor (prefix, chevron, two letters) keeps the run switcher whole; the status row gives way first. */
+.topbar-compact .topbar-title-menu { min-width: 84px; }
+.topbar-compact .edited-chip { min-width: 0; flex: 0 1 auto; }
+.topbar-compact .topbar-source-chip, .topbar-compact .status-label { flex: 0 0 auto; }
+.topbar-compact .edited-label { min-width: 0; }
+.topbar-compact .edited-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .topbar-compact .topbar-actions { gap: 0; }
 /* Phones: replay details as a bottom sheet, headed by the full title (the bar cuts it). */
 .info-sheet-title { padding: 2px 16px 10px; font-size: var(--text-md); line-height: 1.35; text-wrap: pretty; }
