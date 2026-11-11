@@ -245,9 +245,7 @@ function TimeReadout() {
   );
 }
 
-function fpsHint(recorded: boolean, band: FrameBand | undefined) {
-  if (!recorded) return 'Frame timing not recorded';
-  if (!band) return 'No frame sample at this moment';
+function fpsHint(band: FrameBand) {
   return `About ${Math.round(band.fps)} frames per second this second; about ${band.dropped} missed against 60 Hz`;
 }
 
@@ -255,14 +253,12 @@ function fpsHint(recorded: boolean, band: FrameBand | undefined) {
 function FpsReadout() {
   const { performanceFocused, frames = NO_FRAMES } = useViewer();
   const band = usePlayhead((time) => bandAt(frames, time) ?? nearestBand(frames, time));
-  if (!performanceFocused) return null;
-  const recorded = frames.length > 0;
-  if (recorded && !band) return null;
+  if (!performanceFocused || !frames.length || !band) return null;
   return (
-    <Hint label={fpsHint(recorded, band)} align="start">
-      <span className="transport-fps" data-testid="fps-readout" data-verdict={band?.verdict} data-recorded={recorded || undefined}>
+    <Hint label={fpsHint(band)} align="start">
+      <span className="transport-fps" data-testid="fps-readout" data-verdict={band.verdict}>
         <i aria-hidden="true" />
-        {band ? <strong>{Math.round(band.fps)}</strong> : 'n/a'} FPS
+        <strong>{Math.round(band.fps)}</strong> FPS
       </span>
     </Hint>
   );

@@ -4,29 +4,11 @@ import { buildPerformance, type PerformanceSignal } from '../performance.ts';
 import { validDuration } from '../waterfall.ts';
 import { describeTarget, NO_WHY, overlapMs, type PerfWhy } from './why.ts';
 
-export type Verdict = 'good' | 'needs-work' | 'poor';
-/** [good at or under, poor over], in ms. */
-export type Budget = readonly [number, number];
-export type VitalId = 'fcp' | 'lcp' | 'interaction' | 'task' | 'tbt';
+import { type Budget, BUDGETS, type Verdict, verdictFor, type VitalId } from './budgets.ts';
 
-/**
- * Web Vitals thresholds where they exist (FCP, LCP, INP for interactions, TBT); a long task is judged against the
- * 100 ms a person notices, since every captured task is already over the 50 ms that makes it "long".
- */
-export const BUDGETS: Readonly<Record<VitalId, Budget>> = {
-  fcp: [1800, 3000],
-  lcp: [2500, 4000],
-  interaction: [200, 500],
-  task: [100, 250],
-  tbt: [200, 600],
-};
+export { type Budget, BUDGETS, type Verdict, verdictFor, type VitalId };
 
 export const VERDICT_WORDS: Readonly<Record<Verdict, string>> = { good: 'Good', 'needs-work': 'Needs work', poor: 'Poor' };
-
-export function verdictFor(value: number, [good, poor]: Budget): Verdict {
-  if (value <= good) return 'good';
-  return value <= poor ? 'needs-work' : 'poor';
-}
 
 /** A slow stretch someone felt: one interaction (its pointer, key and click events together) or one long task. */
 export interface Moment {
