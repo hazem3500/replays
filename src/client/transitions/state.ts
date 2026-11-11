@@ -51,6 +51,7 @@ function untilSettledOrAbandoned(transition: PageTransition, promise: Promise<un
     waiters.add(resolve);
     const done = () => {
       waiters.delete(resolve);
+      if (waiters.size === 0) waiting.delete(transition);
       resolve();
     };
     void promise.then(done, done);
