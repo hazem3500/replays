@@ -1035,7 +1035,9 @@ function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedS
         }
       >
         <span className="edited-label">
-          {original ? 'Original recording' : stored.updatedAt ? `Edited ${savedAgo(stored.updatedAt)}` : 'Edited'}
+          <span className="edited-text">
+            {original ? 'Original recording' : stored.updatedAt ? `Edited ${savedAgo(stored.updatedAt)}` : 'Edited'}
+          </span>
           <AnimatedIcon name="chevron-down" />
         </span>
       </DropdownMenuTrigger>
