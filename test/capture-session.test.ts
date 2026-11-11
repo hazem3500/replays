@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { type CdpLike, type RecorderChunk, RecorderSession, normalizeConsole, normalizePerformance } from '../src/capture/session.ts';
+import {
+  type CdpLike,
+  type RecorderChunk,
+  RecorderSession,
+  normalizeConsole,
+  normalizeFrames,
+  normalizePerformance,
+} from '../src/capture/session.ts';
 
 type Handler = (params: Record<string, unknown>) => void;
 
@@ -243,6 +250,56 @@ describe('stop', () => {
     cdp.probeFails = true;
     const session = await RecorderSession.start(cdp, LONG_INTERVAL);
     await expect(session.stop()).rejects.toThrow('rrweb recorded fewer than two events ({"context":"unavailable"})');
+  });
+});
+
+describe('frame samples', () => {
+  it('merges samples across navigations onto the replay clock and marks animation-frame supported', async () => {
+    const cdp = new FakeCdp();
+    cdp.chunks = [
+      { events: events(5000, 5200), frames: [{ at: 6000, elapsed: 1000, frames: 59, dropped: 1 }] },
+      {
+        events: events(5600),
+        frames: [
+          { at: 5400, elapsed: 1016, frames: 60, dropped: 0 },
+          { at: 4000, elapsed: 0, frames: 1, dropped: 0 },
+        ],
+      },
+    ];
+    const session = await RecorderSession.start(cdp, LONG_INTERVAL);
+    await session.flush();
+    const tracks = await session.stop();
+    expect(tracks.performance.supported).toEqual(['animation-frame']);
+    expect(tracks.performance.frames).toEqual([
+      { at: 400, elapsed: 1016, frames: 60, dropped: 0 },
+      { at: 1000, elapsed: 1000, frames: 59, dropped: 1 },
+    ]);
+  });
+
+  it('records no frames track when the page sent no samples', async () => {
+    const cdp = new FakeCdp();
+    cdp.chunks = [{ events: events(5000, 5200) }];
+    const session = await RecorderSession.start(cdp, LONG_INTERVAL);
+    const tracks = await session.stop();
+    expect(tracks.performance.frames).toBeUndefined();
+    expect(tracks.performance.supported).toEqual([]);
+  });
+
+  it('keeps at most 600 samples', async () => {
+    const cdp = new FakeCdp();
+    const batch = (from: number) =>
+      Array.from({ length: 400 }, (_, index) => ({ at: from + index * 1000, elapsed: 1000, frames: 60, dropped: 0 }));
+    cdp.chunks = [{ events: events(0, 10), frames: batch(0) }, { frames: batch(400_000) }];
+    const session = await RecorderSession.start(cdp, LONG_INTERVAL);
+    await session.flush();
+    const tracks = await session.stop();
+    expect(tracks.performance.frames).toHaveLength(600);
+  });
+
+  it('normalizeFrames drops invalid samples and respects a smaller limit', () => {
+    const valid = { at: 3000, elapsed: 1000, frames: 60, dropped: 0 };
+    expect(normalizeFrames([valid, { ...valid, frames: 1.5 }, { ...valid, at: Number.NaN }], 1000, 5)).toEqual([{ ...valid, at: 2000 }]);
+    expect(normalizeFrames([valid, { ...valid, at: 4000 }], 0, 1)).toHaveLength(1);
   });
 });
 

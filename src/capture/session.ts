@@ -22,6 +22,7 @@ export interface RecorderChunk {
   console?: Array<{ at: number; level: string; message: string; url?: string }>;
   performance?: Array<{ at: number; kind: string; value: number; eventType?: string }>;
   performanceSupported?: string[];
+  frames?: Array<{ at: number; elapsed: number; frames: number; dropped: number }>;
   steps?: ReplayStep[];
 }
 
@@ -144,6 +145,30 @@ export function normalizePerformance(
     .sort((a, b) => a.at - b.at);
 }
 
+const MAX_FRAME_SAMPLES = 600;
+
+/** Frame samples on the replay's clock: finite, sensible values only, oldest first, at most 600. */
+export function normalizeFrames(
+  samples: NonNullable<RecorderChunk['frames']>,
+  origin: number,
+  limit = MAX_FRAME_SAMPLES,
+): NonNullable<ReplayPerformanceTrack['frames']> {
+  return samples
+    .filter(
+      (sample) =>
+        Number.isFinite(sample.at) &&
+        Number.isFinite(sample.elapsed) &&
+        sample.elapsed > 0 &&
+        Number.isInteger(sample.frames) &&
+        sample.frames >= 0 &&
+        Number.isInteger(sample.dropped) &&
+        sample.dropped >= 0,
+    )
+    .map((sample) => ({ at: Math.max(0, sample.at - origin), elapsed: sample.elapsed, frames: sample.frames, dropped: sample.dropped }))
+    .sort((a, b) => a.at - b.at)
+    .slice(0, Math.min(Math.max(0, limit), MAX_FRAME_SAMPLES));
+}
+
 export interface RecordedTracks {
   events: Array<Record<string, unknown> & { timestamp: number }>;
   console: ReplayConsoleEntry[];
@@ -168,6 +193,7 @@ export class RecorderSession {
   private readonly events: RecordedTracks['events'] = [];
   private readonly consoleEntries: NonNullable<RecorderChunk['console']> = [];
   private readonly performanceEntries: NonNullable<RecorderChunk['performance']> = [];
+  private readonly frameSamples: NonNullable<RecorderChunk['frames']> = [];
   private readonly performanceSupported = new Set<string>();
   private readonly pageSteps: ReplayStep[] = [];
   private readonly loads: PageLoad[] = [];
@@ -256,6 +282,7 @@ export class RecorderSession {
     this.consoleEntries.push(...(chunk.console ?? []));
     const remaining = Math.max(0, MAX_PERFORMANCE_ENTRIES - this.performanceEntries.length);
     this.performanceEntries.push(...(chunk.performance ?? []).slice(0, remaining));
+    this.frameSamples.push(...(chunk.frames ?? []).slice(0, Math.max(0, MAX_FRAME_SAMPLES - this.frameSamples.length)));
     if (this.stepsWanted) this.pageSteps.push(...(chunk.steps ?? []));
     for (const type of chunk.performanceSupported ?? []) if (performanceTypes.has(type)) this.performanceSupported.add(type);
   }
@@ -284,12 +311,14 @@ export class RecorderSession {
       throw new Error(`rrweb recorded fewer than two events (${JSON.stringify(probe?.result?.value ?? { context: 'unavailable' })})`);
     }
     const origin = this.events[0]!.timestamp;
+    const frames = normalizeFrames(this.frameSamples, origin);
     return {
       events: this.events,
       console: normalizeConsole(this.consoleEntries, origin, this.redaction).sort((a, b) => a.at - b.at),
       performance: {
-        supported: [...this.performanceSupported].sort(),
+        supported: [...this.performanceSupported, ...(frames.length ? ['animation-frame'] : [])].sort(),
         entries: normalizePerformance(this.performanceEntries, origin),
+        ...(frames.length ? { frames } : {}),
       },
       steps: this.stepsWanted ? deriveManualSteps(this.pageSteps, this.loads) : [],
       origin,
