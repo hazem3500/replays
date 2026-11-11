@@ -16,7 +16,7 @@ validator for sizes and the privacy pass), and `test/formats.test.ts` keeps them
 | [`comments.schema.json`](comments.schema.json) | `<id>/comments.json` |
 | [`edits.schema.json`](edits.schema.json) | `<id>/edits.json` (beta editor) |
 | [`plugin-manifest.schema.json`](plugin-manifest.schema.json) | A user plugin's manifest (beta.malleable) |
-| [`suite-plan.schema.json`](suite-plan.schema.json) | The plan `replays suite record --plan` reads (example: `sample/suite-plan.json`) |
+| [`suite-plan.schema.json`](suite-plan.schema.json) | The plan `replays suite record --plan` reads (examples: `sample/suite-plan.json`; `sample/suite-perf-plan.json` compares targets with `group`, `target`, `measure` and `baseline`) |
 | [`user-plugin.schema.json`](user-plugin.schema.json) | A shareable `*.replays-plugin.json` file |
 | [`user-plugin-history.schema.json`](user-plugin-history.schema.json) | A saved plugin's version history |
 

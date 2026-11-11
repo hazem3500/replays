@@ -1,0 +1,82 @@
+{
+  "$schema": "../docs/formats/suite-plan.schema.json",
+  "id": "shop-cart-perf",
+  "title": "Cart speed: main vs the cart rewrite",
+  "profile": "performance",
+  "baseline": "main",
+  "summary": "Times opening the cart on main and on the rewrite, three samples each.",
+  "runs": [
+    {
+      "id": "open-cart-main-1",
+      "title": "Open cart, main, sample 1",
+      "group": "Open cart",
+      "target": "main",
+      "measure": "Cart visible",
+      "url": "http://localhost:4173/",
+      "steps": [
+        { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" },
+        { "kind": "wait", "selector": "#cart-items", "label": "Cart visible" }
+      ]
+    },
+    {
+      "id": "open-cart-main-2",
+      "title": "Open cart, main, sample 2",
+      "group": "Open cart",
+      "target": "main",
+      "measure": "Cart visible",
+      "url": "http://localhost:4173/",
+      "steps": [
+        { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" },
+        { "kind": "wait", "selector": "#cart-items", "label": "Cart visible" }
+      ]
+    },
+    {
+      "id": "open-cart-main-3",
+      "title": "Open cart, main, sample 3",
+      "group": "Open cart",
+      "target": "main",
+      "measure": "Cart visible",
+      "url": "http://localhost:4173/",
+      "steps": [
+        { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" },
+        { "kind": "wait", "selector": "#cart-items", "label": "Cart visible" }
+      ]
+    },
+    {
+      "id": "open-cart-rewrite-1",
+      "title": "Open cart, #42, sample 1",
+      "group": "Open cart",
+      "target": "#42",
+      "measure": "Cart visible",
+      "url": "http://localhost:4174/",
+      "steps": [
+        { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" },
+        { "kind": "wait", "selector": "#cart-items", "label": "Cart visible" }
+      ]
+    },
+    {
+      "id": "open-cart-rewrite-2",
+      "title": "Open cart, #42, sample 2",
+      "group": "Open cart",
+      "target": "#42",
+      "measure": "Cart visible",
+      "url": "http://localhost:4174/",
+      "steps": [
+        { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" },
+        { "kind": "wait", "selector": "#cart-items", "label": "Cart visible" }
+      ]
+    },
+    {
+      "id": "open-cart-rewrite-3",
+      "title": "Open cart, #42, sample 3",
+      "group": "Open cart",
+      "target": "#42",
+      "measure": "Cart visible",
+      "url": "http://localhost:4174/",
+      "steps": [
+        { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" },
+        { "kind": "wait", "selector": "#cart-items", "label": "Cart visible" }
+      ]
+    }
+  ]
+}

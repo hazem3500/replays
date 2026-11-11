@@ -31,6 +31,12 @@
       "description": "People on the suite and on every replay it records."
     },
     "summary": { "$ref": "#/$defs/summary", "description": "What the suite found and did not cover." },
+    "baseline": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "A run `target` the other targets are compared against; it must be the target of at least one run."
+    },
     "createdAt": {
       "type": "string",
       "format": "date-time",
@@ -80,7 +86,25 @@
             "maxDurationMs": { "type": "number", "exclusiveMinimum": 0 }
           }
         },
-        "summary": { "$ref": "#/$defs/summary", "description": "What this run checked; kept on the run, with any failure reasons added." }
+        "summary": { "$ref": "#/$defs/summary", "description": "What this run checked; kept on the run, with any failure reasons added." },
+        "group": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Names the flow, e.g. \"Cold open\". Runs in one group are comparable; the viewer lists and compares a run only with its group."
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "What the run was made against, e.g. \"main\" or \"#6879\". Runs with the same group and target are samples of each other."
+        },
+        "measure": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "The `label` of one of this run's steps. The time from the recording's start until that step completed is the run's headline number."
+        }
       }
     },
     "step": {

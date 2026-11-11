@@ -18,18 +18,27 @@ export function registration(current: ReviewSuite | undefined, id: string, input
     return { next: suite, result: suite };
   }
   const { runs, ...stored } = current;
-  const { people: currentPeople, summary: currentSummary, ...currentIdentity } = stored;
-  const { people: requestedPeople, summary: requestedSummary, ...requestedIdentity } = input;
+  const { people: currentPeople, summary: currentSummary, baseline: currentBaseline, ...currentIdentity } = stored;
+  const { people: requestedPeople, summary: requestedSummary, baseline: requestedBaseline, ...requestedIdentity } = input;
   if (JSON.stringify(currentIdentity) !== JSON.stringify({ ...requestedIdentity, id })) {
     throw new HttpError(409, `suite ${id} conflicts with its existing registration`);
   }
   const peopleChanged = requestedPeople !== undefined && JSON.stringify(requestedPeople) !== JSON.stringify(currentPeople);
   const summaryChanged = requestedSummary !== undefined && requestedSummary !== currentSummary;
-  if (!peopleChanged && !summaryChanged) return { next: undefined, result: current };
+  const baselineChanged = requestedBaseline !== undefined && requestedBaseline !== currentBaseline;
+  if (!peopleChanged && !summaryChanged && !baselineChanged) return { next: undefined, result: current };
   // why: key order as on first registration (people, summary, then runs), so the stored file reads the same either way.
   const people = requestedPeople ?? currentPeople;
   const summary = requestedSummary ?? currentSummary;
-  const updated: ReviewSuite = { ...currentIdentity, id, ...(people ? { people } : {}), ...(summary ? { summary } : {}), runs };
+  const baseline = requestedBaseline ?? currentBaseline;
+  const updated: ReviewSuite = {
+    ...currentIdentity,
+    id,
+    ...(people ? { people } : {}),
+    ...(summary ? { summary } : {}),
+    ...(baseline ? { baseline } : {}),
+    runs,
+  };
   return { next: updated, result: updated };
 }
 
@@ -43,6 +52,15 @@ function assertRunUnchanged(existing: ReviewSuiteRun, runId: string, input: Revi
   }
 }
 
+function grouping({ group, target, measure, measureMs }: ReviewSuiteRun) {
+  return {
+    ...(group ? { group } : {}),
+    ...(target ? { target } : {}),
+    ...(measure ? { measure } : {}),
+    ...(measureMs === undefined ? {} : { measureMs }),
+  };
+}
+
 /** The suite with `runId` registered or updated; a run's identity and a finished run's status never change. */
 export function withRun(suite: ReviewSuite, runId: string, input: ReviewRunRegistration): ReviewSuite {
   const existing = suite.runs.find((run) => run.id === runId);
@@ -50,6 +68,7 @@ export function withRun(suite: ReviewSuite, runId: string, input: ReviewRunRegis
   if (existing?.replayId && input.status === 'running') return suite;
   const summary = input.summary ?? existing?.summary;
   const run: ReviewSuiteRun = {
+    ...(existing ? grouping(existing) : {}),
     ...input,
     ...(summary ? { summary } : {}),
     ...(existing?.replayId ? { replayId: existing.replayId, recording: existing.recording } : {}),

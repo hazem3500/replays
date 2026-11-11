@@ -107,14 +107,23 @@ export async function createSuite(
   request: APIRequestContext,
   base: string,
   suiteId: string,
-  runs: Array<{ id: string; label: string; status: RunStatus; replayId?: string }>,
+  runs: Array<{
+    id: string;
+    label: string;
+    status: RunStatus;
+    replayId?: string;
+    group?: string;
+    target?: string;
+    measure?: string;
+    measureMs?: number;
+  }>,
   subject: { provider: string; ref: string; url: string; label: string } | undefined = {
     provider: 'github',
     ref: 'example-org/shop-demo#9',
     url: 'https://github.com/example-org/shop-demo/pull/9',
     label: 'Example change',
   },
-  { profile }: { profile?: string } = {},
+  { profile, baseline }: { profile?: string; baseline?: string } = {},
 ) {
   const now = new Date().toISOString();
   const put = async (path: string, data: unknown) => {
@@ -128,6 +137,7 @@ export async function createSuite(
     createdAt: now,
     ...(subject ? { subject } : {}),
     ...(profile ? { profile } : {}),
+    ...(baseline ? { baseline } : {}),
   });
   for (const [index, run] of runs.entries()) {
     await put(`suites/${suiteId}/runs/${run.id}`, {
@@ -136,6 +146,10 @@ export async function createSuite(
       label: run.label,
       status: run.status,
       startedAt: now,
+      ...(run.group ? { group: run.group } : {}),
+      ...(run.target ? { target: run.target } : {}),
+      ...(run.measure ? { measure: run.measure } : {}),
+      ...(run.measureMs === undefined ? {} : { measureMs: run.measureMs }),
     });
     if (!run.replayId) continue;
     // Without the sample's own context, so the suite's subject is the only source.

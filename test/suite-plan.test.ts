@@ -140,3 +140,38 @@ describe('expectations and replay ids', () => {
     expect(long).not.toBe(replayIdFor('s'.repeat(60), `${'R'.repeat(59)}Q`));
   });
 });
+
+describe('suite plan validation: groups', () => {
+  const timed = { ...run, steps: [{ kind: 'click', selector: '#go', label: 'Entries visible' }] };
+  const grouped = (extra: Record<string, unknown> = {}) => ({
+    ...timed,
+    group: 'Cold open',
+    target: 'main',
+    measure: 'Entries visible',
+    ...extra,
+  });
+
+  it('reads group, target, measure and baseline', () => {
+    const parsed = parsePlan(plan({ baseline: 'main' }, [grouped()]));
+    expect(parsed.baseline).toBe('main');
+    expect(parsed.runs[0]).toMatchObject({ group: 'Cold open', target: 'main', measure: 'Entries visible' });
+  });
+
+  it('leaves an old plan without them', () => {
+    expect(parsePlan(plan()).runs[0]).not.toHaveProperty('group');
+  });
+
+  it('rejects a measure that is not one of the run steps', () => {
+    expect(problem(plan({}, [grouped({ measure: 'Nope' })]))).toContain('must be the label of one of the run');
+  });
+
+  it('rejects over-long and empty names', () => {
+    expect(problem(plan({}, [grouped({ group: 'x'.repeat(81) })]))).toContain('runs[0].group');
+    expect(problem(plan({}, [grouped({ target: 'x'.repeat(41) })]))).toContain('runs[0].target');
+    expect(problem(plan({}, [grouped({ target: ' ' })]))).toContain('runs[0].target');
+  });
+
+  it('rejects a baseline no run targets', () => {
+    expect(problem(plan({ baseline: 'other' }, [grouped()]))).toContain('plan.baseline');
+  });
+});

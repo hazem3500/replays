@@ -18,6 +18,7 @@ export interface SuiteInput {
   source?: string | undefined;
   people?: ReplayPerson[] | undefined;
   summary?: string | undefined;
+  baseline?: string | undefined;
   createdAt?: string | undefined;
 }
 
@@ -38,6 +39,7 @@ function registrationOf(input: SuiteInput, createdAt: string): ReviewSuiteRegist
     ...(input.profile ? { profile: input.profile } : {}),
     ...(input.people?.length ? { people: input.people } : {}),
     ...(input.summary ? { summary: input.summary } : {}),
+    ...(input.baseline ? { baseline: input.baseline } : {}),
   };
 }
 
@@ -78,6 +80,10 @@ export interface RunUpdate {
   title?: string | undefined;
   status: ReviewRunStatus;
   summary?: string | undefined;
+  group?: string | undefined;
+  target?: string | undefined;
+  measure?: string | undefined;
+  measureMs?: number | undefined;
 }
 
 function registrationFor(suite: ReviewSuite, update: RunUpdate, now: () => Date): ReviewRunRegistration {
@@ -93,6 +99,21 @@ function registrationFor(suite: ReviewSuite, update: RunUpdate, now: () => Date)
     startedAt: existing?.startedAt ?? now().toISOString(),
     ...(isTerminal(update.status) ? { finishedAt: existing?.finishedAt ?? now().toISOString() } : {}),
     ...(update.summary ? { summary: update.summary } : {}),
+    ...groupingOf(update, existing),
+  };
+}
+
+/** The grouping fields of an update, each falling back to what the run already has. */
+function groupingOf(update: RunUpdate, existing: ReviewSuiteRun | undefined) {
+  const group = update.group ?? existing?.group;
+  const target = update.target ?? existing?.target;
+  const measure = update.measure ?? existing?.measure;
+  const measureMs = update.measureMs ?? existing?.measureMs;
+  return {
+    ...(group ? { group } : {}),
+    ...(target ? { target } : {}),
+    ...(measure ? { measure } : {}),
+    ...(measureMs === undefined ? {} : { measureMs }),
   };
 }
 

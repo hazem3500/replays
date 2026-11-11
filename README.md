@@ -646,6 +646,12 @@ run from `running` to `passed` or `failed`, and `replays suite show <id>` reads 
 registers the suite, records each run with the capture steps, uploads it to its run and marks it, carrying on past a failed run.
 `replays suite --help` lists everything.
 
+To compare builds, give each run a `group` (the flow, such as "Cold open"), a `target` (what it ran against, such as `main` or
+`#6879`) and a `measure` (the `label` of the step whose completion is the headline number), and name the suite's `baseline`
+target ([example](sample/suite-perf-plan.json)). The viewer then lists the suite by group, shows each target's median and its change
+from the baseline, and compares a run only with its own group. Use one group per flow, the same step labels in every target, and
+three or more samples per target.
+
 ## HTTP API
 
 | Route | |

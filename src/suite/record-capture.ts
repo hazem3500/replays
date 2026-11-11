@@ -83,7 +83,7 @@ export async function recordRunWithCapture(target: RunTarget, flags: CaptureFlag
     { ...args, ...(plan.people.length ? { people: plan.people } : {}) },
     createDriver(args.driver, { headed: args.headed }),
   );
-  return { bundle: await readBundle(result.replayPath), reused: false };
+  return { bundle: await readBundle(result.replayPath), reused: false, ...(result.stepEnds ? { stepEnds: result.stepEnds } : {}) };
 }
 
 async function readBundle(file: string): Promise<ReplayBundle> {

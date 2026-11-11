@@ -1,13 +1,26 @@
 import { type FrameVerdict, fpsVerdict, type ReplayPerfSummary } from '../../shared/frame-timing.ts';
 import type { ReviewSuiteIndexRun } from '../../shared/review-suite.ts';
+import { displayOrder, groupPeers, groupRuns, isGrouped, targetOf } from '../../shared/suite-groups.ts';
 import { tileColour } from '../compare/tiles.ts';
 import { BUDGETS, verdictFor } from '../viewer/performance/budgets.ts';
 
 type RunRecording = Pick<ReviewSuiteIndexRun, 'replayId' | 'replay'>;
 
-/** Runs in sequence order. */
-export function orderedRuns<T extends Pick<ReviewSuiteIndexRun, 'sequence'>>(runs: readonly T[]) {
-  return runs.toSorted((a, b) => a.sequence - b.sequence);
+/** A run's place in the list: `position` is where a grouped suite shows it, else its sequence. */
+type Sequenced = Pick<ReviewSuiteIndexRun, 'sequence'> & { position?: number | undefined };
+
+/** Runs in the order the sidebar shows them: by sequence, or by `position` when a grouped suite set one. */
+export function orderedRuns<T extends Sequenced>(runs: readonly T[]) {
+  return runs.toSorted((a, b) => (a.position ?? a.sequence) - (b.position ?? b.sequence));
+}
+
+/** A grouped suite's runs, numbered in the order its sidebar lists them (group, target, sample); other suites keep their sequence. */
+export function positionedRuns<T extends Pick<ReviewSuiteIndexRun, 'sequence' | 'group' | 'target' | 'measure' | 'measureMs' | 'replayId'>>(
+  runs: readonly T[],
+  baseline: string | undefined,
+): Array<T & { position?: number }> {
+  if (!isGrouped(runs)) return runs.toSorted((a, b) => a.sequence - b.sequence);
+  return displayOrder(groupRuns(runs, baseline)).map((run, position) => ({ ...run, position }));
 }
 
 /**
@@ -34,7 +47,7 @@ export function initialRunReplayId(
 
 /** The recording `step` runs away from `replayId` (J = +1, K = −1), skipping runs without one. */
 export function neighbourReplayId(
-  runs: ReadonlyArray<Pick<ReviewSuiteIndexRun, 'sequence' | 'replayId' | 'replay'>>,
+  runs: ReadonlyArray<Sequenced & Pick<ReviewSuiteIndexRun, 'replayId' | 'replay'>>,
   replayId: string | undefined,
   step: 1 | -1,
   detailed: boolean,
@@ -49,6 +62,8 @@ export interface RecordedRun {
   replayId: string;
   label: string;
   colour: number;
+  /** What the Compare stage calls this run, when its label is not enough (a grouped run is named by its target). */
+  name?: string;
 }
 
 /**
@@ -56,7 +71,7 @@ export interface RecordedRun {
  * stage both read colours from this one list, so a run's swatch and its tile frame can never disagree.
  */
 export function recordedRuns(
-  runs: ReadonlyArray<RunRecording & Pick<ReviewSuiteIndexRun, 'sequence' | 'label'>>,
+  runs: ReadonlyArray<RunRecording & Sequenced & Pick<ReviewSuiteIndexRun, 'label'>>,
   detailed: boolean,
 ): RecordedRun[] {
   const recorded = orderedRuns(runs).flatMap((run) => {
@@ -106,4 +121,58 @@ export function runMetrics(perf: ReplayPerfSummary | undefined): RunMetric[] {
 /** A run's metrics when its suite is performance-focused; undefined leaves the row as it was. */
 export function runRowMetrics(run: { replay?: { perf?: ReplayPerfSummary | undefined } | undefined }, performanceFocused: boolean) {
   return performanceFocused ? runMetrics(run.replay?.perf) : undefined;
+}
+
+/**
+ * In a grouped suite a run's colour is its target's (the baseline first), so "main" is the same colour in every group
+ * and on every Compare stage; the sidebar swatch and the tile frame still read it from this one list.
+ */
+export function colouredByTarget(
+  recorded: readonly RecordedRun[],
+  runs: ReadonlyArray<Pick<ReviewSuiteIndexRun, 'sequence' | 'replayId' | 'group' | 'target'>>,
+  baseline: string | undefined,
+): RecordedRun[] {
+  if (!isGrouped(runs)) return [...recorded];
+  const targets = [...new Set(runs.toSorted((a, b) => a.sequence - b.sequence).map(targetOf))];
+  const order = [...targets.filter((name) => name === baseline), ...targets.filter((name) => name !== baseline)];
+  const targetByReplay = new Map(runs.map((run) => [run.replayId, targetOf(run)]));
+  return recorded.map((run) => ({ ...run, colour: tileColour(Math.max(0, order.indexOf(targetByReplay.get(run.replayId) ?? ''))) }));
+}
+
+/**
+ * What "Compare" shows for the run in view. An ungrouped suite shows every recorded run. In a grouped suite, a grouped
+ * run is shown with the typical sample of each other target of its own group, named by target (the baseline marked);
+ * an ungrouped run only with the other ungrouped runs. Runs of other groups are never offered.
+ */
+export function comparisonRuns(
+  recorded: readonly RecordedRun[],
+  runs: ReadonlyArray<RunRecording & Pick<ReviewSuiteIndexRun, 'sequence' | 'group' | 'target' | 'measure' | 'measureMs'>>,
+  selected: string | undefined,
+  baseline: string | undefined,
+  detailed: boolean,
+) {
+  if (!isGrouped(runs)) return [...recorded];
+  const playable = runs.filter((run) => playableReplayId(run, detailed));
+  const current = playable.find((run) => run.replayId === selected);
+  if (!current) return [...recorded];
+  if (current.group === undefined) {
+    const loose = new Set(playable.filter((run) => run.group === undefined).map((run) => run.replayId));
+    return recorded.filter((run) => loose.has(run.replayId));
+  }
+  const peers = new Map(groupPeers(playable, current, baseline).map((peer) => [peer.target, peer.run]));
+  const colours = new Map(recorded.map((run) => [run.replayId, run.colour]));
+  const group = groupRuns(runs, baseline).groups.find((entry) => entry.name === current.group);
+  return (group?.targets ?? []).flatMap((entry): RecordedRun[] => {
+    const run = entry.target === targetOf(current) ? current : peers.get(entry.target);
+    const replayId = run?.replayId;
+    if (!replayId) return [];
+    return [
+      {
+        replayId,
+        label: entry.target,
+        name: entry.baseline ? `${entry.target} (baseline)` : entry.target,
+        colour: colours.get(replayId) ?? 1,
+      },
+    ];
+  });
 }

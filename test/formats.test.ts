@@ -12,6 +12,7 @@ import { parseManifest, parsePluginFile, starterPlugin } from '../src/shared/mal
 import { UserPluginStore } from '../src/server/malleable-store.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
 import { ReplayStore } from '../src/server/store.ts';
+import { parsePlan } from '../src/suite/plan.ts';
 import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash-encode.ts';
 import { replay } from './fixtures.ts';
 
@@ -70,6 +71,9 @@ describe('docs/formats', () => {
     const check = await validator('suite-plan');
     const sample = JSON.parse(await readFile(join(import.meta.dirname, '../sample/suite-plan.json'), 'utf8'));
     expect(check(sample).errors).toBe('No errors');
+    const perf = JSON.parse(await readFile(join(import.meta.dirname, '../sample/suite-perf-plan.json'), 'utf8'));
+    expect(check(perf).errors).toBe('No errors');
+    expect(parsePlan(perf).baseline).toBe('main');
     const run = { id: 'a', title: 'A', url: 'https://example.com/', steps: [] };
     expect(check({ id: 'p', title: 'P', runs: [run] }).ok).toBe(true);
     expect(check({ id: 'p', title: 'P', runs: [{ ...run, steps: [{ kind: 'click' }] }] }).ok).toBe(false);

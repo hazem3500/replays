@@ -28,7 +28,7 @@ export function SuiteCompare({
   const { layout, t } = parseCompareSearch(useLocationSearch(), '', fallback);
   return (
     <CompareViewer
-      recordings={runs.map((run) => ({ id: run.replayId, label: run.label, colour: run.colour }))}
+      recordings={runs.map((run) => ({ id: run.replayId, label: run.label, colour: run.colour, name: run.name }))}
       focus={focus}
       layout={layout}
       time={t}

@@ -6,7 +6,7 @@ import type { RawStep } from '../capture/drivers/types.ts';
 import { parsePeopleFlags, type ReplayPerson } from '../shared/people.ts';
 import { isProfileId } from '../shared/profiles.ts';
 import { assertReplayId } from '../shared/replay.ts';
-import { assertSummary } from '../shared/review-suite.ts';
+import { assertSummary, MAX_GROUP_LENGTH, MAX_TARGET_LENGTH } from '../shared/review-suite.ts';
 import { SourceProviders } from '../shared/source-providers.ts';
 
 export const MAX_PLAN_RUNS = 100;
@@ -29,6 +29,12 @@ export interface SuitePlanRun {
   viewport: { width: number; height: number };
   expect?: RunExpectations;
   summary?: string;
+  /** The flow this run exercises; runs in one group are comparable. */
+  group?: string;
+  /** What it ran against; runs with the same group and target are samples. */
+  target?: string;
+  /** The label of one of this run's steps: the time until it completed is the run's headline number. */
+  measure?: string;
 }
 
 export interface SuitePlan {
@@ -39,13 +45,15 @@ export interface SuitePlan {
   source?: string;
   people: ReplayPerson[];
   summary?: string;
+  /** The target that comparisons are measured against; it must be the target of at least one run. */
+  baseline?: string;
   /** Fixed for a plan that is run again, so the server sees the same suite identity. */
   createdAt?: string;
   runs: SuitePlanRun[];
 }
 
-const SUITE_KEYS = ['$schema', 'id', 'title', 'profile', 'source', 'people', 'summary', 'createdAt', 'runs'];
-const RUN_KEYS = ['id', 'title', 'url', 'steps', 'viewport', 'expect', 'summary'];
+const SUITE_KEYS = ['$schema', 'id', 'title', 'profile', 'source', 'people', 'summary', 'baseline', 'createdAt', 'runs'];
+const RUN_KEYS = ['id', 'title', 'url', 'steps', 'viewport', 'expect', 'summary', 'group', 'target', 'measure'];
 const EXPECT_KEYS = ['noConsoleErrors', 'noFailedRequests', 'maxDurationMs'];
 
 type Fields = Record<string, unknown>;
@@ -111,6 +119,13 @@ function expectations(value: unknown, where: string): RunExpectations | undefine
   return { ...result, maxDurationMs: max };
 }
 
+function named(value: unknown, where: string, max: number): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || !value.trim() || value.length > max)
+    throw new Error(`${where} must be a non-empty string of at most ${max} characters`);
+  return value;
+}
+
 function runOf(value: unknown, index: number): SuitePlanRun {
   const where = `runs[${index}]`;
   const raw = fields(value, where, RUN_KEYS);
@@ -123,6 +138,11 @@ function runOf(value: unknown, index: number): SuitePlanRun {
   const steps = scoped(`${where}.steps`, () => validateSteps(raw.steps));
   const expect = expectations(raw.expect, `${where}.expect`);
   const summary = summaryOf(raw.summary, `${where}.summary`);
+  const group = named(raw.group, `${where}.group`, MAX_GROUP_LENGTH);
+  const target = named(raw.target, `${where}.target`, MAX_TARGET_LENGTH);
+  const measure = named(raw.measure, `${where}.measure`, TITLE_MAX);
+  if (measure !== undefined && !steps.some((step) => step.label === measure))
+    throw new Error(`${where}.measure "${measure}" must be the label of one of the run's steps`);
   return {
     id,
     title: title(raw.title, `${where}.title`),
@@ -131,6 +151,9 @@ function runOf(value: unknown, index: number): SuitePlanRun {
     viewport: raw.viewport === undefined ? DEFAULT_VIEWPORT : parseViewport(raw.viewport, `${where}.viewport`),
     ...(expect ? { expect } : {}),
     ...(summary ? { summary } : {}),
+    ...(group ? { group } : {}),
+    ...(target ? { target } : {}),
+    ...(measure ? { measure } : {}),
   };
 }
 
@@ -178,6 +201,9 @@ export function parsePlan(value: unknown): SuitePlan {
   const people = peopleOf(raw.people);
   const summary = summaryOf(raw.summary, 'plan.summary');
   const runs = runsOf(raw.runs);
+  const baseline = named(raw.baseline, 'plan.baseline', MAX_TARGET_LENGTH);
+  if (baseline !== undefined && !runs.some((run) => run.target === baseline))
+    throw new Error(`plan.baseline "${baseline}" must be the target of at least one run`);
   return {
     id,
     title: planTitle,
@@ -185,6 +211,7 @@ export function parsePlan(value: unknown): SuitePlan {
     ...(source ? { source } : {}),
     people,
     ...(summary ? { summary } : {}),
+    ...(baseline ? { baseline } : {}),
     ...(typeof createdAt === 'string' ? { createdAt } : {}),
     runs,
   };

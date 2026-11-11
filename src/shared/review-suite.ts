@@ -9,7 +9,7 @@ import {
   type ReplayPersonSummary,
 } from './people.ts';
 import { isProfileId } from './profiles.ts';
-import { assertReplayId, type ReplaySummary } from './replay.ts';
+import { assertReplayId, type ReplayBundle, type ReplaySummary } from './replay.ts';
 
 export type ReviewRunStatus = 'running' | 'passed' | 'failed' | 'partial';
 export type SuiteOverallStatus = 'Waiting' | 'Running' | 'Failed' | 'Partial' | 'Complete';
@@ -45,6 +45,14 @@ export interface ReviewSuiteRun {
   finishedAt?: string;
   /** What this run checked and found, as plain text (see `assertSummary`); shown in the run's Context tab. */
   summary?: string;
+  /** The flow this run exercises (plan `group`); runs in one group are comparable. */
+  group?: string;
+  /** What it ran against (a build or variant); runs with the same group and target are samples. */
+  target?: string;
+  /** The label of the step whose completion is the run's headline number. */
+  measure?: string;
+  /** Milliseconds from the recording's start until the `measure` step completed. */
+  measureMs?: number;
   replayId?: string;
   recording?: { title: string; duration: number; steps: number; viewport: { width: number; height: number } };
   /** Per-run snapshot overrides shared suite context without rewriting its capture time. */
@@ -67,6 +75,8 @@ export interface ReviewSuite {
   profile?: string;
   /** What the suite found and what it did not cover, as plain text (see `assertSummary`); shown in the sidebar header. */
   summary?: string;
+  /** The target that comparisons between a group's targets are measured against. */
+  baseline?: string;
   runs: ReviewSuiteRun[];
 }
 
@@ -93,7 +103,18 @@ export interface ReviewSuiteSummary {
 /** One run as the index lists it: registration fields plus its replay's summary when uploaded. */
 export interface ReviewSuiteIndexRun extends Pick<
   ReviewSuiteRun,
-  'id' | 'sequence' | 'label' | 'status' | 'startedAt' | 'finishedAt' | 'replayId' | 'summary'
+  | 'id'
+  | 'sequence'
+  | 'label'
+  | 'status'
+  | 'startedAt'
+  | 'finishedAt'
+  | 'replayId'
+  | 'summary'
+  | 'group'
+  | 'target'
+  | 'measure'
+  | 'measureMs'
 > {
   replay?: ReplaySummary;
 }
@@ -125,6 +146,43 @@ function record(value: unknown, label: string, keys: string[]) {
   return result;
 }
 
+/** Longest `group`, `target` and `measure` a run may carry. */
+export const MAX_GROUP_LENGTH = 80;
+export const MAX_TARGET_LENGTH = 40;
+const MAX_MEASURE_LENGTH = 160;
+
+function assertName(value: unknown, name: string, max: number): asserts value is string {
+  if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error(`${name} is invalid`);
+}
+
+function assertGrouping(run: Record<string, unknown>, name: string) {
+  if (run.group !== undefined) assertName(run.group, `${name}.group`, MAX_GROUP_LENGTH);
+  if (run.target !== undefined) assertName(run.target, `${name}.target`, MAX_TARGET_LENGTH);
+  if (run.measure !== undefined) assertName(run.measure, `${name}.measure`, MAX_MEASURE_LENGTH);
+  if (run.measureMs !== undefined && (typeof run.measureMs !== 'number' || !Number.isFinite(run.measureMs) || run.measureMs < 0))
+    throw new Error(`${name}.measureMs is invalid`);
+}
+
+/**
+ * Milliseconds from the recording's start until the step labelled `label` completed: the next step's start, or for the
+ * last step the end of the recording less the capture's closing wait. Undefined when no step has that label.
+ */
+export function measureMsOf(
+  bundle: { meta: Pick<ReplayBundle['meta'], 'duration'>; steps: ReadonlyArray<Pick<ReplayBundle['steps'][number], 'at' | 'label'>> },
+  label: string,
+): number | undefined {
+  const steps = bundle.steps.toSorted((a, b) => a.at - b.at);
+  const index = steps.findIndex((step) => step.label === label);
+  const step = steps[index];
+  if (!step) return undefined;
+  const next = steps[index + 1];
+  // why: the capture holds the page for CLOSING_WAIT_MS after its last step before it stops recording.
+  const end = next ? next.at : bundle.meta.duration - CLOSING_WAIT_MS;
+  return Math.round(Math.max(step.at, end));
+}
+
+const CLOSING_WAIT_MS = 900;
+
 function date(value: unknown, label: string) {
   if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) throw new Error(`${label} is invalid`);
 }
@@ -140,6 +198,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
     'people',
     'profile',
     'summary',
+    'baseline',
     'runs',
   ]);
   if (suite.version !== 1) throw new Error('suite.version is unsupported');
@@ -157,6 +216,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
   if (suite.people !== undefined) assertReplayPeople(suite.people, 'suite.people');
   if (suite.profile !== undefined && !isProfileId(suite.profile)) throw new Error('suite.profile is invalid');
   if (suite.summary !== undefined) assertSummary(suite.summary, 'suite.summary');
+  if (suite.baseline !== undefined) assertName(suite.baseline, 'suite.baseline', MAX_TARGET_LENGTH);
   if (!Array.isArray(suite.runs) || suite.runs.length > 100) throw new Error('suite.runs must contain at most 100 entries');
   const ids = new Set<string>();
   const sequences = new Set<number>();
@@ -170,6 +230,10 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
       'startedAt',
       'finishedAt',
       'summary',
+      'group',
+      'target',
+      'measure',
+      'measureMs',
       'replayId',
       'recording',
       'context',
@@ -201,6 +265,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
     }
     if (run.context !== undefined) assertReplayContext(run.context);
     if (run.summary !== undefined) assertSummary(run.summary, `${name}.summary`);
+    assertGrouping(run, name);
   }
 }
 
@@ -218,6 +283,8 @@ export interface ReviewSuiteRegistration {
   profile?: string;
   /** Not identity: registering again replaces it (absent keeps the stored one). */
   summary?: string;
+  /** Not identity: the target comparisons are measured against. */
+  baseline?: string;
 }
 
 /** A registration after the server resolved the subject reference into a link. */
@@ -232,6 +299,10 @@ export interface ReviewRunRegistration {
   finishedAt?: string;
   /** Not identity: registering again replaces it (absent keeps the stored one). */
   summary?: string;
+  group?: string;
+  target?: string;
+  measure?: string;
+  measureMs?: number;
   context?: ReplayContext;
 }
 
@@ -246,6 +317,7 @@ export function assertReviewSuiteRegistration(value: unknown, suiteId: string): 
     'people',
     'profile',
     'summary',
+    'baseline',
   ]);
   if (input.id !== suiteId) throw new Error('suite ID does not match path');
   const { subject, ...rest } = input;
@@ -255,7 +327,20 @@ export function assertReviewSuiteRegistration(value: unknown, suiteId: string): 
 }
 
 export function assertReviewRunRegistration(value: unknown, runId: string): asserts value is ReviewRunRegistration {
-  const input = record(value, 'run registration', ['id', 'sequence', 'label', 'status', 'startedAt', 'finishedAt', 'summary', 'context']);
+  const input = record(value, 'run registration', [
+    'id',
+    'sequence',
+    'label',
+    'status',
+    'startedAt',
+    'finishedAt',
+    'summary',
+    'group',
+    'target',
+    'measure',
+    'measureMs',
+    'context',
+  ]);
   if (input.id !== runId) throw new Error('run ID does not match path');
   assertReviewSuite({
     version: 1,

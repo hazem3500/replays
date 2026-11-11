@@ -76,6 +76,8 @@ export interface TileInput {
   id: string;
   /** A suite run's label; ad-hoc recordings go by their title. */
   label?: string | undefined;
+  /** What tells it apart from the others, when the page knows better than the labels do (a suite target). */
+  name?: string | undefined;
   bundle: ReplayBundle | undefined;
   failure?: string | undefined;
   removable?: boolean;
@@ -99,9 +101,9 @@ function aspectOf(bundle: ReplayBundle | undefined) {
 export function compareTiles(inputs: readonly TileInput[]): CompareTile[] {
   const labels = inputs.map(({ id, label, bundle }) => labelOf(id, label, bundle));
   const names = shortNames(labels);
-  return inputs.map(({ id, bundle, failure = '', removable = false, colour }, index) => ({
+  return inputs.map(({ id, bundle, failure = '', removable = false, colour, name }, index) => ({
     id,
-    name: names[index] ?? id,
+    name: name ?? names[index] ?? id,
     colour: colour ?? tileColour(index),
     label: labels[index] ?? id,
     bundle,

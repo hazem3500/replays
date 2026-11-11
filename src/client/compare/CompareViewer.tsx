@@ -28,6 +28,8 @@ export interface CompareRecording {
   id: string;
   /** A suite run's label; else the recording's title. */
   label?: string | undefined;
+  /** What the stage calls it, instead of the name derived from the labels. */
+  name?: string | undefined;
   removable?: boolean;
   /** The colour a suite run already shows in its sidebar row. */
   colour?: number | undefined;
