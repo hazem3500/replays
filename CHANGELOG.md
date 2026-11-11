@@ -7,6 +7,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Capture: CLI recordings now record frame rate, so the player and suite runs show FPS instead of n/a.
 - Viewer: the Network timeline's lane names (Requests, Slow, Failed) sit in the left column beside their lanes again; they stacked above the chart because the timeline borrowed spacing that only the Performance tab defines.
 - Viewer: the Performance tab's stat strip leaves out a group that has nothing measured (for example "Frame rate wasn't recorded") instead of saying so, and with Details open it gets no heading. A tab with no measurements at all still says so.
 - Viewer: the inspector tabs' loading placeholders now match each tab. Console, Network, Performance, Context and Comments each draw their own layout (filter pills, timeline lanes, table columns, label and value rows, comment cards) from one shared skeleton block, and the page's loading screen opens on the tab you last used instead of identical stripes. A placeholder appears only if loading takes longer than 150 ms, and it does not shimmer under reduced motion. Empty tabs keep a quiet icon and one sentence.

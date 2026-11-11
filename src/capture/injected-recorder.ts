@@ -1,9 +1,11 @@
 import { record } from 'rrweb';
 
 import { resolveCapture } from '../recorder/capture-options.ts';
+import { captureFramePacing } from '../recorder/frame-pacing.ts';
 import { captureInteractionSteps } from '../recorder/interaction-steps.ts';
 import { modePrivacy } from '../recorder/recorder-choices.ts';
 import { recorderPrivacy } from '../recorder/recorder-privacy.ts';
+import type { ReplayPerformanceTrack } from '../shared/replay.ts';
 import type { RecorderPrivacyMode } from '../recorder/types.ts';
 import { MASK_INPUT_OPTIONS } from './mask-inputs.ts';
 
@@ -27,6 +29,7 @@ interface RecorderChunk {
   console: Array<{ at: number; level: string; message: string; url: string }>;
   performance: Array<{ at: number; kind: string; value: number; eventType?: string }>;
   performanceSupported: string[];
+  frames: Array<{ at: number; elapsed: number; frames: number; dropped: number }>;
   steps: Array<{ at: number; kind: string; label: string; auto: true }>;
 }
 
@@ -47,6 +50,10 @@ try {
     let finalMetricsSent = false;
     // why: LCP entries are not buffered on the performance timeline, so only an observer can see them.
     let latestLcp: { startTime: number } | undefined;
+
+    // why: reuses the in-app sampler; each flush drains its samples so a navigation loses none (the session keeps and caps them).
+    const frameTrack: ReplayPerformanceTrack = { supported: [], entries: [] };
+    captureFramePacing(frameTrack, () => {});
 
     const interactionTypes = new Set(['click', 'keydown', 'keyup', 'input', 'beforeinput', 'pointerdown', 'pointerup', 'compositionend']);
 
@@ -202,6 +209,7 @@ try {
         console: consoleEntries,
         performance: performanceEntries,
         performanceSupported: [...supportedTypes],
+        frames: frameTrack.frames?.splice(0) ?? [],
         steps,
       };
       events = [];
@@ -215,7 +223,10 @@ try {
       'pagehide',
       () => {
         const chunk = window.__REPLAYS_FLUSH__?.(true);
-        if (chunk && (chunk.events.length || chunk.console.length || chunk.performance.length || chunk.steps.length)) {
+        if (
+          chunk &&
+          (chunk.events.length || chunk.console.length || chunk.performance.length || chunk.frames.length || chunk.steps.length)
+        ) {
           window.__replaysNavigationFlush?.(JSON.stringify(chunk));
         }
       },
