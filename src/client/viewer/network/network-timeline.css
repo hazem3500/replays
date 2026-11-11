@@ -1,3 +1,5 @@
+/* why: the shared timeline reads the Performance tab's spacing, which is scoped to that tab; Network sets its own. */
+.nt { --pp-edge: 14px; --pp-end: 14px; --pp-gap: 8px; --pp-gutter: 128px; }
 /* The Network timeline (NetworkTimeline.tsx) on the Performance timeline's classes (perf-timeline.css): only what is its own. */
 .nt .pt-label[data-lane="density"], .nt .pt-lane[data-lane="density"] { height: 32px; }
 .nt-density { position: absolute; inset: 4px 0; width: 100%; height: calc(100% - 8px); overflow: visible; }
