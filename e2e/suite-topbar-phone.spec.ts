@@ -37,8 +37,9 @@ test('phone topbar items never overlap at 320 to 430 px, even with status, edite
     boxes.sort((a, b) => a.x - b.x);
     // why: left-to-right neighbours must not intersect; a 0.5 px tolerance absorbs subpixel rounding.
     for (const [index, box] of boxes.slice(1).entries()) {
-      expect(box.x, `${width}px: ${box.item} overlaps ${boxes[index]!.item}`).toBeGreaterThanOrEqual(boxes[index]!.right - 0.5);
+      const left = boxes[index];
+      expect(box.x, `${width}px: ${box.item} overlaps ${left?.item}`).toBeGreaterThanOrEqual((left?.right ?? 0) - 0.5);
     }
-    expect(boxes.at(-1)!.right, `${width}px: bar overflows`).toBeLessThanOrEqual(width + 0.5);
+    expect(boxes.at(-1)?.right ?? 0, `${width}px: bar overflows`).toBeLessThanOrEqual(width + 0.5);
   }
 });
