@@ -92,7 +92,7 @@ function layout(hint: OpenHint | undefined) {
   const collapsed = savedCollapsed === '1';
   const savedWidth = Number(readStorage(STEPS_WIDTH_KEY));
   const stepsWidth =
-    readStorage(viewSettingKey(view, 'rail-collapsed')) === '1'
+    readStorage(viewSettingKey(view, 'rail-collapsed')) !== '0'
       ? 0
       : Number.isFinite(savedWidth) && savedWidth > 0
         ? savedWidth
