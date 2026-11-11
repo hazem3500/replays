@@ -484,13 +484,14 @@ export function summarizeTimeline(bundle: Pick<ReplayBundle, 'meta' | 'steps' | 
   return { steps, errors: mergeErrorTimes(errorTimes, Math.max(1, duration * 0.005)) };
 }
 
+function cut(text: string) {
+  const line = text.trim().replace(/\s+/g, ' ');
+  return line.length > FIRST_ERROR_TEXT ? `${line.slice(0, FIRST_ERROR_TEXT - 1)}…` : line;
+}
+
 function firstErrorOf(bundle: ReplayBundle): ReplayFirstError | undefined {
   const logged = bundle.console.filter((entry) => entry.level === 'error').toSorted((a, b) => a.at - b.at)[0];
   const failed = bundle.network.filter(isFailedRequest).toSorted((a, b) => a.at - b.at)[0];
-  const cut = (text: string) => {
-    const line = text.trim().replace(/\s+/g, ' ');
-    return line.length > FIRST_ERROR_TEXT ? `${line.slice(0, FIRST_ERROR_TEXT - 1)}…` : line;
-  };
   if (logged && (!failed || logged.at <= failed.at)) return { kind: 'console', message: cut(logged.message) };
   if (!failed) return undefined;
   return { kind: 'request', message: cut(`${failed.method} ${failed.url} ${failed.status || failed.statusText}`) };
