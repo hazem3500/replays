@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { openReplay, origin } from './support.ts';
+import { openReplay, openStepsRail, origin } from './support.ts';
 
 test.use({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
 
@@ -54,6 +54,7 @@ test('held captions retain their label while the number follows legacy wait and 
     await route.fulfill({ response, json: bundle });
   });
   await openReplay(page, `${origin()}/r/demo-shop`);
+  await openStepsRail(page);
   await page.getByTestId('captions-switch').click();
   await page.getByTestId('captions-switch').click({ button: 'right' });
   await page.getByRole('switch', { name: 'Show step numbers' }).click();

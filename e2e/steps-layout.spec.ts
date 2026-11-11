@@ -1,9 +1,21 @@
 import { expect, test } from '@playwright/test';
 
-import { boxOf, openReplay, origin } from './support.ts';
+import { boxOf, openReplay, openStepsRail, origin } from './support.ts';
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
+});
+
+test('a fresh viewer opens with Steps collapsed, and opening them is remembered after a reload', async ({ page }) => {
+  await openReplay(page, `${origin()}/r/demo-shop`);
+  const viewer = page.locator('[data-rail-collapsed]');
+  await expect(viewer).toHaveCount(1);
+  await expect(page.getByRole('complementary', { name: 'Steps' })).toBeHidden();
+  await openStepsRail(page);
+  await expect(viewer).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('complementary', { name: 'Steps' })).toBeVisible();
+  await expect(page.locator('[data-rail-collapsed]')).toHaveCount(0);
 });
 
 test('dragging Steps closed and reopening restores its saved width', async ({ page }) => {
@@ -30,7 +42,6 @@ test('dragging Steps closed and reopening restores its saved width', async ({ pa
 test('the collapsed Steps separator stays inside the viewport and can be dragged open', async ({ page }) => {
   await openReplay(page, `${origin()}/r/demo-shop`);
   const seam = page.getByRole('separator', { name: 'Resize steps panel' });
-  await seam.press('Enter');
   await expect(seam).toHaveAttribute('aria-valuenow', '0');
   await expect(seam).toBeInViewport({ ratio: 1 });
   const handle = await boxOf(seam);
@@ -66,7 +77,7 @@ for (const viewport of [
     await page.getByTestId('network-tab').click();
     await page.setViewportSize({ width: 1280, height: 800 });
     await expect(steps).toHaveCount(0);
-    await expect(page.getByRole('complementary', { name: 'Steps' })).toBeVisible();
+    await openStepsRail(page);
     await expect(page.getByTestId('network-tab')).toHaveAttribute('aria-selected', 'true');
     await page.setViewportSize(viewport);
     await expect(steps).toBeVisible();

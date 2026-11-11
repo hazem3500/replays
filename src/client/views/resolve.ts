@@ -87,7 +87,7 @@ function stageDefaults(view: ViewInfo, legacy: Legacy) {
   const stage = view.stage ?? {};
   return {
     captions: legacy?.captions ?? stage.captions ?? false,
-    steps: stage.steps ?? 'open',
+    steps: stage.steps ?? 'collapsed',
     tracks: stage.tracks,
     chrome: stage.chrome ?? 'full',
   };

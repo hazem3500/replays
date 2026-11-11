@@ -92,6 +92,12 @@ export async function openReplay(page: Page, url: string) {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 }
 
+/** Opens the steps rail the way a person does, from its edge tab: the rail starts collapsed. */
+export async function openStepsRail(page: Page) {
+  await page.getByRole('button', { name: 'Show steps' }).click();
+  await expect(page.getByRole('complementary', { name: 'Steps' })).toBeVisible();
+}
+
 /** A fixed colour scheme from the first paint (the app stores the choice under THEME_KEY). */
 export async function useTheme(page: Page, theme: 'dark' | 'light') {
   await page.addInitScript(([key, value]) => localStorage.setItem(key as string, value as string), [THEME_KEY, theme] as const);

@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test';
 
 import { capture, parseArgs } from '../src/capture/capture.ts';
 import { startDemoServer } from '../scripts/demo-server.mjs';
-import { openReplay, uniqueId, serveApp } from './support.ts';
+import { openReplay, openStepsRail, uniqueId, serveApp } from './support.ts';
 
 // The CI smoke for the whole path: capture the demo shop with the real CLI code, upload the result to the app
 // server, and open it in the viewer.
@@ -66,6 +66,7 @@ test('capture a sample, upload it, and the viewer loads it', async ({ page }) =>
   }
 
   await openReplay(page, `${server().origin}/r/${id}`);
+  await openStepsRail(page);
   await expect(page.getByRole('heading', { level: 1, name: 'Captured demo shop' })).toBeVisible();
 
   // Unlabelled waits are pacing only; labelled waits keep their rail row, plus the opening step.
