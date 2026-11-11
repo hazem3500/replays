@@ -162,10 +162,7 @@ export async function loadCaptureRedaction(
   return (await loadCaptureSettings(options)).redaction;
 }
 
-export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureArgs & { headed: boolean }> {
-  const { values, lists, booleans } = flagMap(argv, BOOLEAN_FLAGS);
-  if (!values.url) throw new Error('required: --url <https-url>');
-  assertCaptureUrl(values.url, '--url');
+function assertFlagCombinations(values: Record<string, string>, booleans: Set<string>) {
   const manual = booleans.has('manual');
   if (manual && !booleans.has('headed')) throw new Error('--manual requires --headed');
   if (manual && values.steps !== undefined) throw new Error('--manual cannot be combined with --steps');
@@ -174,6 +171,18 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   if (!values.output && !manual) throw new Error('required: --output <directory>');
   if (booleans.has('login') && !booleans.has('upload') && !values['upload-url'])
     throw new Error('--login requires --upload or --upload-url');
+  if (Boolean(values['suite-id']) !== Boolean(values['run-id'])) throw new Error('--suite-id and --run-id must be used together');
+  if (values['run-id'] && !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,79}$/.test(values['run-id'])) {
+    throw new Error('--run-id must contain letters, digits, and hyphens');
+  }
+}
+
+export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureArgs & { headed: boolean }> {
+  const { values, lists, booleans } = flagMap(argv, BOOLEAN_FLAGS);
+  if (!values.url) throw new Error('required: --url <https-url>');
+  assertCaptureUrl(values.url, '--url');
+  const manual = booleans.has('manual');
+  assertFlagCombinations(values, booleans);
   const id = assertReplayId(values.id ?? defaultId(values.url));
   const driver = (values.driver ?? 'playwright') as DriverName;
   if (driver !== 'playwright' && driver !== 'agent-browser') throw new Error('--driver must be playwright or agent-browser');
@@ -181,10 +190,6 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   if (tags.length) assertReplayTags(tags, '--tag');
   const profile = profileFlag(values);
   const people = parsePeopleFlags(lists.person ?? []);
-  if (Boolean(values['suite-id']) !== Boolean(values['run-id'])) throw new Error('--suite-id and --run-id must be used together');
-  if (values['run-id'] && !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,79}$/.test(values['run-id'])) {
-    throw new Error('--run-id must contain letters, digits, and hyphens');
-  }
   const providers = new SourceProviders();
   const sources = (lists.source ?? []).map((spec) => providers.parse(spec));
   const schema: unknown = values['context-schema'] ? JSON.parse(await readFile(resolve(values['context-schema']), 'utf8')) : undefined;

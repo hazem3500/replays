@@ -310,6 +310,46 @@ function ColumnGrip({
   );
 }
 
+function RequestCell({
+  row,
+  selected,
+  onSelect,
+  onKeyDown,
+}: {
+  row: NetworkRow;
+  selected: boolean;
+  onSelect: (id?: string) => void;
+  onKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>) => void;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            id={`request-switch-${row.id}`}
+            data-request-id={row.id}
+            aria-label={`${row.entry.method} ${row.name.path}${row.name.query ?? ''}${row.name.host ? ` ${row.name.host}` : ''}`}
+            aria-expanded={selected}
+            aria-controls={selected ? REQUEST_DETAIL_ID : undefined}
+            onClick={() => onSelect(selected ? undefined : row.id)}
+            onKeyDown={onKeyDown}
+          />
+        }
+      >
+        <span className="method">{row.entry.method}</span>
+        <span className="np-name">
+          <span className="np-path">
+            <RequestLabel method={row.entry.method} path={row.name.path} url={row.entry.url} showMethod={false} />
+          </span>
+          {row.name.host ? <span className="np-host">{row.name.host}</span> : null}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-96 break-all">{row.entry.url}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 function RequestRow({
   row,
   highlighted,
@@ -337,33 +377,7 @@ function RequestRow({
     status: <StatusText row={row} />,
     duration: <DurationBar row={row} ceiling={ceiling} />,
     during: step?.label,
-    request: (
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <button
-              type="button"
-              id={`request-switch-${row.id}`}
-              data-request-id={row.id}
-              aria-label={`${row.entry.method} ${row.name.path}${row.name.query ?? ''}${row.name.host ? ` ${row.name.host}` : ''}`}
-              aria-expanded={selected}
-              aria-controls={selected ? REQUEST_DETAIL_ID : undefined}
-              onClick={() => onSelect(selected ? undefined : row.id)}
-              onKeyDown={onKeyDown}
-            />
-          }
-        >
-          <span className="method">{row.entry.method}</span>
-          <span className="np-name">
-            <span className="np-path">
-              <RequestLabel method={row.entry.method} path={row.name.path} url={row.entry.url} showMethod={false} />
-            </span>
-            {row.name.host ? <span className="np-host">{row.name.host}</span> : null}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-96 break-all">{row.entry.url}</TooltipContent>
-      </Tooltip>
-    ),
+    request: <RequestCell row={row} selected={selected} onSelect={onSelect} onKeyDown={onKeyDown} />,
   };
   return (
     <div

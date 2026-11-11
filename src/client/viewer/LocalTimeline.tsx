@@ -63,6 +63,41 @@ function labelledTicks(ticks: readonly { offset: number; position: number }[], g
   });
 }
 
+function LocalRow({
+  item,
+  left,
+  width,
+  onPick,
+}: {
+  item: LocalItem;
+  left: string;
+  width: string;
+  onPick: ((id: string) => void) | undefined;
+}) {
+  const bar = (
+    <>
+      <span className="lt-label" title={item.request?.url ?? item.label}>
+        {item.request ? <RequestLabel {...item.request} /> : item.label}
+      </span>
+      <span className="lt-track" aria-hidden="true">
+        <span className="lt-bar" data-tone={item.current ? 'current' : item.tone} style={{ left, width }} />
+      </span>
+      <span className="lt-value">{item.value}</span>
+    </>
+  );
+  if (item.current === true || !onPick)
+    return (
+      <div className="lt-row" data-current={item.current === true ? '' : undefined}>
+        {bar}
+      </div>
+    );
+  return (
+    <button type="button" className="lt-row" onClick={() => onPick(item.id)}>
+      {bar}
+    </button>
+  );
+}
+
 /**
  * A waterfall on the moment's own scale (a few hundred ms), where bars are legible, unlike on the recording's. Every
  * other row is a button that opens that item (`onPick`); the ruler counts from the item's own start.
@@ -127,32 +162,9 @@ export function LocalTimeline({
           </span>
         ))}
       </div>
-      {items.map((item) => {
-        const bar = (
-          <>
-            <span className="lt-label" title={item.request?.url ?? item.label}>
-              {item.request ? <RequestLabel {...item.request} /> : item.label}
-            </span>
-            <span className="lt-track" aria-hidden="true">
-              <span
-                className="lt-bar"
-                data-tone={item.current ? 'current' : item.tone}
-                style={{ left: left(item.at), width: width(item) }}
-              />
-            </span>
-            <span className="lt-value">{item.value}</span>
-          </>
-        );
-        return item.current === true || !onPick ? (
-          <div key={item.id} className="lt-row" data-current={item.current === true ? '' : undefined}>
-            {bar}
-          </div>
-        ) : (
-          <button key={item.id} type="button" className="lt-row" onClick={() => onPick(item.id)}>
-            {bar}
-          </button>
-        );
-      })}
+      {items.map((item) => (
+        <LocalRow key={item.id} item={item} left={left(item.at)} width={width(item)} onPick={onPick} />
+      ))}
     </div>
   );
 }

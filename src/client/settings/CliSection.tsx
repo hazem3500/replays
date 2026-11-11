@@ -35,6 +35,17 @@ function uploadHint(mode: SignInMode, auth: string): string {
   return UPLOAD_HINTS[mode];
 }
 
+function CliLoadFailed({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div role="alert" className="settings-intro settings-error">
+      <p>{strings.cli.loadFailed}</p>
+      <button type="button" className="settings-text-button" onClick={onRetry}>
+        {strings.cli.retry}
+      </button>
+    </div>
+  );
+}
+
 export function CliSection() {
   const config = useQuery(configQuery);
   if (config.isPending)
@@ -43,21 +54,7 @@ export function CliSection() {
         {strings.cli.loading}
       </p>
     );
-  if (config.isError)
-    return (
-      <div role="alert" className="settings-intro settings-error">
-        <p>{strings.cli.loadFailed}</p>
-        <button
-          type="button"
-          className="settings-text-button"
-          onClick={() => {
-            void config.refetch();
-          }}
-        >
-          {strings.cli.retry}
-        </button>
-      </div>
-    );
+  if (config.isError) return <CliLoadFailed onRetry={() => void config.refetch()} />;
   const auth = config.data.auth;
   const anonymous = auth === 'none';
   const deviceLogin = Boolean(config.data.cliDeviceAuth);

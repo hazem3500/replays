@@ -18,6 +18,54 @@ import type { IssueUploadErrorDetails } from './upload.ts';
 export * from './messages.ts';
 export { createRecorderFormat, formatDuration, type RecorderFormat } from './format.ts';
 export type { CompletionAction, CompletionContext, CompletionOptions, DefaultUiOptions, RecorderTheme } from './default-ui-types.ts';
+function closeButton(label: string, dismiss: () => void) {
+  const close = element('button', { type: 'button', className: 'icon-button', title: label, onclick: dismiss }, [icon('close')]);
+  close.dataset.recorderAction = 'dismiss';
+  close.setAttribute('aria-label', label);
+  return close;
+}
+
+function retryButton(label: string, retry: () => void) {
+  const button = element('button', { type: 'button', className: 'primary', onclick: retry }, [label]);
+  button.dataset.recorderAction = 'retry';
+  return button;
+}
+
+type RecoveryFace = { label: HTMLElement; live: HTMLElement; resting: Element; text: string };
+
+/** Mounts the host's recovery action under a failed result: its pending state swaps the status icon for a spinner. */
+function mountRecovery(
+  controls: HTMLElement,
+  action: NonNullable<IssueUploadErrorDetails['action']>,
+  retry: (() => void) | undefined,
+  face: RecoveryFace,
+) {
+  let spinner: ReturnType<typeof createStatusSpinner> | undefined;
+  const say = (message: string) => {
+    updateText(face.label, message);
+    face.live.textContent = message;
+  };
+  const stopRecovery = uploadRecovery(controls, action, retry, {
+    failure: say,
+    pendingStart: (message) => {
+      spinner = createStatusSpinner();
+      face.resting.replaceWith(spinner.node);
+      say(message);
+    },
+    pendingEnd: () => {
+      spinner?.node.replaceWith(face.resting);
+      spinner?.stop();
+      spinner = undefined;
+      say(face.text);
+    },
+  });
+  return () => {
+    stopRecovery();
+    spinner?.stop();
+    spinner = undefined;
+  };
+}
+
 /**
  * The built-in, framework-free UI: a consent dialog, a recording pill with a
  * Stop button, a review dialog and a result toast. It lives in a shadow root
@@ -342,56 +390,30 @@ export function createDefaultUi(
         updateText(current.label, text);
         const restingIcon = icon(receipt ? 'check' : error?.notice ? 'lock' : 'alert', 'status-icon');
         if (error?.notice) current.shell.dataset.tone = 'notice';
-        let spinner: ReturnType<typeof createStatusSpinner> | undefined;
         current.content.append(restingIcon, current.label);
         if (receipt) {
           const href = receipt.url ? safeHref(receipt.url) : undefined;
           appendCompletionControls(controls, completion?.actions, { resolveValue, copy, context, href, messages });
         } else {
           if (error?.action && result.status === 'error') {
-            const stopRecovery = uploadRecovery(controls, error.action, result.retry, {
-              failure: (message) => {
-                updateText(current.label, message);
-                current.live.textContent = message;
-              },
-              pendingStart: (message) => {
-                spinner = createStatusSpinner();
-                restingIcon.replaceWith(spinner.node);
-                updateText(current.label, message);
-                current.live.textContent = message;
-              },
-              pendingEnd: () => {
-                spinner?.node.replaceWith(restingIcon);
-                spinner?.stop();
-                spinner = undefined;
-                updateText(current.label, text);
-                current.live.textContent = text;
-              },
+            renderCleanup = mountRecovery(controls, error.action, result.retry, {
+              label: current.label,
+              live: current.live,
+              resting: restingIcon,
+              text,
             });
-            renderCleanup = () => {
-              stopRecovery();
-              spinner?.stop();
-              spinner = undefined;
-            };
           }
           if (error?.link) {
             const control = link(error.link.label, error.link.url);
             if (control) controls.append(control);
           }
           if (result.status === 'error' && result.retry && !error?.action?.replacesRetry) {
-            const retry = element('button', { type: 'button', className: 'primary', onclick: result.retry }, [messages.retry]);
-            retry.dataset.recorderAction = 'retry';
-            controls.append(retry);
+            controls.append(retryButton(messages.retry, result.retry));
           }
         }
         current.content.append(feedback);
       }
-      const close = element('button', { type: 'button', className: 'icon-button', title: messages.close, onclick: dismiss }, [
-        icon('close'),
-      ]);
-      close.dataset.recorderAction = 'dismiss';
-      close.setAttribute('aria-label', messages.close);
-      controls.append(close);
+      controls.append(closeButton(messages.close, dismiss));
       current.content.append(controls);
     },
   };

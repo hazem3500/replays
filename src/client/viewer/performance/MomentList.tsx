@@ -82,37 +82,7 @@ export function MomentList({
         empty
       ) : (
         <div className="pp-table" role="table" aria-rowcount={moments.length + 1}>
-          <div className="pp-row pp-head" role="row" aria-rowindex={1}>
-            <span role="columnheader">{STRINGS.moment}</span>
-            <SortHeader
-              label={STRINGS.when}
-              active={order === 'time'}
-              direction="ascending"
-              sortable={moments.length > 1}
-              onSort={() => onOrder('time')}
-            />
-            <SortHeader
-              label={STRINGS.took}
-              className="pp-took"
-              active={order === 'worst'}
-              direction="descending"
-              sortable={moments.length > 1}
-              onSort={() => onOrder('worst')}
-            />
-            <span role="columnheader" className="pp-budget">
-              {STRINGS.budget}
-            </span>
-            <span role="columnheader" className="pp-why">
-              {STRINGS.why}
-            </span>
-            {moments.length > 1 ? (
-              <span role="columnheader" className="pp-sort-phone">
-                <button type="button" className="pp-sort" data-active="" onClick={() => onOrder(order === 'worst' ? 'time' : 'worst')}>
-                  {order === 'worst' ? STRINGS.orderWorst : STRINGS.orderTime}
-                </button>
-              </span>
-            ) : null}
-          </div>
+          <MomentHead count={moments.length} order={order} onOrder={onOrder} />
           {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: delegated hover and focus only light the row's mark on the time ribbon; every row keeps its own button. */}
           <div
             ref={body}
@@ -139,6 +109,42 @@ export function MomentList({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function MomentHead({ count, order, onOrder }: { count: number; order: MomentOrder; onOrder: (order: MomentOrder) => void }) {
+  return (
+    <div className="pp-row pp-head" role="row" aria-rowindex={1}>
+      <span role="columnheader">{STRINGS.moment}</span>
+      <SortHeader
+        label={STRINGS.when}
+        active={order === 'time'}
+        direction="ascending"
+        sortable={count > 1}
+        onSort={() => onOrder('time')}
+      />
+      <SortHeader
+        label={STRINGS.took}
+        className="pp-took"
+        active={order === 'worst'}
+        direction="descending"
+        sortable={count > 1}
+        onSort={() => onOrder('worst')}
+      />
+      <span role="columnheader" className="pp-budget">
+        {STRINGS.budget}
+      </span>
+      <span role="columnheader" className="pp-why">
+        {STRINGS.why}
+      </span>
+      {count > 1 ? (
+        <span role="columnheader" className="pp-sort-phone">
+          <button type="button" className="pp-sort" data-active="" onClick={() => onOrder(order === 'worst' ? 'time' : 'worst')}>
+            {order === 'worst' ? STRINGS.orderWorst : STRINGS.orderTime}
+          </button>
+        </span>
+      ) : null}
     </div>
   );
 }
