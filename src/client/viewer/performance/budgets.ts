@@ -1,5 +1,4 @@
-// why: a dependency-free home for the budgets so the suite sidebar can rate runs without bundling the whole
-// performance model into its chunk.
+// why: kept free of imports so the suite sidebar can rate runs without bundling the performance model.
 export type Verdict = 'good' | 'needs-work' | 'poor';
 /** [good at or under, poor over], in ms. */
 export type Budget = readonly [number, number];
