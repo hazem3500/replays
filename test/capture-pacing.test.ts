@@ -246,7 +246,6 @@ async function driverAt(openUrl: string) {
   return { driver, goto };
 }
 
-
 describe('a goto step', () => {
   it('does not reload the page that is already open', async () => {
     const { driver, goto } = await driverAt('https://example.com/shop?a=1');
