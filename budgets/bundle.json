@@ -786,6 +786,11 @@
       "raw": 575921,
       "gzip": 185326,
       "brotli": 146611
+    },
+    "dist/lib/chunks/agent-bundle.ts-69d72eb8fe85.mjs": {
+      "raw": 116200,
+      "gzip": 32600,
+      "brotli": 27650
     }
   },
   "allowances": [
@@ -2240,6 +2245,16 @@
       },
       "reason": "New: installs the viewer dependencies into the user cache on the first serve.",
       "pr": "https://github.com/hazem3500/replays/pull/320"
+    },
+    {
+      "file": "dist/lib/chunks/agent-bundle.ts-69d72eb8fe85.mjs",
+      "cap": {
+        "raw": 116200,
+        "gzip": 32600,
+        "brotli": 27650
+      },
+      "reason": "Renamed, not new: the shared capture chunk (bundle-io, sanitize, upload) was unbudgeted on main at 30904 B gzip; it now also holds buildAgentBundle (+739 B gzip) and takes that file's name.",
+      "pr": "https://github.com/hazem3500/replays/pull/384"
     }
   ]
 }
