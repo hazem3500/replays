@@ -348,7 +348,7 @@ function RequestCell({
           <span className="np-path">
             <RequestLabel method={row.entry.method} path={row.name.path} url={row.entry.url} showMethod={false} />
           </span>
-          {row.name.query && queryHit(row.name.query, words) ? (
+          {row.name.query && textHit(row.name.query, words) ? (
             <span className="np-query">
               <SearchMarked text={row.name.query} />
             </span>
@@ -430,6 +430,7 @@ function RequestRow({
 }
 
 export function StatusText({ row }: { row: NetworkRow }) {
+  const words = use(LabelSearch);
   if (row.pending)
     return (
       <span className="np-code" data-tone="none" title={STRINGS.noResponseHint}>
@@ -439,13 +440,19 @@ export function StatusText({ row }: { row: NetworkRow }) {
   return (
     <span className="np-code" data-tone={row.failed ? 'bad' : undefined} title={row.entry.statusText || undefined}>
       <SearchMarked text={String(row.entry.status || STRINGS.error)} />
+      {row.entry.statusText && textHit(row.entry.statusText, words) ? (
+        <span className="np-status-text">
+          {' '}
+          <SearchMarked text={row.entry.statusText} />
+        </span>
+      ) : null}
     </span>
   );
 }
 
-/** The query is shown only while a search word matches it, since the label leaves it out otherwise. */
-function queryHit(query: string, words: readonly string[]) {
-  const lower = query.toLowerCase();
+/** The query and status text show only while a search word matches them, since the row leaves them out otherwise. */
+function textHit(text: string, words: readonly string[]) {
+  const lower = text.toLowerCase();
   return words.some((word) => lower.includes(word));
 }
 

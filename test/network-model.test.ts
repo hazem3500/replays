@@ -98,6 +98,9 @@ describe('network filters', () => {
     expect(filtered({ status: 'failed' })).toEqual(['coupon', 'blocked']);
     expect(filtered({ type: 'document' })).toEqual(['doc']);
     expect(filtered({ text: 'post 422' })).toEqual(['coupon']);
+    expect(filtered({ text: 'blocked_by' })).toEqual(['blocked']);
+    expect(filtered({ text: 'https' })).toEqual([]);
+    expect(filtered({ text: 'for=home' })).toEqual(['slow']);
     expect(filtered({ range: { from: 5600, to: 5800 } })).toEqual(['coupon']);
   });
 

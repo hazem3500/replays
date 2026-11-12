@@ -64,6 +64,8 @@
 .np-code { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 .np-code[data-tone="bad"] { color: var(--danger); font-weight: 600; }
 .np-code[data-tone="none"] { color: var(--text-tertiary); font-family: var(--sans); }
+.np-status-text { color: var(--text-tertiary); font-family: var(--sans); font-weight: 400; }
+.np-row .np-code:has(.np-status-text) { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .np-duration { --np-duration-bar-width: 48px; --np-duration-gap: 8px; display: flex; align-items: center; justify-content: flex-end; gap: var(--np-duration-gap); }
 .np-head > .np-duration { padding-inline-end: calc(var(--np-duration-bar-width) + var(--np-duration-gap)); }
 .np-sort { display: inline-flex; align-items: center; justify-content: inherit; gap: 3px; max-width: 100%; min-width: 24px; min-height: 24px; padding: 2px 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
