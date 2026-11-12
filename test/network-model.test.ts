@@ -91,7 +91,7 @@ describe('network filters', () => {
   const rows = buildNetworkRows(busy());
 
   it('counts each status filter', () => {
-    expect(statusCounts(rows)).toEqual({ all: 6, failed: 2, slow: 1, pending: 1 });
+    expect(statusCounts(rows)).toEqual({ all: 6, failed: 2, slow: 1, pending: 1, focus: 0 });
   });
 
   it('combines status, type, words and a time range', () => {

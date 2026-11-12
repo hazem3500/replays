@@ -8,6 +8,7 @@ import {
   type ReviewSuiteRegistration,
   type ReviewSuiteRun,
 } from '../shared/review-suite.ts';
+import type { FocusMarker } from '../shared/run-focus.ts';
 import { SourceProviders } from '../shared/source-providers.ts';
 import { assertTransition, isTerminal, nextSequence } from './lifecycle.ts';
 
@@ -80,6 +81,8 @@ export interface RunUpdate {
   title?: string | undefined;
   status: ReviewRunStatus;
   summary?: string | undefined;
+  /** Replaces the run's focus markers; an empty list clears them, absent keeps them. */
+  focus?: FocusMarker[] | undefined;
   group?: string | undefined;
   target?: string | undefined;
   measure?: string | undefined;
@@ -99,6 +102,7 @@ function registrationFor(suite: ReviewSuite, update: RunUpdate, now: () => Date)
     startedAt: existing?.startedAt ?? now().toISOString(),
     ...(isTerminal(update.status) ? { finishedAt: existing?.finishedAt ?? now().toISOString() } : {}),
     ...(update.summary ? { summary: update.summary } : {}),
+    ...(update.focus ? { focus: update.focus } : {}),
     ...groupingOf(update, existing),
   };
 }

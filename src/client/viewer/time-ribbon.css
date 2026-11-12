@@ -101,3 +101,5 @@ button.lt-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2
 .rl { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rl-method { color: var(--text-secondary); }
 .rl-muted { color: var(--text-tertiary); }
+/* A Network search match: tinted like a selection, full-contrast text, no box change so the label keeps its width. */
+.rl-hit { border-radius: 2px; background: color-mix(in srgb, var(--accent) 28%, transparent); color: var(--text); }

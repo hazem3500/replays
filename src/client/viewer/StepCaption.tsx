@@ -1,3 +1,4 @@
+import type { ReplayStep } from '../../shared/replay.ts';
 import { useSeekedPause } from '../hooks/use-seeked-pause.ts';
 import { LiveCaption } from '../LiveCaption.tsx';
 import { usePlayer, usePlayerState, usePlayhead } from '../player.ts';
@@ -11,19 +12,25 @@ import { useRenamingKey, useStepRenaming } from './step-rename-context.ts';
  * Step captions: the current step's label as a calm caption on the player while it plays, and while you scrub or
  * seek (pointer drag, touch drag, keys, a step click) and stay paused there; a pause without a seek, or the end,
  * clears it. The stable caption host swaps the whole line between step labels.
+ *
+ * `recording` captions another recording on the same clock (a compared tile that is not in focus) with its own steps;
+ * only the viewer's own recording can be renamed from its caption.
  */
-export function StepCaption() {
+export function StepCaption({ recording }: { recording?: { steps: readonly ReplayStep[]; duration: number } }) {
   const player = usePlayer();
-  const { steps, captionNumbers } = useViewer();
+  const viewer = useViewer();
+  const steps = recording?.steps ?? viewer.steps;
+  const duration = recording?.duration ?? player.duration;
   const { status } = usePlayerState();
   // why: the rail's own step index, so caption and rail never disagree at a boundary.
-  const activeIndex = useActiveStep(steps);
+  const activeIndex = useActiveStep(steps, duration);
   const seeked = useSeekedPause(player);
-  const captionIndex = usePlayhead((time) => captionAt(steps, time, player.duration)?.index ?? -1);
+  const captionIndex = usePlayhead((time) => captionAt(steps, time, duration)?.index ?? -1);
   const step = steps[captionIndex];
   const active = Boolean(step && (status === 'playing' || (seeked && status !== 'ended')));
-  const number = active && captionNumbers ? activeIndex + 1 : undefined;
-  const renaming = useStepRenaming();
+  const number = active && viewer.captionNumbers ? activeIndex + 1 : undefined;
+  const viewerRenaming = useStepRenaming();
+  const renaming = recording ? null : viewerRenaming;
   const editingKey = useRenamingKey(renaming, 'caption');
   const key = renaming?.keys[captionIndex];
   const editing = Boolean(renaming && key && key === editingKey);

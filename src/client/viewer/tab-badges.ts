@@ -10,6 +10,16 @@ export interface TabBadge {
   value: number;
   tone?: 'danger' | 'warning';
   label: string;
+  /** How many of them the suite run marked to look at (src/shared/run-focus.ts); shown as its own accent count. */
+  focus?: number;
+}
+
+/** The badge with its focus count, spoken after the total: "14 requests, 2 to focus on". */
+export function withFocus(base: TabBadge | undefined, focus: number): TabBadge | undefined {
+  if (focus <= 0) return base;
+  const marked = `${focus} to focus on`;
+  // why: Performance counts only slow moments, so a marked fast one still needs a badge to carry its focus count.
+  return base ? { ...base, focus, label: `${base.label}, ${marked}` } : { value: 0, focus, label: marked };
 }
 
 function badge(total: number, noun: readonly [string, string], problems: readonly (readonly [number, string, 'danger' | 'warning'])[]) {

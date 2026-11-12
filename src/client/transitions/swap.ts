@@ -8,7 +8,7 @@ import { abandon, currentTransition, follow, isTurn, nextTurn, setSwappingInPlac
 
 /* why: in-place swaps (a suite's runs). The runs sidebar stays perfectly still (its live layer, so only its selection
  * glides), the frame crossfades between the two runs at its rect (resizing smoothly if the aspect differs), the top
- * bar and transport crossfade in place, and Motion brings the step rail and panel in with a 4 px rise.
+ * bar and transport crossfade in place, and the step rail and inspector swap at once without moving.
  * The new run renders complete inside the update (rrweb included: a crossfade has nothing to stall), and the old one
  * stays on screen while its data loads, up to a short wait. A switch while one runs (a held J) lands at once.
  */
@@ -33,19 +33,44 @@ function describeRunTransition(view: RunView) {
     .layout({ type: spring, duration: 0.28, bounce: 0.06 })
     .old({ opacity: [1, 1] }, { duration: 0.2 })
     .new({ opacity: [0, 1] }, { duration: 0.2 });
-  for (const panel of ['.app-shell .timeline-panel', '.app-shell .inspector']) {
+  /* why: the sidebar, step rail and inspector keep their place and chrome across runs; only their rows change, so they
+     swap at once instead of fading or rising (a crossfade there reads as the panel flickering). */
+  for (const still of ['.suite-sidebar', '.app-shell .timeline-panel', '.app-shell .inspector']) {
     view
-      .add(panel, panel)
+      .add(still, still)
       .layout({ duration: 0 })
-      .old({ opacity: [1, 1] })
-      .new({ opacity: [0, 1], transform: ['translateY(4px)', 'translateY(0px)'] }, { duration: 0.22 });
+      .old({ opacity: [0, 0] })
+      .new({ opacity: [1, 1] });
   }
-  const sidebar = '.suite-sidebar';
-  view
-    .add(sidebar, sidebar)
-    .layout({ duration: 0 })
-    .old({ opacity: [0, 0] })
-    .new({ opacity: [1, 1] });
+}
+
+/** How long after a run swap commits its new panels may still be starting their arrival motion. */
+const SETTLE_MS = 700;
+
+/**
+ * why: a run swap remounts the run's view in place of the old one, so every panel's arrival motion (rows rising, tab
+ * indicators sliding, chips and counters popping, splitters fading in) would replay on each switch and read as the
+ * page flickering. Whatever starts inside the run's view after the swap lands at its end state at once; the
+ * crossfades the swap itself draws (view-transition layers) and endless loaders are left alone.
+ */
+function settled(update: () => void) {
+  const root = document.querySelector('.suite-viewer');
+  const seen = new WeakSet<Animation>(document.getAnimations());
+  update();
+  if (!root) return;
+  const until = performance.now() + SETTLE_MS;
+  const sweep = () => {
+    for (const animation of document.getAnimations()) {
+      if (seen.has(animation)) continue;
+      seen.add(animation);
+      const effect = animation.effect;
+      if (!(effect instanceof KeyframeEffect) || effect.pseudoElement || !effect.target || !root.contains(effect.target)) continue;
+      if (effect.getComputedTiming().iterations === Number.POSITIVE_INFINITY) continue;
+      animation.finish();
+    }
+    if (performance.now() < until) requestAnimationFrame(sweep);
+  };
+  sweep();
 }
 
 export function swapInPlace(update: () => void, ready: Promise<unknown>, { instant = false }: { instant?: boolean } = {}) {
@@ -55,13 +80,13 @@ export function swapInPlace(update: () => void, ready: Promise<unknown>, { insta
   const running = Boolean(currentTransition());
   const turn = nextTurn();
   if (instant || running || !supportsTransitions()) {
-    update();
+    settled(update);
     return;
   }
   void Promise.race([ready.catch(() => {}), delay(RUN_WAIT_MS)]).then(() => {
     if (!isTurn(turn)) return;
     if (currentTransition()) {
-      update();
+      settled(update);
       return;
     }
     unnameAll();
@@ -74,7 +99,7 @@ export function swapInPlace(update: () => void, ready: Promise<unknown>, { insta
       unnameAll();
       setSwappingInPlace(true);
       try {
-        flushSync(update);
+        settled(() => flushSync(update));
       } finally {
         setSwappingInPlace(false);
       }
@@ -90,7 +115,7 @@ export function swapInPlace(update: () => void, ready: Promise<unknown>, { insta
       abandon(transition);
       unnameAll();
       delete root.dataset.pageTransition;
-      flushSync(update);
+      settled(() => flushSync(update));
     }, COMMIT_WAIT_MS);
     // why: Motion can leave a crossfade unfinished (its layers never settle); the next run's player waits on it to mount.
     void Promise.race([

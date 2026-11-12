@@ -120,6 +120,8 @@ let lastReveal: { at: number; start: number } | undefined;
  * in the same commit are revealed by one revealRows call, on one clock; a straggler joins that clock.
  */
 export function queueReveal(container: HTMLElement, selector: string) {
+  // why: read now, not in the microtask: an in-place run swap has ended by then, and its rows must not rise.
+  if (!shouldStagger()) return;
   if (queued.length === 0) queueMicrotask(flushReveal);
   queued.push({ container, selector });
 }

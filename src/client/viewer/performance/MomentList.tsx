@@ -1,5 +1,5 @@
 import { useViewerPresenceMotion } from '../../hooks/use-viewer-presence-motion.ts';
-import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useRef } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useContext, useRef } from 'react';
 
 import type { ReplayStep } from '../../../shared/replay.ts';
 import { useRevealRow } from '../../hooks/use-reveal-row.ts';
@@ -11,6 +11,8 @@ import { HEADER_HEIGHT, SeekTime } from '../TrackList.tsx';
 import { BUDGETS, type Moment, type MomentOrder, VERDICT_WORDS } from './model.ts';
 import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
 import { ListSpacer } from '../ListSpacer.tsx';
+import { ViewerContext } from '../context.ts';
+import { FocusMark } from '../FocusMark.tsx';
 
 export const MOMENT_DETAIL_ID = 'performance-detail';
 
@@ -167,6 +169,8 @@ function MomentRow({
   onStep: (id: string, move: StepMove) => void;
 }) {
   const future = usePlayhead((time) => time < moment.at);
+  const focus = useContext(ViewerContext)?.focus;
+  const marker = focus?.has.performance ? focus.performance(moment) : undefined;
   const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (event.altKey || event.metaKey || event.ctrlKey) return;
     const move = KEY_MOVES[event.key];
@@ -187,6 +191,7 @@ function MomentRow({
       data-performance-id={moment.id}
       data-row-id={moment.id}
       data-verdict={moment.verdict}
+      data-focus={marker ? '' : undefined}
       data-selected={selected || undefined}
       data-lit={lit || undefined}
       data-future={future || undefined}
@@ -203,6 +208,7 @@ function MomentRow({
           <span className="pp-dot" data-verdict={moment.verdict} aria-hidden="true" />
           {moment.label}
           <span className="visually-hidden">, {VERDICT_WORDS[moment.verdict]}</span>
+          {marker ? <FocusMark marker={marker} /> : null}
         </button>
       </span>
       <span role="cell" className="pp-when">

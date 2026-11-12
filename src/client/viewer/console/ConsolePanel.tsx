@@ -1,14 +1,16 @@
 import { TerminalIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 
 import type { ReplayConsoleEntry } from '../../../shared/replay.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { Button } from '@/components/ui/button.tsx';
+import { useCarriedFilter } from '../carried-filters.ts';
+import { ViewerContext } from '../context.ts';
 import { Empty } from '../Empty.tsx';
 import { ConsoleDetail } from './ConsoleDetail.tsx';
 import { ConsoleList } from './ConsoleList.tsx';
 import { ConsoleToolbar } from './ConsoleToolbar.tsx';
-import { filterRows, groupRepeats, type LevelFilter, levelCounts } from './model.ts';
+import { filterRows, groupRepeats, levelCounts } from './model.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the panel shares the network panel's frame and toolbar styles.
 import '../network/network.css';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the panel's styles load with the lazy inspector chunk, not with every page.
@@ -39,12 +41,15 @@ function emptyCopy(total: number, human: boolean) {
 export function ConsolePanel({ entries, human }: { entries: readonly ReplayConsoleEntry[]; human: boolean }) {
   const panel = useRef<HTMLDivElement>(null);
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
-  const [level, setLevel] = useState<LevelFilter>('all');
-  const [text, setText] = useState('');
+  const [chosen, setLevel] = useCarriedFilter('consoleLevel', 'all');
+  const [text, setText] = useCarriedFilter('consoleText', '');
   const [selected, setSelected] = useState<string>();
-  const rows = groupRepeats(entries);
-  const shown = filterRows(rows, level, text);
+  const focus = useContext(ViewerContext)?.focus;
+  const rows = useMemo(() => groupRepeats(entries, focus), [entries, focus]);
   const counts = levelCounts(rows);
+  // why: Focus carried over from a run that marked messages shows every message on a run that marks none.
+  const level = chosen === 'focus' && counts.focus === 0 ? 'all' : chosen;
+  const shown = filterRows(rows, level, text);
   const open = selected ? rows.find((row) => row.id === selected) : undefined;
   const copy = emptyCopy(rows.length, human);
   const empty = (

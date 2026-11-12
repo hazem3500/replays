@@ -32,7 +32,10 @@ export function useTabIndicatorMotion(forwardedRef: Ref<HTMLSpanElement> | undef
         node.style.setProperty('translate', `${next.left} 0`);
         node.style.setProperty('width', next.width);
       };
+      // why: the first geometry after mount is the indicator's placement, not a move (a run swap remounts the tabs).
+      const placing = previous.width === '0px';
       if (
+        placing ||
         typeof node.animate !== 'function' ||
         node.closest('[data-instant-switch]') ||
         matchMedia('(prefers-reduced-motion: reduce)').matches

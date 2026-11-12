@@ -2,6 +2,7 @@ import { animate } from 'motion/mini';
 import { useImperativeHandle, useLayoutEffect, useRef, type Ref } from 'react';
 
 import { haltMotion } from '../lib/halt-motion.ts';
+import { swappingInPlace } from '../transitions/state.ts';
 
 export type SurfaceMotionKind = 'popover' | 'tooltip' | 'modal' | 'backdrop' | 'sheet' | 'drawer' | 'drawer-backdrop' | 'pane';
 
@@ -50,6 +51,8 @@ function drawerInteraction(node: HTMLElement, open: boolean, kind: SurfaceMotion
 function instantSurface(node: HTMLElement, instant: boolean) {
   return (
     instant ||
+    // why: a suite run swap mounts the new run's panels in place; they are already where the old ones were.
+    swappingInPlace() ||
     node.hasAttribute('data-instant') ||
     Boolean(node.closest('[data-instant-switch]')) ||
     matchMedia('(prefers-reduced-motion: reduce)').matches

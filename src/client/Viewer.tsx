@@ -88,6 +88,8 @@ import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { DesktopHeader } from './viewer/DesktopHeader.tsx';
 import { SpeedHud, SkipIndicator } from './viewer/PlaybackNotices.tsx';
 import { setPageUrl } from './routing/navigate.ts';
+import { focusTests } from '../shared/run-focus.ts';
+import { focusSpots } from './viewer/focus-marks.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
 const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
@@ -192,6 +194,8 @@ export function Viewer({
   const comparisonContext = Boolean(stage && (comparing?.length ?? 0) > 1);
   const page = usePageView({ replay: bundle, suiteProfile, recordings: comparing?.length ?? 1, comparison: comparisonContext });
   const viewerDefaults = viewDefaults(page);
+  const runFocus = suite?.runFocus;
+  const focus = useMemo(() => (runFocus?.length ? focusTests(runFocus) : undefined), [runFocus]);
   const performanceFocused = isPerformanceFocused({
     view: page.view.id,
     profiles: [profile, suiteProfile ? pageProfiles().find((candidate) => candidate.id === suiteProfile) : undefined],
@@ -444,13 +448,15 @@ export function Viewer({
       tabOrder: defaults.tabs,
       performanceFocused,
       frames,
+      ...(focus ? { focus, focusSpots: focusSpots(bundle, focus) } : {}),
     };
   }, [
+    focus,
+    bundle,
     performanceFocused,
     frames,
     defaults.tabs,
     defaults.tracks,
-    bundle.steps,
     steps,
     captionNumbers,
     captions,

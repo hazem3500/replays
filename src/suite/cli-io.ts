@@ -6,6 +6,7 @@ import { ReviewSuiteHttpError } from '../capture/review-suite.ts';
 import { createTerminal, failureHint, type Terminal } from '../capture/terminal.ts';
 import { PRODUCT_SLUG } from '../shared/brand.ts';
 import { assertReplayId } from '../shared/replay.ts';
+import { assertFocus, type FocusMarker, parseFocusSpec } from '../shared/run-focus.ts';
 import { assertSummary, MAX_GROUP_LENGTH, MAX_TARGET_LENGTH, type ReviewRunStatus } from '../shared/review-suite.ts';
 import { RUN_ID_PATTERN } from './plan.ts';
 
@@ -65,6 +66,55 @@ export async function textArgument(raw: string | undefined, name: string): Promi
     );
   }
   return text;
+}
+
+/**
+ * Repeated `--focus` values: `panel:pattern # note` specs, or `@file` with a JSON list of markers or one spec per line
+ * (blank and `//` lines skipped). `none` alone clears the run's markers; no flag at all keeps them.
+ */
+export async function focusArgument(raw: string[] | undefined): Promise<FocusMarker[] | undefined> {
+  if (!raw?.length) return undefined;
+  if (raw.length === 1 && raw[0] === 'none') return [];
+  const markers: unknown[] = [];
+  for (const item of raw) {
+    if (!item.startsWith('@')) {
+      markers.push(focusMarker(item));
+      continue;
+    }
+    let text: string;
+    try {
+      text = await readFile(resolve(item.slice(1)), 'utf8');
+    } catch {
+      throw new UsageError(`--focus: cannot read ${item.slice(1)}`);
+    }
+    if (text.trimStart().startsWith('[')) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new UsageError(`--focus: ${item.slice(1)} is not valid JSON`);
+      }
+      if (!Array.isArray(parsed)) throw new UsageError(`--focus: ${item.slice(1)} must hold a list of markers`);
+      markers.push(...parsed.map((entry) => (typeof entry === 'string' ? focusMarker(entry) : entry)));
+    } else {
+      const lines = text.split(/\r?\n/).map((line) => line.trim());
+      markers.push(...lines.filter((line) => line && !line.startsWith('//')).map(focusMarker));
+    }
+  }
+  try {
+    assertFocus(markers, '--focus');
+    return markers;
+  } catch (error) {
+    throw new UsageError(error instanceof Error ? error.message : String(error));
+  }
+}
+
+function focusMarker(spec: string): FocusMarker {
+  try {
+    return parseFocusSpec(spec);
+  } catch (error) {
+    throw new UsageError(`--focus: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 export function need(values: Record<string, string>, name: string, command: string): string {

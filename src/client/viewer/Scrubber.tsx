@@ -1,3 +1,4 @@
+import type { FocusSpot } from './focus-marks.ts';
 import { memo, type RefObject, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
@@ -81,6 +82,7 @@ const TRACKS_SLOT = 'viewer.scrubber.tracks';
 const NO_STEPS: ReplayStep[] = [];
 const NO_ERRORS: ReplayError[] = [];
 const NO_HIGHLIGHTS: ProjectedHighlight[] = [];
+const NO_SPOTS: readonly FocusSpot[] = [];
 
 /**
  * The seek bar's built-in tracks as `viewer.scrubber.tracks` items, so a host's hide applies to them as to plugin tracks
@@ -94,7 +96,7 @@ const BUILTIN_TRACKS: readonly SlotDescriptor<undefined, null>[] = [
 ];
 
 export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: ReplayStep[]; errors: ReplayError[] }) {
-  const { highlights: allHighlights = NO_HIGHLIGHTS, tracks: viewTracks } = useViewer();
+  const { highlights: allHighlights = NO_HIGHLIGHTS, tracks: viewTracks, focusSpots = NO_SPOTS } = useViewer();
   // why: a host's slot configuration changes the registry snapshot; reading it re-renders the bar with it.
   usePluginSnapshot();
   const tracks = new Set(
@@ -145,6 +147,12 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
     const boxes = segments.map((segment, index) => barBox(segment, index, segments.length, player.duration, width));
     return scrubberMarks([], errors, player.duration, width, ERROR_NOTCH_GAP).map((mark) => ({ ...mark, x: notchX(mark.x, boxes) }));
   }, [errors, player.duration, segments, width]);
+
+  // why: focus notches merge like error notches so a dense run stays readable; a merged notch names the first marker.
+  const focusMarks = useMemo(() => {
+    const boxes = segments.map((segment, index) => barBox(segment, index, segments.length, player.duration, width));
+    return scrubberMarks(focusSpots, [], player.duration, width, ERROR_NOTCH_GAP).map((mark) => ({ ...mark, x: notchX(mark.x, boxes) }));
+  }, [focusSpots, player.duration, segments, width]);
 
   // The interaction engine: plain listeners and refs, rebuilt only when the bars, marks or width change.
   useLayoutEffect(() => {
@@ -627,6 +635,7 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
         <div ref={bars} className="scrubber-bars">
           <Segments segments={segments} width={width} />
           <ErrorNotches marks={errorMarks} />
+          <FocusNotches marks={focusMarks} />
         </div>
       </div>
       <input
@@ -785,6 +794,20 @@ const Segments = memo(function Segments({ segments, width }: { segments: Scrubbe
  * Errors as notches on the bars (like ad marks on a video timeline): 2 px of red at the error's time,
  * above the fill, growing with the bars. Merged errors are one notch; the hover bubble gives the count.
  */
+const FocusNotches = memo(function FocusNotches({ marks }: { marks: ScrubberMark[] }) {
+  const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
+  return marks.map((mark) => (
+    <span
+      key={`${mark.at}-${mark.x}`}
+      role="img"
+      className="focus-notch"
+      data-testid="focus-marker"
+      aria-label={`Focus: ${mark.label} at ${formatClock(mark.at)}`}
+      style={{ left: `${Math.round((mark.x - 1) * dpr) / dpr}px` }}
+    />
+  ));
+});
+
 const ErrorNotches = memo(function ErrorNotches({ marks }: { marks: ScrubberMark[] }) {
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   return marks.map((mark) => (
