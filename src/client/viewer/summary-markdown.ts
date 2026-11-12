@@ -87,7 +87,7 @@ function appendItem(blocks: Block[], match: RegExpExecArray): void {
     const parent = last.items.at(-1);
     if (parent) {
       // invariant: nesting stops at one level; deeper markers join the child list.
-      if (parent.children && parent.children.ordered === ordered) parent.children.items.push(item);
+      if (parent.children?.ordered === ordered) parent.children.items.push(item);
       else parent.children = { kind: 'list', ordered, items: [item] };
       return;
     }
@@ -122,49 +122,59 @@ function continueItem(blocks: Block[], line: string): boolean {
   return Boolean(target);
 }
 
+interface Pending {
+  blocks: Block[];
+  paragraph: string[];
+  quote: string[];
+}
+
+function flush(pending: Pending): void {
+  if (pending.paragraph.length) pending.blocks.push({ kind: 'p', text: pending.paragraph.join(' ') });
+  if (pending.quote.length) pending.blocks.push({ kind: 'quote', text: pending.quote.join(' ') });
+  pending.paragraph.splice(0);
+  pending.quote.splice(0);
+}
+
+/** Adds one line outside a code fence. */
+function addLine(pending: Pending, next: Exclude<Line, { kind: 'fence' }>, line: string): void {
+  const { blocks, paragraph, quote } = pending;
+  if (next.kind === 'quote') {
+    if (paragraph.length) flush(pending);
+    pending.quote.push(next.text);
+  } else if (next.kind === 'item') {
+    flush(pending);
+    appendItem(blocks, next.match);
+  } else if (next.kind === 'heading') {
+    flush(pending);
+    blocks.push({ kind: 'heading', level: next.level, text: next.text });
+  } else if (next.kind === 'blank') {
+    flush(pending);
+  } else if (paragraph.length || quote.length || !continueItem(blocks, line)) {
+    if (quote.length || (paragraph.length && leadLabel(line.trim()))) flush(pending);
+    pending.paragraph.push(line.trim());
+  }
+}
+
 /** Splits a summary into blocks. Lines that start a new "Label:" begin a new paragraph so Toki's report lines stay apart. */
 export function summaryBlocks(summary: string): Block[] {
-  const blocks: Block[] = [];
-  let paragraph: string[] = [];
-  let quote: string[] = [];
+  const pending: Pending = { blocks: [], paragraph: [], quote: [] };
   let code: string[] | undefined;
-  const flush = () => {
-    if (paragraph.length) blocks.push({ kind: 'p', text: paragraph.join(' ') });
-    if (quote.length) blocks.push({ kind: 'quote', text: quote.join(' ') });
-    paragraph = [];
-    quote = [];
-  };
   for (const line of summary.replace(/\r\n?/g, '\n').split('\n')) {
     const next = classify(line);
-    if (code) {
-      if (next.kind === 'fence') {
-        blocks.push({ kind: 'code', text: code.join('\n') });
-        code = undefined;
-      } else code.push(line);
-    } else if (next.kind === 'fence') {
-      flush();
-      code = [];
-    } else if (next.kind === 'quote') {
-      if (paragraph.length) flush();
-      quote.push(next.text);
-    } else if (next.kind === 'item') {
-      flush();
-      appendItem(blocks, next.match);
-    } else if (next.kind === 'heading') {
-      flush();
-      blocks.push({ kind: 'heading', level: next.level, text: next.text });
-    } else if (next.kind === 'blank') {
-      flush();
-    } else if (!paragraph.length && !quote.length && continueItem(blocks, line)) {
-      continue;
+    if (next.kind !== 'fence') {
+      if (code) code.push(line);
+      else addLine(pending, next, line);
+    } else if (code) {
+      pending.blocks.push({ kind: 'code', text: code.join('\n') });
+      code = undefined;
     } else {
-      if (quote.length || (paragraph.length && leadLabel(line.trim()))) flush();
-      paragraph.push(line.trim());
+      flush(pending);
+      code = [];
     }
   }
-  if (code) blocks.push({ kind: 'code', text: code.join('\n') });
-  flush();
-  return blocks;
+  if (code) pending.blocks.push({ kind: 'code', text: code.join('\n') });
+  flush(pending);
+  return pending.blocks;
 }
 
 /**
