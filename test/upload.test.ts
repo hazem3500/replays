@@ -227,6 +227,13 @@ describe('POST /api/replays sanitizes client bundles', () => {
     expect(onDisk).toContain('*'.repeat('unmasked-value'.length));
   });
 
+  it('rejects a gzipped bundle that is over the cap once decompressed', async () => {
+    const { api } = await start();
+    const bomb = await post(api, gzipSync(Buffer.alloc(26 * 1024 * 1024, 32)), { 'content-encoding': 'gzip' });
+    expect(bomb.status).toBe(413);
+    expect(await bomb.text()).toMatch(/once decompressed/);
+  });
+
   it('accepts gzip and is idempotent for already-sanitized bundles', async () => {
     const { api } = await start();
     const clean = sanitizeReplayBundle(leaky());

@@ -9,6 +9,7 @@ import { capture, labelFor, parseArgs, selectorName } from '../src/capture/captu
 import { agentBrowserDriver } from '../src/capture/drivers/agent-browser.ts';
 import { AgentBrowser } from '../src/capture/drivers/agent-browser-cli.ts';
 import { playwrightDriver } from '../src/capture/drivers/playwright.ts';
+import { isSameUrl } from '../src/capture/drivers/same-url.ts';
 import type { CaptureDriver } from '../src/capture/drivers/types.ts';
 import { RecorderSession } from '../src/capture/session.ts';
 import type { ReplayBundle } from '../src/shared/replay.ts';
@@ -233,4 +234,17 @@ it('requests 80ms typing from agent-browser without adding a delay to fill', asy
   expect(command).toHaveBeenCalledWith(['type', '#field', 'demo', '--delay', '80']);
   await driver.step({ kind: 'fill', selector: '#field', text: 'demo' });
   expect(command).toHaveBeenLastCalledWith(['fill', '#field', 'demo']);
+});
+
+describe('a goto step', () => {
+  it('is skipped for the page that is already open, however the address is written', () => {
+    expect(isSameUrl('https://example.com/shop?a=1', 'https://example.com/shop?a=1')).toBe(true);
+    expect(isSameUrl('https://example.com/shop?a=1', '/shop?a=1')).toBe(true);
+  });
+
+  it('still navigates to a different page or an unreadable address', () => {
+    expect(isSameUrl('https://example.com/shop', 'https://example.com/cart')).toBe(false);
+    expect(isSameUrl('https://example.com/shop', '/shop?b=2')).toBe(false);
+    expect(isSameUrl('about:blank', 'http://[bad')).toBe(false);
+  });
 });

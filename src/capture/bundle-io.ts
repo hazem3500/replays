@@ -1,5 +1,6 @@
 import { mkdir, readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { gzipSync } from 'node:zlib';
 
 import { isProfileId, readAliased } from '../shared/profiles.ts';
 import { REPLAY_FORMAT_VERSION, type ReplayBundle } from '../shared/replay.ts';
@@ -159,11 +160,15 @@ export async function upload(
     ...(headerFile || !accessToken ? {} : { authorization: `Bearer ${accessToken}` }),
   };
   const endpoint = normalizeUploadUrl(url);
-  const response = await uploadRequest(endpoint, {
+  const json = JSON.stringify(bundle);
+  // why: bundles run to 17 MB against a 25 MB cap and gzip to about 4%; an older server answers 415, so it gets one plain retry.
+  let response = await uploadRequest(endpoint, {
     method: 'POST',
-    headers: { ...headers, 'content-type': 'application/json' },
-    body: JSON.stringify(bundle),
+    headers: { ...headers, 'content-type': 'application/json', 'content-encoding': 'gzip' },
+    body: new Uint8Array(gzipSync(json)),
   });
+  if (response.status === 415)
+    response = await uploadRequest(endpoint, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: json });
   if (response.status >= 300 && response.status < 400)
     throw new Error('replay upload was redirected; check the configured server URL and sign-in setup');
   if (response.status === 401 || response.status === 403) throw new UploadHttpError(response.status);

@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { PassThrough } from 'node:stream';
+import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -108,6 +109,62 @@ describe('upload receipt and partial success', () => {
     expect(receiptUrl('https://s.example/base/api/replays', 'abc', { id: 'abc' })).toBe('https://s.example/base/r/abc');
     expect(receiptUrl('https://s.example/api/replays', 'abc', { url: '/x/r/abc' })).toBe('https://s.example/x/r/abc');
     expect(receiptUrl('https://s.example/api/replays', 'abc', { url: 'https://evil.example/r/abc' })).toBe('https://s.example/r/abc');
+  });
+});
+
+const collect = (request: IncomingMessage, done: (body: Buffer) => void) => {
+  const chunks: Buffer[] = [];
+  request.on('data', (chunk: Buffer) => chunks.push(chunk));
+  request.on('end', () => done(Buffer.concat(chunks)));
+};
+
+describe('gzip upload', () => {
+  afterEach(closeAll);
+
+  it('sends the bundle gzipped with a content-encoding header', async () => {
+    const seen: Array<{ encoding: string | undefined; json: unknown }> = [];
+    const origin = await serve((request, response) =>
+      collect(request, (body) => {
+        seen.push({ encoding: request.headers['content-encoding'], json: JSON.parse(gunzipSync(body).toString('utf8')) });
+        response.writeHead(201, { 'content-type': 'application/json' });
+        response.end('{}');
+      }),
+    );
+    const bundle = replay('zipped');
+    await upload(bundle, '/unused', `${origin}/api/replays`);
+    expect(seen).toEqual([{ encoding: 'gzip', json: JSON.parse(JSON.stringify(bundle)) }]);
+  });
+
+  it('retries once, plain, when the server answers 415', async () => {
+    const seen: Array<{ encoding: string | undefined; text: string }> = [];
+    const origin = await serve((request, response) =>
+      collect(request, (body) => {
+        const encoding = request.headers['content-encoding'];
+        seen.push({ encoding, text: encoding ? '' : body.toString('utf8') });
+        response.writeHead(encoding ? 415 : 201, { 'content-type': 'application/json' });
+        response.end('{}');
+      }),
+    );
+    const bundle = replay('plain-retry');
+    const result = await upload(bundle, '/unused', `${origin}/api/replays`);
+    expect(result.id).toBe('plain-retry');
+    expect(seen).toEqual([
+      { encoding: 'gzip', text: '' },
+      { encoding: undefined, text: JSON.stringify(bundle) },
+    ]);
+  });
+
+  it('does not retry again when the plain request is also refused', async () => {
+    let calls = 0;
+    const origin = await serve((request, response) =>
+      collect(request, () => {
+        calls += 1;
+        response.writeHead(415);
+        response.end();
+      }),
+    );
+    await expect(upload(replay('refused'), '/unused', `${origin}/api/replays`)).rejects.toMatchObject({ status: 415 });
+    expect(calls).toBe(2);
   });
 });
 
