@@ -137,6 +137,95 @@ describe('replays suite list and show against the real server routes', () => {
   });
 });
 
+/** Runs `replays suite …` without --json and returns what it printed. */
+async function suiteText(origin: string, ...argv: string[]): Promise<string> {
+  const out: string[] = [];
+  vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => out.push(String(chunk)) > 0);
+  await runSuiteCli([...argv, '--upload-url', `${origin}/api/replays`], { NO_COLOR: '1' });
+  vi.restoreAllMocks();
+  return out.join('');
+}
+
+describe('replays suite grouping flags against the real server routes', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    process.exitCode = undefined;
+  });
+
+  it('sets baseline, group, target and measure, and keeps them when a flag is left out', async () => {
+    const { client } = await boot();
+    await suite(client.origin, 'create', '--id', 'perf', '--title', 'Perf', '--baseline', 'main');
+    const added = await suite(
+      client.origin,
+      'run',
+      'add',
+      'perf',
+      '--run',
+      'a',
+      '--title',
+      'A',
+      '--group',
+      'Cold open',
+      '--target',
+      'main',
+      '--measure',
+      'Entries visible',
+    );
+    expect(added.body).toMatchObject({ run: { id: 'a', group: 'Cold open', target: 'main', measure: 'Entries visible' } });
+    await suite(client.origin, 'run', 'add', 'perf', '--run', 'b', '--title', 'B', '--group', 'Cold open', '--target', '#6879');
+
+    const set = await suite(client.origin, 'run', 'set', 'perf', 'a', '--summary', 'Looks fine.');
+    expect(set.body).toMatchObject({ run: { id: 'a', group: 'Cold open', target: 'main', measure: 'Entries visible' } });
+    const retarget = await suite(client.origin, 'run', 'set', 'perf', 'b', '--target', '#7000');
+    expect(retarget.body).toMatchObject({ run: { id: 'b', group: 'Cold open', target: '#7000' } });
+    const regroup = await suite(client.origin, 'run', 'set', 'perf', 'a', '--status', 'passed');
+    expect(regroup.body).toMatchObject({ run: { status: 'passed', group: 'Cold open', target: 'main', measure: 'Entries visible' } });
+
+    const shown = await suite(client.origin, 'show', 'perf');
+    expect(shown.body).toMatchObject({
+      suite: {
+        baseline: 'main',
+        runs: [
+          { id: 'a', group: 'Cold open', target: 'main', measure: 'Entries visible' },
+          { id: 'b', group: 'Cold open', target: '#7000' },
+        ],
+      },
+    });
+  });
+
+  it('lists a grouped suite by group and target in the text output', async () => {
+    const { client } = await boot();
+    await suite(client.origin, 'create', '--id', 'perf', '--title', 'Perf', '--baseline', 'main');
+    await suite(client.origin, 'run', 'add', 'perf', '--run', 'x', '--title', 'X', '--group', 'Cold open', '--target', '#6879');
+    await suite(client.origin, 'run', 'add', 'perf', '--run', 'y', '--title', 'Y', '--group', 'Cold open', '--target', 'main');
+    await suite(client.origin, 'run', 'add', 'perf', '--run', 'z', '--title', 'Z');
+    const text = await suiteText(client.origin, 'show', 'perf');
+    expect(text).toMatch(/Baseline\s+main/);
+    expect(text).toMatch(/Cold open\n/);
+    expect(text.indexOf('main (baseline, 1 run)')).toBeGreaterThan(-1);
+    expect(text.indexOf('main (baseline, 1 run)')).toBeLessThan(text.indexOf('#6879 (1 run)'));
+    expect(text.indexOf('#6879 (1 run)')).toBeLessThan(text.indexOf('Ungrouped'));
+  });
+
+  it('refuses a group, target, measure or baseline that is too long or blank', async () => {
+    const { client } = await boot();
+    const tooLongTarget = await suite(client.origin, 'create', '--id', 'perf', '--title', 'Perf', '--baseline', 'x'.repeat(41));
+    expect(tooLongTarget.code).toBe(2);
+    expect(JSON.stringify(tooLongTarget.body)).toMatch(/--baseline must be 1 to 40 characters/);
+    await suite(client.origin, 'create', '--id', 'perf', '--title', 'Perf');
+    const base = ['run', 'add', 'perf', '--run', 'a', '--title', 'A'];
+    const group = await suite(client.origin, ...base, '--group', 'g'.repeat(81));
+    expect(group.code).toBe(2);
+    expect(JSON.stringify(group.body)).toMatch(/--group must be 1 to 80 characters/);
+    const target = await suite(client.origin, ...base, '--target', 't'.repeat(41));
+    expect(JSON.stringify(target.body)).toMatch(/--target must be 1 to 40 characters/);
+    const blank = await suite(client.origin, 'run', 'set', 'perf', 'a', '--measure', ' ');
+    expect(blank.code).toBe(2);
+    expect(JSON.stringify(blank.body)).toMatch(/--measure must be 1 to 160 characters/);
+    expect((await suite(client.origin, 'show', 'perf')).body).toMatchObject({ suite: { runs: [] } });
+  });
+});
+
 async function recorder(origin: string, reachable: () => boolean): Promise<RecordDeps> {
   const dir = await mkdtemp(join(tmpdir(), 'replays-suite-record-'));
   return {

@@ -4,9 +4,12 @@ import { PRODUCT_SLUG } from '../shared/brand.ts';
 import { parsePeopleFlags } from '../shared/people.ts';
 import { isProfileId } from '../shared/profiles.ts';
 import { suiteOverallStatus, type ReviewSuite, type ReviewSuiteRun } from '../shared/review-suite.ts';
+import { formatMs, formatPercent, groupRuns, isGrouped } from '../shared/suite-groups.ts';
 import { record } from './cli-record.ts';
 import {
+  baselineFlag,
   firstLine,
+  groupingFlags,
   need,
   paint,
   parse,
@@ -28,12 +31,17 @@ import { SUITE_USAGE } from './usage.ts';
 
 const TITLE_MAX = 160;
 
+function measured(run: ReviewSuiteRun) {
+  return run.measure && run.measureMs !== undefined ? `${run.measure} ${formatMs(run.measureMs)}` : '-';
+}
+
 function runRow(term: Terminal, run: ReviewSuiteRun, server: string, suite: string): Cell[] {
   const link = run.replayId ? replayUrl(server, suite, run.replayId) : '-';
   return [
     { text: run.id },
     { text: run.status, shown: paint(term, run.status) },
     { text: seconds(run.recording?.duration) },
+    { text: measured(run) },
     { text: link, shown: run.replayId ? term.link(link) : link },
     { text: firstLine(run.summary) },
   ];
@@ -50,6 +58,7 @@ function showFields(suite: ReviewSuite, server: string) {
     ...(suite.subject ? { source: suite.subject.url } : {}),
     ...(suite.people?.length ? { people: suite.people } : {}),
     ...(suite.summary ? { summary: suite.summary } : {}),
+    ...(suite.baseline ? { baseline: suite.baseline } : {}),
     runs: suite.runs.map((run) => ({
       id: run.id,
       sequence: run.sequence,
@@ -60,6 +69,10 @@ function showFields(suite: ReviewSuite, server: string) {
       ...(run.replayId ? { replayId: run.replayId, replayUrl: replayUrl(server, suite.id, run.replayId) } : {}),
       ...(run.recording ? { duration: run.recording.duration, steps: run.recording.steps } : {}),
       ...(run.summary ? { summary: run.summary } : {}),
+      ...(run.group ? { group: run.group } : {}),
+      ...(run.target ? { target: run.target } : {}),
+      ...(run.measure ? { measure: run.measure } : {}),
+      ...(run.measureMs === undefined ? {} : { measureMs: run.measureMs }),
     })),
   };
 }
@@ -72,7 +85,7 @@ async function create(argv: string[], env: NodeJS.ProcessEnv) {
   const { values, lists, booleans } = parse(argv, {
     command: 'create',
     positionals: 0,
-    values: ['id', 'title', 'profile', 'source', 'person', 'summary'],
+    values: ['id', 'title', 'profile', 'source', 'person', 'summary', 'baseline'],
   });
   const id = suiteId(need(values, 'id', 'create'));
   const title = need(values, 'title', 'create');
@@ -80,9 +93,18 @@ async function create(argv: string[], env: NodeJS.ProcessEnv) {
   if (values.profile !== undefined && !isProfileId(values.profile))
     throw new UsageError('--profile must be a profile id (lower-case letters, digits and "-")');
   const people = parsePeopleFlags(lists.person ?? []);
+  const baseline = baselineFlag(values);
   const summary = await textArgument(values.summary, '--summary');
   const { server, api } = await connect(values);
-  const { suite, created } = await ensureSuite(api, { id, title, profile: values.profile, source: values.source, people, summary });
+  const { suite, created } = await ensureSuite(api, {
+    id,
+    title,
+    profile: values.profile,
+    source: values.source,
+    people,
+    summary,
+    baseline,
+  });
   const url = suiteUrl(server, id);
   if (booleans.has('json'))
     return printJson({ id, title: suite.title, url, created, status: suiteOverallStatus(suite.runs), runs: suite.runs.length });
@@ -127,6 +149,35 @@ async function list(argv: string[], env: NodeJS.ProcessEnv) {
   print(table(out, ['SUITE', 'STATUS', 'RUNS', 'TITLE', 'LINK'], rows));
 }
 
+const RUN_COLUMNS = ['RUN', 'STATUS', 'TIME', 'MEASURED', 'REPLAY', 'SUMMARY'];
+
+/** The runs as one table, or for a grouped suite one table per group and target, as the viewer lists them. */
+function runsText(out: Terminal, suite: ReviewSuite, server: string) {
+  const rowsOf = (runs: ReviewSuiteRun[]) =>
+    table(
+      out,
+      RUN_COLUMNS,
+      runs.map((run) => runRow(out, run, server, suite.id)),
+    );
+  if (!suite.runs.length) return '  No runs yet.';
+  if (!isGrouped(suite.runs)) return rowsOf(suite.runs);
+  const { groups, other } = groupRuns(suite.runs, suite.baseline);
+  const sections = groups.map((group) => {
+    const targets = group.targets.map((entry) => {
+      const facts = [
+        entry.baseline ? 'baseline' : undefined,
+        `${entry.samples.length} run${entry.samples.length === 1 ? '' : 's'}`,
+        entry.median === undefined ? undefined : `median ${formatMs(entry.median)}`,
+        entry.delta === undefined ? undefined : formatPercent(entry.delta),
+      ].filter(Boolean);
+      return `${entry.target} (${facts.join(', ')})\n${rowsOf(entry.samples)}`;
+    });
+    return `${group.name}\n\n${targets.join('\n\n')}`;
+  });
+  if (other.length) sections.push(`Ungrouped\n\n${rowsOf(other)}`);
+  return sections.join('\n\n');
+}
+
 async function show(argv: string[], env: NodeJS.ProcessEnv) {
   const { positionals, values, booleans } = parse(argv, { command: 'show', positionals: 1 });
   const id = suiteId(positionals[0]);
@@ -142,8 +193,8 @@ async function show(argv: string[], env: NodeJS.ProcessEnv) {
   ];
   if (suite.profile) head.push(['Profile', suite.profile]);
   if (suite.subject) head.push(['Source', suite.subject.label ?? suite.subject.url]);
-  const rows = suite.runs.map((run) => runRow(out, run, server, id));
-  const runs = rows.length ? table(out, ['RUN', 'STATUS', 'TIME', 'REPLAY', 'SUMMARY'], rows) : '  No runs yet.';
+  if (suite.baseline) head.push(['Baseline', suite.baseline]);
+  const runs = runsText(out, suite, server);
   const sections = [out.keyValue(head), suite.summary, runs].filter(Boolean).join('\n\n');
   print(`${out.fancy ? `${out.header()}\n\n` : ''}${sections}`);
 }
@@ -164,33 +215,63 @@ async function runAdd(argv: string[], env: NodeJS.ProcessEnv) {
   const { positionals, values, booleans } = parse(argv, {
     command: 'run add',
     positionals: 1,
-    values: ['run', 'title', 'status', 'summary'],
+    values: ['run', 'title', 'status', 'summary', 'group', 'target', 'measure'],
   });
   const suite = suiteId(positionals[0]);
   const id = runId(need(values, 'run', 'run add'));
   const title = need(values, 'title', 'run add');
   if (title.length > TITLE_MAX) throw new UsageError(`--title can be at most ${TITLE_MAX} characters`);
+  const grouping = groupingFlags(values);
   const { server, api } = await connect(values);
   const summary = await textArgument(values.summary, '--summary');
-  const { run } = await addRun(api, suite, { id, title, status: status(values.status) ?? 'running', summary });
+  const { run } = await addRun(api, suite, { id, title, status: status(values.status) ?? 'running', summary, ...grouping });
   const link = suiteUrl(server, suite);
   if (booleans.has('json'))
-    return printJson({ suite, run: { id, title: run.label, status: run.status, sequence: run.sequence }, url: link });
+    return printJson({
+      suite,
+      run: {
+        id,
+        title: run.label,
+        status: run.status,
+        sequence: run.sequence,
+        ...(run.group ? { group: run.group } : {}),
+        ...(run.target ? { target: run.target } : {}),
+        ...(run.measure ? { measure: run.measure } : {}),
+      },
+      url: link,
+    });
   done(createTerminal({ env, stream: process.stdout }), `Run ${id} is ${run.status}`, link);
 }
 
 async function runSet(argv: string[], env: NodeJS.ProcessEnv) {
-  const { positionals, values, booleans } = parse(argv, { command: 'run set', positionals: 2, values: ['status', 'summary'] });
+  const { positionals, values, booleans } = parse(argv, {
+    command: 'run set',
+    positionals: 2,
+    values: ['status', 'summary', 'group', 'target', 'measure'],
+  });
   const suite = suiteId(positionals[0]);
   const id = runId(positionals[1]);
   const target = status(values.status);
   const summary = await textArgument(values.summary, '--summary');
-  if (!target && !summary) throw new UsageError('suite run set needs --status passed|failed, --summary, or both');
+  const grouping = groupingFlags(values);
+  if (!target && !summary && !Object.values(grouping).some(Boolean))
+    throw new UsageError('suite run set needs --status passed|failed, --summary, --group, --target or --measure');
   const { server, api } = await connect(values);
-  const { run } = await updateRun(api, suite, { id, status: target, summary });
+  const { run } = await updateRun(api, suite, { id, status: target, summary, ...grouping });
   const link = suiteUrl(server, suite);
   if (booleans.has('json'))
-    return printJson({ suite, run: { id, status: run.status, ...(run.summary ? { summary: run.summary } : {}) }, url: link });
+    return printJson({
+      suite,
+      run: {
+        id,
+        status: run.status,
+        ...(run.summary ? { summary: run.summary } : {}),
+        ...(run.group ? { group: run.group } : {}),
+        ...(run.target ? { target: run.target } : {}),
+        ...(run.measure ? { measure: run.measure } : {}),
+      },
+      url: link,
+    });
   done(createTerminal({ env, stream: process.stdout }), `Run ${id} is ${run.status}`, link);
 }
 
