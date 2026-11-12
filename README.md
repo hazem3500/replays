@@ -650,7 +650,9 @@ To compare builds, give each run a `group` (the flow, such as "Cold open"), a `t
 `#6879`) and a `measure` (the `label` of the step whose completion is the headline number), and name the suite's `baseline`
 target ([example](sample/suite-perf-plan.json)). The viewer then lists the suite by group, shows each target's median and its change
 from the baseline, and compares a run only with its own group. Use one group per flow, the same step labels in every target, and
-three or more samples per target.
+three or more samples per target. Without a plan file, `replays suite create --baseline main` and
+`replays suite run add|set --group "Cold open" --target '#6879' --measure "Entries visible"` set the same fields, and `replays suite show <id>`
+lists the runs by group and target with each measured time.
 
 ## HTTP API
 

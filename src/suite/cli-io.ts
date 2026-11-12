@@ -6,7 +6,7 @@ import { ReviewSuiteHttpError } from '../capture/review-suite.ts';
 import { createTerminal, failureHint, type Terminal } from '../capture/terminal.ts';
 import { PRODUCT_SLUG } from '../shared/brand.ts';
 import { assertReplayId } from '../shared/replay.ts';
-import { assertSummary, type ReviewRunStatus } from '../shared/review-suite.ts';
+import { assertSummary, MAX_GROUP_LENGTH, MAX_TARGET_LENGTH, type ReviewRunStatus } from '../shared/review-suite.ts';
 import { RUN_ID_PATTERN } from './plan.ts';
 
 export class UsageError extends Error {
@@ -94,6 +94,25 @@ export function status(value: string | undefined): ReviewRunStatus | undefined {
   if (!found) throw new UsageError(`--status must be one of ${STATUSES.join(', ')}`);
   return found;
 }
+
+const MEASURE_MAX = 160;
+
+function named(value: string | undefined, flag: string, max: number): string | undefined {
+  if (value === undefined) return undefined;
+  if (!value.trim() || value.length > max) throw new UsageError(`${flag} must be 1 to ${max} characters`);
+  return value;
+}
+
+/** The grouping flags of a run; each is undefined when its flag was left out, so an update keeps what the run has. */
+export function groupingFlags(values: Record<string, string>) {
+  return {
+    group: named(values.group, '--group', MAX_GROUP_LENGTH),
+    target: named(values.target, '--target', MAX_TARGET_LENGTH),
+    measure: named(values.measure, '--measure', MEASURE_MAX),
+  };
+}
+
+export const baselineFlag = (values: Record<string, string>) => named(values.baseline, '--baseline', MAX_TARGET_LENGTH);
 
 export function suiteHint(error: unknown): string | undefined {
   const message = error instanceof Error ? error.message : String(error);
