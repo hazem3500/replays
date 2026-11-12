@@ -1,6 +1,25 @@
 import type { ReactNode } from 'react';
 
 const BULLET = /^\s*[-*]\s+(.*)$/;
+// why: Toki leads lines with a short label ("Checked:", "Result:", "Good enough:"); bolding it makes the text scannable.
+const LEAD_LABEL = /^([A-Z][A-Za-z ]{0,23}):\s+(\S.*)$/s;
+
+/** A line's short leading label and the rest, or undefined when it has none. */
+export function leadLabel(text: string): { label: string; rest: string } | undefined {
+  const match = LEAD_LABEL.exec(text);
+  return match?.[1] && match[2] ? { label: match[1], rest: match[2] } : undefined;
+}
+
+function Line({ text }: { text: string }) {
+  const lead = leadLabel(text);
+  return lead ? (
+    <>
+      <strong>{lead.label}:</strong> {lead.rest}
+    </>
+  ) : (
+    text
+  );
+}
 
 type Block = { kind: 'p'; text: string } | { kind: 'ul'; items: string[] };
 
@@ -41,11 +60,15 @@ export function SummaryText({ summary, className }: { summary: string; className
     <div className={className ? `summary-text ${className}` : 'summary-text'} data-testid="summary-text">
       {summaryBlocks(summary).map((block) =>
         block.kind === 'p' ? (
-          <p key={keyFor(block.text)}>{block.text}</p>
+          <p key={keyFor(block.text)}>
+            <Line text={block.text} />
+          </p>
         ) : (
           <ul key={keyFor(block.items.join('\n'))}>
             {block.items.map((item) => (
-              <li key={keyFor(item)}>{item}</li>
+              <li key={keyFor(item)}>
+                <Line text={item} />
+              </li>
             ))}
           </ul>
         ),

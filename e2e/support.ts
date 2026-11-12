@@ -122,6 +122,7 @@ export async function createSuite(
     target?: string;
     measure?: string;
     measureMs?: number;
+    summary?: string;
   }>,
   subject: { provider: string; ref: string; url: string; label: string } | undefined = {
     provider: 'github',
@@ -156,6 +157,7 @@ export async function createSuite(
       ...(run.target ? { target: run.target } : {}),
       ...(run.measure ? { measure: run.measure } : {}),
       ...(run.measureMs === undefined ? {} : { measureMs: run.measureMs }),
+      ...(run.summary ? { summary: run.summary } : {}),
     });
     if (!run.replayId) continue;
     // Without the sample's own context, so the suite's subject is the only source.
