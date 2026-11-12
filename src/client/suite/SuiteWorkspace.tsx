@@ -334,7 +334,13 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const runTitle = run?.label;
   const headline = useMemo(() => {
     const line = run ? runHeadline(runs, run, baseline) : undefined;
-    return line ? <RunHeadlineLine line={line} /> : undefined;
+    const brief = run?.summary ? <RunBrief key={run.replayId} summary={run.summary} /> : null;
+    return line || brief ? (
+      <>
+        {line ? <RunHeadlineLine line={line} /> : null}
+        {brief}
+      </>
+    ) : undefined;
   }, [baseline, run, runs]);
   // The run title shown before this one: switching runs remounts the viewer, and its title morphs from this.
   const shownTitle = bundle && bundle.meta.id === selected ? runTitle : undefined;
@@ -711,12 +717,11 @@ function RunCopy({
   );
 }
 
-/** The suite's review summary, a few lines tall until opened, so the runs stay in view. */
-function SidebarSummary({ summary }: { summary: string }) {
-  const [open, setOpen] = useState(false);
+/** Whether a fixed-height box cuts off its content, re-measured whenever the box resizes. */
+function useClipped() {
   const [clipped, setClipped] = useState(false);
   const body = useRef<HTMLDivElement>(null);
-  // why: the sidebar width and the text both change what fits, so it is measured whenever the box resizes.
+  // why: the panel width and the text both change what fits.
   useLayoutEffect(() => {
     const node = body.current;
     const measure = () => setClipped(node ? node.scrollHeight > node.clientHeight + 1 : false);
@@ -725,16 +730,37 @@ function SidebarSummary({ summary }: { summary: string }) {
     if (node) observer.observe(node);
     return () => observer.disconnect();
   }, []);
+  return { body, clipped };
+}
+
+/** A summary that stays a few lines tall until opened, with a toggle only when it has more to show. */
+function ClippedSummary({
+  summary,
+  className,
+  label,
+  heading,
+  textId,
+  testId,
+}: {
+  summary: string;
+  className: string;
+  label: string;
+  heading?: string;
+  textId: string;
+  testId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const { body, clipped } = useClipped();
   return (
     <section
-      className="suite-sidebar-summary"
-      data-testid="suite-summary"
+      className={className}
+      data-testid={testId}
       data-open={open || undefined}
       data-clipped={clipped || undefined}
-      aria-label="Review summary"
+      aria-label={label}
     >
-      <h2>Review summary</h2>
-      <div ref={body} id="suite-summary-text">
+      {heading ? <h2>{heading}</h2> : null}
+      <div ref={body} id={textId}>
         <SummaryText summary={summary} />
       </div>
       {clipped || open ? (
@@ -742,7 +768,7 @@ function SidebarSummary({ summary }: { summary: string }) {
           type="button"
           className="suite-summary-toggle"
           aria-expanded={open}
-          aria-controls="suite-summary-text"
+          aria-controls={textId}
           onClick={() => setOpen((value) => !value)}
         >
           {open ? 'Show less' : 'Show more'}
@@ -750,6 +776,25 @@ function SidebarSummary({ summary }: { summary: string }) {
       ) : null}
     </section>
   );
+}
+
+/** The suite's review summary, a few lines tall until opened, so the runs stay in view. */
+function SidebarSummary({ summary }: { summary: string }) {
+  return (
+    <ClippedSummary
+      summary={summary}
+      className="suite-sidebar-summary"
+      label="Review summary"
+      heading="Review summary"
+      textId="suite-summary-text"
+      testId="suite-summary"
+    />
+  );
+}
+
+/** What the selected run checked and found, above its recording: two lines until opened. */
+function RunBrief({ summary }: { summary: string }) {
+  return <ClippedSummary summary={summary} className="run-brief" label="About this run" textId="run-brief-text" testId="run-brief" />;
 }
 
 /** A performance-focused suite's comparison row: only what the run recorded. */

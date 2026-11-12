@@ -10,7 +10,7 @@ Review suites group the recordings of one review: a suite has runs, each run has
   suite list [--mine] [--limit <n>]        the newest suites; --mine keeps those you are named on
   suite show <id>          the suite's runs with status, replay link, duration and summary; a grouped suite lists them
                            by group and target, with the baseline and each measured time
-  suite summary <id> <text|@file>          set the suite's summary (plain text, at most 4000 characters)
+  suite summary <id> <text|@file>          set the suite's summary (text, at most 4000 characters)
   suite run add <suite> --run <id> --title <text> [--status running] [--summary <text|@file>]
                            [--focus <panel:pattern # note|@file>]... [--group <name>] [--target <name>] [--measure <step label>]
   suite run set <suite> <run> [--status passed|failed] [--summary <text|@file>] [--focus <spec|@file|none>]...
@@ -33,6 +33,9 @@ more (at most 20); --focus @file reads a JSON list or one spec per line. On run 
 
 Run lifecycle: running, then passed or failed. A finished run keeps its status and cannot be changed
 (register a new run id instead); a suite's title, source and profile are fixed once it exists.
+
+A summary is text, never HTML, and may use a Markdown subset: paragraphs, - and 1. lists, ## and ### headings, **bold**, *italic*,
+inline code, fenced code blocks, > quotes and http(s) links (also bare URLs). Result: Pass|Fail|Partial (note) shows as a badge.
 
 suite record reads a plan (docs/formats/suite-plan.schema.json, example in sample/suite-plan.json) with the suite's
 id, title, profile, source, people and summary plus runs { id, title, url, steps, viewport?, expect?, summary?, focus? }.

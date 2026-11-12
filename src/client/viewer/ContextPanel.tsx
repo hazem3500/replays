@@ -30,7 +30,8 @@ import { CopyButton } from '@/components/copy-button.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 
-import { SummaryText } from './SummaryText.tsx';
+import { InlineText, ResultBadge, SummaryBlocks } from './SummaryText.tsx';
+import { liftReport, summaryBlocks } from './summary-markdown.ts';
 import './context-panel.css';
 
 /*
@@ -71,7 +72,11 @@ export function ContextPanel({
   if (!context) {
     return (
       <div className="table-scroll" data-testid="context-empty">
-        {summary ? <RunSummary summary={summary} /> : null}
+        {summary ? (
+          <div className="ctx-inner">
+            <RunSummary summary={summary} />
+          </div>
+        ) : null}
         <Empty icon={FileTextIcon} title="No context was captured">
           The recording app can attach approved build and runtime details. CLI captures can attach context with --context-file. Missing
           context cannot be recovered from this recording.
@@ -90,14 +95,24 @@ export function ContextPanel({
   );
 }
 
+/** The run's own summary: what it checked leads, its verdict sits on the heading row, the rest follows in order. */
 function RunSummary({ summary }: { summary: string }) {
   const heading = useId();
+  const report = liftReport(summaryBlocks(summary));
   return (
     <section className="ctx-section ctx-run-summary" aria-labelledby={heading} data-testid="context-run-summary">
-      <h2 id={heading} className="ctx-heading">
-        This run
-      </h2>
-      <SummaryText summary={summary} />
+      <div className="ctx-run-summary-head">
+        <h2 id={heading} className="ctx-heading">
+          This run
+        </h2>
+        {report.result ? <ResultBadge result={report.result} /> : null}
+      </div>
+      {report.checked ? (
+        <p className="ctx-run-lead">
+          <span className="ctx-run-lead-label">Checked</span> <InlineText text={report.checked} />
+        </p>
+      ) : null}
+      {report.blocks.length ? <SummaryBlocks blocks={report.blocks} /> : null}
     </section>
   );
 }
