@@ -164,6 +164,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     const summaryFields = summaryFieldsRunner(registry.summaryFields);
     store = new ReplayStore(storage, sampleDir, settings.retention, {
       profiles: settings.profiles,
+      staleRunMs: settings.staleRunMinutes * 60_000,
       ...(summaryFields ? { summaryFields } : {}),
     });
     // why: the first prune also proves the store is reachable (bucket name, IAM): fail fast instead of serving errors.

@@ -112,6 +112,10 @@ export class ReplayStore {
       purposes?: ProfileCatalog;
       /** Plugins' `summaryFields` (src/server/summary-fields.ts): run whenever a summary is built, into `summary.ext`. */
       summaryFields?: SummaryFieldsRunner;
+      /** Milliseconds an unrecorded `running` run may go without a write before suites show it ended (default 30 minutes, 0 = never). */
+      staleRunMs?: number;
+      /** The clock for that rule (tests). */
+      now?: () => number;
     } = {},
   ) {
     this.storage = typeof data === 'string' ? new FsStorage(data) : data;
@@ -122,7 +126,10 @@ export class ReplayStore {
     this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
     this.bundles = new Bundles(this.storage, this.samples);
     this.sidecars = new Sidecars({ storage: this.storage, load: (id) => this.load(id), summaryFields: options.summaryFields });
-    this.suites = new SuiteFiles(this.storage);
+    this.suites = new SuiteFiles(this.storage, {
+      ...(options.staleRunMs === undefined ? {} : { staleRunMs: options.staleRunMs }),
+      ...(options.now ? { now: options.now } : {}),
+    });
     const sources = { storage: this.storage, samples: this.samples, retention: this.retention, profiles: this.profiles };
     this.listing = new Listing({ ...sources, sidecars: this.sidecars, suites: this.suites });
     this.expired = new ExpiredLedger(this.storage, this.retention.expiredDays ?? DEFAULT_EXPIRED_DAYS);

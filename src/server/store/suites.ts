@@ -4,6 +4,7 @@ import { assertReviewSuite, type ReviewSuite } from '../../shared/review-suite.t
 import { ObjectExistsError, type ObjectInfo, type ObjectStorage, PreconditionFailedError } from '../storage/index.ts';
 import { orAbsent } from './async.ts';
 import { parseSuiteKey, SUITES_PREFIX, suiteKey } from './keys.ts';
+import { DEFAULT_STALE_RUN_MS, endAbandonedRuns } from './stale-runs.ts';
 import type { SuiteChange } from './suite-changes.ts';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
@@ -13,6 +14,8 @@ const MAX_WRITE_ATTEMPTS = 5;
 export interface StoredSuite {
   suite: ReviewSuite;
   version: string;
+  /** When the suite file was last written. */
+  updatedMs: number;
 }
 
 /** Suite files from one listing: suites, and keep markers by suite id. */
@@ -40,8 +43,14 @@ export class SuiteFiles {
   private readonly storage: ObjectStorage;
   private readonly writes = new Map<string, Promise<void>>();
 
-  constructor(storage: ObjectStorage) {
+  private readonly staleRunMs: number;
+  private readonly now: () => number;
+
+  /** `staleRunMs` is how long an unrecorded `running` run may sit unwritten before reads show it ended (0: never). */
+  constructor(storage: ObjectStorage, options: { staleRunMs?: number; now?: () => number } = {}) {
     this.storage = storage;
+    this.staleRunMs = options.staleRunMs ?? DEFAULT_STALE_RUN_MS;
+    this.now = options.now ?? Date.now;
   }
 
   async read(id: string): Promise<StoredSuite | undefined> {
@@ -52,12 +61,14 @@ export class SuiteFiles {
     if (!body) return undefined;
     const suite: unknown = JSON.parse(body.toString('utf8'));
     assertReviewSuite(suite);
-    return { suite, version: info.version };
+    return { suite, version: info.version, updatedMs: info.updatedMs };
   }
 
+  /** The suite as callers see it: abandoned runs read as ended (see endAbandonedRuns). Writes use `read`, never this. */
   async load(id: string): Promise<ReviewSuite | undefined> {
     assertReplayId(id);
-    return (await this.read(id))?.suite;
+    const stored = await this.read(id);
+    return stored && endAbandonedRuns(stored.suite, this.now(), stored.updatedMs, this.staleRunMs);
   }
 
   async objects(): Promise<SuiteObjects> {

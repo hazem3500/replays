@@ -336,6 +336,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `DATA_DIR` | `./.data/replays` (`/data` in Docker) | Where the filesystem driver stores replays |
 | `STORAGE` | `fs` | `fs`, `s3`, or a backend a plugin registered |
 | `RETENTION_DAYS` | `30` | Days an upload lives, counted from its upload time; `0` keeps everything. "Kept" replays never expire |
+| `STALE_RUN_MINUTES` | `30` | Minutes a suite run with no recording may go without a write before it reads as `partial` instead of `running` (stored unchanged, so a late update still lands); `0` turns it off |
 | `RETENTION_PROFILE_<ID>_DAYS` | – | Days for replays of one [profile](docs/extension-api.md#profiles-and-retention) (`RETENTION_PROFILE_DESIGN_REVIEW_DAYS`); `0` keeps explicit ones forever |
 | `REPLAYS_CONFIG` | `replays.config.{ts,mjs,js,json}` in the working directory | The config file (below); a script can also list [plugins](#extending-replays) |
 | `SAMPLE_DIR` | the bundled `sample/` | Directory of read-only demo replays; point it at an empty directory for none |
