@@ -40,6 +40,7 @@ import { createViewCatalog, type ViewCatalog } from './views.ts';
  *     "hosts": { "replays.example.com": { "basePath": "/" } },  per-host bases (src/server/base-path.ts), else basePath
  *     "trustForwardedHost": false,                 TRUST_FORWARDED_HOST (pick the host from X-Forwarded-Host)
  *     "retentionDays": 30,                         RETENTION_DAYS (0 = never); RETENTION_EXPIRED_DAYS: removed replays' records (default 30)
+ *     "staleRunMinutes": 30,                       STALE_RUN_MINUTES (a suite run with no recording and no write for this long reads as partial; 0 = never)
  *     "profiles": [{ "id": "triage", "label": "Triage", "retentionDays": 90 }],   RETENTION_PROFILE_<ID>_DAYS (src/server/profiles.ts)
  *     "contextSchemaFile": "./context.schema.json" CONTEXT_SCHEMA_FILE
  *     "githubHost": "github.example.com",          GITHUB_HOST
@@ -81,6 +82,8 @@ export interface FileConfig {
   /** Read the request host from `X-Forwarded-Host` (a gateway that rewrites `Host`). Only matters with `hosts`. */
   trustForwardedHost?: boolean;
   retentionDays?: number;
+  /** Minutes without a write after which a suite run that never got a recording reads as ended (STALE_RUN_MINUTES; default 30, 0 = never). */
+  staleRunMinutes?: number;
   /** Why replays are recorded (src/shared/profiles.ts); plugins can add more with `api.profile`. Core ships `performance` (BUILT_IN_PROFILES). */
   profiles?: ProfileConfig[];
   /** @deprecated Use `profiles`; read when `profiles` is absent, with a warning at start. */
@@ -134,6 +137,8 @@ export interface AppSettings {
   /** The config file's `privacy` switches, checked; absent means all off. */
   privacy?: PrivacySettings;
   editing: EditingSettings;
+  /** Minutes before an unrecorded `running` suite run reads as ended; 0 = never. */
+  staleRunMinutes: number;
 }
 
 export const CONFIG_KEYS = new Set([
@@ -148,6 +153,7 @@ export const CONFIG_KEYS = new Set([
   'hosts',
   'trustForwardedHost',
   'retentionDays',
+  'staleRunMinutes',
   'profiles',
   'purposes',
   'views',
@@ -207,6 +213,9 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
       : retentionFromEnv({ RETENTION_DAYS: String(file.retentionDays) })),
     ...(expiredDays === undefined ? {} : { expiredDays }),
   };
+  const staleRunMinutes = Number(pick('STALE_RUN_MINUTES') ?? file.staleRunMinutes ?? 30);
+  if (!Number.isInteger(staleRunMinutes) || staleRunMinutes < 0 || staleRunMinutes > 10_080)
+    throw new Error('STALE_RUN_MINUTES (staleRunMinutes) must be a whole number of minutes from 0 (never) to 10080');
   const githubHost = pick('GITHUB_HOST') ?? file.githubHost;
   const gitlabHost = pick('GITLAB_HOST') ?? file.gitlabHost;
   for (const host of [githubHost, gitlabHost]) if (host && !HOST.test(host)) throw new Error(`invalid host name ${JSON.stringify(host)}`);
@@ -234,6 +243,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     branding,
     basePath,
     hosts,
+    staleRunMinutes,
     retention: Object.keys(profiles.retentionDays()).length ? { ...retention, profiles: profiles.retentionDays() } : retention,
     profiles,
     purposes: profiles,
