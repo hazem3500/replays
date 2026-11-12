@@ -11,6 +11,7 @@ import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
 import { findFfmpeg, findSystemBrowser, hasPlaywrightBrowser, NO_BROWSER_MESSAGE, NO_FFMPEG_MESSAGE } from './system-tools.ts';
 import { onFirstVisible, STEP_TIMEOUT, waitForSelector } from './locate.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
+import { isSameUrl } from './same-url.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -47,15 +48,6 @@ export async function launchChromium(options: PlaywrightDriverOptions = {}, env:
     ...(executablePath ? { executablePath } : {}),
     args: (options.noSandbox ?? env.CHROMIUM_NO_SANDBOX === '1') ? ['--no-sandbox'] : [],
   });
-}
-
-/** True when `url`, resolved against the open page, is the page's own address. */
-function isCurrentUrl(current: string, url: string) {
-  try {
-    return new URL(url, current).href === new URL(current).href;
-  } catch {
-    return false;
-  }
 }
 
 /** Drives Chrome through Playwright: no extra CLI needed, `recordHar` for the network track, `recordVideo` for MP4 (needs ffmpeg). */
@@ -147,7 +139,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
         }
         case 'goto':
           // why: capture() already opened the start URL; navigating to the open page again shows a blank reload.
-          if (isCurrentUrl(target.url(), step.url)) break;
+          if (isSameUrl(target.url(), step.url)) break;
           await target.goto(step.url, { waitUntil: 'load', timeout: 30_000 });
           break;
         case 'shot':

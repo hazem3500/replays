@@ -6,6 +6,7 @@ import { runOnFirstVisible } from './first-visible.ts';
 import { STEP_TIMEOUT } from './locate.ts';
 import { waitForSelectorOverCdp } from './wait-selector.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
+import { isSameUrl } from './same-url.ts';
 
 function stepArgs(step: Exclude<RawStep, { kind: 'shot' | 'wait' }>, typeDelayMs: number) {
   switch (step.kind) {
@@ -32,7 +33,7 @@ async function isOpenPage(page: CdpLike, url: string) {
     const result: unknown = await page.send('Runtime.evaluate', { expression: 'location.href', returnByValue: true });
     const inner = typeof result === 'object' && result !== null && 'result' in result ? result.result : undefined;
     const current = typeof inner === 'object' && inner !== null && 'value' in inner ? inner.value : undefined;
-    return typeof current === 'string' && new URL(url, current).href === new URL(current).href;
+    return typeof current === 'string' && isSameUrl(current, url);
   } catch {
     return false;
   }

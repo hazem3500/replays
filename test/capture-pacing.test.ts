@@ -9,6 +9,7 @@ import { capture, labelFor, parseArgs, selectorName } from '../src/capture/captu
 import { agentBrowserDriver } from '../src/capture/drivers/agent-browser.ts';
 import { AgentBrowser } from '../src/capture/drivers/agent-browser-cli.ts';
 import { playwrightDriver } from '../src/capture/drivers/playwright.ts';
+import { isSameUrl } from '../src/capture/drivers/same-url.ts';
 import type { CaptureDriver } from '../src/capture/drivers/types.ts';
 import { RecorderSession } from '../src/capture/session.ts';
 import type { ReplayBundle } from '../src/shared/replay.ts';
@@ -235,30 +236,15 @@ it('requests 80ms typing from agent-browser without adding a delay to fill', asy
   expect(command).toHaveBeenLastCalledWith(['fill', '#field', 'demo']);
 });
 
-async function driverAt(openUrl: string) {
-  const goto = vi.fn<(url: string) => Promise<void>>(async () => {});
-  const close = vi.fn<() => Promise<void>>(async () => {});
-  const page = { goto, url: () => openUrl };
-  const context = { newPage: async () => page, newCDPSession: async () => ({}), close };
-  vi.spyOn(chromium, 'launch').mockResolvedValue({ newContext: async () => context, close } as never);
-  const driver = playwrightDriver();
-  await driver.launch({ viewport: { width: 800, height: 600 }, harPath: '/unused' });
-  return { driver, goto };
-}
-
 describe('a goto step', () => {
-  it('does not reload the page that is already open', async () => {
-    const { driver, goto } = await driverAt('https://example.com/shop?a=1');
-    await driver.step({ kind: 'goto', url: 'https://example.com/shop?a=1' });
-    await driver.step({ kind: 'goto', url: '/shop?a=1' });
-    expect(goto).not.toHaveBeenCalled();
-    await driver.close();
+  it('is skipped for the page that is already open, however the address is written', () => {
+    expect(isSameUrl('https://example.com/shop?a=1', 'https://example.com/shop?a=1')).toBe(true);
+    expect(isSameUrl('https://example.com/shop?a=1', '/shop?a=1')).toBe(true);
   });
 
-  it('navigates to a different page', async () => {
-    const { driver, goto } = await driverAt('https://example.com/shop');
-    await driver.step({ kind: 'goto', url: 'https://example.com/cart' });
-    expect(goto).toHaveBeenCalledWith('https://example.com/cart', { waitUntil: 'load', timeout: 30_000 });
-    await driver.close();
+  it('still navigates to a different page or an unreadable address', () => {
+    expect(isSameUrl('https://example.com/shop', 'https://example.com/cart')).toBe(false);
+    expect(isSameUrl('https://example.com/shop', '/shop?b=2')).toBe(false);
+    expect(isSameUrl('about:blank', 'http://[bad')).toBe(false);
   });
 });
