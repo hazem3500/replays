@@ -44,6 +44,8 @@ export { activeStepIndex };
 /** How long a click on the stage waits for a second click (double click = fullscreen) before flipping playback. */
 const DOUBLE_CLICK_MS = 220;
 const NO_FRAMES: readonly FrameBand[] = [];
+/** Widest player (px) that shows the recording edge to edge: phones in portrait, as in MOBILE_QUERY. */
+const EDGE_TO_EDGE_WIDTH = 720;
 
 export function PlayerStage() {
   const player = usePlayer();
@@ -100,7 +102,11 @@ export function PlayerStage() {
     target.style.width = `${viewport.width}px`;
     target.style.height = `${viewport.height}px`;
     const apply = () => {
-      const fit = fitViewport({ width: element.clientWidth, height: element.clientHeight }, viewport, 12);
+      /* why: a phone-width player has no width to spare, so the recording runs edge to edge there, without its
+         frame line (data-edge-to-edge in styles.css). */
+      const edgeToEdge = element.clientWidth <= EDGE_TO_EDGE_WIDTH;
+      element.toggleAttribute('data-edge-to-edge', edgeToEdge);
+      const fit = fitViewport({ width: element.clientWidth, height: element.clientHeight }, viewport, edgeToEdge ? 0 : 12);
       target.style.transform = `scale(${fit.scale})`;
       // Overlays inside the replay (the step target outline) keep a constant on-screen stroke.
       target.style.setProperty('--player-scale', String(fit.scale));

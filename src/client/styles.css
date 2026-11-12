@@ -314,6 +314,7 @@ kbd:not([data-slot]) { min-width: 22px; padding: 1px 6px; border: 1px solid var(
 .player-stage:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
 .player-host { position: absolute; top: 0; left: 0; transform-origin: 0 0; overflow: hidden; }
 .player-host .replayer-wrapper { box-shadow: 0 0 0 1px var(--line-strong); }
+.player-stage[data-edge-to-edge] .player-host .replayer-wrapper { box-shadow: none; }
 .player-host iframe { display: block; border: 0; background: #fff; }
 /* The recorded frame's rect (Transport.tsx): rrweb's host, scaled inside it, and the opened card's poster over
    it until rrweb has painted (then it fades). The page transition morphs the card into this box. */
@@ -484,7 +485,9 @@ svg.lucide.lucide { stroke-width: 2; }
    button's corner (the stage's right 56 px) when the frame runs close to that edge. */
 .stage-wrap .step-caption {
   --clear: max(0px, calc(56px - var(--frame-right, 0px)));
-  --caption-min: 12px;
+  /* why: on a phone-sized frame a 12 px floor makes the caption cover the page; the floor follows the frame's width
+     there (2.3%, never under 9 px) and stays 12 px from a 522 px wide frame up. */
+  --caption-min: clamp(9px, calc(var(--frame-w, 522px) * 0.023), 12px);
   left: var(--frame-x, 0px); right: auto; width: var(--frame-w, 100%);
   bottom: calc(var(--frame-bottom, 0px) + max(8px, var(--caption-inset)));
   padding-inline: var(--clear);
@@ -724,6 +727,9 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-stage { container-type: size; display: grid; place-items: center; }
 .sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; }
 .sk-frame:has(.sk-poster) { overflow: hidden; }
+/* why: matches the player, which runs the recording edge to edge at 720 px wide or less (EDGE_TO_EDGE_WIDTH in
+   Transport.tsx), so the loading frame is the frame that arrives. */
+@container (max-width: 720px) { .sk-frame { width: min(100cqw, 100cqh * var(--sk-ratio, 1.6)); } }
 .sk-poster { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
 .skeleton-divider { border-top: 1px solid var(--line); }
 .app-shell[data-mobile] .sk-tabs-phone { min-height: 52px; padding: 0 0 0 4px; border-top: 1px solid var(--line); }
