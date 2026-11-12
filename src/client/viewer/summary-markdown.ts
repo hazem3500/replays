@@ -177,38 +177,6 @@ export function summaryBlocks(summary: string): Block[] {
   return pending.blocks;
 }
 
-/**
- * The first `Checked:` line and a bare `Result:` line (one with nothing after its tag), taken out of the blocks so the Context
- * tab can show them as the section's lead and heading badge. Every other line stays, in order.
- */
-export function liftReport(blocks: Block[]): { checked?: string; result?: ResultLine; blocks: Block[] } {
-  let checked: string | undefined;
-  let result: ResultLine | undefined;
-  const take = (text: string): boolean => {
-    const lead = leadLabel(text);
-    if (checked === undefined && lead?.label === 'Checked') {
-      checked = lead.rest;
-      return true;
-    }
-    const parsed = result === undefined ? parseResult(text) : undefined;
-    if (parsed && !parsed.rest) {
-      result = parsed;
-      return true;
-    }
-    return false;
-  };
-  const rest: Block[] = [];
-  for (const block of blocks) {
-    if (block.kind === 'p') {
-      if (!take(block.text)) rest.push(block);
-    } else if (block.kind === 'list') {
-      const items = block.items.filter((item) => !(item.children === undefined && take(item.text)));
-      if (items.length) rest.push({ ...block, items });
-    } else rest.push(block);
-  }
-  return { ...(checked === undefined ? {} : { checked }), ...(result === undefined ? {} : { result }), blocks: rest };
-}
-
 const MAX_SHORT_URL = 44;
 
 /** A bare URL as people say it: `o/r#12` for a GitHub pull request or issue, otherwise the host and a trimmed path. */
