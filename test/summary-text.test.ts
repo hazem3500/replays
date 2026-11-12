@@ -68,7 +68,13 @@ describe('parseInline', () => {
       { kind: 'text', text: 'a ' },
       { kind: 'code', text: 'x*y' },
       { kind: 'text', text: ' ' },
-      { kind: 'strong', children: [{ kind: 'text', text: 'b ' }, { kind: 'em', children: [{ kind: 'text', text: 'c' }] }] },
+      {
+        kind: 'strong',
+        children: [
+          { kind: 'text', text: 'b ' },
+          { kind: 'em', children: [{ kind: 'text', text: 'c' }] },
+        ],
+      },
       { kind: 'text', text: ' ' },
       { kind: 'em', children: [{ kind: 'text', text: 'd' }] },
     ]);
@@ -90,7 +96,11 @@ describe('parseInline', () => {
   it('never turns a javascript:, data: or other non-http link into a link', () => {
     for (const text of ['[x](javascript:alert(1))', '[x](data:text/html,hi)', '[x](ftp://example.com/f)', '[x](//evil.test)']) {
       expect(parseInline(text).some((node) => node.kind === 'link')).toBe(false);
-      expect(parseInline(text).map((node) => (node.kind === 'text' ? node.text : '')).join('')).toBe(text);
+      expect(
+        parseInline(text)
+          .map((node) => (node.kind === 'text' ? node.text : ''))
+          .join(''),
+      ).toBe(text);
     }
   });
 
@@ -119,7 +129,12 @@ describe('shortenUrl', () => {
 
 describe('parseResult', () => {
   it('reads a status with its qualifier', () => {
-    expect(parseResult('Result: Fail (mocked responses)')).toEqual({ status: 'Fail', tone: 'fail', qualifier: 'mocked responses', rest: '' });
+    expect(parseResult('Result: Fail (mocked responses)')).toEqual({
+      status: 'Fail',
+      tone: 'fail',
+      qualifier: 'mocked responses',
+      rest: '',
+    });
     expect(parseResult('Result: passed')).toEqual({ status: 'passed', tone: 'pass', rest: '' });
     expect(parseResult('Result: Partial (two of three)')?.tone).toBe('partial');
   });
@@ -133,7 +148,11 @@ describe('parseResult', () => {
 
 describe('liftReport', () => {
   it('takes the Checked line and a bare Result out of paragraphs and bullets, keeping the rest in order', () => {
-    const lifted = liftReport(summaryBlocks('Checked: the fee.\n\n- Result: Fail (mocked)\n- Observed: one\n- Observed: two\n\nPR comment: https://github.com/o/r/pull/1'));
+    const lifted = liftReport(
+      summaryBlocks(
+        'Checked: the fee.\n\n- Result: Fail (mocked)\n- Observed: one\n- Observed: two\n\nPR comment: https://github.com/o/r/pull/1',
+      ),
+    );
     expect(lifted.checked).toBe('the fee.');
     expect(lifted.result).toMatchObject({ status: 'Fail', qualifier: 'mocked' });
     expect(lifted.blocks).toEqual([

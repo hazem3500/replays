@@ -250,7 +250,8 @@ function matchEm(text: string, i: number): Match | undefined {
   const marker = text[i] ?? '';
   const wordBefore = marker === '_' && /\w/.test(text[i - 1] ?? '');
   const end = text.indexOf(marker, i + 2);
-  if (wordBefore || end < 0 || /\s/.test(text[i + 1] ?? ' ') || /\s/.test(text[end - 1] ?? ' ') || text[end - 1] === marker) return undefined;
+  if (wordBefore || end < 0 || /\s/.test(text[i + 1] ?? ' ') || /\s/.test(text[end - 1] ?? ' ') || text[end - 1] === marker)
+    return undefined;
   if (marker === '_' && /\w/.test(text[end + 1] ?? '')) return undefined;
   return { node: { kind: 'em', children: parseInline(text.slice(i + 1, end)) }, length: end + 1 - i };
 }
