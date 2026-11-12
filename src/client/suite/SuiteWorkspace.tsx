@@ -765,15 +765,7 @@ function SidebarSummary({ summary }: { summary: string }) {
 
 /** What the selected run checked and found, above its recording: two lines until opened. */
 function RunBrief({ summary }: { summary: string }) {
-  return (
-    <ClippedSummary
-      summary={summary}
-      className="run-brief"
-      label="About this run"
-      textId="run-brief-text"
-      testId="run-brief"
-    />
-  );
+  return <ClippedSummary summary={summary} className="run-brief" label="About this run" textId="run-brief-text" testId="run-brief" />;
 }
 
 /** A performance-focused suite's comparison row: only what the run recorded. */

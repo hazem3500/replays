@@ -387,7 +387,8 @@ test('a run with a summary says what it checked above the recording, clipped unt
       label: 'Desktop: run 1',
       status: 'passed',
       replayId: one,
-      summary: 'Checked: the over-fee warning on two invoice lines.\n\n- Result: Pass\n- Observed: both lines turn amber.\n- Observed: the total is unchanged.',
+      summary:
+        'Checked: the over-fee warning on two invoice lines.\n\n- Result: Pass\n- Observed: both lines turn amber.\n- Observed: the total is unchanged.',
     },
     { id: 'brief-2', label: 'Desktop: run 2', status: 'passed', replayId: two },
   ]);
