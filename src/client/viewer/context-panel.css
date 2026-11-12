@@ -116,5 +116,7 @@
 .ctx-run-summary-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ctx-run-summary-head .ctx-heading { margin: 0; }
 .ctx-run-lead { margin: 0; max-width: 72ch; color: var(--text); font-size: 13px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+/* why: the lead drops the author's "Checked:" tag; a quiet "Checked" keeps it reading as a sentence. */
+.ctx-run-lead-label { color: var(--text-secondary); font-weight: 400; }
 .ctx-run-summary .summary-text { color: var(--text); font-size: 13px; }
 .ctx-run-summary .summary-text :is(a, .summary-result-tag) { font-size: inherit; }

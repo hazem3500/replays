@@ -72,7 +72,11 @@ export function ContextPanel({
   if (!context) {
     return (
       <div className="table-scroll" data-testid="context-empty">
-        {summary ? <RunSummary summary={summary} /> : null}
+        {summary ? (
+          <div className="ctx-inner">
+            <RunSummary summary={summary} />
+          </div>
+        ) : null}
         <Empty icon={FileTextIcon} title="No context was captured">
           The recording app can attach approved build and runtime details. CLI captures can attach context with --context-file. Missing
           context cannot be recovered from this recording.
@@ -105,7 +109,7 @@ function RunSummary({ summary }: { summary: string }) {
       </div>
       {report.checked ? (
         <p className="ctx-run-lead">
-          <InlineText text={report.checked} />
+          <span className="ctx-run-lead-label">Checked</span> <InlineText text={report.checked} />
         </p>
       ) : null}
       {report.blocks.length ? <SummaryBlocks blocks={report.blocks} /> : null}

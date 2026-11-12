@@ -1229,7 +1229,7 @@ a.menu-link, a.menu-link:hover { color: inherit; text-decoration: none; }
 .summary-text blockquote { padding-left: 10px; border-left: 2px solid var(--line-strong); color: var(--text-secondary); }
 .summary-text pre { overflow-x: auto; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--text); }
 .summary-text pre code { padding: 0; background: none; font-size: var(--text-xs); white-space: pre; }
-.summary-text :not(pre) > code { padding: 0 4px; border-radius: 3px; background: var(--surface-hover); color: var(--text); }
+.summary-text :not(pre) > code { padding: 0 3px; border-radius: 3px; background: var(--surface-hover); color: var(--text); }
 .summary-text a { color: var(--accent); text-underline-offset: 2px; }
 .summary-text a:hover { color: var(--text); }
 .summary-result { display: inline-flex; align-items: center; gap: 6px; vertical-align: baseline; }
