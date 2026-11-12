@@ -15,14 +15,14 @@ import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
 import { ConsoleCapture } from './console/ConsoleCapture.tsx';
-import { buildNetworkRows, networkBadge } from './network/model.ts';
+import { buildNetworkRows, markFocus, networkBadge } from './network/model.ts';
 import { type NetworkPeer, NetworkPanel } from './network/NetworkPanel.tsx';
 import { buildMoments, performanceBadge, vitalsOf } from './performance/model.ts';
 import { type PerformancePeer, PerformancePanel } from './performance/PerformancePanel.tsx';
 import { resolveSlot } from '../plugins/registry.ts';
 import { DockPanel, InspectorDock } from './InspectorDock.tsx';
 import { inspectorTabItems } from './inspector-tabs.ts';
-import { consoleBadge } from './tab-badges.ts';
+import { consoleBadge, withFocus } from './tab-badges.ts';
 import { MIN_INSPECTOR_HEIGHT, maxInspectorHeight } from './inspector-size.ts';
 import { availableTab, orderTabs } from '../views/resolve.ts';
 import { STANDARD_VIEW, viewSettingKey } from '../views/settings.ts';
@@ -143,6 +143,11 @@ export interface MobilePanel {
 
 const NO_ORDER: readonly string[] = [];
 
+/** How many of `items` a panel's focus test matches; 0 when the run marks nothing there. */
+function focusCount<T>(items: readonly T[], test: ((item: T) => unknown) | undefined) {
+  return test ? items.filter((item) => test(item)).length : 0;
+}
+
 export const Inspector = memo(function Inspector({
   bundle,
   sourceBundle = bundle,
@@ -173,7 +178,7 @@ export const Inspector = memo(function Inspector({
   compare?: { scope?: ReactNode; performance?: ReactNode; peers?: readonly InspectorPeer[] | undefined } | undefined;
 }) {
   const player = usePlayer();
-  const { setTab, setExpandedRequest, tabOrder: order = NO_ORDER } = useViewer();
+  const { setTab, setExpandedRequest, tabOrder: order = NO_ORDER, focus } = useViewer();
   const features = activeFeatures().flatMap((feature) => (feature.tab ? [{ id: feature.id, featureTab: feature.tab }] : []));
   const featureBadges = useFeatureBadges();
   // Rows fill once the page transition has landed (hooks/use-filled-after-transition.ts); until then each panel shows its pending frame.
@@ -183,7 +188,8 @@ export const Inspector = memo(function Inspector({
   const consoleTrack = useMemo(() => sortByAt(bundle.console), [bundle]);
 
   const performanceModel = useMemo(() => buildPerformance(sourceBundle, timeline), [sourceBundle, timeline]);
-  const networkRows = useMemo(() => buildNetworkRows(sourceBundle, timeline), [sourceBundle, timeline]);
+  const moments = useMemo(() => buildMoments(performanceModel.signals, performanceModel.why), [performanceModel]);
+  const networkRows = useMemo(() => markFocus(buildNetworkRows(sourceBundle, timeline), focus), [sourceBundle, timeline, focus]);
   const peers = compare?.peers ?? [];
   const networkPeers: NetworkPeer[] = peers.map((peer) => ({
     id: peer.id,
@@ -208,9 +214,9 @@ export const Inspector = memo(function Inspector({
       stepCount: bundle.steps.length,
       rail: !mobile,
       badges: {
-        console: consoleBadge(consoleTrack.entries),
+        console: withFocus(consoleBadge(consoleTrack.entries), focusCount(consoleTrack.entries, focus?.has.console ? focus.console : undefined)),
         network: networkBadge(networkRows),
-        performance: performanceBadge(buildMoments(performanceModel.signals, performanceModel.why)),
+        performance: withFocus(performanceBadge(moments), focusCount(moments, focus?.has.performance ? focus.performance : undefined)),
       },
       features: features.map(({ id, featureTab }) => ({
         id,

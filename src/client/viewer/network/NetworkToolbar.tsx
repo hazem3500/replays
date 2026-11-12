@@ -17,6 +17,7 @@ import { type NetworkFilter, REQUEST_TYPES, type RequestType, type StatusFilter 
 
 const STATUS_CHIPS: ReadonlyArray<{ id: StatusFilter; label: string }> = [
   { id: 'all', label: 'All' },
+  { id: 'focus', label: 'Focus' },
   { id: 'failed', label: 'Failed' },
   { id: 'slow', label: 'Slow' },
   { id: 'pending', label: 'No response' },
@@ -45,10 +46,11 @@ const STRINGS = {
   range: (from: number, to: number) => `${formatClock(from)} to ${formatClock(to)}`,
   shown: (shown: number) => `${shown} ${shown === 1 ? 'request' : 'requests'}`,
   slowHint: 'Took 500 ms or longer',
+  focusHint: 'What this run marked to look at',
   pendingHint: 'No response recorded: a redirect hop, or still in flight when capture stopped',
 };
 
-const HINTS: Partial<Record<StatusFilter, string>> = { slow: STRINGS.slowHint, pending: STRINGS.pendingHint };
+const HINTS: Partial<Record<StatusFilter, string>> = { focus: STRINGS.focusHint, slow: STRINGS.slowHint, pending: STRINGS.pendingHint };
 
 /** Keys typed in the toolbar stay out of the player's shortcuts (space, arrows). */
 const keepKeys = (event: ReactKeyboardEvent<HTMLElement>) => {

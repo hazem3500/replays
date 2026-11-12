@@ -10,6 +10,7 @@ import {
 } from './people.ts';
 import { isProfileId } from './profiles.ts';
 import { assertReplayId, type ReplayBundle, type ReplaySummary } from './replay.ts';
+import { assertFocus, type FocusMarker } from './run-focus.ts';
 
 export type ReviewRunStatus = 'running' | 'passed' | 'failed' | 'partial';
 export type SuiteOverallStatus = 'Waiting' | 'Running' | 'Failed' | 'Partial' | 'Complete';
@@ -45,6 +46,8 @@ export interface ReviewSuiteRun {
   finishedAt?: string;
   /** What this run checked and found, as plain text (see `assertSummary`); shown in the run's Context tab. */
   summary?: string;
+  /** What to look at in the recording (src/shared/run-focus.ts): the viewer accents the matching rows. */
+  focus?: FocusMarker[];
   /** The flow this run exercises (plan `group`); runs in one group are comparable. */
   group?: string;
   /** What it ran against (a build or variant); runs with the same group and target are samples. */
@@ -111,6 +114,7 @@ export interface ReviewSuiteIndexRun extends Pick<
   | 'finishedAt'
   | 'replayId'
   | 'summary'
+  | 'focus'
   | 'group'
   | 'target'
   | 'measure'
@@ -232,6 +236,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
       'startedAt',
       'finishedAt',
       'summary',
+      'focus',
       'group',
       'target',
       'measure',
@@ -267,6 +272,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
     }
     if (run.context !== undefined) assertReplayContext(run.context);
     if (run.summary !== undefined) assertSummary(run.summary, `${name}.summary`);
+    if (run.focus !== undefined) assertFocus(run.focus, `${name}.focus`);
     assertGrouping(run, name);
   }
 }
@@ -301,6 +307,8 @@ export interface ReviewRunRegistration {
   finishedAt?: string;
   /** Not identity: registering again replaces it (absent keeps the stored one). */
   summary?: string;
+  /** Not identity: registering again replaces it (absent keeps the stored one, an empty list clears it). */
+  focus?: FocusMarker[];
   group?: string;
   target?: string;
   measure?: string;
@@ -337,6 +345,7 @@ export function assertReviewRunRegistration(value: unknown, runId: string): asse
     'startedAt',
     'finishedAt',
     'summary',
+    'focus',
     'group',
     'target',
     'measure',

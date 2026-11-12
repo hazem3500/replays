@@ -4,6 +4,8 @@ import type { FrameBand } from './performance/frames.ts';
 import type { ReplayStep } from '../../shared/replay.ts';
 import type { ReplayError } from '../issues.ts';
 import type { ProjectedHighlight } from '../../shared/highlights.ts';
+import type { FocusTests } from '../../shared/run-focus.ts';
+import type { FocusSpot } from './focus-marks.ts';
 
 export type BuiltinInspectorTab = 'console' | 'network' | 'waterfall' | 'performance' | 'context';
 /** A tab a client plugin registered: `plugin:<plugin>:<id>` (src/client/plugins/). */
@@ -62,6 +64,10 @@ export interface ViewerActions {
   performanceFocused?: boolean;
   /** Frame rate per second of recording on the player's clock; empty when frame timing was not recorded. */
   frames?: readonly FrameBand[];
+  /** The suite run's focus markers as row tests (src/shared/run-focus.ts); absent when the run marks nothing. */
+  focus?: FocusTests;
+  /** Where the marked requests and console messages happen, for the seek bar. */
+  focusSpots?: readonly FocusSpot[];
 }
 
 export const ViewerContext = createContext<ViewerActions | null>(null);

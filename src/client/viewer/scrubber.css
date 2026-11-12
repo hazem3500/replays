@@ -129,6 +129,17 @@
     opacity: 0;
   }
 
+  /* Focus: the suite run's marked requests and messages, accent notches that stay visible (they are why the run
+     was recorded), under the error notches so a marked failure still reads red. */
+  .focus-notch {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--accent);
+  }
+
   /* Saved highlights sit above the rail as small, real buttons. Their labels appear only while active, so a
      busy replay stays readable; touch and keyboard activation work without changing the slider's drag/keys. */
   .scrubber-highlight-layer { position: absolute; z-index: 4; inset: 0 var(--inset); pointer-events: none; }

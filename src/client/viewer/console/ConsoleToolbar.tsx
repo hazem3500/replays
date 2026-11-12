@@ -6,6 +6,7 @@ import type { LevelFilter } from './model.ts';
 
 const LEVEL_CHIPS: ReadonlyArray<{ id: LevelFilter; label: string }> = [
   { id: 'all', label: 'All' },
+  { id: 'focus', label: 'Focus' },
   { id: 'error', label: 'Errors' },
   { id: 'warn', label: 'Warnings' },
   { id: 'info', label: 'Info' },
@@ -19,6 +20,7 @@ const STRINGS = {
   placeholder: 'Text in the message or page',
   shown: (shown: number) => `${shown} ${shown === 1 ? 'message' : 'messages'}`,
   infoHint: 'Info and log',
+  focusHint: 'What this run marked to look at',
 };
 
 const keepKeys = (event: ReactKeyboardEvent<HTMLElement>) => {
@@ -65,7 +67,7 @@ export function ConsoleToolbar({
             data-level={chip.id}
             data-testid={`console-level-${chip.id}`}
             aria-pressed={level === chip.id}
-            title={chip.id === 'info' ? STRINGS.infoHint : undefined}
+            title={chip.id === 'info' ? STRINGS.infoHint : chip.id === 'focus' ? STRINGS.focusHint : undefined}
             onClick={() => onLevel(level === chip.id ? 'all' : chip.id)}
             onKeyDown={keepKeys}
           >

@@ -155,8 +155,8 @@ class SuiteRecorder {
   ) {
     const link = this.linked();
     if (!link) return;
-    const { group, target, measure } = run;
-    this.suite = (await putRun(link.connection.api, link.suite, { id: run.id, group, target, measure, ...update }, this.now)).suite;
+    const { group, target, measure, focus } = run;
+    this.suite = (await putRun(link.connection.api, link.suite, { id: run.id, group, target, measure, focus, ...update }, this.now)).suite;
   }
 
   private finishedOutcome(run: SuitePlanRun): RunOutcome | undefined {

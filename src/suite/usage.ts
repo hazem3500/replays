@@ -12,8 +12,8 @@ Review suites group the recordings of one review: a suite has runs, each run has
                            by group and target, with the baseline and each measured time
   suite summary <id> <text|@file>          set the suite's summary (plain text, at most 4000 characters)
   suite run add <suite> --run <id> --title <text> [--status running] [--summary <text|@file>]
-                           [--group <name>] [--target <name>] [--measure <step label>]
-  suite run set <suite> <run> [--status passed|failed] [--summary <text|@file>]
+                           [--focus <panel:pattern # note|@file>]... [--group <name>] [--target <name>] [--measure <step label>]
+  suite run set <suite> <run> [--status passed|failed] [--summary <text|@file>] [--focus <spec|@file|none>]...
                            [--group <name>] [--target <name>] [--measure <step label>]
   suite run summary <suite> <run> <text|@file>
   suite record --plan <file> [--upload] [--only <run>]... [--dry-run] [--output <dir>]
@@ -24,11 +24,18 @@ against such as main or #6879 (at most 40), --measure the label of the step whos
 (the CLI stores the label; the measured time itself is only filled in by suite record), and suite create --baseline the
 target the others are compared to. Runs with the same group and target are samples. Leaving a flag out on run set keeps what the run has.
 
+Focus markers point the reviewer at what matters in a run's recording: --focus 'network:POST /api/v9/timer # starts
+the timer', 'console:Uncaught TypeError' or 'performance:Long task'. The pattern is case-insensitive text the row
+contains (* matches anything; a network pattern may start with the HTTP method); the note after " # " is shown beside
+the row. The viewer accents matching rows, adds a Focus filter and marks them on the seek bar. Repeat --focus for
+more (at most 20); --focus @file reads a JSON list or one spec per line. On run set, --focus replaces the markers and
+--focus none clears them.
+
 Run lifecycle: running, then passed or failed. A finished run keeps its status and cannot be changed
 (register a new run id instead); a suite's title, source and profile are fixed once it exists.
 
 suite record reads a plan (docs/formats/suite-plan.schema.json, example in sample/suite-plan.json) with the suite's
-id, title, profile, source, people and summary plus runs { id, title, url, steps, viewport?, expect?, summary? }.
+id, title, profile, source, people and summary plus runs { id, title, url, steps, viewport?, expect?, summary?, focus? }.
 Per run it registers the run as running, records it with the capture steps, uploads the replay to the run and marks it
 passed, or failed when the recording throws, a step fails or an expectation (noConsoleErrors, noFailedRequests,
 maxDurationMs) does not hold. A failed run does not stop the next one. Without --upload nothing is sent: the

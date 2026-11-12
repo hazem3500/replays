@@ -162,6 +162,14 @@ A suite registration and a run registration may also carry an optional `summary`
 by blank lines and `- ` bullet lines, no control characters, never HTML. The suite's summary is shown, collapsible, in the suite sidebar header
 and the run's in that run's Context tab. Like `people`, it is not identity: registering again replaces it (absent keeps it).
 
+A run registration may also carry `focus`: at most 20 markers `{ panel: 'network' | 'console' | 'performance', match, note? }`
+that point the reviewer at what matters in the recording (`src/shared/run-focus.ts`). `match` is case-insensitive text the row
+contains, with `*` as a wildcard; a network `match` may start with the HTTP method (`POST /api/v9/timer`). The viewer accents
+matching rows, counts them on the tab, adds a Focus filter and marks network and console matches on the seek bar. A marker that
+matches nothing is not an error. Absent keeps the stored markers and an empty list clears them. From the CLI:
+`suite run add|set --focus 'network:POST /api/v9/timer # starts the timer'` (repeatable, `@file`, `none` to clear), or `focus`
+on a plan run.
+
 ```ts
 api.people({
   roles: ['pr-author', 'reviewer', 'requester', 'assignee', 'uploader', 'mentioned'], // priority order for "For me"
