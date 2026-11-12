@@ -6,6 +6,7 @@ import { runOnFirstVisible } from './first-visible.ts';
 import { STEP_TIMEOUT } from './locate.ts';
 import { waitForSelectorOverCdp } from './wait-selector.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
+import { isSameUrl } from './same-url.ts';
 
 function stepArgs(step: Exclude<RawStep, { kind: 'shot' | 'wait' }>, typeDelayMs: number) {
   switch (step.kind) {
@@ -23,6 +24,18 @@ function stepArgs(step: Exclude<RawStep, { kind: 'shot' | 'wait' }>, typeDelayMs
       return 'selector' in step ? ['scrollintoview', step.selector] : ['scroll', step.direction, String(step.pixels ?? 720)];
     case 'goto':
       return ['open', step.url];
+  }
+}
+
+/** True when `url`, resolved against the open page, is the page's own address (then a goto would only reload it). */
+async function isOpenPage(page: CdpLike, url: string) {
+  try {
+    const result: unknown = await page.send('Runtime.evaluate', { expression: 'location.href', returnByValue: true });
+    const inner = typeof result === 'object' && result !== null && 'result' in result ? result.result : undefined;
+    const current = typeof inner === 'object' && inner !== null && 'value' in inner ? inner.value : undefined;
+    return typeof current === 'string' && isSameUrl(current, url);
+  } catch {
+    return false;
   }
 }
 
@@ -64,6 +77,7 @@ export function agentBrowserDriver(): CaptureDriver {
         else if ('ms' in step) await browser.command(['wait', String(step.ms)]);
         return;
       }
+      if (step.kind === 'goto' && page && (await isOpenPage(page, step.url))) return;
       if (page && (await runOnFirstVisible(page, step, typeDelay()))) return;
       await browser.command(stepArgs(step, typeDelay()));
     },

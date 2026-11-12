@@ -11,6 +11,7 @@ import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
 import { findFfmpeg, findSystemBrowser, hasPlaywrightBrowser, NO_BROWSER_MESSAGE, NO_FFMPEG_MESSAGE } from './system-tools.ts';
 import { onFirstVisible, STEP_TIMEOUT, waitForSelector } from './locate.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
+import { isSameUrl } from './same-url.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -137,6 +138,8 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
           break;
         }
         case 'goto':
+          // why: capture() already opened the start URL; navigating to the open page again shows a blank reload.
+          if (isSameUrl(target.url(), step.url)) break;
           await target.goto(step.url, { waitUntil: 'load', timeout: 30_000 });
           break;
         case 'shot':

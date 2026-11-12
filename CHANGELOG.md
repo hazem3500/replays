@@ -5,8 +5,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
-- Capture: you can now record the Playwright page your test already drives, so mocked responses and test data show up in the replay. `RecorderSession.start(cdp, { joinCurrentPage: true })` joins the open page, `session.step(...)` marks each action, and `buildAgentBundle(...)` builds the bundle `capture()` builds. The `./capture` entry no longer loads server packages.
+- Capture: uploads are gzipped, so large replays upload about 25 times smaller. An older server that refuses gzip gets one plain retry.
+- Capture: a goto step to the page that is already open no longer reloads it, so replays don't open on a blank reload.
 - CLI: `suite create --baseline` and `suite run add/set --group --target --measure` group runs without a plan file, and `suite show` lists runs by group and target with the baseline and each measured time.
+- Capture: you can now record the Playwright page your test already drives, so mocked responses and test data show up in the replay. `RecorderSession.start(cdp, { joinCurrentPage: true })` joins the open page, `session.step(...)` marks each action, and `buildAgentBundle(...)` builds the bundle `capture()` builds. The `./capture` entry no longer loads server packages.
 - Capture: a recording now plays until the capture stopped, not until the page last changed. A page that sits still after its last steps no longer cuts those steps off the end of the replay.
 - Viewer: a run's player no longer waits forever on a page transition the browser never finishes. After 3 s it mounts anyway, so a switched run cannot stay stuck on a black stage and a spinning play button.
 - Viewer: on a phone, a suite run's top bar no longer piles its items on top of each other. The run switcher keeps its position and arrow, and "Edited 8 min ago" shortens to fit instead of running over the status dot.
