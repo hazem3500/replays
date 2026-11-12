@@ -38,6 +38,13 @@ const suiteOf = (...runs: ReviewSuiteRun[]): ReviewSuite => ({
   runs,
 });
 
+const closeServer = (server: ReturnType<typeof createServer>) =>
+  new Promise<void>((resolve) => {
+    server.close(() => resolve());
+  });
+
+const status = (value: string) => ({ runs: [expect.objectContaining({ status: value })] });
+
 const put = (url: string, body: unknown) =>
   fetch(url, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
@@ -80,7 +87,7 @@ describe('endAbandonedRuns', () => {
 describe('stale runs in the store and the API', () => {
   const servers: Array<ReturnType<typeof createServer>> = [];
   afterEach(async () => {
-    await Promise.all(servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
+    await Promise.all(servers.splice(0).map(closeServer));
   });
 
   async function start(clock: { now: number }) {
@@ -105,19 +112,16 @@ describe('stale runs in the store and the API', () => {
     const body = { id: 'step-01', sequence: 1, label: 'Dates persist', status: 'running', startedAt: new Date(clock.now).toISOString() };
     expect((await put(`${base}/runs/step-01`, body)).status).toBe(200);
 
-    const read = async () => {
-      const suite: ReviewSuite = await (await fetch(base)).json();
-      return suite.runs[0];
-    };
-    expect((await read())?.status).toBe('running');
+    const read = async (): Promise<unknown> => (await fetch(base)).json();
+    expect(await read()).toMatchObject(status('running'));
 
     clock.now += limit + MINUTE;
-    expect((await read())?.status).toBe('partial');
+    expect(await read()).toMatchObject(status('partial'));
     expect((await store.listSuiteSummaries())[0]?.running).toBe(0);
 
     const late = await put(`${base}/runs/step-01`, { ...body, status: 'passed', finishedAt: new Date(clock.now).toISOString() });
     expect(late.status).toBe(200);
-    expect((await read())?.status).toBe('passed');
+    expect(await read()).toMatchObject(status('passed'));
   });
 });
 
