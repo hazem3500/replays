@@ -106,7 +106,12 @@ export function NetworkToolbar({
       <TypeMenu types={types} value={filter.type} onChange={(type) => onFilter({ ...filter, type })} />
       <TimelineButton />
       {searching ? (
-        <SearchField text={filter.text} onText={(text) => onFilter({ ...filter, text })} onClose={closeSearch} restored={search === 'restored'} />
+        <SearchField
+          text={filter.text}
+          onText={(text) => onFilter({ ...filter, text })}
+          onClose={closeSearch}
+          restored={search === 'restored'}
+        />
       ) : (
         <button
           ref={trigger}

@@ -378,75 +378,75 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
 
       <div className="suite-viewer">
         <CarriedFilters value={filters}>
-        {comparing && selected ? (
-          <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? stageRuns.length : 0} />}>
-            <SuiteCompare
-              // why: the runs sidebar (desktop) and the title run menu (phone) already switch runs; colour frames mark
-              // the focused tile. The CompareSummary strip belongs on standalone Compare — on a phone with many runs
-              // it wraps into an unreadable pile of clocks and deltas above the player.
-              hideCompareSummary
-              runs={stageRuns}
-              fallback={defaults.layout}
-              focus={selected}
-              onFocus={select}
-              page={{
-                ...(runTitle ? { title: runTitle } : {}),
-                ...(runStatus ? { status: runStatus } : {}),
-                ...(suiteDetails ? { suite: suiteDetails } : {}),
-                ...(runMenu ? { titleMenu: runMenu } : {}),
-                ...(headline ? { headline } : {}),
-                backHref,
-                skipLink: false,
-                initialTab: tab,
-                onTabChange: setTab,
-                suiteProfile: suite?.profile,
-              }}
-            />
-          </Suspense>
-        ) : viewerReady && bundle ? (
-          <EditedViewer
-            key={bundle.meta.id}
-            bundle={bundle}
-            edits={edits.data}
-            {...(runTitle ? { title: runTitle } : {})}
-            {...(runPrefix ? { prefix: runPrefix } : {})}
-            {...(runStatus ? { status: runStatus } : {})}
-            {...(suiteDetails ? { suite: suiteDetails } : {})}
-            {...(runMenu ? { titleMenu: runMenu } : {})}
-            {...(headline ? { headline } : {})}
-            {...(titles.previous && titles.previous !== runTitle ? { titleFrom: titles.previous } : {})}
-            backHref={backHref}
-            skipLink={false}
-            initialTab={tab}
-            onTabChange={setTab}
-            suiteProfile={suite?.profile}
-            playIntent={playIntent}
-          />
-        ) : bundleError ? (
-          <main className="app-shell">
-            <Topbar
-              title={runTitle ?? suite?.title ?? 'Review suite'}
+          {comparing && selected ? (
+            <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? stageRuns.length : 0} />}>
+              <SuiteCompare
+                // why: the runs sidebar (desktop) and the title run menu (phone) already switch runs; colour frames mark
+                // the focused tile. The CompareSummary strip belongs on standalone Compare — on a phone with many runs
+                // it wraps into an unreadable pile of clocks and deltas above the player.
+                hideCompareSummary
+                runs={stageRuns}
+                fallback={defaults.layout}
+                focus={selected}
+                onFocus={select}
+                page={{
+                  ...(runTitle ? { title: runTitle } : {}),
+                  ...(runStatus ? { status: runStatus } : {}),
+                  ...(suiteDetails ? { suite: suiteDetails } : {}),
+                  ...(runMenu ? { titleMenu: runMenu } : {}),
+                  ...(headline ? { headline } : {}),
+                  backHref,
+                  skipLink: false,
+                  initialTab: tab,
+                  onTabChange: setTab,
+                  suiteProfile: suite?.profile,
+                }}
+              />
+            </Suspense>
+          ) : viewerReady && bundle ? (
+            <EditedViewer
+              key={bundle.meta.id}
+              bundle={bundle}
+              edits={edits.data}
+              {...(runTitle ? { title: runTitle } : {})}
               {...(runPrefix ? { prefix: runPrefix } : {})}
-              backHref={backHref}
-              compact={narrow}
+              {...(runStatus ? { status: runStatus } : {})}
+              {...(suiteDetails ? { suite: suiteDetails } : {})}
               {...(runMenu ? { titleMenu: runMenu } : {})}
+              {...(headline ? { headline } : {})}
+              {...(titles.previous && titles.previous !== runTitle ? { titleFrom: titles.previous } : {})}
+              backHref={backHref}
+              skipLink={false}
+              initialTab={tab}
+              onTabChange={setTab}
+              suiteProfile={suite?.profile}
+              playIntent={playIntent}
             />
-            <RunUnavailable message={bundleError} />
-          </main>
-        ) : !selected && playable.length === 0 ? (
-          <main className="app-shell">
-            <Topbar title={suite.title} backHref={backHref} compact={narrow} />
-            {runs.some((item) => isExpired(item, detailed)) ? (
-              <SuiteExpired replayIds={runs.flatMap((item) => (item.replayId ? [item.replayId] : []))} />
-            ) : (
-              <StateView kind="empty" title="No recordings yet" cause="Runs appear here as the review uploads them." />
-            )}
-          </main>
-        ) : (
-          <LoadingPlayContext value={{ wanted: wantedRun === selected, toggle: toggleLoadingPlay }}>
-            <ViewerSkeleton label="Loading run" />
-          </LoadingPlayContext>
-        )}
+          ) : bundleError ? (
+            <main className="app-shell">
+              <Topbar
+                title={runTitle ?? suite?.title ?? 'Review suite'}
+                {...(runPrefix ? { prefix: runPrefix } : {})}
+                backHref={backHref}
+                compact={narrow}
+                {...(runMenu ? { titleMenu: runMenu } : {})}
+              />
+              <RunUnavailable message={bundleError} />
+            </main>
+          ) : !selected && playable.length === 0 ? (
+            <main className="app-shell">
+              <Topbar title={suite.title} backHref={backHref} compact={narrow} />
+              {runs.some((item) => isExpired(item, detailed)) ? (
+                <SuiteExpired replayIds={runs.flatMap((item) => (item.replayId ? [item.replayId] : []))} />
+              ) : (
+                <StateView kind="empty" title="No recordings yet" cause="Runs appear here as the review uploads them." />
+              )}
+            </main>
+          ) : (
+            <LoadingPlayContext value={{ wanted: wantedRun === selected, toggle: toggleLoadingPlay }}>
+              <ViewerSkeleton label="Loading run" />
+            </LoadingPlayContext>
+          )}
         </CarriedFilters>
       </div>
     </div>

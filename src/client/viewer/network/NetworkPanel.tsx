@@ -118,18 +118,18 @@ export function NetworkPanel({
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
           <LabelSearch value={words}>
-          <NetworkList
-            rows={sortNetworkRows(shown, sort, steps)}
-            sort={sort}
-            onSort={setSort}
-            steps={steps}
-            ceiling={slowestMeasured(rows)}
-            selected={selected}
-            onSelect={onSelect}
-            onHover={setHovered}
-            highlight={hovered}
-            empty={empty}
-          />
+            <NetworkList
+              rows={sortNetworkRows(shown, sort, steps)}
+              sort={sort}
+              onSort={setSort}
+              steps={steps}
+              ceiling={slowestMeasured(rows)}
+              selected={selected}
+              onSelect={onSelect}
+              onHover={setHovered}
+              highlight={hovered}
+              empty={empty}
+            />
           </LabelSearch>
         </div>
         {open && !stacked ? (
