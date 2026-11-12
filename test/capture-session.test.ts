@@ -28,7 +28,8 @@ class FakeCdp implements CdpLike {
     this.calls.push({ method, params });
     if (method !== 'Runtime.evaluate') return {};
     const expression = String(params?.expression ?? '');
-    if (!expression.includes('__REPLAYS_FLUSH__?.(')) {
+    if (!expression.startsWith('window.__REPLAYS_FLUSH__?.(')) {
+      if (expression.length > 1000) return {};
       if (this.probeFails) throw new Error('context destroyed');
       return { result: { value: this.probe } };
     }
@@ -60,7 +61,7 @@ class FakeCdp implements CdpLike {
 
   flushes() {
     return this.calls.filter(
-      (call) => call.method === 'Runtime.evaluate' && String(call.params?.expression).includes('__REPLAYS_FLUSH__?.('),
+      (call) => call.method === 'Runtime.evaluate' && String(call.params?.expression).startsWith('window.__REPLAYS_FLUSH__?.('),
     );
   }
 }
@@ -399,5 +400,63 @@ describe('normalizePerformance', () => {
     expect(normalizePerformance(many, 0, 10_000)).toHaveLength(500);
     expect(normalizePerformance(many, 0, 0)).toHaveLength(0);
     expect(normalizePerformance(undefined, 0)).toEqual([]);
+  });
+});
+
+describe('joining a page that is already open', () => {
+  const snapshot = [
+    { type: 4, timestamp: 1000 },
+    { type: 2, timestamp: 1001 },
+  ];
+
+  it('evaluates the recorder in the current document after registering it for later loads, and records the snapshot', async () => {
+    const cdp = new FakeCdp();
+    cdp.chunks = [{ events: snapshot }];
+    const session = await RecorderSession.start(cdp, { ...LONG_INTERVAL, joinCurrentPage: true });
+    const methods = cdp.calls.map((call) => call.method);
+    expect(methods.slice(-2)).toEqual(['Page.addScriptToEvaluateOnNewDocument', 'Runtime.evaluate']);
+    expect(cdp.calls.at(-1)?.params?.expression).toBe(cdp.calls.at(-2)?.params?.source);
+    const tracks = await session.stop();
+    expect(tracks.events.length).toBeGreaterThanOrEqual(2);
+    expect(tracks.events.some((event) => event.type === 2)).toBe(true);
+  });
+
+  it('does not evaluate the recorder in the page without the option', async () => {
+    const cdp = new FakeCdp();
+    const session = await RecorderSession.start(cdp, LONG_INTERVAL);
+    session.dispose();
+    expect(cdp.calls.filter((call) => call.method === 'Runtime.evaluate')).toHaveLength(0);
+  });
+
+  it('refuses a page where the recorder throws', async () => {
+    const cdp = new FakeCdp();
+    const send = cdp.send.bind(cdp);
+    cdp.send = async (method, params) => (method === 'Runtime.evaluate' ? { exceptionDetails: { text: 'boom' } } : send(method, params));
+    await expect(RecorderSession.start(cdp, { ...LONG_INTERVAL, joinCurrentPage: true })).rejects.toThrow(/could not start/);
+  });
+});
+
+describe('step', () => {
+  it('flushes, then records the steps in order with their time, and stop returns them', async () => {
+    const cdp = new FakeCdp();
+    cdp.chunks = [{ events: events(1000, 1001) }, { events: events(1100) }];
+    const session = await RecorderSession.start(cdp, LONG_INTERVAL);
+    const before = Date.now();
+    await session.step({ kind: 'click', label: 'Click Pay', selector: '#pay' });
+    await session.step({ kind: 'goto', label: 'Open receipt', url: 'https://example.com/receipt?api_token=abc' });
+    const after = Date.now();
+    expect(cdp.flushes()).toHaveLength(2);
+    const tracks = await session.stop();
+    expect(tracks.steps.map((step) => [step.kind, step.label, step.selector])).toEqual([
+      ['click', 'Click Pay', '#pay'],
+      ['goto', 'Open receipt', undefined],
+    ]);
+    for (const step of tracks.steps) {
+      expect(step.at).toBeGreaterThanOrEqual(before);
+      expect(step.at).toBeLessThanOrEqual(after);
+    }
+    const receipt = tracks.steps.find((step) => step.kind === 'goto');
+    expect(receipt?.url).toContain('/receipt');
+    expect(receipt?.url).not.toContain('abc');
   });
 });

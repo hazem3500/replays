@@ -220,8 +220,35 @@ await page.getByRole('link').click();
 const tracks = await session.stop(); // { events, console, performance, origin, duration }
 ```
 
-`stop()` gives the page-side tracks; combine them with a HAR (`networkEntries`) and your steps into a
-`ReplayBundle` (see `src/capture/capture.ts` for the reference assembly) and upload it.
+`stop()` gives the page-side tracks; `buildAgentBundle` turns them into a `ReplayBundle` (see below) you can upload.
+
+#### Record the page your test already drives
+
+To keep your own `page.route` mocks, init scripts and test data in the replay, attach to the page you already have instead of
+letting `capture()` open a second browser. Import from `@hazem3500/replays/capture` (no server packages load).
+
+```ts
+import { RecorderSession, buildAgentBundle, cdpLike } from '@hazem3500/replays/capture';
+
+// the page is already open and mocked; join it instead of waiting for the next navigation
+const session = await RecorderSession.start(cdpLike(await context.newCDPSession(page)), { joinCurrentPage: true });
+await session.step({ kind: 'click', label: 'Click Pay', selector: '#pay' }); // one per action, just before you do it
+await page.click('#pay');
+const tracks = await session.stop(Date.now()); // events, console, performance and your steps; ends the replay now
+const bundle = buildAgentBundle({
+  id: 'checkout-1',
+  title: 'Checkout',
+  url: page.url(),
+  viewport: page.viewportSize() ?? { width: 1280, height: 720 },
+  tracks,
+  // har: the parsed HAR from `recordHar` on the context, for the network tab
+});
+// upload `bundle`: POST it as JSON to your server's /api/replays
+```
+
+`joinCurrentPage` snapshots the page as it is now and still records later page loads. Without it the recorder starts on the
+next navigation, which is what `capture()` uses. `buildAgentBundle` takes the same options `capture()` passes it (tags, profile,
+people, `redaction`, `privacy`, `network`, `console`, `context`), so a bundle built here matches an agent capture.
 
 ### Inspect network and performance
 

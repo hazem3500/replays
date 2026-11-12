@@ -1,4 +1,5 @@
-import WebSocket, { type RawData } from 'ws';
+import type WebSocket from 'ws';
+import type { RawData } from 'ws';
 
 import type { CdpLike } from './session.ts';
 
@@ -28,7 +29,9 @@ export class CdpClient {
   }
 
   static async connect(url: string) {
-    const socket = new WebSocket(url);
+    // why: ws is only needed to reach a browser over a socket; the library entry records through Playwright and never loads it.
+    const { default: Socket } = await import('ws');
+    const socket = new Socket(url);
     await new Promise<void>((resolve, reject) => {
       socket.once('open', () => resolve());
       socket.once('error', reject);
