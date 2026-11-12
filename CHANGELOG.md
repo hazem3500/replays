@@ -6,6 +6,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 ## [Unreleased]
 
 - Suites: a run whose recorder was killed no longer shows as running forever; after 30 minutes without an update or a recording it shows as partial. The stored run is unchanged, so a late update from the recorder is still accepted. Set `STALE_RUN_MINUTES` (or `staleRunMinutes` in the config; 0 turns it off) to change the time.
+- Capture: uploads are gzipped, so large replays upload about 25 times smaller. An older server that refuses gzip gets one plain retry.
+- Capture: a goto step to the page that is already open no longer reloads it, so replays don't open on a blank reload.
 - CLI: `suite create --baseline` and `suite run add/set --group --target --measure` group runs without a plan file, and `suite show` lists runs by group and target with the baseline and each measured time.
 - Capture: a recording now plays until the capture stopped, not until the page last changed. A page that sits still after its last steps no longer cuts those steps off the end of the replay.
 - Viewer: a run's player no longer waits forever on a page transition the browser never finishes. After 3 s it mounts anyway, so a switched run cannot stay stuck on a black stage and a spinning play button.
