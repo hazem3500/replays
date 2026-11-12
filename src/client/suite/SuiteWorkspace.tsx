@@ -83,7 +83,22 @@ function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
         return duration === undefined ? run : { ...run, duration };
       })
     : suite.runs.map(
-        ({ id, sequence, label, status, startedAt, finishedAt, replayId, recording, summary, focus, group, target, measure, measureMs }) => ({
+        ({
+          id,
+          sequence,
+          label,
+          status,
+          startedAt,
+          finishedAt,
+          replayId,
+          recording,
+          summary,
+          focus,
+          group,
+          target,
+          measure,
+          measureMs,
+        }) => ({
           id,
           sequence,
           label,

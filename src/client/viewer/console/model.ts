@@ -72,7 +72,14 @@ function rowTest(filter: LevelFilter): (row: ConsoleRow) => boolean {
 /** Entries (not rows) per level filter, so a folded run counts every time it was logged. */
 export function levelCounts(rows: readonly ConsoleRow[]): Record<LevelFilter, number> {
   const count = (filter: LevelFilter) => rows.reduce((sum, row) => sum + (rowTest(filter)(row) ? row.count : 0), 0);
-  return { all: count('all'), focus: count('focus'), error: count('error'), warn: count('warn'), info: count('info'), debug: count('debug') };
+  return {
+    all: count('all'),
+    focus: count('focus'),
+    error: count('error'),
+    warn: count('warn'),
+    info: count('info'),
+    debug: count('debug'),
+  };
 }
 
 export function filterRows(rows: readonly ConsoleRow[], level: LevelFilter, text: string) {

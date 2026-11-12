@@ -214,7 +214,10 @@ export const Inspector = memo(function Inspector({
       stepCount: bundle.steps.length,
       rail: !mobile,
       badges: {
-        console: withFocus(consoleBadge(consoleTrack.entries), focusCount(consoleTrack.entries, focus?.has.console ? focus.console : undefined)),
+        console: withFocus(
+          consoleBadge(consoleTrack.entries),
+          focusCount(consoleTrack.entries, focus?.has.console ? focus.console : undefined),
+        ),
         network: networkBadge(networkRows),
         performance: withFocus(performanceBadge(moments), focusCount(moments, focus?.has.performance ? focus.performance : undefined)),
       },

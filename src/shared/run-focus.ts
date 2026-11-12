@@ -99,7 +99,10 @@ export function focusTests(markers: readonly FocusMarker[] = []): FocusTests {
     const method = METHOD.exec(marker.match.trim());
     const test = focusPattern(method ? marker.match.trim().slice(method[0].length) : marker.match);
     const verb = method?.[1]?.toUpperCase();
-    return { marker, test: (request: { method: string; url: string }) => (!verb || request.method.toUpperCase() === verb) && test(request.url) };
+    return {
+      marker,
+      test: (request: { method: string; url: string }) => (!verb || request.method.toUpperCase() === verb) && test(request.url),
+    };
   });
   const text = (panel: FocusPanel) => of(panel).map((marker) => ({ marker, test: focusPattern(marker.match) }));
   const consoleTests = text('console');

@@ -93,14 +93,23 @@
           "description": "What to look at in the recording. The viewer accents matching rows, adds a Focus filter and marks them on the seek bar.",
           "items": {
             "oneOf": [
-              { "type": "string", "pattern": "^\\s*(network|console|performance)\\s*:", "description": "`panel:pattern # note`, e.g. `network:POST /api/v9/timer # starts the timer`." },
+              {
+                "type": "string",
+                "pattern": "^\\s*(network|console|performance)\\s*:",
+                "description": "`panel:pattern # note`, e.g. `network:POST /api/v9/timer # starts the timer`."
+              },
               {
                 "type": "object",
                 "required": ["panel", "match"],
                 "additionalProperties": false,
                 "properties": {
                   "panel": { "enum": ["network", "console", "performance"] },
-                  "match": { "type": "string", "minLength": 1, "maxLength": 300, "description": "Case-insensitive text the row contains; `*` matches anything. Network: an optional HTTP method, then part of the URL." },
+                  "match": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "description": "Case-insensitive text the row contains; `*` matches anything. Network: an optional HTTP method, then part of the URL."
+                  },
                   "note": { "type": "string", "minLength": 1, "maxLength": 200, "description": "Why it matters, shown beside the row." }
                 }
               }

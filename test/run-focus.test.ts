@@ -44,7 +44,12 @@ describe('focus specs', () => {
   it('checks stored markers field by field', () => {
     expect(() => assertFocus([{ panel: 'network', match: 'x', extra: 1 }], 'focus')).toThrow('unsupported fields');
     expect(() => assertFocus([{ panel: 'network', match: 'x', note: 'a\nb' }], 'focus')).toThrow('focus[0].note');
-    expect(() => assertFocus(Array.from({ length: 21 }, () => ({ panel: 'console', match: 'x' })), 'focus')).toThrow('at most 20');
+    expect(() =>
+      assertFocus(
+        Array.from({ length: 21 }, () => ({ panel: 'console', match: 'x' })),
+        'focus',
+      ),
+    ).toThrow('at most 20');
     expect(() => assertFocus([], 'focus')).not.toThrow();
   });
 });
@@ -79,7 +84,10 @@ describe('focus tests', () => {
 const entry = (at: number, message: string): ReplayConsoleEntry => ({ at, level: 'error', message }) as ReplayConsoleEntry;
 
 describe('focus in the viewer models', () => {
-  const tests = focusTests([{ panel: 'console', match: 'TypeError', note: 'the bug' }, { panel: 'network', match: 'GET /timer' }]);
+  const tests = focusTests([
+    { panel: 'console', match: 'TypeError', note: 'the bug' },
+    { panel: 'network', match: 'GET /timer' },
+  ]);
 
   it('marks console rows and filters to them', () => {
     const rows = groupRepeats([entry(1, 'Uncaught TypeError: x'), entry(2, 'other')], tests);
@@ -138,7 +146,11 @@ describe('focus from the CLI and plans', () => {
 
   it('takes markers as objects or specs on a plan run, and names a bad one', () => {
     const run = { id: 'a', title: 'A', url: 'https://example.com/', steps: [] };
-    const plan = parsePlan({ id: 'p', title: 'P', runs: [{ ...run, focus: ['console:TypeError # the bug', { panel: 'network', match: '/timer' }] }] });
+    const plan = parsePlan({
+      id: 'p',
+      title: 'P',
+      runs: [{ ...run, focus: ['console:TypeError # the bug', { panel: 'network', match: '/timer' }] }],
+    });
     expect(plan.runs[0]?.focus).toEqual([
       { panel: 'console', match: 'TypeError', note: 'the bug' },
       { panel: 'network', match: '/timer' },
