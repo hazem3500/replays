@@ -4,7 +4,7 @@ import { PRODUCT_SLUG } from '../shared/brand.ts';
 import { parsePeopleFlags } from '../shared/people.ts';
 import { isProfileId } from '../shared/profiles.ts';
 import { suiteOverallStatus, type ReviewSuite, type ReviewSuiteRun } from '../shared/review-suite.ts';
-import { formatMs, formatPercent, groupRuns, isGrouped } from '../shared/suite-groups.ts';
+import { formatMs, formatPercent, groupRuns, isGrouped, sectionCount } from '../shared/suite-groups.ts';
 import { record } from './cli-record.ts';
 import {
   baselineFlag,
@@ -152,7 +152,10 @@ async function list(argv: string[], env: NodeJS.ProcessEnv) {
 
 const RUN_COLUMNS = ['RUN', 'STATUS', 'TIME', 'MEASURED', 'REPLAY', 'SUMMARY'];
 
-/** The runs as one table, or for a grouped suite one table per group and target, as the viewer lists them. */
+/**
+ * The runs as one table, or for a grouped suite as the viewer lists them: a comparison group one table per target, a
+ * section group one table under its name and count.
+ */
 function runsText(out: Terminal, suite: ReviewSuite, server: string) {
   const rowsOf = (runs: ReviewSuiteRun[]) =>
     table(
@@ -164,6 +167,7 @@ function runsText(out: Terminal, suite: ReviewSuite, server: string) {
   if (!isGrouped(suite.runs)) return rowsOf(suite.runs);
   const { groups, other } = groupRuns(suite.runs, suite.baseline);
   const sections = groups.map((group) => {
+    if (!group.comparison) return `${group.name} (${sectionCount(group.runs)})\n${rowsOf(group.runs)}`;
     const targets = group.targets.map((entry) => {
       const facts = [
         entry.baseline ? 'baseline' : undefined,

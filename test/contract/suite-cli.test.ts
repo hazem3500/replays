@@ -207,6 +207,18 @@ describe('replays suite grouping flags against the real server routes', () => {
     expect(text.indexOf('#6879 (1 run)')).toBeLessThan(text.indexOf('Ungrouped'));
   });
 
+  it('lists a group without targets or a measure as a section with its count', async () => {
+    const { client } = await boot();
+    await suite(client.origin, 'create', '--id', 'flows', '--title', 'Flows');
+    await suite(client.origin, 'run', 'add', 'flows', '--run', 'a', '--title', 'A', '--group', 'Smoke');
+    await suite(client.origin, 'run', 'add', 'flows', '--run', 'b', '--title', 'B', '--group', 'Smoke', '--status', 'failed');
+    await suite(client.origin, 'run', 'add', 'flows', '--run', 'c', '--title', 'C');
+    const text = await suiteText(client.origin, 'show', 'flows');
+    expect(text).toContain('Smoke (2 runs · 1 failed)');
+    expect(text).not.toContain('Runs (');
+    expect(text.indexOf('Smoke (2 runs')).toBeLessThan(text.indexOf('Ungrouped'));
+  });
+
   it('refuses a group, target, measure or baseline that is too long or blank', async () => {
     const { client } = await boot();
     const tooLongTarget = await suite(client.origin, 'create', '--id', 'perf', '--title', 'Perf', '--baseline', 'x'.repeat(41));
