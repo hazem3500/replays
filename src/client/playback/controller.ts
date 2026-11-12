@@ -8,6 +8,8 @@ import { withDottedMasks } from '../../shared/mask-display.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import { NO_EFFECTS, type PlaybackEffects } from '../../shared/effects.ts';
 import { EffectsLayer } from '../effects-layer.ts';
+import type { PointerTrack } from '../caption-placement.ts';
+import { cursorInput } from '../cursor-motion.ts';
 import { ReplayCursor } from '../replay-cursor.ts';
 import { firstPaintOffset, renderOffset, type SnapshotGroup, snapshotGroups } from '../snapshots.ts';
 import { clampTime } from '../timeline.ts';
@@ -48,6 +50,8 @@ export class ReplayController {
   private time = 0;
   private state: PlayerState = { status: 'paused', speed: 1, skipInactive: false };
   private viewport: Viewport;
+  private readonly recordedViewport: Viewport;
+  private pointer: PointerTrack | undefined;
   private frame = 0;
   private resumeAfterScrub = false;
   /** Play was asked for before the renderer was mounted: it starts as soon as `mount` lands. */
@@ -80,6 +84,7 @@ export class ReplayController {
       })),
     );
     this.viewport = { ...bundle.meta.viewport };
+    this.recordedViewport = { ...bundle.meta.viewport };
   }
 
   /** Mounts an rrweb Replayer into `root`; returns the cleanup. */
@@ -155,6 +160,22 @@ export class ReplayController {
   /** Holds the zoom at 1× (the editor, while a blur box is being placed). */
   setZoomSuspended(suspended: boolean) {
     this.layer?.setZoomSuspended(suspended, this.time);
+  }
+
+  /**
+   * The recorded pointer on the replay clock (ms from the first event) and the recorded viewport, read once per replay:
+   * caption placement (caption-placement.ts) reads it here and in the video export alike.
+   */
+  pointerTrack(): PointerTrack {
+    if (this.pointer) return this.pointer;
+    const first = this.events[0]?.timestamp ?? 0;
+    const input = cursorInput(this.events);
+    this.pointer = {
+      points: input.points.map((point) => ({ t: point.t - first, x: point.x, y: point.y })),
+      presses: input.presses.map((press) => press - first),
+      viewport: this.recordedViewport,
+    };
+    return this.pointer;
   }
 
   /** Recorded events: how heavy a mount (and the first render) will be. */

@@ -1,6 +1,7 @@
 import { animate } from 'motion/mini';
 import { useLayoutEffect, useRef } from 'react';
 
+import type { CaptionPlace } from '../caption-placement.ts';
 import type { CaptionPresence } from './use-caption-presence.ts';
 import { CAPTION_MOVE_MS } from './use-caption-presence.ts';
 import { useMediaQuery } from '../media.ts';
@@ -10,14 +11,15 @@ function captionDuration(active: boolean, reduced: boolean) {
   return active ? 0.2 : CAPTION_MOVE_MS / 1000;
 }
 
-function captionDrop(element: HTMLElement) {
+/** The 4 px (scaled) the caption moves in from and back toward its edge: down at the bottom, up at the top. */
+function captionDrop(element: HTMLElement, place: CaptionPlace) {
   const pill = element.querySelector('.step-caption-text');
   const scale = pill ? (Number.parseFloat(getComputedStyle(pill).fontSize) || 15) / 15 : 1;
-  return 4 * scale;
+  return (place === 'top' ? -4 : 4) * scale;
 }
 
 /** Only the browser caption's appearance uses wall-clock motion; its content still follows replay time. */
-export function useCaptionMotion(caption: CaptionPresence) {
+export function useCaptionMotion(caption: CaptionPresence, place: CaptionPlace = 'bottom') {
   const ref = useRef<HTMLDivElement>(null);
   const appearance = useRef<number | undefined>(undefined);
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -25,7 +27,7 @@ export function useCaptionMotion(caption: CaptionPresence) {
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const drop = captionDrop(element);
+    const drop = captionDrop(element, place);
     if (typeof element.animate !== 'function') {
       element.style.opacity = active ? '1' : '0';
       element.style.transform = 'none';
@@ -45,7 +47,7 @@ export function useCaptionMotion(caption: CaptionPresence) {
       { duration: captionDuration(active, reduced), ease: [0.23, 1, 0.32, 1] },
     );
     return () => animation.stop();
-  }, [active, currentAppearance, reduced]);
+  }, [active, currentAppearance, reduced, place]);
   return ref;
 }
 

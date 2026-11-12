@@ -12,7 +12,9 @@
  * checks it is still that version, and plays the edited bundle (src/shared/edits.ts applyEdits), so trims and
  * cuts land in the video exactly as the viewer plays them. Its effects are drawn into every frame through the same
  * EffectsLayer as the viewer (zoom, and blur boxes that hide sensitive content), and its captions replace the step
- * captions. Posters and previews show the replay as recorded.
+ * captions. Each caption sits at the bottom or the top of the frame as the viewer places it (caption-placement.ts),
+ * decided once per caption, so a downloaded video matches the viewer; exports never fade it under the pointer.
+ * Posters and previews show the replay as recorded.
  */
 import './render.css';
 
@@ -20,6 +22,7 @@ import { applyEdits, assertReplayEdits, editListOf, editsVersion, type ReplayEdi
 import { editCaptionAt, effectsKey } from '../../shared/effects.ts';
 import type { PosterMoment } from '../../shared/profiles.ts';
 import { isFailedRequest, type ReplayBundle } from '../../shared/replay.ts';
+import { editCaptionPlaces, stepCaptionPlaces, type CaptionPlace } from '../caption-placement.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
@@ -133,6 +136,14 @@ async function start() {
       : captions
         ? captionAt(bundle.steps, time, controller.duration, map.outputAt)
         : undefined;
+  // why: placed once per replay (not per frame), from the same pointer track the viewer reads.
+  let places: CaptionPlace[] | undefined;
+  const placeOf = (index: number) => {
+    places ??= editCaptions
+      ? editCaptionPlaces(effects.captions, controller.pointerTrack())
+      : stepCaptionPlaces(bundle.steps, controller.pointerTrack(), controller.duration);
+    return places[index] ?? 'bottom';
+  };
   const effectsAt = (time: number) =>
     editCaptions || effects.zooms.length || effects.blurs.length ? effectsKey(effects, { width, height }, time) : '';
   let map: PlaybackMap = exportMap({ duration: controller.duration, speed: 1 });
@@ -156,6 +167,7 @@ async function start() {
       caption?.root.remove();
       const root = document.createElement('div');
       root.className = 'step-caption';
+      if (placeOf(frame.index) === 'top') root.dataset.place = 'top';
       root.setAttribute('aria-hidden', 'true');
       const text = document.createElement('span');
       text.className = 'step-caption-text';

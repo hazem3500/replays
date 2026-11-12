@@ -386,7 +386,10 @@ These options do not alter capture or upload sanitization.
 Playback and MP4 export share speeds 0.25×, 0.5×, 1×, 1.5×, 2×, 4× and 8×. Skip inactive detects gaps
 longer than 4000ms, keeps 800ms at each end and fast-forwards the middle at 16×. Captions hold the
 preceding label through legacy unlabelled waits and repeated actions, while their number follows the
-active rail step. Exports use the same caption selection and time mapping.
+active rail step. Exports use the same caption selection and time mapping. A caption sits at the bottom of
+the recorded frame unless, while it is up, the recorded pointer rests or clicks under its bottom pill; it then sits at
+the top for its whole span (the edge it covers less when both are hit). Viewer and export make the same choice; only
+the viewer fades a caption while the pointer is under it.
 
 User plugins can add Context blocks and timeline markers through `contributes.contextSections` / `contributes.tracks` and `replays.section` / `replays.track`. Import the custom distribution's `sandbox-surfaces.replays-plugin.json` for a complete example. Replay access and marker seeking retain the manifest and broker permission checks. See [sandboxed viewer sections and tracks](extension-api.md#sandboxed-viewer-sections-and-tracks).
 

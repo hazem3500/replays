@@ -66,6 +66,15 @@
   .step-caption-live .step-caption-text { animation: none; }
   .step-caption-live .caption-morph { display: block; min-width: 0; }
   .step-caption-live .caption-swap { display: block; max-width: 100%; }
+  /* At the top edge (caption-placement.ts: the pointer or the clicked spot is under its bottom place) the caption
+     mirrors the bottom one: the same inset from the frame's top, entering 4 px down from that edge. */
+  .step-caption[data-place="top"] { top: var(--caption-inset); bottom: auto; }
+  .step-caption[data-place="top"] .step-caption-text { --caption-from: -0.27em; }
+  /* Live captions only: while the pointer is under the pill it fades back (160 ms) so the pointer and the page show
+     through, and returns when it leaves. Reduced motion fades without the transition. Exports never fade. */
+  .step-caption-live .step-caption-text { transition: opacity 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+  .step-caption-live[data-covered] .step-caption-text { opacity: 0.25; }
+  @media (prefers-reduced-motion: reduce) { .step-caption-live .step-caption-text { transition: none; } }
   /* The step index: a circle 4/3 of the text tall before the label, tabular figures, quieter than the label. */
   .step-caption-number { flex: 0 0 auto; min-width: 1.82em; height: 1.82em; display: inline-grid; place-items: center; padding: 0 0.45em; border-radius: 999px; background: rgb(255 255 255 / 0.16); color: rgb(255 255 255 / 0.82); font-size: 0.733em; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
   @keyframes caption-in { from { opacity: 0; transform: translateY(var(--caption-from)) scale(0.98); } }

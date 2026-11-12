@@ -690,6 +690,12 @@
   bottom: max(calc(var(--frame-bottom, 0px) + max(8px, var(--caption-inset))), 26px);
 }
 
+/* A tile's caption at the top clears the name pill and the tile actions in its top corners (8 px in, ~24 px tall). */
+.ct-picture .step-caption[data-place="top"] {
+  top: max(calc(var(--frame-y, 0px) + max(8px, var(--caption-inset))), 36px);
+  bottom: auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ct-tile::after,
   .layout-switch-thumb {

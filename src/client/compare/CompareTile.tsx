@@ -276,7 +276,9 @@ function TilePicture({
       <div className="ct-host player-host" inert />
       <img ref={cover} className="ct-cover" src={poster} alt="" aria-hidden="true" />
       {captions && shown.length > 0 && !editCaptions ? (
-        <StepCaption {...(caption ? {} : { recording: { steps: bundle.steps, duration: controller.duration } })} />
+        <StepCaption
+          {...(caption ? {} : { recording: { steps: bundle.steps, duration: controller.duration, pointer: controller.pointerTrack() } })}
+        />
       ) : null}
     </div>
   );
