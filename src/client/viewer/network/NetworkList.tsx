@@ -22,6 +22,7 @@ import { HEADER_HEIGHT, SeekTime, TrackList } from '../TrackList.tsx';
 import { durationShare, formatDuration, type NetworkRow, playheadHorizon, stepAt } from './model.ts';
 import { FocusMark, focusLabel } from '../FocusMark.tsx';
 import { RequestLabel, SearchMarked } from './RequestLabel.tsx';
+import { LabelSearch } from './label-search.ts';
 import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
 import { ListSpacer } from '../ListSpacer.tsx';
 import { cssVars } from '../../lib/css-vars.ts';
@@ -322,6 +323,7 @@ function RequestCell({
   onSelect: (id?: string) => void;
   onKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>) => void;
 }) {
+  const words = use(LabelSearch);
   return (
     <Tooltip>
       <TooltipTrigger
@@ -339,11 +341,18 @@ function RequestCell({
         }
       >
         {row.focus ? <FocusMark marker={row.focus} compact /> : null}
-        <span className="method">{row.entry.method}</span>
+        <span className="method">
+          <SearchMarked text={row.entry.method} />
+        </span>
         <span className="np-name">
           <span className="np-path">
             <RequestLabel method={row.entry.method} path={row.name.path} url={row.entry.url} showMethod={false} />
           </span>
+          {row.name.query && queryHit(row.name.query, words) ? (
+            <span className="np-query">
+              <SearchMarked text={row.name.query} />
+            </span>
+          ) : null}
           {row.name.host ? (
             <span className="np-host">
               <SearchMarked text={row.name.host} />
@@ -429,9 +438,15 @@ export function StatusText({ row }: { row: NetworkRow }) {
     );
   return (
     <span className="np-code" data-tone={row.failed ? 'bad' : undefined} title={row.entry.statusText || undefined}>
-      {row.entry.status || STRINGS.error}
+      <SearchMarked text={String(row.entry.status || STRINGS.error)} />
     </span>
   );
+}
+
+/** The query is shown only while a search word matches it, since the label leaves it out otherwise. */
+function queryHit(query: string, words: readonly string[]) {
+  const lower = query.toLowerCase();
+  return words.some((word) => lower.includes(word));
 }
 
 function durationTone(row: NetworkRow) {

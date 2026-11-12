@@ -71,6 +71,14 @@ describe('focus tests', () => {
     expect(literal.console({ message: 'axb c' })).toBeUndefined();
   });
 
+  it('answers a long non-match of many wildcards at once', () => {
+    const wild = focusTests([{ panel: 'console', match: `${'*a'.repeat(20)}*b` }]);
+    const started = performance.now();
+    expect(wild.console({ message: 'a'.repeat(300) })).toBeUndefined();
+    expect(performance.now() - started).toBeLessThan(50);
+    expect(wild.console({ message: `${'a'.repeat(20)}b` })).toBeDefined();
+  });
+
   it('says which panels have markers', () => {
     expect(tests.has).toEqual({ network: true, console: true, performance: true });
     expect(focusTests([]).has).toEqual({ network: false, console: false, performance: false });
