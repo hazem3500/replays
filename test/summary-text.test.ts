@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { leadLabel, liftReport, parseInline, parseResult, shortenUrl, summaryBlocks } from '../src/client/viewer/summary-markdown.ts';
+import { leadLabel, parseInline, parseResult, shortenUrl, summaryBlocks } from '../src/client/viewer/summary-markdown.ts';
 
 describe('summaryBlocks', () => {
   it('splits paragraphs on blank lines and groups bullet lines into lists', () => {
@@ -143,27 +143,5 @@ describe('parseResult', () => {
     expect(parseResult('Result: Pass. Both lines turn amber.')).toMatchObject({ tone: 'pass', rest: 'Both lines turn amber.' });
     expect(parseResult('Result: the total changed')).toBeUndefined();
     expect(parseResult('Observed: Pass')).toBeUndefined();
-  });
-});
-
-describe('liftReport', () => {
-  it('takes the Checked line and a bare Result out of paragraphs and bullets, keeping the rest in order', () => {
-    const lifted = liftReport(
-      summaryBlocks(
-        'Checked: the fee.\n\n- Result: Fail (mocked)\n- Observed: one\n- Observed: two\n\nPR comment: https://github.com/o/r/pull/1',
-      ),
-    );
-    expect(lifted.checked).toBe('the fee.');
-    expect(lifted.result).toMatchObject({ status: 'Fail', qualifier: 'mocked' });
-    expect(lifted.blocks).toEqual([
-      { kind: 'list', ordered: false, items: [{ text: 'Observed: one' }, { text: 'Observed: two' }] },
-      { kind: 'p', text: 'PR comment: https://github.com/o/r/pull/1' },
-    ]);
-  });
-
-  it('leaves a Result that carries more text where it is', () => {
-    const lifted = liftReport(summaryBlocks('Result: Pass, all good'));
-    expect(lifted.result).toBeUndefined();
-    expect(lifted.blocks).toHaveLength(1);
   });
 });

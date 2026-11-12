@@ -764,7 +764,6 @@ export function Viewer({
             tab={tab}
             expandedRequest={expandedRequest}
             collapse={inspectorCollapse}
-            runSummary={suite?.runSummary}
             {...(mobilePanel ? { mobile: mobilePanel } : {})}
             compare={inspectorScope || inspectorPeers ? { scope: inspectorScope, peers: inspectorPeers } : undefined}
           />
