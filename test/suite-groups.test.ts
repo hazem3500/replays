@@ -120,16 +120,16 @@ describe('headline', () => {
   });
 });
 
-describe('sections and comparisons', () => {
-  const section = (sequence: number, group?: string, target?: string, status = 'passed') => ({
-    ...row(sequence, group, target),
-    label: `Run ${sequence}`,
-    status,
-  });
-  const recorded = (rows: Row[]): RecordedRun[] =>
-    rows.map((run, index) => ({ replayId: run.replayId ?? '', label: `Run ${run.sequence}`, colour: index + 1 }));
-  const ids = (list: readonly RecordedRun[]) => list.map((run) => run.replayId);
+const section = (sequence: number, group?: string, target?: string, status = 'passed') => ({
+  ...row(sequence, group, target),
+  label: `Run ${sequence}`,
+  status,
+});
+const recorded = (rows: Row[]): RecordedRun[] =>
+  rows.map((run, index) => ({ replayId: run.replayId ?? '', label: `Run ${run.sequence}`, colour: index + 1 }));
+const ids = (list: readonly RecordedRun[]) => list.map((run) => run.replayId);
 
+describe('sections and comparisons', () => {
   it('compares a group only when its runs name more than one target or a measure', () => {
     expect(comparesRuns([row(1, 'Smoke'), row(2, 'Smoke')])).toBe(false);
     expect(comparesRuns([row(1, 'Smoke', 'main'), row(2, 'Smoke', 'main')])).toBe(false);
