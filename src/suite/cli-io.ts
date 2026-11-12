@@ -75,7 +75,7 @@ export async function textArgument(raw: string | undefined, name: string): Promi
 export async function focusArgument(raw: string[] | undefined): Promise<FocusMarker[] | undefined> {
   if (!raw?.length) return undefined;
   if (raw.length === 1 && raw[0] === 'none') return [];
-  const markers: FocusMarker[] = [];
+  const markers: unknown[] = [];
   for (const item of raw) {
     if (!item.startsWith('@')) {
       markers.push(focusMarker(item));
@@ -95,7 +95,7 @@ export async function focusArgument(raw: string[] | undefined): Promise<FocusMar
         throw new UsageError(`--focus: ${item.slice(1)} is not valid JSON`);
       }
       if (!Array.isArray(parsed)) throw new UsageError(`--focus: ${item.slice(1)} must hold a list of markers`);
-      markers.push(...parsed.map((entry) => (typeof entry === 'string' ? focusMarker(entry) : (entry as FocusMarker))));
+      markers.push(...parsed.map((entry) => (typeof entry === 'string' ? focusMarker(entry) : entry)));
     } else {
       const lines = text.split(/\r?\n/).map((line) => line.trim());
       markers.push(...lines.filter((line) => line && !line.startsWith('//')).map(focusMarker));
@@ -103,10 +103,10 @@ export async function focusArgument(raw: string[] | undefined): Promise<FocusMar
   }
   try {
     assertFocus(markers, '--focus');
+    return markers;
   } catch (error) {
     throw new UsageError(error instanceof Error ? error.message : String(error));
   }
-  return markers;
 }
 
 function focusMarker(spec: string): FocusMarker {

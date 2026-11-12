@@ -148,7 +148,7 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
     return scrubberMarks([], errors, player.duration, width, ERROR_NOTCH_GAP).map((mark) => ({ ...mark, x: notchX(mark.x, boxes) }));
   }, [errors, player.duration, segments, width]);
 
-  // Focus notches: the run's marked requests and messages, merged like error notches; a merged run names the first.
+  // why: focus notches merge like error notches so a dense run stays readable; a merged notch names the first marker.
   const focusMarks = useMemo(() => {
     const boxes = segments.map((segment, index) => barBox(segment, index, segments.length, player.duration, width));
     return scrubberMarks(focusSpots, [], player.duration, width, ERROR_NOTCH_GAP).map((mark) => ({ ...mark, x: notchX(mark.x, boxes) }));

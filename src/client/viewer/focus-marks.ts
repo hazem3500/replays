@@ -9,7 +9,7 @@ export interface FocusSpot {
 }
 
 /** Marked requests and console messages in time order, named by the run's note or else by the row itself. */
-export function focusSpots(bundle: Pick<ReplayBundle, 'console' | 'network'>, focus: FocusTests | undefined): FocusSpot[] {
+export function focusSpots(bundle: Pick<ReplayBundle, 'console' | 'network'>, focus?: FocusTests): FocusSpot[] {
   if (!focus) return [];
   const spots: FocusSpot[] = [];
   if (focus.has.network) {

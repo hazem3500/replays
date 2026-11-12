@@ -457,7 +457,6 @@ export function Viewer({
     frames,
     defaults.tabs,
     defaults.tracks,
-    bundle.steps,
     steps,
     captionNumbers,
     captions,

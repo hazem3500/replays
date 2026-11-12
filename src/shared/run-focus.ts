@@ -24,7 +24,7 @@ export const MAX_FOCUS_MARKERS = 20;
 export const MAX_FOCUS_MATCH = 300;
 export const MAX_FOCUS_NOTE = 200;
 
-// oxlint-disable-next-line no-control-regex
+// oxlint-disable-next-line no-control-regex -- why: markers must be one line of plain text, so control characters are what this rejects.
 const CONTROL = /[\u0000-\u001f\u007f]/;
 
 function assertText(value: unknown, name: string, max: number): asserts value is string {
@@ -37,10 +37,11 @@ const isPanel = (value: unknown): value is FocusPanel => FOCUS_PANELS.some((pane
 
 export function assertFocus(value: unknown, name: string): asserts value is FocusMarker[] {
   if (!Array.isArray(value) || value.length > MAX_FOCUS_MARKERS) throw new Error(`${name} must list at most ${MAX_FOCUS_MARKERS} markers`);
-  for (const [index, raw] of value.entries()) {
+  const items: readonly unknown[] = value;
+  for (const [index, raw] of items.entries()) {
     const where = `${name}[${index}]`;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error(`${where} must be an object`);
-    const marker = raw as Record<string, unknown>;
+    const marker: Record<string, unknown> = Object.fromEntries(Object.entries(raw));
     if (Object.keys(marker).some((key) => key !== 'panel' && key !== 'match' && key !== 'note')) {
       throw new Error(`${where} contains unsupported fields`);
     }

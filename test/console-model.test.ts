@@ -37,7 +37,7 @@ describe('console rows', () => {
 
   it('counts every logged time per level, with log under info', () => {
     const rows = groupRepeats([entry(1, 'error', 'a'), entry(2, 'error', 'a'), entry(3, 'log', 'b'), entry(4, 'info', 'c')]);
-    expect(levelCounts(rows)).toEqual({ all: 4, error: 2, warn: 0, info: 2, debug: 0 });
+    expect(levelCounts(rows)).toEqual({ all: 4, error: 2, warn: 0, info: 2, debug: 0, focus: 0 });
   });
 
   it('filters by level and by every word of the text', () => {

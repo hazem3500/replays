@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { boxOf, createSuite, openReplay, serveApp, uniqueId } from './support.ts';
 
@@ -10,11 +10,11 @@ async function captionsOn(page: Page) {
   });
 }
 
-/** Plays from the start and waits for the step caption to show while a step is under way; returns its pill. */
-async function playToCaption(page: Page) {
+/** Plays from the start and waits for the step caption in `scope` to show while a step is under way; returns its pill. */
+async function playToCaption(page: Page, scope: Page | Locator = page) {
   await expect(page.getByRole('button', { name: /Hide step captions/ }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
-  const pill = page.locator('[data-testid="step-caption"][data-active="true"] .step-caption-text');
+  const pill = scope.locator('[data-testid="step-caption"][data-active="true"] .step-caption-text');
   await expect(pill).toBeVisible({ timeout: 10_000 });
   await expect(pill).toHaveCount(1);
   return pill;
@@ -52,8 +52,10 @@ for (const [width, height, mobile] of [
       await captionsOn(page);
       await openReplay(page, `${server().origin}/s/${suite}?view=compare`);
       await expect(page.getByTestId('compare-stage')).toBeVisible();
-      const pill = await playToCaption(page);
-      expect(inside(await boxOf(pill), await boxOf(page.locator('.ct-tile[data-current]')))).toBe(true);
+      // why: since every compare tile captions its own recording, only the focused tile's caption is checked here.
+      const focused = page.locator('.ct-tile[data-current]');
+      const pill = await playToCaption(page, focused);
+      expect(inside(await boxOf(pill), await boxOf(focused))).toBe(true);
     });
   });
 }

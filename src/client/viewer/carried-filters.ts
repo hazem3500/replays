@@ -1,4 +1,4 @@
-import { createContext, use, useCallback, useState } from 'react';
+import { createContext, use, useState } from 'react';
 
 import type { LevelFilter } from './console/model.ts';
 import type { NetworkFilter } from './network/model.ts';
@@ -42,12 +42,9 @@ export function useCarriedFilter<K extends keyof CarriedFilterValues>(
 ) {
   const store = use(CarriedFilters);
   const [value, setValue] = useState(() => store?.read(key) ?? initial);
-  const update = useCallback(
-    (next: CarriedFilterValues[K]) => {
-      setValue(next);
-      store?.write(key, carry(next));
-    },
-    [carry, key, store],
-  );
+  const update = (next: CarriedFilterValues[K]) => {
+    setValue(next);
+    store?.write(key, carry(next));
+  };
   return [value, update] as const;
 }

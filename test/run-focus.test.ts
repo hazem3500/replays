@@ -13,6 +13,8 @@ import { assertFocus, focusSpec, focusTests, parseFocusSpec } from '../src/share
 import { focusArgument } from '../src/suite/cli-io.ts';
 import { parsePlan } from '../src/suite/plan.ts';
 
+const tooManyMarkers = Array.from({ length: 21 }, () => ({ panel: 'console', match: 'x' }));
+
 describe('focus specs', () => {
   it('reads the panel, the pattern and the note after " # "', () => {
     expect(parseFocusSpec('network:POST /api/v9/timer # starts the timer')).toEqual({
@@ -44,12 +46,7 @@ describe('focus specs', () => {
   it('checks stored markers field by field', () => {
     expect(() => assertFocus([{ panel: 'network', match: 'x', extra: 1 }], 'focus')).toThrow('unsupported fields');
     expect(() => assertFocus([{ panel: 'network', match: 'x', note: 'a\nb' }], 'focus')).toThrow('focus[0].note');
-    expect(() =>
-      assertFocus(
-        Array.from({ length: 21 }, () => ({ panel: 'console', match: 'x' })),
-        'focus',
-      ),
-    ).toThrow('at most 20');
+    expect(() => assertFocus(tooManyMarkers, 'focus')).toThrow('at most 20');
     expect(() => assertFocus([], 'focus')).not.toThrow();
   });
 });
@@ -81,7 +78,7 @@ describe('focus tests', () => {
   });
 });
 
-const entry = (at: number, message: string): ReplayConsoleEntry => ({ at, level: 'error', message }) as ReplayConsoleEntry;
+const entry = (at: number, message: string): ReplayConsoleEntry => ({ at, level: 'error', message });
 
 describe('focus in the viewer models', () => {
   const tests = focusTests([
@@ -97,20 +94,21 @@ describe('focus in the viewer models', () => {
   });
 
   it('places seek bar marks for marked requests and messages, in time order', () => {
-    const bundle = {
+    const request = { id: 'n1', at: 300, duration: 10, method: 'GET', url: 'https://x.test/timer?x=1', status: 200, statusText: 'OK' };
+    const bundle: Pick<ReplayBundle, 'console' | 'network'> = {
       console: [entry(900, 'Uncaught TypeError: x')],
-      network: [{ at: 300, method: 'GET', url: 'https://x.test/timer?x=1' }],
-    } as unknown as Pick<ReplayBundle, 'console' | 'network'>;
+      network: [{ ...request, requestHeaders: [], responseHeaders: [] }],
+    };
     expect(focusSpots(bundle, tests)).toEqual([
       { at: 300, label: 'GET x.test/timer?x=1' },
       { at: 900, label: 'the bug' },
     ]);
-    expect(focusSpots(bundle, undefined)).toEqual([]);
+    expect(focusSpots(bundle)).toEqual([]);
   });
 });
 
 describe('focus on a stored run', () => {
-  const suite: ReviewSuite = { id: 's', title: 'S', runs: [] } as unknown as ReviewSuite;
+  const suite: ReviewSuite = { version: 1, id: 's', title: 'S', createdAt: '2026-11-12T10:00:00.000Z', runs: [] };
   const base = { id: 'r', label: 'R', sequence: 1, startedAt: '2026-11-12T10:00:00.000Z', status: 'running' as const };
   const focus = [{ panel: 'network' as const, match: '/timer' }];
 
@@ -126,7 +124,7 @@ describe('focus on a stored run', () => {
 
 describe('focus from the CLI and plans', () => {
   it('reads repeated specs, a file of specs or JSON, and none', async () => {
-    expect(await focusArgument(undefined)).toBeUndefined();
+    expect(await focusArgument([])).toBeUndefined();
     expect(await focusArgument(['none'])).toEqual([]);
     const dir = await mkdtemp(join(tmpdir(), 'focus-'));
     const lines = join(dir, 'focus.txt');

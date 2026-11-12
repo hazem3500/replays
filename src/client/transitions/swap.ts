@@ -33,8 +33,8 @@ function describeRunTransition(view: RunView) {
     .layout({ type: spring, duration: 0.28, bounce: 0.06 })
     .old({ opacity: [1, 1] }, { duration: 0.2 })
     .new({ opacity: [0, 1] }, { duration: 0.2 });
-  // why: the sidebar, step rail and inspector keep their place and chrome across runs; only their rows change, so they
-  // swap at once instead of fading or rising (a crossfade there reads as the panel flickering).
+  /* why: the sidebar, step rail and inspector keep their place and chrome across runs; only their rows change, so they
+     swap at once instead of fading or rising (a crossfade there reads as the panel flickering). */
   for (const still of ['.suite-sidebar', '.app-shell .timeline-panel', '.app-shell .inspector']) {
     view
       .add(still, still)
