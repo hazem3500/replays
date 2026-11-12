@@ -727,6 +727,9 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-stage { container-type: size; display: grid; place-items: center; }
 .sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; }
 .sk-frame:has(.sk-poster) { overflow: hidden; }
+/* why: matches the player, which runs the recording edge to edge at 720 px wide or less (EDGE_TO_EDGE_WIDTH in
+   Transport.tsx), so the loading frame is the frame that arrives. */
+@container (max-width: 720px) { .sk-frame { width: min(100cqw, 100cqh * var(--sk-ratio, 1.6)); } }
 .sk-poster { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
 .skeleton-divider { border-top: 1px solid var(--line); }
 .app-shell[data-mobile] .sk-tabs-phone { min-height: 52px; padding: 0 0 0 4px; border-top: 1px solid var(--line); }

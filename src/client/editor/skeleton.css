@@ -10,6 +10,7 @@
   .editor-loading .editor-presentation { overflow: hidden; }
   /* The preview's box while it loads: its final rect, a quiet fill and the player's 1 px ring. */
   .editor-loading .sk-frame { background-color: color-mix(in srgb, var(--text) 6%, var(--canvas)); box-shadow: 0 0 0 1px var(--line-strong); }
+  @container (max-width: 720px) { .editor-loading .sk-frame { box-shadow: none; } }
   /* Placeholders hold still: no pulse, so loading reads as the editor arriving rather than a shimmer. */
   .editor-loading .skeleton { animation: none; }
   .inspector-skeleton { opacity: 0.7; }
