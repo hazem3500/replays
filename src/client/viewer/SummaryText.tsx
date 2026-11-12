@@ -39,12 +39,12 @@ function renderInline(nodes: Inline[]): ReactNode {
 }
 
 /** Inline Markdown (code, bold, italic, links, bare URLs) of one line of text. */
-export function InlineText({ text }: { text: string }): ReactNode {
+function InlineText({ text }: { text: string }): ReactNode {
   return renderInline(parseInline(text));
 }
 
 /** A `Result:` status as a colored badge with its qualifier as a small muted tag. */
-export function ResultBadge({ result }: { result: ResultLine }): ReactNode {
+function ResultBadge({ result }: { result: ResultLine }): ReactNode {
   return (
     <span className="summary-result">
       <span className="summary-result-status" data-tone={result.tone}>
@@ -127,7 +127,7 @@ function BlockView({ block }: { block: Block }) {
 }
 
 /** Already-parsed summary blocks, drawn as React elements; nothing here ever becomes HTML. */
-export function SummaryBlocks({ blocks, className }: { blocks: Block[]; className?: string }): ReactNode {
+function SummaryBlocks({ blocks, className }: { blocks: Block[]; className?: string }): ReactNode {
   const key = keyer();
   return (
     <div className={className ? `summary-text ${className}` : 'summary-text'} data-testid="summary-text">

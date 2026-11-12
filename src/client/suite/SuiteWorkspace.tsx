@@ -314,13 +314,11 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     if (!suite) return undefined;
     const subject = subjectLink(suite);
     const run = runs.find((item) => item.replayId === selected);
-    const runSummary = run?.summary;
     const runFocus = run?.focus;
     return {
       title: suite.title,
       href: suiteHref(id),
       ...(subject ? { subject } : {}),
-      ...(runSummary ? { runSummary } : {}),
       ...(runFocus?.length ? { runFocus } : {}),
     };
   }, [id, suite, runs, selected]);
