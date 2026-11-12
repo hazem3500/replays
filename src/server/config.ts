@@ -218,7 +218,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   const profiles = createProfileCatalog({ config: configProfiles(file), env });
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
   // why: the validator pulls in ajv; the capture entry loads this file for its config and never needs it unless a schema is set.
-  const contextSchema = schemaFile ? await (await import('./context-schema.ts')).loadContextSchema(resolve(cwd, schemaFile)) : undefined;
+  const contextSchema = schemaFile ? await (await import('./context-schema-loader.ts')).loadSchema(resolve(cwd, schemaFile)) : undefined;
   if (file.redaction !== undefined) assertRedactionRules(file.redaction, 'config redaction');
   const privacy = privacyFromConfig(file.privacy);
   const malleable = parseMalleablePolicy(file.malleable);

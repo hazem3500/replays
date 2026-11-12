@@ -268,7 +268,7 @@ async function buildContext(args: CaptureArgs, capturedAt: string) {
     ...(args.sources.length ? { sources: [...((base.sources as unknown[] | undefined) ?? []), ...args.sources] } : {}),
   };
   // why: the schema validator pulls in ajv; loading it only when a schema is given keeps the ./capture entry free of server packages.
-  const schema = args.contextSchema ? (await import('../server/context-schema.ts')).compileContextSchema(args.contextSchema) : undefined;
+  const schema = args.contextSchema ? (await import('../server/context-schema-loader.ts')).compileSchema(args.contextSchema) : undefined;
   return buildReplayContext(merged, capturedAt, {
     sources: new SourceProviders({ templates: args.sourceProviders ?? [] }),
     ...(schema ? { schema } : {}),
