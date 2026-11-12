@@ -7,13 +7,12 @@ import { shotDelayMs, stepPauseMs, typeDelayMs, type CapturePacingOptions } from
 import type { CaptureNetwork, NetworkBodyLimits } from '../shared/capture-profile.ts';
 import { type ProfileConfig, profileOf, profilesOf } from '../shared/profiles.ts';
 import type { ConsoleLevel } from '../shared/replay.ts';
-import { captureSettings, capturedRecord, networkFlag, profileCapture, unknownProfileWarning } from './capture-settings.ts';
-import { assertReplayId, REPLAY_FORMAT_VERSION, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
+import { captureSettings, networkFlag, profileCapture, unknownProfileWarning } from './capture-settings.ts';
+import { assertReplayId, type ReplayStep } from '../shared/replay.ts';
 import { assertReplayTags, type ReplayPerson } from '../shared/replay.ts';
 import { parsePeopleFlags } from '../shared/people.ts';
 import { SourceProviders, type TemplateProviderConfig } from '../shared/source-providers.ts';
 import type { ReplaySourceInput } from '../shared/context.ts';
-import { compileContextSchema } from '../server/context-schema.ts';
 import { loadConfig } from '../config/index.ts';
 import { resolvePlugins } from '../plugin/registry.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
@@ -27,13 +26,14 @@ import { agentBrowserDriver } from './drivers/agent-browser.ts';
 import { readStateFile } from './drivers/storage-state.ts';
 import { playwrightDriver } from './drivers/playwright.ts';
 import type { CaptureDriver, RawStep } from './drivers/types.ts';
-import { networkEntries, sanitizeReplayBundle, sanitizeUrl } from './sanitize.ts';
+import { sanitizeUrl } from './sanitize.ts';
+import { buildAgentBundle } from './agent-bundle.ts';
 import { RecorderSession } from './session.ts';
 import { assertCaptureUrl, readSteps } from './capture-steps.ts';
 import { saveShot, type CapturedShot } from './capture-shots.ts';
 import { labelFor } from './step-labels.ts';
-import { assertPrivacyFitsProfile, inputsVisible, privacyFlag } from './capture-privacy.ts';
-import { compressPacingWaits, isPacingWait, pacingClock, pacingWaitLabel, type PacingSpan } from './pacing-waits.ts';
+import { assertPrivacyFitsProfile, privacyFlag } from './capture-privacy.ts';
+import { isPacingWait, pacingClock, pacingWaitLabel, type PacingSpan } from './pacing-waits.ts';
 import { waitForManualStop, type ManualStopOptions, type ManualStopReason } from './manual.ts';
 import { DEFAULT_MAX_DURATION_MS, MAX_DURATION_CEILING_MS } from '../recorder/recorder-limits.ts';
 import type { RecorderPrivacyMode } from '../recorder/types.ts';
@@ -255,21 +255,23 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
       : {}),
   } satisfies CaptureArgs & { headed: boolean };
   // why: a bad context or source is a usage error, so it fails before the browser starts, not as a half-finished capture.
-  buildContext(args, new Date(0).toISOString());
+  await buildContext(args, new Date(0).toISOString());
   return args;
 }
 
 /** The bundle's context: the runner's file plus `--source` flags, checked against the schema. */
-function buildContext(args: CaptureArgs, capturedAt: string) {
+async function buildContext(args: CaptureArgs, capturedAt: string) {
   if (args.context === undefined && !args.sources.length) return undefined;
   const base = args.context === undefined ? {} : (args.context as Record<string, unknown>);
   const merged = {
     ...base,
     ...(args.sources.length ? { sources: [...((base.sources as unknown[] | undefined) ?? []), ...args.sources] } : {}),
   };
+  // why: the schema validator pulls in ajv; loading it only when a schema is given keeps the ./capture entry free of server packages.
+  const schema = args.contextSchema ? (await import('../server/context-schema.ts')).compileContextSchema(args.contextSchema) : undefined;
   return buildReplayContext(merged, capturedAt, {
     sources: new SourceProviders({ templates: args.sourceProviders ?? [] }),
-    ...(args.contextSchema ? { schema: compileContextSchema(args.contextSchema) } : {}),
+    ...(schema ? { schema } : {}),
   });
 }
 
@@ -374,11 +376,6 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
 
     const har: unknown = JSON.parse(await readFile(harPath, 'utf8'));
     const { origin } = tracks;
-    const steps = [
-      ...rawSteps.map(({ epoch, ...step }) => ({ ...step, at: Math.max(0, epoch - origin) })),
-      ...tracks.steps.map((step) => ({ ...step, at: Math.max(0, step.at - origin) })),
-    ].sort((a, b) => a.at - b.at);
-    const { duration } = tracks;
     const spans = pacingSpans.map(({ from, to }) => ({ from: from - origin, to: to - origin }));
     const replayClock = pacingClock(spans);
     const shots: CapturedShot[] = shotFiles.map(({ step, ...shot }) => ({
@@ -387,51 +384,32 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       step,
       at: replayClock(Math.max(0, rawSteps[step - 1]!.epoch - origin)),
     }));
-    const context = buildContext(args, new Date(origin).toISOString());
+    const context = await buildContext(args, new Date(origin).toISOString());
     const profile = profileOf(args);
-    let bundle: ReplayBundle = {
-      meta: {
-        id: args.id,
-        title: args.title ?? new URL(args.url).hostname,
-        url: sanitizeUrl(args.url),
-        capturedAt: new Date(origin).toISOString(),
-        duration,
-        viewport: args.viewport,
-        eventCount: tracks.events.length,
-        version: 1,
-        formatVersion: REPLAY_FORMAT_VERSION,
-        source: 'agent',
-        ...(args.video ? { videoFile: 'session.mp4' } : {}),
-        ...(args.tags.length ? { tags: args.tags } : {}),
-        ...(profile ? { profile } : {}),
-        ...(args.people?.length ? { people: args.people } : {}),
-        captured: capturedRecord(
-          {
-            network: args.network ?? 'headers',
-            performance: args.performance ?? true,
-            performanceChosen: args.performanceChosen === true,
-            ...(args.console ? { console: args.console } : {}),
-            inputsVisible: inputsVisible(args.privacy),
-          },
-          args.video,
-          bodiesRecorded,
-        ),
-      },
-      events: tracks.events,
-      console: args.console ? tracks.console.filter((entry) => args.console?.includes(entry.level)) : tracks.console,
-      network:
-        args.network === 'off'
-          ? []
-          : networkEntries(har, origin, args.redaction, bodiesRecorded ? (args.bodies ?? {}) : undefined).sort((a, b) => a.at - b.at),
-      steps,
-      ...(args.performance === false ? {} : { performance: tracks.performance }),
+    const bundle = buildAgentBundle({
+      id: args.id,
+      title: args.title ?? new URL(args.url).hostname,
+      url: args.url,
+      viewport: args.viewport,
+      tracks,
+      har,
+      steps: rawSteps,
+      tags: args.tags,
+      ...(profile ? { profile } : {}),
+      ...(args.people?.length ? { people: args.people } : {}),
+      video: args.video,
+      network: args.network ?? 'headers',
+      bodiesRecorded,
+      ...(args.bodies ? { bodies: args.bodies } : {}),
+      performance: args.performance ?? true,
+      performanceChosen: args.performanceChosen === true,
+      ...(args.console ? { console: args.console } : {}),
+      ...(args.privacy ? { privacy: args.privacy } : {}),
+      ...(args.redaction ? { redaction: args.redaction } : {}),
       ...(context ? { context } : {}),
       ...(args.suiteRun ? { suiteRun: args.suiteRun } : {}),
-    };
-    bundle = compressPacingWaits(bundle, spans);
-    const keepVisibleInputs = inputsVisible(args.privacy);
-    // why: the host's rules also cover what the steps added (labels, the title), as the server's upload pass does.
-    if (args.redaction || bodiesRecorded || keepVisibleInputs) bundle = sanitizeReplayBundle(bundle, args.redaction, { keepVisibleInputs });
+      pacingSpans,
+    });
     const replayPath = join(args.output, 'replay.json');
     await writeFile(replayPath, `${JSON.stringify(bundle)}\n`, { flag: 'wx' });
     if (args.video) await copyFile(rawVideoPath, join(args.output, 'session.mp4'), constants.COPYFILE_EXCL);

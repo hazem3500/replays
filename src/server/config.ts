@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { SourceProviders, type TemplateProviderConfig } from '../shared/source-providers.ts';
 import { daysFromEnv, retentionFromEnv, type RetentionPolicy } from '../shared/retention.ts';
 import { type BrandingConfig, validateBranding } from './branding.ts';
-import { type ContextSchema, loadContextSchema } from './context-schema.ts';
+import type { ContextSchema } from './context-schema.ts';
 import { type HostConfig, type HostRouting, normalizeBasePath, normalizeHosts } from './base-path.ts';
 import { type BetaFlags, betaFromEnv, parseFlag } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
@@ -217,7 +217,8 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   });
   const profiles = createProfileCatalog({ config: configProfiles(file), env });
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
-  const contextSchema = schemaFile ? await loadContextSchema(resolve(cwd, schemaFile)) : undefined;
+  // why: the validator pulls in ajv; the capture entry loads this file for its config and never needs it unless a schema is set.
+  const contextSchema = schemaFile ? await (await import('./context-schema.ts')).loadContextSchema(resolve(cwd, schemaFile)) : undefined;
   if (file.redaction !== undefined) assertRedactionRules(file.redaction, 'config redaction');
   const privacy = privacyFromConfig(file.privacy);
   const malleable = parseMalleablePolicy(file.malleable);

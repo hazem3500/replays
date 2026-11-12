@@ -6,6 +6,7 @@ import type { ReplayConsoleEntry, ReplayPerformanceEntry, ReplayPerformanceTrack
 import { MAX_PERFORMANCE_ENTRIES } from '../shared/replay.ts';
 import { compileRedaction, type RedactionRules } from '../shared/redaction.ts';
 import type { RecorderPrivacyMode } from '../recorder/types.ts';
+import { isRecord } from '../shared/validate.ts';
 import { assertHideSelectors, hideScript } from './hide-selectors.ts';
 import { deriveManualSteps, type PageLoad } from './manual-steps.ts';
 import { redactConsoleMessage, redactEvents, sanitizeEmbeddedUrls, sanitizeUrl, sanitizeUrlFields } from './sanitize.ts';
@@ -200,6 +201,7 @@ export class RecorderSession {
   private readonly performanceSupported = new Set<string>();
   private readonly pageSteps: ReplayStep[] = [];
   private readonly loads: PageLoad[] = [];
+  private readonly callerSteps: ReplayStep[] = [];
   private readonly stepsWanted: boolean;
   private opened = false;
   private readonly pull: (final?: boolean) => Promise<void>;
@@ -254,6 +256,12 @@ export class RecorderSession {
       privacy?: RecorderPrivacyMode;
       /** CSS selectors hidden from the first frame (`--hide`), before the recorder snapshots the page. */
       hide?: readonly string[];
+      /**
+       * Record a page that is already open: the recorder runs in the current document and snapshots it right away
+       * (it still installs for later page loads, and never twice in one document). Without it the recorder starts
+       * on the next navigation.
+       */
+      joinCurrentPage?: boolean;
     } = {},
   ) {
     if (options.redaction) compileRedaction(options.redaction);
@@ -268,12 +276,17 @@ export class RecorderSession {
       // why: registered first, so the style is in the page before the recorder's first snapshot.
       await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: hideScript(options.hide) });
     }
-    await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
-      source: recorderScript(await recorderSource(), options.redaction, {
-        steps: session.stepsWanted,
-        ...(options.privacy ? { privacy: options.privacy } : {}),
-      }),
+    const source = recorderScript(await recorderSource(), options.redaction, {
+      steps: session.stepsWanted,
+      ...(options.privacy ? { privacy: options.privacy } : {}),
     });
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source });
+    if (options.joinCurrentPage) {
+      if (options.hide?.length) await cdp.send('Runtime.evaluate', { expression: hideScript(options.hide) });
+      // why: the recorder's own guard (__REPLAYS_RUNNING__) keeps a document from being recorded twice.
+      const joined = await cdp.send('Runtime.evaluate', { expression: source });
+      if (isRecord(joined) && joined.exceptionDetails) throw new Error('the recorder could not start in the current page');
+    }
     session.timer = setInterval(() => void session.pull(), options.pullIntervalMs ?? 1000);
     return session;
   }
@@ -288,6 +301,21 @@ export class RecorderSession {
     this.frameSamples.push(...(chunk.frames ?? []).slice(0, Math.max(0, MAX_FRAME_SAMPLES - this.frameSamples.length)));
     if (this.stepsWanted) this.pageSteps.push(...(chunk.steps ?? []));
     for (const type of chunk.performanceSupported ?? []) if (performanceTypes.has(type)) this.performanceSupported.add(type);
+  }
+
+  /**
+   * Marks a step the caller just took (or is about to), on the same clock as capture()'s steps. Flushes first so the
+   * events before it land before it. Pass the result of `stop()` to `buildAgentBundle`.
+   */
+  async step(step: { kind: string; label: string; selector?: string; url?: string }) {
+    await this.pull();
+    this.callerSteps.push({
+      at: Date.now(),
+      kind: step.kind,
+      label: step.label,
+      ...(step.selector ? { selector: step.selector } : {}),
+      ...(step.url ? { url: sanitizeUrl(step.url, this.redaction) } : {}),
+    });
   }
 
   /** Pulls what the page has buffered now (call between steps so the events land on the right side of them). */
@@ -329,7 +357,7 @@ export class RecorderSession {
         entries: normalizePerformance(this.performanceEntries, origin),
         ...(frames.length ? { frames } : {}),
       },
-      steps: this.stepsWanted ? deriveManualSteps(this.pageSteps, this.loads) : [],
+      steps: [...(this.stepsWanted ? deriveManualSteps(this.pageSteps, this.loads) : []), ...this.callerSteps],
       origin,
       duration: Math.max(1, this.events.at(-1)!.timestamp - origin),
     };

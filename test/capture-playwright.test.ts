@@ -7,7 +7,10 @@ import { join, resolve } from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { buildAgentBundle } from '../src/capture/agent-bundle.ts';
 import { capture, createDriver, parseArgs } from '../src/capture/capture.ts';
+import { cdpLike, launchChromium } from '../src/capture/drivers/playwright.ts';
+import { RecorderSession } from '../src/capture/session.ts';
 import { createApp } from '../src/server/app.ts';
 import { MemoryStorage } from '../src/server/storage/index.ts';
 import { ReplayStore } from '../src/server/store.ts';
@@ -196,4 +199,63 @@ describe.skipIf(!CHROME)(
     });
   },
   60_000,
+);
+
+describe.skipIf(!CHROME)(
+  'recording a page the test already drives',
+  () => {
+    it('keeps the test mocks in the replay: join the loaded page, click, stop, build the bundle', async () => {
+      const chrome = CHROME;
+      if (!chrome) return;
+      const saved = { chrome: process.env.CHROME_PATH, sandbox: process.env.CHROMIUM_NO_SANDBOX };
+      process.env.CHROME_PATH = chrome;
+      process.env.CHROMIUM_NO_SANDBOX ??= '1';
+      const server = createServer((request, response) => {
+        response.setHeader('content-type', 'text/html');
+        response.end(
+          request.url === '/api/message'
+            ? 'REAL-SERVER-TEXT'
+            : '<title>Attach</title><div id="out">loading</div><button id="b">Go</button>' +
+                "<script>fetch('/api/message').then((r) => r.text()).then((t) => { document.getElementById('out').textContent = t; });" +
+                "document.getElementById('b').onclick = () => { document.getElementById('out').textContent += ' clicked'; };</script>",
+        );
+      });
+      await new Promise<void>((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
+      const address = server.address();
+      const url = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}/`;
+      const browser = await launchChromium();
+      try {
+        const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
+        const page = await context.newPage();
+        await page.route('**/api/message', (route) => route.fulfill({ contentType: 'text/plain', body: 'MOCKED-TEXT-42' }));
+        await page.goto(url);
+        await page.getByText('MOCKED-TEXT-42').waitFor();
+
+        const session = await RecorderSession.start(cdpLike(await context.newCDPSession(page)), { joinCurrentPage: true });
+        await session.step({ kind: 'click', label: 'Click Go', selector: '#b' });
+        await page.click('#b');
+        await page.getByText('clicked', { exact: false }).waitFor();
+        const tracks = await session.stop(Date.now());
+        const bundle = buildAgentBundle({ id: 'attach', title: 'Attach', url, viewport: { width: 800, height: 600 }, tracks });
+
+        expect(() => assertReplayBundle(bundle)).not.toThrow();
+        expect(bundle.events.some((event) => event.type === 2)).toBe(true);
+        const text = JSON.stringify(bundle.events);
+        expect(text).toContain('MOCKED-TEXT-42');
+        expect(text).not.toContain('REAL-SERVER-TEXT');
+        expect(bundle.steps.map((step) => step.label)).toEqual(['Click Go']);
+      } finally {
+        await browser.close();
+        server.close();
+        for (const [name, value] of [
+          ['CHROME_PATH', saved.chrome],
+          ['CHROMIUM_NO_SANDBOX', saved.sandbox],
+        ] as const) {
+          if (value === undefined) delete process.env[name];
+          else process.env[name] = value;
+        }
+      }
+    }, 60_000);
+  },
+  90_000,
 );
