@@ -144,7 +144,9 @@ const STATUS_TESTS: Readonly<Record<StatusFilter, (row: NetworkRow) => boolean>>
 
 function matchesText(row: NetworkRow, words: readonly string[]) {
   if (!words.length) return true;
-  const text = `${row.entry.method} ${row.entry.url} ${row.entry.status} ${row.entry.statusText}`.toLocaleLowerCase();
+  // why: only what the row shows is searched (no scheme, no hidden own host), so every kept row can mark its match.
+  const { host = '', path, query } = row.name;
+  const text = `${row.entry.method} ${host}${path}${query} ${row.entry.status} ${row.entry.statusText}`.toLocaleLowerCase();
   return words.every((word) => text.includes(word));
 }
 
