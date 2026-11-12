@@ -35,6 +35,7 @@ import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import { SummaryText } from '../viewer/SummaryText.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
+import { CarriedFilters, createFilterCarry } from '../viewer/carried-filters.ts';
 import {
   colouredByTarget,
   comparisonRuns,
@@ -163,6 +164,8 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const authFailure = [suiteFailure, bundleFailure, edits.error].find((candidate) => candidate instanceof SignInError);
   const signingIn = useSignInRedirect(authFailure);
   const [tab, setTab] = useState<InspectorTab>('console');
+  // why: like the tab, the inspector's search and filters stay put while the person moves between runs.
+  const [filters] = useState(createFilterCarry);
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
   const [collapsed, setRailPreference] = useState(false);
   const narrow = useMediaQuery(MOBILE_QUERY);
@@ -374,6 +377,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
       ) : null}
 
       <div className="suite-viewer">
+        <CarriedFilters value={filters}>
         {comparing && selected ? (
           <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? stageRuns.length : 0} />}>
             <SuiteCompare
@@ -443,6 +447,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             <ViewerSkeleton label="Loading run" />
           </LoadingPlayContext>
         )}
+        </CarriedFilters>
       </div>
     </div>
   );

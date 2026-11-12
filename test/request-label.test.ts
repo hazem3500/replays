@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { charBudget, isIdSegment, labelSegments, shortenPath } from '../src/client/viewer/network/request-label.ts';
+import { charBudget, isIdSegment, labelSegments, markWords, searchWords, shortenPath } from '../src/client/viewer/network/request-label.ts';
 
 const UUID = '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b';
 
@@ -47,5 +47,24 @@ describe('request label', () => {
     expect(charBudget(0, 7)).toBeUndefined();
     expect(charBudget(140, 7)).toBe(20);
     expect(charBudget(20, 7)).toBe(8);
+  });
+
+  it('keeps the segment a search matches when it shortens', () => {
+    const words = searchWords('  Organizations ');
+    expect(words).toEqual(['organizations']);
+    expect(shortenPath('/api/organizations/workspaces/search', 18)).toBe('/api/…/search');
+    expect(shortenPath('/api/organizations/workspaces/search', 18, words)).toBe('/api/organizations/…/search');
+    expect(shortenPath('/api/a/b/c/d/e/f/g/h/i/j/k', 12, ['e'])).toBe('/api/…/e/…/k');
+    // why: a word that only spans a slash marks no segment, so the label shortens as before.
+    expect(shortenPath('/api/organizations/workspaces/search', 18, ['s/w'])).toBe('/api/…/search');
+  });
+
+  it('marks every search word in a label, ignoring case', () => {
+    expect(markWords('api.Example.com', ['example'])).toEqual([
+      { text: 'api.', hit: false },
+      { text: 'Example', hit: true },
+      { text: '.com', hit: false },
+    ]);
+    expect(markWords('plain', [])).toEqual([{ text: 'plain', hit: false }]);
   });
 });

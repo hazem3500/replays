@@ -239,8 +239,8 @@ function TileNotice({ busy, text }: { busy: boolean; text: string }) {
 }
 
 /**
- * The tile's recorded page. The focused tile carries the step captions when they are on: the panels, the steps rail
- * and the captions all follow the focused recording, on its own frame.
+ * The tile's recorded page, with its own step captions when they are on, so every compared run says where it is. The
+ * focused tile's caption is the viewer's (renamed steps, renaming); the others read their own recording's steps.
  */
 function TilePicture({
   session,
@@ -269,12 +269,15 @@ function TilePicture({
     return hinted?.includes(`/${path}`) ? hinted : apiUrl(`${path}poster?v=2`);
   });
   const { captions, steps, editCaptions } = useViewer();
+  const shown = caption ? steps : bundle.steps;
   if (failure) return <TileNotice busy={false} text={TILE_STRINGS.unavailable(failure)} />;
   return (
     <div ref={stage} className="ct-picture" data-fidelity={fidelity}>
       <div className="ct-host player-host" inert />
       <img ref={cover} className="ct-cover" src={poster} alt="" aria-hidden="true" />
-      {caption && captions && steps.length > 0 && !editCaptions ? <StepCaption /> : null}
+      {captions && shown.length > 0 && !editCaptions ? (
+        <StepCaption {...(caption ? {} : { recording: { steps: bundle.steps, duration: controller.duration } })} />
+      ) : null}
     </div>
   );
 }

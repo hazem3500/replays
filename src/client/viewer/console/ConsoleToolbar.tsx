@@ -45,11 +45,13 @@ export function ConsoleToolbar({
   onLevel: (level: LevelFilter) => void;
   onText: (text: string) => void;
 }) {
-  const [searching, setSearching] = useState(false);
+  // why: a search carried over from the previous run shows its field at once, without the opening motion or focus.
+  const [search, setSearch] = useState<'closed' | 'opened' | 'restored'>(text ? 'restored' : 'closed');
+  const searching = search !== 'closed';
   const trigger = useRef<HTMLButtonElement>(null);
   const closeSearch = () => {
     onText('');
-    setSearching(false);
+    setSearch('closed');
     requestAnimationFrame(() => trigger.current?.focus());
   };
   return (
@@ -80,7 +82,7 @@ export function ConsoleToolbar({
         </span>
       )}
       {searching ? (
-        <SearchField text={text} onText={onText} onClose={closeSearch} />
+        <SearchField text={text} onText={onText} onClose={closeSearch} restored={search === 'restored'} />
       ) : (
         <button
           ref={trigger}
@@ -89,7 +91,7 @@ export function ConsoleToolbar({
           aria-label={STRINGS.search}
           data-active={text ? '' : undefined}
           data-testid="console-search-toggle"
-          onClick={() => setSearching(true)}
+          onClick={() => setSearch('opened')}
           onKeyDown={keepKeys}
         >
           <AnimatedIcon name="search" />
@@ -99,8 +101,18 @@ export function ConsoleToolbar({
   );
 }
 
-function SearchField({ text, onText, onClose }: { text: string; onText: (text: string) => void; onClose: () => void }) {
-  const ref = usePanelSearchMotion();
+function SearchField({
+  text,
+  onText,
+  onClose,
+  restored,
+}: {
+  text: string;
+  onText: (text: string) => void;
+  onClose: () => void;
+  restored: boolean;
+}) {
+  const ref = usePanelSearchMotion(!restored);
   return (
     <label ref={ref} className="np-search">
       <AnimatedIcon name="search" />
@@ -108,7 +120,7 @@ function SearchField({ text, onText, onClose }: { text: string; onText: (text: s
       <input
         type="search"
         // oxlint-disable-next-line jsx-a11y/no-autofocus -- why: the field appears because its button was pressed; focus belongs there.
-        autoFocus
+        autoFocus={!restored}
         placeholder={STRINGS.placeholder}
         value={text}
         onChange={(event) => onText(event.target.value)}

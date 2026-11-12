@@ -682,8 +682,11 @@
   opacity: 0.5;
 }
 
-/* The focused tile's step caption (CompareTile.tsx) clears the tile's name tag at the bottom-left. */
+/* Every tile's step caption (CompareTile.tsx) clears the tile's name tag at the bottom-left. It keeps the export's
+   size relative to its tile's frame, so a small tile does not carry a caption larger than its page; the 9 px floor
+   (the single player keeps 12) still reads beside several tiles. */
 .ct-picture .step-caption {
+  --caption-min: 9px;
   bottom: max(calc(var(--frame-bottom, 0px) + max(8px, var(--caption-inset))), 26px);
 }
 

@@ -73,11 +73,13 @@ export function NetworkToolbar({
   shown: number;
   onFilter: (next: NetworkFilter) => void;
 }) {
-  const [searching, setSearching] = useState(false);
+  // why: a search carried over from the previous run shows its field at once, without the opening motion or focus.
+  const [search, setSearch] = useState<'closed' | 'opened' | 'restored'>(filter.text ? 'restored' : 'closed');
+  const searching = search !== 'closed';
   const trigger = useRef<HTMLButtonElement>(null);
   const closeSearch = () => {
     onFilter({ ...filter, text: '' });
-    setSearching(false);
+    setSearch('closed');
     requestAnimationFrame(() => trigger.current?.focus());
   };
   return (
@@ -104,7 +106,7 @@ export function NetworkToolbar({
       <TypeMenu types={types} value={filter.type} onChange={(type) => onFilter({ ...filter, type })} />
       <TimelineButton />
       {searching ? (
-        <SearchField text={filter.text} onText={(text) => onFilter({ ...filter, text })} onClose={closeSearch} />
+        <SearchField text={filter.text} onText={(text) => onFilter({ ...filter, text })} onClose={closeSearch} restored={search === 'restored'} />
       ) : (
         <button
           ref={trigger}
@@ -113,7 +115,7 @@ export function NetworkToolbar({
           aria-label={STRINGS.search}
           data-active={filter.text ? '' : undefined}
           data-testid="network-search-toggle"
-          onClick={() => setSearching(true)}
+          onClick={() => setSearch('opened')}
           onKeyDown={keepKeys}
         >
           <AnimatedIcon name="search" />
@@ -144,8 +146,18 @@ function TimelineButton() {
   );
 }
 
-function SearchField({ text, onText, onClose }: { text: string; onText: (text: string) => void; onClose: () => void }) {
-  const ref = usePanelSearchMotion();
+function SearchField({
+  text,
+  onText,
+  onClose,
+  restored,
+}: {
+  text: string;
+  onText: (text: string) => void;
+  onClose: () => void;
+  restored: boolean;
+}) {
+  const ref = usePanelSearchMotion(!restored);
   return (
     <label ref={ref} className="np-search">
       <AnimatedIcon name="search" />
@@ -153,7 +165,7 @@ function SearchField({ text, onText, onClose }: { text: string; onText: (text: s
       <input
         type="search"
         // oxlint-disable-next-line jsx-a11y/no-autofocus -- why: the field appears because its button was pressed; focus belongs there.
-        autoFocus
+        autoFocus={!restored}
         placeholder={STRINGS.placeholder}
         value={text}
         onChange={(event) => onText(event.target.value)}

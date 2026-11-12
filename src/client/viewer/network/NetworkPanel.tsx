@@ -1,5 +1,5 @@
 import { GlobeIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Splitter } from '@/components/ui/splitter.tsx';
 import { useElementWidth } from '../../hooks/use-element-width.ts';
 import { cssVars } from '../../lib/css-vars.ts';
@@ -9,7 +9,10 @@ import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Empty } from '../Empty.tsx';
 import { filterRows, NO_FILTER, type NetworkFilter, type NetworkRow, slowestMeasured, statusCounts, typeCounts } from './model.ts';
+import { useCarriedFilter } from '../carried-filters.ts';
+import { LabelSearch } from './label-search.ts';
 import { NetworkList } from './NetworkList.tsx';
+import { searchWords } from './request-label.ts';
 import { NetworkTimeline } from './NetworkTimeline.tsx';
 import { sortNetworkRows, type NetworkSort } from './sort.ts';
 import { NetworkToolbar } from './NetworkToolbar.tsx';
@@ -22,6 +25,8 @@ export type { NetworkPeer } from './RequestDetail.tsx';
 /** Narrower than this, the detail takes the list's place instead of sitting beside it. */
 const SIDE_DETAIL_MIN_WIDTH = 760;
 const NO_PEERS: readonly NetworkPeer[] = [];
+/** The time range is this recording's clock; another run starts without it. */
+const withoutRange = (filter: NetworkFilter): NetworkFilter => ({ ...filter, range: undefined });
 
 const STRINGS = {
   humanTitle: 'Network wasn’t recorded',
@@ -66,11 +71,12 @@ export function NetworkPanel({
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
   const panelWidth = useElementWidth(panel, SIDE_DETAIL_MIN_WIDTH);
   const [detailWidth, setDetailWidth] = useState(400);
-  const [filter, setFilter] = useState<NetworkFilter>(NO_FILTER);
+  const [filter, setFilter] = useCarriedFilter('network', NO_FILTER, withoutRange);
   const [hovered, setHovered] = useState<string>();
   const [sort, setSort] = useState<NetworkSort>({ key: 'time', direction: 'ascending' });
   const unranged = filterRows(rows, { ...filter, range: undefined });
   const shown = filter.range ? filterRows(unranged, { ...NO_FILTER, range: filter.range }) : unranged;
+  const words = useMemo(() => searchWords(filter.text), [filter.text]);
   const litId = hovered ?? selected;
   const lit = litId ? [litId] : [];
   const open = selected ? rows.find((row) => row.id === selected) : undefined;
@@ -111,6 +117,7 @@ export function NetworkPanel({
       ) : null}
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
+          <LabelSearch value={words}>
           <NetworkList
             rows={sortNetworkRows(shown, sort, steps)}
             sort={sort}
@@ -123,6 +130,7 @@ export function NetworkPanel({
             highlight={hovered}
             empty={empty}
           />
+          </LabelSearch>
         </div>
         {open && !stacked ? (
           <Splitter
