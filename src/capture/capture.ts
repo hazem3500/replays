@@ -368,7 +368,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     }
     // why: a closed window has no page left to wait on.
     if (stoppedBy !== 'closed') await driver.wait(900);
-    const tracks = await session.stop();
+    const tracks = await session.stop(Date.now());
     session = undefined;
     await driver.finish();
 

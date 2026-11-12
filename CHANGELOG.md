@@ -5,6 +5,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Capture: a recording now plays until the capture stopped, not until the page last changed. A page that sits still after its last steps no longer cuts those steps off the end of the replay.
 - Viewer: a run's player no longer waits forever on a page transition the browser never finishes. After 3 s it mounts anyway, so a switched run cannot stay stuck on a black stage and a spinning play button.
 - Viewer: on a phone, a suite run's top bar no longer piles its items on top of each other. The run switcher keeps its position and arrow, and "Edited 8 min ago" shortens to fit instead of running over the status dot.
 - Viewer: switching runs in a suite while a replay plays, or in quick succession, no longer leaves the new run stuck with a spinning play button and an empty player. The player now stops waiting on a run-switch crossfade that never finishes.
