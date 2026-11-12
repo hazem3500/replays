@@ -158,9 +158,13 @@ always checked; without `api.people` a role is free text and any handle id is ac
 `POST /api/replays/import` takes the same as repeatable `?person=`. Registering a suite again with only `people` changed replaces them
 (absent keeps them); anything else that differs is still a `409`.
 
-A suite registration and a run registration may also carry an optional `summary`: plain text of at most 4000 characters, paragraphs split
-by blank lines and `- ` bullet lines, no control characters, never HTML. The suite's summary is shown, collapsible, in the suite sidebar header
-and the run's in that run's Context tab. Like `people`, it is not identity: registering again replaces it (absent keeps it).
+A suite registration and a run registration may also carry an optional `summary`: plain text of at most 4000 characters with no control characters, never HTML. The viewer draws a Markdown subset and nothing else:
+paragraphs split by blank lines, `- ` or `* ` bullets and `1. ` numbered lists (one nested level by indenting two spaces), `## ` and `### `
+subheadings, `**bold**`, `*italic*` or `_italic_`, `` `code` ``, fenced code blocks, `> ` quotes, `[text](https://url)` links and bare
+http(s) URLs (shown short, for example `o/r#12` for a GitHub pull request). Only http and https links are links. A line that starts with a
+short label such as `Checked:` gets a bold label, and `Result: Pass|Fail|Partial (note)` shows as a status badge; a run's `Checked:` line
+leads its Context tab and its bare `Result:` sits beside the heading. The suite's summary is shown, collapsible, in the suite sidebar header
+and the run's in that run's Context tab and above its recording. Like `people`, it is not identity: registering again replaces it (absent keeps it).
 
 ```ts
 api.people({

@@ -110,3 +110,11 @@
 @media (prefers-reduced-motion: reduce) {
   .ctx-source, .ctx-source-arrow, .ctx-open { transition: none; }
 }
+
+/* Run summary: body-size text, the verdict beside the heading, and a rule that ends it before the app details. */
+.ctx-run-summary { display: grid; gap: 8px; padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
+.ctx-run-summary-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ctx-run-summary-head .ctx-heading { margin: 0; }
+.ctx-run-lead { margin: 0; max-width: 72ch; color: var(--text); font-size: 13px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+.ctx-run-summary .summary-text { color: var(--text); font-size: 13px; }
+.ctx-run-summary .summary-text :is(a, .summary-result-tag) { font-size: inherit; }
