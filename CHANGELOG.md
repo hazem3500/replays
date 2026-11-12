@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Capture: uploads are gzipped, so large replays upload about 25 times smaller. An older server that refuses gzip gets one plain retry.
+- Capture: a goto step to the page that is already open no longer reloads it, so replays don't open on a blank reload.
 - Capture: a recording now plays until the capture stopped, not until the page last changed. A page that sits still after its last steps no longer cuts those steps off the end of the replay.
 - Viewer: a run's player no longer waits forever on a page transition the browser never finishes. After 3 s it mounts anyway, so a switched run cannot stay stuck on a black stage and a spinning play button.
 - Viewer: on a phone, a suite run's top bar no longer piles its items on top of each other. The run switcher keeps its position and arrow, and "Edited 8 min ago" shortens to fit instead of running over the status dot.

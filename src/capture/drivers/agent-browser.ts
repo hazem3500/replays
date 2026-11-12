@@ -26,6 +26,18 @@ function stepArgs(step: Exclude<RawStep, { kind: 'shot' | 'wait' }>, typeDelayMs
   }
 }
 
+/** True when `url`, resolved against the open page, is the page's own address (then a goto would only reload it). */
+async function isOpenPage(page: CdpLike, url: string) {
+  try {
+    const result: unknown = await page.send('Runtime.evaluate', { expression: 'location.href', returnByValue: true });
+    const inner = typeof result === 'object' && result !== null && 'result' in result ? result.result : undefined;
+    const current = typeof inner === 'object' && inner !== null && 'value' in inner ? inner.value : undefined;
+    return typeof current === 'string' && new URL(url, current).href === new URL(current).href;
+  } catch {
+    return false;
+  }
+}
+
 /** Drives a session of the `agent-browser` CLI (https://github.com/vercel-labs/agent-browser, `AGENT_BROWSER_BIN` to override the binary). */
 export function agentBrowserDriver(): CaptureDriver {
   const browser = new AgentBrowser(`replays-${process.pid}-${Date.now()}`);
@@ -64,6 +76,7 @@ export function agentBrowserDriver(): CaptureDriver {
         else if ('ms' in step) await browser.command(['wait', String(step.ms)]);
         return;
       }
+      if (step.kind === 'goto' && page && (await isOpenPage(page, step.url))) return;
       if (page && (await runOnFirstVisible(page, step, typeDelay()))) return;
       await browser.command(stepArgs(step, typeDelay()));
     },

@@ -234,3 +234,32 @@ it('requests 80ms typing from agent-browser without adding a delay to fill', asy
   await driver.step({ kind: 'fill', selector: '#field', text: 'demo' });
   expect(command).toHaveBeenLastCalledWith(['fill', '#field', 'demo']);
 });
+
+async function driverAt(openUrl: string) {
+  const goto = vi.fn<(url: string) => Promise<void>>(async () => {});
+  const close = vi.fn<() => Promise<void>>(async () => {});
+  const page = { goto, url: () => openUrl };
+  const context = { newPage: async () => page, newCDPSession: async () => ({}), close };
+  vi.spyOn(chromium, 'launch').mockResolvedValue({ newContext: async () => context, close } as never);
+  const driver = playwrightDriver();
+  await driver.launch({ viewport: { width: 800, height: 600 }, harPath: '/unused' });
+  return { driver, goto };
+}
+
+
+describe('a goto step', () => {
+  it('does not reload the page that is already open', async () => {
+    const { driver, goto } = await driverAt('https://example.com/shop?a=1');
+    await driver.step({ kind: 'goto', url: 'https://example.com/shop?a=1' });
+    await driver.step({ kind: 'goto', url: '/shop?a=1' });
+    expect(goto).not.toHaveBeenCalled();
+    await driver.close();
+  });
+
+  it('navigates to a different page', async () => {
+    const { driver, goto } = await driverAt('https://example.com/shop');
+    await driver.step({ kind: 'goto', url: 'https://example.com/cart' });
+    expect(goto).toHaveBeenCalledWith('https://example.com/cart', { waitUntil: 'load', timeout: 30_000 });
+    await driver.close();
+  });
+});

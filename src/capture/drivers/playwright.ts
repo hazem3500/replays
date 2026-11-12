@@ -49,6 +49,15 @@ export async function launchChromium(options: PlaywrightDriverOptions = {}, env:
   });
 }
 
+/** True when `url`, resolved against the open page, is the page's own address. */
+function isCurrentUrl(current: string, url: string) {
+  try {
+    return new URL(url, current).href === new URL(current).href;
+  } catch {
+    return false;
+  }
+}
+
 /** Drives Chrome through Playwright: no extra CLI needed, `recordHar` for the network track, `recordVideo` for MP4 (needs ffmpeg). */
 export function playwrightDriver(options: PlaywrightDriverOptions = {}): CaptureDriver {
   const env = process.env;
@@ -137,6 +146,8 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
           break;
         }
         case 'goto':
+          // why: capture() already opened the start URL; navigating to the open page again shows a blank reload.
+          if (isCurrentUrl(target.url(), step.url)) break;
           await target.goto(step.url, { waitUntil: 'load', timeout: 30_000 });
           break;
         case 'shot':
