@@ -228,6 +228,25 @@ describe('stop', () => {
     expect(tracks.duration).toBe(2000);
   });
 
+  it('plays on to the stop time after the page went quiet', async () => {
+    const cdp = new FakeCdp();
+    cdp.chunks = [{ events: events(1000, 1600) }];
+    const session = await RecorderSession.start(cdp, LONG_INTERVAL);
+    const tracks = await session.stop(3000);
+    expect([tracks.duration, tracks.events.at(-1)]).toEqual([
+      2000,
+      { type: 5, timestamp: 3000, data: { tag: 'replays:capture-end', payload: {} } },
+    ]);
+  });
+
+  it('adds no end marker when the last event is already at the stop time', async () => {
+    const cdp = new FakeCdp();
+    cdp.chunks = [{ events: events(1000, 1600) }];
+    const session = await RecorderSession.start(cdp, LONG_INTERVAL);
+    const tracks = await session.stop(1500);
+    expect([tracks.duration, tracks.events.length]).toEqual([600, 2]);
+  });
+
   it('reports at least 1 ms of duration', async () => {
     const cdp = new FakeCdp();
     cdp.chunks = [{ events: events(1000, 1000) }];

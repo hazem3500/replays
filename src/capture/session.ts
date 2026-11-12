@@ -27,6 +27,9 @@ export interface RecorderChunk {
 }
 
 const BINDING = '__replaysNavigationFlush';
+/** rrweb's custom event type; the player ignores tags it does not know. */
+const CUSTOM_EVENT = 5;
+const CAPTURE_END_TAG = 'replays:capture-end';
 
 /** The recorder page script (rrweb plus console, error and performance capture), bundled for the browser. */
 export async function recorderSource() {
@@ -292,8 +295,11 @@ export class RecorderSession {
     return this.pull(final);
   }
 
-  /** Final flush, then the three page-side tracks on one timeline. Throws when rrweb recorded nothing. */
-  async stop(): Promise<RecordedTracks> {
+  /**
+   * Final flush, then the three page-side tracks on one timeline. Throws when rrweb recorded nothing.
+   * `endAt` (epoch ms) is when the capture stopped: a page that went quiet still plays until then.
+   */
+  async stop(endAt?: number): Promise<RecordedTracks> {
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;
     await this.pull(true);
@@ -311,6 +317,9 @@ export class RecorderSession {
       throw new Error(`rrweb recorded fewer than two events (${JSON.stringify(probe?.result?.value ?? { context: 'unavailable' })})`);
     }
     const origin = this.events[0]!.timestamp;
+    // why: rrweb records nothing while the page is still, and the player's clock ends at the last event, so the last steps fell off the end.
+    if (endAt !== undefined && endAt > this.events.at(-1)!.timestamp)
+      this.events.push({ type: CUSTOM_EVENT, timestamp: endAt, data: { tag: CAPTURE_END_TAG, payload: {} } });
     const frames = normalizeFrames(this.frameSamples, origin);
     return {
       events: this.events,
