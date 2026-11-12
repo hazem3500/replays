@@ -75,12 +75,21 @@ export function focusSpec(marker: FocusMarker) {
   return `${marker.panel}:${marker.match}${marker.note ? `${NOTE_SEPARATOR}${marker.note}` : ''}`;
 }
 
-const escape = (text: string) => text.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
-
 /** A case-insensitive containment test with `*` as a wildcard. */
 export function focusPattern(match: string): (text: string) => boolean {
-  const pattern = new RegExp(match.trim().split('*').map(escape).join('.*'), 'is');
-  return (text) => pattern.test(text);
+  const pieces = match.trim().toLowerCase().split('*').filter(Boolean);
+  /* why: a scan for each literal piece in order runs in linear time; a regular expression of `.*` runs backtracks
+     exponentially on a long non-match and would freeze the viewer while it marks rows. */
+  return (text) => {
+    const lower = text.toLowerCase();
+    let from = 0;
+    for (const piece of pieces) {
+      const at = lower.indexOf(piece, from);
+      if (at === -1) return false;
+      from = at + piece.length;
+    }
+    return true;
+  };
 }
 
 const METHOD = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+/i;
