@@ -23,6 +23,7 @@ import {
   table,
   textArgument,
   UsageError,
+  focusArgument,
   type Cell,
 } from './cli-io.ts';
 import { connect, replayUrl, suiteUrl } from './connection.ts';
@@ -212,10 +213,10 @@ async function suiteSummary(argv: string[], env: NodeJS.ProcessEnv) {
 }
 
 async function runAdd(argv: string[], env: NodeJS.ProcessEnv) {
-  const { positionals, values, booleans } = parse(argv, {
+  const { positionals, values, lists, booleans } = parse(argv, {
     command: 'run add',
     positionals: 1,
-    values: ['run', 'title', 'status', 'summary', 'group', 'target', 'measure'],
+    values: ['run', 'title', 'status', 'summary', 'focus', 'group', 'target', 'measure'],
   });
   const suite = suiteId(positionals[0]);
   const id = runId(need(values, 'run', 'run add'));
@@ -224,7 +225,8 @@ async function runAdd(argv: string[], env: NodeJS.ProcessEnv) {
   const grouping = groupingFlags(values);
   const { server, api } = await connect(values);
   const summary = await textArgument(values.summary, '--summary');
-  const { run } = await addRun(api, suite, { id, title, status: status(values.status) ?? 'running', summary, ...grouping });
+  const focus = await focusArgument(lists.focus);
+  const { run } = await addRun(api, suite, { id, title, status: status(values.status) ?? 'running', summary, focus, ...grouping });
   const link = suiteUrl(server, suite);
   if (booleans.has('json'))
     return printJson({
@@ -237,6 +239,7 @@ async function runAdd(argv: string[], env: NodeJS.ProcessEnv) {
         ...(run.group ? { group: run.group } : {}),
         ...(run.target ? { target: run.target } : {}),
         ...(run.measure ? { measure: run.measure } : {}),
+        ...(run.focus?.length ? { focus: run.focus } : {}),
       },
       url: link,
     });
@@ -244,20 +247,21 @@ async function runAdd(argv: string[], env: NodeJS.ProcessEnv) {
 }
 
 async function runSet(argv: string[], env: NodeJS.ProcessEnv) {
-  const { positionals, values, booleans } = parse(argv, {
+  const { positionals, values, lists, booleans } = parse(argv, {
     command: 'run set',
     positionals: 2,
-    values: ['status', 'summary', 'group', 'target', 'measure'],
+    values: ['status', 'summary', 'focus', 'group', 'target', 'measure'],
   });
   const suite = suiteId(positionals[0]);
   const id = runId(positionals[1]);
   const target = status(values.status);
   const summary = await textArgument(values.summary, '--summary');
+  const focus = await focusArgument(lists.focus);
   const grouping = groupingFlags(values);
-  if (!target && !summary && !Object.values(grouping).some(Boolean))
-    throw new UsageError('suite run set needs --status passed|failed, --summary, --group, --target or --measure');
+  if (!target && !summary && !focus && !Object.values(grouping).some(Boolean))
+    throw new UsageError('suite run set needs --status passed|failed, --summary, --focus, --group, --target or --measure');
   const { server, api } = await connect(values);
-  const { run } = await updateRun(api, suite, { id, status: target, summary, ...grouping });
+  const { run } = await updateRun(api, suite, { id, status: target, summary, focus, ...grouping });
   const link = suiteUrl(server, suite);
   if (booleans.has('json'))
     return printJson({
@@ -269,6 +273,7 @@ async function runSet(argv: string[], env: NodeJS.ProcessEnv) {
         ...(run.group ? { group: run.group } : {}),
         ...(run.target ? { target: run.target } : {}),
         ...(run.measure ? { measure: run.measure } : {}),
+        ...(run.focus?.length ? { focus: run.focus } : {}),
       },
       url: link,
     });

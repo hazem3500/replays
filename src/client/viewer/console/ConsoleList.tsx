@@ -1,4 +1,5 @@
 import { CircleXIcon, TriangleAlertIcon } from 'lucide-react';
+import { FocusMark } from '../FocusMark.tsx';
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useRef } from 'react';
 
 import type { ConsoleLevel } from '../../../shared/replay.ts';
@@ -143,6 +144,7 @@ function MessageRow({
       role="row"
       aria-rowindex={rowIndex}
       data-level={level}
+      data-focus={row.focus ? '' : undefined}
       data-selected={selected || undefined}
       data-future={future || undefined}
     >
@@ -161,6 +163,7 @@ function MessageRow({
         >
           <LevelIcon level={level} />
           <code className="cp-text">{row.entry.message}</code>
+          {row.focus ? <FocusMark marker={row.focus} /> : null}
           <RowBadges row={row} />
         </button>
       </span>

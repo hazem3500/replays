@@ -83,13 +83,29 @@ function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
         return duration === undefined ? run : { ...run, duration };
       })
     : suite.runs.map(
-        ({ id, sequence, label, status, startedAt, finishedAt, replayId, recording, summary, group, target, measure, measureMs }) => ({
+        ({
+          id,
+          sequence,
+          label,
+          status,
+          startedAt,
+          finishedAt,
+          replayId,
+          recording,
+          summary,
+          focus,
+          group,
+          target,
+          measure,
+          measureMs,
+        }) => ({
           id,
           sequence,
           label,
           status,
           startedAt,
           ...(summary ? { summary } : {}),
+          ...(focus?.length ? { focus } : {}),
           ...(group ? { group } : {}),
           ...(target ? { target } : {}),
           ...(measure ? { measure } : {}),
@@ -296,8 +312,16 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const suiteDetails = useMemo<SuiteDetails | undefined>(() => {
     if (!suite) return undefined;
     const subject = subjectLink(suite);
-    const runSummary = runs.find((item) => item.replayId === selected)?.summary;
-    return { title: suite.title, href: suiteHref(id), ...(subject ? { subject } : {}), ...(runSummary ? { runSummary } : {}) };
+    const run = runs.find((item) => item.replayId === selected);
+    const runSummary = run?.summary;
+    const runFocus = run?.focus;
+    return {
+      title: suite.title,
+      href: suiteHref(id),
+      ...(subject ? { subject } : {}),
+      ...(runSummary ? { runSummary } : {}),
+      ...(runFocus?.length ? { runFocus } : {}),
+    };
   }, [id, suite, runs, selected]);
   const keep = useKeepSuite(id);
   // Phones: no sidebar; the title is the run switcher (tap "Run 1 of 2 · label ⌄").

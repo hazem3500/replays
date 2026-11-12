@@ -20,6 +20,7 @@ import { countAtOrBefore } from '../../timeline.ts';
 import { useWindowedRows } from '../../windowing.ts';
 import { HEADER_HEIGHT, SeekTime, TrackList } from '../TrackList.tsx';
 import { durationShare, formatDuration, type NetworkRow, playheadHorizon, stepAt } from './model.ts';
+import { FocusMark, focusLabel } from '../FocusMark.tsx';
 import { RequestLabel, SearchMarked } from './RequestLabel.tsx';
 import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
 import { ListSpacer } from '../ListSpacer.tsx';
@@ -329,7 +330,7 @@ function RequestCell({
             type="button"
             id={`request-switch-${row.id}`}
             data-request-id={row.id}
-            aria-label={`${row.entry.method} ${row.name.path}${row.name.query ?? ''}${row.name.host ? ` ${row.name.host}` : ''}`}
+            aria-label={`${row.entry.method} ${row.name.path}${row.name.query ?? ''}${row.name.host ? ` ${row.name.host}` : ''}${row.focus ? `, ${focusLabel(row.focus)}` : ''}`}
             aria-expanded={selected}
             aria-controls={selected ? REQUEST_DETAIL_ID : undefined}
             onClick={() => onSelect(selected ? undefined : row.id)}
@@ -337,6 +338,7 @@ function RequestCell({
           />
         }
       >
+        {row.focus ? <FocusMark marker={row.focus} compact /> : null}
         <span className="method">{row.entry.method}</span>
         <span className="np-name">
           <span className="np-path">
@@ -349,7 +351,10 @@ function RequestCell({
           ) : null}
         </span>
       </TooltipTrigger>
-      <TooltipContent className="max-w-96 break-all">{row.entry.url}</TooltipContent>
+      <TooltipContent className="max-w-96 break-all">
+        {row.entry.url}
+        {row.focus ? <span className="focus-tip">{focusLabel(row.focus)}</span> : null}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -392,6 +397,7 @@ function RequestRow({
       data-selected={selected || undefined}
       data-highlighted={highlighted || undefined}
       data-failed={row.failed || undefined}
+      data-focus={row.focus ? '' : undefined}
       data-pending={row.pending || undefined}
       data-future={future || undefined}
     >

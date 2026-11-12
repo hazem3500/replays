@@ -1,5 +1,7 @@
 import type { EditTimeline } from '../../../shared/edits.ts';
 import { hasNoResponse, isFailedRequest, type ReplayBundle, type ReplayNetworkEntry, type ReplayStep } from '../../../shared/replay.ts';
+import { type TabBadge, withFocus } from '../tab-badges.ts';
+import type { FocusMarker, FocusTests } from '../../../shared/run-focus.ts';
 import { buildWaterfall, type WaterfallRow } from '../waterfall.ts';
 
 export const REQUEST_TYPES = ['document', 'fetch', 'script', 'stylesheet', 'image', 'font', 'other'] as const;
@@ -24,6 +26,17 @@ export interface NetworkRow {
   pending: boolean;
   slow: boolean;
   name: RequestName;
+  /** The run's focus marker this request matches (src/shared/run-focus.ts). */
+  focus?: FocusMarker;
+}
+
+/** The rows with the run's focus markers they match; the same rows when the run marks no requests. */
+export function markFocus(rows: readonly NetworkRow[], tests: FocusTests | undefined): readonly NetworkRow[] {
+  if (!tests?.has.network) return rows;
+  return rows.map((row) => {
+    const focus = tests.network(row.entry);
+    return focus ? { ...row, focus } : row;
+  });
 }
 
 export interface RequestName {
@@ -104,7 +117,7 @@ export function buildNetworkRows(bundle: ReplayBundle, timeline?: EditTimeline, 
     });
 }
 
-export type StatusFilter = 'all' | 'failed' | 'slow' | 'pending';
+export type StatusFilter = 'all' | 'focus' | 'failed' | 'slow' | 'pending';
 
 export interface TimeRange {
   from: number;
@@ -123,6 +136,7 @@ export const NO_FILTER: NetworkFilter = { status: 'all', type: 'all', text: '' }
 
 const STATUS_TESTS: Readonly<Record<StatusFilter, (row: NetworkRow) => boolean>> = {
   all: () => true,
+  focus: (row) => row.focus !== undefined,
   failed: (row) => row.failed,
   slow: (row) => row.slow,
   pending: (row) => row.pending,
@@ -153,6 +167,7 @@ export function isFiltered(filter: NetworkFilter) {
 export function statusCounts(rows: readonly NetworkRow[]): Record<StatusFilter, number> {
   return {
     all: rows.length,
+    focus: rows.filter(STATUS_TESTS.focus).length,
     failed: rows.filter(STATUS_TESTS.failed).length,
     slow: rows.filter(STATUS_TESTS.slow).length,
     pending: rows.filter(STATUS_TESTS.pending).length,
@@ -278,12 +293,14 @@ export function playheadHorizon(time: number, duration: number) {
 }
 
 /** The Network tab's badge: the request total, in danger ink when any failed; none when nothing was recorded. */
-export function networkBadge(rows: readonly NetworkRow[]) {
+export function networkBadge(rows: readonly NetworkRow[]): TabBadge | undefined {
   if (!rows.length) return;
   const failed = rows.filter((row) => row.failed).length;
   const total = `${rows.length} ${rows.length === 1 ? 'request' : 'requests'}`;
-  if (!failed) return { value: rows.length, label: total };
-  return { value: rows.length, tone: 'danger' as const, label: `${total}, ${failed} failed` };
+  const badge: TabBadge = failed
+    ? { value: rows.length, tone: 'danger', label: `${total}, ${failed} failed` }
+    : { value: rows.length, label: total };
+  return withFocus(badge, rows.filter((row) => row.focus).length);
 }
 
 /** "82 ms", "1.24 s". */

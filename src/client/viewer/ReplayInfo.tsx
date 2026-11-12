@@ -1,3 +1,4 @@
+import type { FocusMarker } from '../../shared/run-focus.ts';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import {
   BotIcon,
@@ -35,6 +36,8 @@ export interface SuiteDetails {
   subject?: { provider: string; url: string; label: string };
   /** The selected run's own summary; the Context tab shows it. */
   runSummary?: string;
+  /** What the selected run's author marked to look at (src/shared/run-focus.ts). */
+  runFocus?: readonly FocusMarker[];
 }
 
 function splitUrl(url: string) {

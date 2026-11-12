@@ -6,6 +6,7 @@ import type { RawStep } from '../capture/drivers/types.ts';
 import { parsePeopleFlags, type ReplayPerson } from '../shared/people.ts';
 import { isProfileId } from '../shared/profiles.ts';
 import { assertReplayId } from '../shared/replay.ts';
+import { assertFocus, type FocusMarker, parseFocusSpec } from '../shared/run-focus.ts';
 import { assertSummary, MAX_GROUP_LENGTH, MAX_TARGET_LENGTH } from '../shared/review-suite.ts';
 import { SourceProviders } from '../shared/source-providers.ts';
 
@@ -29,6 +30,8 @@ export interface SuitePlanRun {
   viewport: { width: number; height: number };
   expect?: RunExpectations;
   summary?: string;
+  /** What to look at in the recording (src/shared/run-focus.ts): marker objects or `panel:pattern # note` strings. */
+  focus?: FocusMarker[];
   /** The flow this run exercises; runs in one group are comparable. */
   group?: string;
   /** What it ran against; runs with the same group and target are samples. */
@@ -53,7 +56,7 @@ export interface SuitePlan {
 }
 
 const SUITE_KEYS = ['$schema', 'id', 'title', 'profile', 'source', 'people', 'summary', 'baseline', 'createdAt', 'runs'];
-const RUN_KEYS = ['id', 'title', 'url', 'steps', 'viewport', 'expect', 'summary', 'group', 'target', 'measure'];
+const RUN_KEYS = ['id', 'title', 'url', 'steps', 'viewport', 'expect', 'summary', 'focus', 'group', 'target', 'measure'];
 const EXPECT_KEYS = ['noConsoleErrors', 'noFailedRequests', 'maxDurationMs'];
 
 type Fields = Record<string, unknown>;
@@ -126,6 +129,15 @@ function named(value: unknown, where: string, max: number): string | undefined {
   return value;
 }
 
+/** Markers as objects or `panel:pattern # note` strings, each checked as the server would. */
+function focusOf(value: unknown, where: string): FocusMarker[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw new Error(`${where} must be a list of focus markers`);
+  const markers = value.map((item, index) => (typeof item === 'string' ? scoped(`${where}[${index}]`, () => parseFocusSpec(item)) : item));
+  scoped(where, () => assertFocus(markers, 'focus'));
+  return markers;
+}
+
 function runOf(value: unknown, index: number): SuitePlanRun {
   const where = `runs[${index}]`;
   const raw = fields(value, where, RUN_KEYS);
@@ -138,6 +150,7 @@ function runOf(value: unknown, index: number): SuitePlanRun {
   const steps = scoped(`${where}.steps`, () => validateSteps(raw.steps));
   const expect = expectations(raw.expect, `${where}.expect`);
   const summary = summaryOf(raw.summary, `${where}.summary`);
+  const focus = focusOf(raw.focus, `${where}.focus`);
   const group = named(raw.group, `${where}.group`, MAX_GROUP_LENGTH);
   const target = named(raw.target, `${where}.target`, MAX_TARGET_LENGTH);
   const measure = named(raw.measure, `${where}.measure`, TITLE_MAX);
@@ -151,6 +164,7 @@ function runOf(value: unknown, index: number): SuitePlanRun {
     viewport: raw.viewport === undefined ? DEFAULT_VIEWPORT : parseViewport(raw.viewport, `${where}.viewport`),
     ...(expect ? { expect } : {}),
     ...(summary ? { summary } : {}),
+    ...(focus?.length ? { focus } : {}),
     ...(group ? { group } : {}),
     ...(target ? { target } : {}),
     ...(measure ? { measure } : {}),

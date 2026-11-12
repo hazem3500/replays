@@ -1,4 +1,5 @@
 import type { ConsoleLevel, ReplayConsoleEntry } from '../../../shared/replay.ts';
+import type { FocusMarker, FocusTests } from '../../../shared/run-focus.ts';
 
 /**
  * One row of the console list: an entry, or a run of identical consecutive entries (same level and text) folded into
@@ -12,10 +13,12 @@ export interface ConsoleRow {
   count: number;
   /** Lines in the message as captured (a thrown error's stack, a multi-line log). */
   lines: number;
+  /** The run's focus marker this message matches (src/shared/run-focus.ts). */
+  focus?: FocusMarker;
 }
 
 /** Folds runs of identical consecutive entries, in time order. */
-export function groupRepeats(entries: readonly ReplayConsoleEntry[]): ConsoleRow[] {
+export function groupRepeats(entries: readonly ReplayConsoleEntry[], focus?: FocusTests): ConsoleRow[] {
   const rows: ConsoleRow[] = [];
   for (const [index, entry] of entries.entries()) {
     const last = rows.at(-1);
@@ -24,7 +27,16 @@ export function groupRepeats(entries: readonly ReplayConsoleEntry[]): ConsoleRow
       last.count += 1;
       continue;
     }
-    rows.push({ id: `console-${index}`, entry, at: entry.at, ats: [entry.at], count: 1, lines: entry.message.split('\n').length });
+    const marker = focus?.has.console ? focus.console(entry) : undefined;
+    rows.push({
+      id: `console-${index}`,
+      entry,
+      at: entry.at,
+      ats: [entry.at],
+      count: 1,
+      lines: entry.message.split('\n').length,
+      ...(marker ? { focus: marker } : {}),
+    });
   }
   return rows;
 }
@@ -38,10 +50,12 @@ export const LEVEL_NAMES: Readonly<Record<ConsoleLevel, string>> = {
   debug: 'Debug',
 };
 
-export type LevelFilter = 'all' | 'error' | 'warn' | 'info' | 'debug';
+/** `focus` keeps the messages the suite run marked to look at; the rest are levels. */
+export type LevelFilter = 'all' | 'focus' | 'error' | 'warn' | 'info' | 'debug';
+type Level = Exclude<LevelFilter, 'focus'>;
 
 /** `info` covers `log` too: the capture keeps both, and people read them as one "ordinary output" level. */
-const LEVEL_TESTS: Readonly<Record<LevelFilter, (level: ConsoleLevel) => boolean>> = {
+const LEVEL_TESTS: Readonly<Record<Level, (level: ConsoleLevel) => boolean>> = {
   all: () => true,
   error: (level) => level === 'error',
   warn: (level) => level === 'warn',
@@ -49,16 +63,29 @@ const LEVEL_TESTS: Readonly<Record<LevelFilter, (level: ConsoleLevel) => boolean
   debug: (level) => level === 'debug',
 };
 
+function rowTest(filter: LevelFilter): (row: ConsoleRow) => boolean {
+  if (filter === 'focus') return (row) => row.focus !== undefined;
+  const test = LEVEL_TESTS[filter];
+  return (row) => test(row.entry.level);
+}
+
 /** Entries (not rows) per level filter, so a folded run counts every time it was logged. */
 export function levelCounts(rows: readonly ConsoleRow[]): Record<LevelFilter, number> {
-  const count = (filter: LevelFilter) => rows.reduce((sum, row) => sum + (LEVEL_TESTS[filter](row.entry.level) ? row.count : 0), 0);
-  return { all: count('all'), error: count('error'), warn: count('warn'), info: count('info'), debug: count('debug') };
+  const count = (filter: LevelFilter) => rows.reduce((sum, row) => sum + (rowTest(filter)(row) ? row.count : 0), 0);
+  return {
+    all: count('all'),
+    focus: count('focus'),
+    error: count('error'),
+    warn: count('warn'),
+    info: count('info'),
+    debug: count('debug'),
+  };
 }
 
 export function filterRows(rows: readonly ConsoleRow[], level: LevelFilter, text: string) {
   const words = text.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
   return rows.filter((row) => {
-    if (!LEVEL_TESTS[level](row.entry.level)) return false;
+    if (!rowTest(level)(row)) return false;
     const haystack = `${row.entry.message} ${row.entry.url ?? ''}`.toLocaleLowerCase();
     return words.every((word) => haystack.includes(word));
   });

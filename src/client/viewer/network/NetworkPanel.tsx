@@ -71,9 +71,12 @@ export function NetworkPanel({
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
   const panelWidth = useElementWidth(panel, SIDE_DETAIL_MIN_WIDTH);
   const [detailWidth, setDetailWidth] = useState(400);
-  const [filter, setFilter] = useCarriedFilter('network', NO_FILTER, withoutRange);
+  const [chosen, setFilter] = useCarriedFilter('network', NO_FILTER, withoutRange);
   const [hovered, setHovered] = useState<string>();
   const [sort, setSort] = useState<NetworkSort>({ key: 'time', direction: 'ascending' });
+  const counts = useMemo(() => statusCounts(rows), [rows]);
+  // why: Focus carried over from a run that marked requests shows every request on a run that marks none.
+  const filter = chosen.status === 'focus' && counts.focus === 0 ? { ...chosen, status: 'all' as const } : chosen;
   const unranged = filterRows(rows, { ...filter, range: undefined });
   const shown = filter.range ? filterRows(unranged, { ...NO_FILTER, range: filter.range }) : unranged;
   const words = useMemo(() => searchWords(filter.text), [filter.text]);
@@ -104,7 +107,7 @@ export function NetworkPanel({
       data-stacked={stacked || undefined}
       data-open={open ? '' : undefined}
     >
-      <NetworkToolbar counts={statusCounts(rows)} types={typeCounts(rows)} filter={filter} shown={shown.length} onFilter={setFilter} />
+      <NetworkToolbar counts={counts} types={typeCounts(rows)} filter={filter} shown={shown.length} onFilter={setFilter} />
       {rows.length ? (
         <NetworkTimeline
           rows={unranged}

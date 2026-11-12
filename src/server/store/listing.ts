@@ -114,24 +114,27 @@ export class Listing {
     };
     const runs = suite.runs.toSorted((a, b) => a.sequence - b.sequence);
     const runDetails = await Promise.all(
-      runs.map(async ({ id, sequence, label, status, startedAt, finishedAt, replayId, summary, group, target, measure, measureMs }) => {
-        const replay = replayId ? await replayOf(replayId) : undefined;
-        return {
-          id,
-          sequence,
-          label,
-          status,
-          startedAt,
-          ...(finishedAt ? { finishedAt } : {}),
-          ...(summary ? { summary } : {}),
-          ...(group ? { group } : {}),
-          ...(target ? { target } : {}),
-          ...(measure ? { measure } : {}),
-          ...(measureMs === undefined ? {} : { measureMs }),
-          ...(replayId ? { replayId } : {}),
-          ...(replay ? { replay } : {}),
-        };
-      }),
+      runs.map(
+        async ({ id, sequence, label, status, startedAt, finishedAt, replayId, summary, focus, group, target, measure, measureMs }) => {
+          const replay = replayId ? await replayOf(replayId) : undefined;
+          return {
+            id,
+            sequence,
+            label,
+            status,
+            startedAt,
+            ...(finishedAt ? { finishedAt } : {}),
+            ...(summary ? { summary } : {}),
+            ...(focus?.length ? { focus } : {}),
+            ...(group ? { group } : {}),
+            ...(target ? { target } : {}),
+            ...(measure ? { measure } : {}),
+            ...(measureMs === undefined ? {} : { measureMs }),
+            ...(replayId ? { replayId } : {}),
+            ...(replay ? { replay } : {}),
+          };
+        },
+      ),
     );
     return { ...summarizeReviewSuite(suite), ...retention, runDetails };
   }

@@ -67,10 +67,14 @@ export function withRun(suite: ReviewSuite, runId: string, input: ReviewRunRegis
   if (existing) assertRunUnchanged(existing, runId, input);
   if (existing?.replayId && input.status === 'running') return suite;
   const summary = input.summary ?? existing?.summary;
+  // why: an empty list clears the markers, so it is never stored.
+  const { focus: requestedFocus, ...rest } = input;
+  const focus = requestedFocus ?? existing?.focus;
   const run: ReviewSuiteRun = {
     ...(existing ? grouping(existing) : {}),
-    ...input,
+    ...rest,
     ...(summary ? { summary } : {}),
+    ...(focus?.length ? { focus } : {}),
     ...(existing?.replayId ? { replayId: existing.replayId, recording: existing.recording } : {}),
   };
   return {

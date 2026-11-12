@@ -55,11 +55,20 @@ export function DockPanel({ value, pending = value, children }: { value: string;
 
 function TabBadge({ item }: { item: InspectorTabItem }) {
   const text = item.badge ? badgeText(item.badge.value) : undefined;
-  if (!text) return null;
+  const focus = item.badge?.focus ? badgeText(item.badge.focus) : undefined;
   return (
-    <span className="count count-pill tab-badge" data-tone={item.badge?.tone} aria-hidden="true">
-      {text}
-    </span>
+    <>
+      {focus ? (
+        <span className="count count-pill tab-badge tab-focus" aria-hidden="true">
+          {focus}
+        </span>
+      ) : null}
+      {text ? (
+        <span className="count count-pill tab-badge" data-tone={item.badge?.tone} aria-hidden="true">
+          {text}
+        </span>
+      ) : null}
+    </>
   );
 }
 
