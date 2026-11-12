@@ -34,8 +34,6 @@ export interface SuiteDetails {
   href: string;
   /** What the suite is about (a pull request, a ticket), when it names one. */
   subject?: { provider: string; url: string; label: string };
-  /** The selected run's own summary; the Context tab shows it. */
-  runSummary?: string;
   /** What the selected run's author marked to look at (src/shared/run-focus.ts). */
   runFocus?: readonly FocusMarker[];
 }

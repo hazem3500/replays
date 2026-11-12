@@ -30,8 +30,6 @@ import { CopyButton } from '@/components/copy-button.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 
-import { InlineText, ResultBadge, SummaryBlocks } from './SummaryText.tsx';
-import { liftReport, summaryBlocks } from './summary-markdown.ts';
 import './context-panel.css';
 
 /*
@@ -57,12 +55,9 @@ export function ContextPanel({
   bundle,
   schema,
   sections,
-  summary,
 }: {
   bundle: ContextBundle;
   schema?: FieldSchema | undefined;
-  /** The suite run's own summary of what it checked and found, shown above the captured context. */
-  summary?: string | undefined;
   /** Blocks client plugins add to the tab (registerContextSection), drawn after the built-in groups. */
   sections?: ReactNode;
 }) {
@@ -72,11 +67,6 @@ export function ContextPanel({
   if (!context) {
     return (
       <div className="table-scroll" data-testid="context-empty">
-        {summary ? (
-          <div className="ctx-inner">
-            <RunSummary summary={summary} />
-          </div>
-        ) : null}
         <Empty icon={FileTextIcon} title="No context was captured">
           The recording app can attach approved build and runtime details. CLI captures can attach context with --context-file. Missing
           context cannot be recovered from this recording.
@@ -88,32 +78,9 @@ export function ContextPanel({
   return (
     <div ref={scope} data-testid="context-panel" className="table-scroll ctx">
       <div className="ctx-inner" data-slot={CONTEXT_SECTIONS_SLOT}>
-        {summary ? <RunSummary summary={summary} /> : null}
         {contextSections(CORE_SECTIONS, { context, schema }, sections)}
       </div>
     </div>
-  );
-}
-
-/** The run's own summary: what it checked leads, its verdict sits on the heading row, the rest follows in order. */
-function RunSummary({ summary }: { summary: string }) {
-  const heading = useId();
-  const report = liftReport(summaryBlocks(summary));
-  return (
-    <section className="ctx-section ctx-run-summary" aria-labelledby={heading} data-testid="context-run-summary">
-      <div className="ctx-run-summary-head">
-        <h2 id={heading} className="ctx-heading">
-          This run
-        </h2>
-        {report.result ? <ResultBadge result={report.result} /> : null}
-      </div>
-      {report.checked ? (
-        <p className="ctx-run-lead">
-          <span className="ctx-run-lead-label">Checked</span> <InlineText text={report.checked} />
-        </p>
-      ) : null}
-      {report.blocks.length ? <SummaryBlocks blocks={report.blocks} /> : null}
-    </section>
   );
 }
 
