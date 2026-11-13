@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-XKyaHtl9.js";import{a as t}from"./react-rgU3xPAb.js";var n=e(t(),1),r={workshopOpen:!1,keepFor:void 0},i=new Set;function a(e){r={...r,...e};for(let e of i)e()}var o=()=>r,s=e=>(i.add(e),()=>i.delete(e)),c=()=>(0,n.useSyncExternalStore)(s,o,o),l=()=>a({workshopOpen:!0});export{a as n,c as r,l as t};

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Browser chrome colour: the theme's page token per scheme (data-dark / data-light), stamped by the server or
+         replays build-static from the branding (src/server/base-path.ts withBase). The inline script below picks one. -->
+    <meta name="theme-color" content="#0c0e12" data-dark="#0c0e12" data-light="#eff1f5" />
+    <!-- Where the app lives ("/" at a domain's root, else a path prefix such as /replays): filled in by the server
+         per request (src/server/base-path.ts), so one build serves every base. Read by src/client/deployment.ts. -->
+    <meta name="app-base" content="" />
+    <script>
+      // Static demo: the app lives at the folder this page was served from, up to and including "/demo".
+      (function () {
+        var match = /^(.*?\/demo)(?:\/(?:r|s)\/|\/?$|\/index\.html$)/.exec(location.pathname);
+        document.querySelector('meta[name="app-base"]').content = match ? match[1] : '/demo';
+      })();
+    </script>
+    <meta name="app-sign-in" content="" />
+    <!-- Beta features the server enabled (REPLAYS_BETA_EDITOR): read by src/client/config.ts betaEditor(). Empty = none. -->
+    <meta name="app-beta" content="" />
+    <!-- Effective host editing write policy; saved edits use app-beta independently. -->
+    <meta name="app-editing" content="" />
+    <meta name="app-comments" content="" />
+    <!-- Browser entries of the server's plugins (JSON), filled in by the server: read by src/client/plugins/load.ts. -->
+    <meta name="app-plugins" content="" />
+    <!-- The deployment's profiles (JSON), filled in by the server: read by src/client/profiles.ts. Empty = none. -->
+    <meta name="app-profiles" content="" />
+    <!-- The deployment's views (JSON, src/shared/views.ts), filled in by the server. -->
+    <meta name="app-views" content="" />
+    <!-- Source providers' icons and nouns (JSON), filled in by the server: read by src/client/source-looks.ts. -->
+    <meta name="app-sources" content="" />
+    <!-- The deployment's display name and logo, filled in by the server (src/client/config.ts reads them). -->
+    <meta name="app-name" content="replays" />
+    <meta name="app-logo" content="" />
+    <title>replays</title>
+    <!-- The built-in mark (src/client/components/brand-mark-geometry.ts), drawn into public/assets/brand by
+         scripts/build-icons.mjs. The PNG's sizes keeps browsers on the SVG, which follows the tab's colour scheme. -->
+    <link rel="icon" href="./assets/brand/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="./assets/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png" />
+    <link rel="manifest" href="./assets/brand/manifest.json" />
+    <script data-brand-icons>
+      // why: a deployment's logo (branding logoUrl) is its tab icon too. The home-screen icon and the manifest carry the
+      // built-in mark and name: a custom logo drops both, a custom name only the manifest (iOS labels the icon with the
+      // title). 'replays' is PRODUCT_NAME (src/shared/brand.ts; test/brand-mark-dom.test.ts holds them together).
+      (function () {
+        var logo = document.querySelector('meta[name="app-logo"]').content;
+        var name = document.querySelector('meta[name="app-name"]').content;
+        var custom = /^(https:|data:image\/)/i.test(logo);
+        var renamed = name !== 'replays' && !/^__/.test(name);
+        var links = document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"], link[rel="manifest"]');
+        for (var i = 0; i < links.length; i++) {
+          var link = links[i];
+          if (custom && link.rel === 'icon') {
+            link.removeAttribute('type');
+            link.removeAttribute('sizes');
+            link.href = logo;
+          } else if (custom || (renamed && link.rel === 'manifest')) link.remove();
+        }
+      })();
+    </script>
+    <style>@view-transition{navigation:auto}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style>
+    <!-- Inter (self-hosted, OFL): the Latin subset every page paints with; Latin Extended loads only when used. -->
+    <link rel="preload" href="./assets/inter-latin-wght-normal-Dx4kXJAl.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Before first paint: the saved theme (else the OS preference) on <html>, and the matching browser
+      // chrome colour (the meta's data-dark / data-light, the branding's page colours), so phones never flash the wrong
+      // bar. The fallbacks are THEME_COLORS in theme.tsx.
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem('replays-theme');
+        } catch (error) {}
+        if (theme !== 'light' && theme !== 'dark') theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = theme;
+        var color = document.querySelector('meta[name="theme-color"]');
+        color.content = color.getAttribute('data-' + theme) || (theme === 'dark' ? '#0c0e12' : '#eff1f5');
+      })();
+    </script>
+    <script>
+      // Start the page's API requests alongside the app's JS instead of after it: the app's fetch() of the
+      // same URL picks up each preload. Mirrors the routes (src/client/routes), apiUrl and searchFromFilters (src/client).
+      (function () {
+        var path = location.pathname;
+        // appBase (src/client/api/fetch.ts): the declared base when the page is under it, else the root.
+        var meta = document.querySelector('meta[name="app-base"]');
+        var declared = meta && meta.content && meta.content !== '/' ? meta.content.replace(/\/+$/, '') : '';
+        var base = declared !== '' && (path === declared || path.indexOf(declared + '/') === 0) ? declared : '';
+        var rest = path.slice(base.length) || '/';
+        var api = base + '/api/';
+        var preload = function (url) {
+          var link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = 'fetch';
+          link.crossOrigin = 'anonymous';
+          link.href = api + url;
+          document.head.appendChild(link);
+        };
+        var id = function (segment) {
+          try {
+            return encodeURIComponent(decodeURIComponent(segment));
+          } catch (error) {
+            return '';
+          }
+        };
+        var params = new URLSearchParams(location.search);
+        var suite = /^\/s\/([^/]+)(?:\/r\/([^/]+))?\/?$/.exec(rest);
+        var replay = /^\/r\/([^/]+)\/?$/.exec(rest);
+        if (suite || replay) {
+          var replayId = id(suite ? suite[2] || '' : replay[1]);
+          var suiteId = suite ? id(suite[1]) : '';
+          if (suiteId) preload('suites/' + suiteId + '?expand=runs');
+          if (replayId) preload('replays/' + replayId);
+          return;
+        }
+        // why: a server-rendered index (TanStack Start) already carries its lists.
+        if (document.documentElement.hasAttribute('data-rendered')) return;
+        var filters = new URLSearchParams();
+        var q = (params.get('q') || '').trim();
+        if (q) filters.set('q', q);
+        if (params.get('host')) filters.set('host', params.get('host'));
+        if (params.get('errors') === '1') filters.set('errors', '1');
+        if (params.get('source') === 'agent' || params.get('source') === 'human') filters.set('source', params.get('source'));
+        if (params.get('tag')) filters.set('tag', params.get('tag'));
+        // Plugin filters (`x-*`), sorted, as ReplayIndex.tsx searchFromFilters writes them.
+        var plugin = {};
+        params.forEach(function (value, key) {
+          if (/^x-[a-z0-9][a-z0-9-]{0,38}$/.test(key) && value.trim() && !(key in plugin)) plugin[key] = value.trim().slice(0, 200);
+        });
+        Object.keys(plugin)
+          .sort()
+          .forEach(function (key) {
+            filters.set(key, plugin[key]);
+          });
+        var search = filters.toString();
+        preload('replays' + (search ? '?' + search : ''));
+        preload('suites?expand=runs&limit=100');
+      })();
+    </script>
+    <script>
+      // Tag cross-document transitions so styles.css can animate them: "page", and "page-back" on Back (a history
+      // traversal to an earlier entry). Reloads skip the transition. Index ↔ viewer changes stay in the document
+      // and animate there (src/client/transitions/page-motion.ts). Clicks during any transition go through (below).
+      (function () {
+        function tag(transition, activation) {
+          if (!transition || !activation) return;
+          if (activation.navigationType === 'reload') return transition.skipTransition();
+          transition.types.add('page');
+          var from = activation.from;
+          if (activation.navigationType === 'traverse' && from && from.index > -1 && activation.entry.index < from.index) transition.types.add('page-back');
+        }
+        addEventListener('pageswap', function (event) {
+          tag(event.viewTransition, event.activation);
+        });
+        addEventListener('pagereveal', function (event) {
+          tag(event.viewTransition, window.navigation && navigation.activation);
+        });
+        // Browsers with View Transitions but without document.activeViewTransition (Chromium before 133, which some
+        // embedded previews still ship) would lose every click made while one runs: track it ourselves.
+        if (Document.prototype.startViewTransition && !('activeViewTransition' in Document.prototype)) {
+          var running = null;
+          var start = Document.prototype.startViewTransition;
+          Document.prototype.startViewTransition = function () {
+            var transition = start.apply(this, arguments);
+            running = transition;
+            var clear = function () {
+              if (running === transition) running = null;
+            };
+            transition.finished.then(clear, clear);
+            return transition;
+          };
+          Object.defineProperty(Document.prototype, 'activeViewTransition', {
+            configurable: true,
+            get: function () {
+              return running;
+            },
+          });
+        }
+        // Input never waits for a transition (page or feed): while one runs, browsers route clicks to <html>.
+        // End it and hand the click to whatever is under the pointer once the real page is back on screen.
+        addEventListener(
+          'click',
+          function (event) {
+            var transition = document.activeViewTransition;
+            // The second click of a double click is not a new intent: drop it rather than replaying it on the new page.
+            if (!transition || !event.isTrusted || event.target !== document.documentElement) return;
+            if (event.detail > 1) return event.stopPropagation();
+            event.stopPropagation();
+            var x = event.clientX;
+            var y = event.clientY;
+            transition.skipTransition();
+            transition.finished.finally(function () {
+              requestAnimationFrame(function () {
+                var target = document.elementFromPoint(x, y);
+                if (target && target !== document.documentElement) target.click();
+              });
+            });
+          },
+          true,
+        );
+      })();
+    </script>
+    <!-- In <head> and render-blocking (with main.tsx's synchronous first render), so a page transition's incoming
+         snapshot is the rendered app and its top bar, not an empty #root. Modules defer: #root exists by then. -->
+    <script type="module" blocking="render" crossorigin src="./assets/main-DmM-42XW.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-XKyaHtl9.js">
+    <link rel="modulepreload" crossorigin href="./assets/edits-Bl1J9lHJ.js">
+    <link rel="modulepreload" crossorigin href="./assets/react-rgU3xPAb.js">
+    <link rel="modulepreload" crossorigin href="./assets/utils-BQvxlV4g.js">
+    <link rel="modulepreload" crossorigin href="./assets/useOpenInteractionType-C8c99lMI.js">
+    <link rel="modulepreload" crossorigin href="./assets/fetch-C7C36PXa.js">
+    <link rel="modulepreload" crossorigin href="./assets/sign-in-DGn8T_G8.js">
+    <link rel="modulepreload" crossorigin href="./assets/useQuery-CvexpIeI.js">
+    <link rel="modulepreload" crossorigin href="./assets/storage-DU0zI_tk.js">
+    <link rel="modulepreload" crossorigin href="./assets/index-queries-QKdlw-jn.js">
+    <link rel="modulepreload" crossorigin href="./assets/queries-DLR_Z0xX.js">
+    <link rel="modulepreload" crossorigin href="./assets/shortcuts-3Iha5Twd.js">
+    <link rel="modulepreload" crossorigin href="./assets/settings-Cs3e3pB5.js">
+    <link rel="modulepreload" crossorigin href="./assets/dropdown-menu-T704pLuP.js">
+    <link rel="modulepreload" crossorigin href="./assets/toast-baMKiMxl.js">
+    <link rel="modulepreload" crossorigin href="./assets/PluginUi-8opR01PL.js">
+    <link rel="modulepreload" crossorigin href="./assets/HostSurface-CixN_3cp.js">
+    <link rel="modulepreload" crossorigin href="./assets/clamp-uc_4yzOB.js">
+    <link rel="modulepreload" crossorigin href="./assets/plus-3MIZ5Wuu.js">
+    <link rel="modulepreload" crossorigin href="./assets/microtask-Dv10DFvq.js">
+    <link rel="modulepreload" crossorigin href="./assets/PanelSkeletons-CE2kZ2l4.js">
+    <link rel="modulepreload" crossorigin href="./assets/enabled-C_89MdxR.js">
+    <link rel="modulepreload" crossorigin href="./assets/dialog-BtlKUjhF.js">
+    <link rel="modulepreload" crossorigin href="./assets/plural-GH04560T.js">
+    <link rel="modulepreload" crossorigin href="./assets/open-hint-CFQU277p.js">
+    <link rel="stylesheet" crossorigin href="./assets/dropdown-menu-DRacj5h2.css">
+    <link rel="stylesheet" crossorigin href="./assets/clamp-OIxymvD1.css">
+    <link rel="stylesheet" crossorigin href="./assets/PanelSkeletons-Nssv9wof.css">
+    <link rel="stylesheet" crossorigin href="./assets/open-hint-BzgkvbWY.css">
+    <link rel="stylesheet" crossorigin href="./assets/main-B9HzDIvr.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
