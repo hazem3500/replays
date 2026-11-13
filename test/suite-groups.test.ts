@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { colouredByTarget, comparisonRuns, positionedRuns, type RecordedRun, runSections } from '../src/client/suite/runs.ts';
 import { assertReviewSuite, measureMsOf } from '../src/shared/review-suite.ts';
 import {
+  comparesRuns,
   displayOrder,
   formatMs,
   formatPercent,
@@ -11,6 +13,7 @@ import {
   median,
   percentChange,
   runHeadline,
+  sectionCount,
   typicalSample,
 } from '../src/shared/suite-groups.ts';
 
@@ -114,6 +117,80 @@ describe('headline', () => {
   it('is absent without a measured time', () => {
     const selected = runs[7];
     expect(selected && runHeadline(runs, selected, 'main')).toBeUndefined();
+  });
+});
+
+const section = (sequence: number, group?: string, target?: string, status = 'passed') => ({
+  ...row(sequence, group, target),
+  label: `Run ${sequence}`,
+  status,
+});
+const recorded = (rows: Row[]): RecordedRun[] =>
+  rows.map((run, index) => ({ replayId: run.replayId ?? '', label: `Run ${run.sequence}`, colour: index + 1 }));
+const ids = (list: readonly RecordedRun[]) => list.map((run) => run.replayId);
+
+describe('sections and comparisons', () => {
+  it('compares a group only when its runs name more than one target or a measure', () => {
+    expect(comparesRuns([row(1, 'Smoke'), row(2, 'Smoke')])).toBe(false);
+    expect(comparesRuns([row(1, 'Smoke', 'main'), row(2, 'Smoke', 'main')])).toBe(false);
+    expect(comparesRuns([row(1, 'Open', 'main'), row(2, 'Open', '#6879')])).toBe(true);
+    expect(comparesRuns([row(1, 'Open', 'main', 1200)])).toBe(true);
+    expect(comparesRuns([{ sequence: 1, group: 'Open', measure: 'Entries visible' }])).toBe(true);
+  });
+
+  it('lists a section group in sequence order with no comparison', () => {
+    const plain = [section(1, 'Smoke'), section(3, 'Smoke', undefined, 'failed'), section(2, 'Login'), section(4)];
+    const grouped = groupRuns(plain, 'main');
+    expect(grouped.groups.map((group) => [group.name, group.comparison])).toEqual([
+      ['Smoke', false],
+      ['Login', false],
+    ]);
+    expect(displayOrder(grouped).map((run) => run.sequence)).toEqual([1, 3, 2, 4]);
+    expect(sectionCount(grouped.groups[0]?.runs ?? [])).toBe('2 runs · 1 failed');
+    expect(sectionCount(grouped.groups[1]?.runs ?? [])).toBe('1 run');
+    const first = plain[0];
+    expect(first && groupPeers(plain, first, 'main')).toEqual([]);
+  });
+
+  it('compares across the whole suite when no group compares, and keeps each run its own colour', () => {
+    const plain = [section(1, 'Smoke'), section(2, 'Smoke'), section(3, 'Login'), section(4)];
+    const list = recorded(plain);
+    expect(ids(comparisonRuns(list, plain, 'r1', 'main', false))).toEqual(['r1', 'r2', 'r3', 'r4']);
+    expect(colouredByTarget(list, plain, 'main')).toEqual(list);
+  });
+
+  it('keeps a comparison group closed, and pools section and ungrouped runs in a mixed suite', () => {
+    const mixed = [
+      section(1, 'Cold open', 'main'),
+      section(2, 'Cold open', '#6879'),
+      section(3, 'Smoke'),
+      section(4, 'Smoke'),
+      section(5, 'Login'),
+      section(6),
+    ];
+    const list = recorded(mixed);
+    const stage = comparisonRuns(list, mixed, 'r2', 'main', false);
+    expect(stage.map((run) => [run.replayId, run.name])).toEqual([
+      ['r1', 'main (baseline)'],
+      ['r2', '#6879'],
+    ]);
+    expect(ids(comparisonRuns(list, mixed, 'r3', 'main', false))).toEqual(['r3', 'r4', 'r5', 'r6']);
+    expect(ids(comparisonRuns(list, mixed, 'r6', 'main', false))).toEqual(['r3', 'r4', 'r5', 'r6']);
+    const colours = colouredByTarget(list, mixed, 'main').map((run) => run.colour);
+    expect(colours.slice(0, 2)).toEqual([1, 2]);
+    expect(colours.slice(2)).toEqual([3, 4, 5, 6]);
+    expect(runHeadline(mixed, section(3, 'Smoke'), 'main')).toBeUndefined();
+  });
+
+  it('cuts the listed runs into one section per group, then the ungrouped', () => {
+    const mixed = [section(1, 'Cold open', 'main'), section(2, 'Smoke'), section(3), section(4, 'Cold open', '#6879')];
+    const listed = positionedRuns(mixed, 'main');
+    expect(runSections(listed).map((entry) => [entry.name, entry.runs.map((run) => run.sequence)])).toEqual([
+      ['Cold open', [1, 4]],
+      ['Smoke', [2]],
+      ['Other runs', [3]],
+    ]);
+    expect(runSections([section(1), section(2)])).toEqual([{ name: undefined, runs: [section(1), section(2)] }]);
   });
 });
 

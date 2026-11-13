@@ -9,7 +9,7 @@ Review suites group the recordings of one review: a suite has runs, each run has
                            register a suite (the same suite again is fine); prints <server>/s/<id>
   suite list [--mine] [--limit <n>]        the newest suites; --mine keeps those you are named on
   suite show <id>          the suite's runs with status, replay link, duration and summary; a grouped suite lists them
-                           by group and target, with the baseline and each measured time
+                           by group, and a compared group by target, with the baseline and each measured time
   suite summary <id> <text|@file>          set the suite's summary (text, at most 4000 characters)
   suite run add <suite> --run <id> --title <text> [--status running] [--summary <text|@file>]
                            [--focus <panel:pattern # note|@file>]... [--group <name>] [--target <name>] [--measure <step label>]
@@ -19,10 +19,12 @@ Review suites group the recordings of one review: a suite has runs, each run has
   suite record --plan <file> [--upload] [--only <run>]... [--dry-run] [--output <dir>]
                            record every run of a plan and finish each run: see below
 
-Grouping, to compare builds without a plan file: --group is the flow (at most 80 characters), --target what the run ran
-against such as main or #6879 (at most 40), --measure the label of the step whose completion is the run's headline time
-(the CLI stores the label; the measured time itself is only filled in by suite record), and suite create --baseline the
-target the others are compared to. Runs with the same group and target are samples. Leaving a flag out on run set keeps what the run has.
+Grouping, without a plan file: --group <name> is a section in the sidebar (at most 80 characters); with --target or
+--measure the group's runs are compared. --target is what the run ran against such as main or #6879 (at most 40),
+--measure the label of the step whose completion is the run's headline time (the CLI stores the label; the measured
+time itself is only filled in by suite record), and suite create --baseline the target the others are compared to. A
+group is compared when its runs name more than one target or any has a measure; runs with the same group and target
+are then samples. Leaving a flag out on run set keeps what the run has.
 
 Focus markers point the reviewer at what matters in a run's recording: --focus 'network:POST /api/v9/timer # starts
 the timer', 'console:Uncaught TypeError' or 'performance:Long task'. The pattern is case-insensitive text the row

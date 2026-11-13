@@ -48,7 +48,7 @@ export interface ReviewSuiteRun {
   summary?: string;
   /** What to look at in the recording (src/shared/run-focus.ts): the viewer accents the matching rows. */
   focus?: FocusMarker[];
-  /** The flow this run exercises (plan `group`); runs in one group are comparable. */
+  /** The flow this run exercises (plan `group`): a section of the suite, compared by target when `comparesRuns` holds. */
   group?: string;
   /** What it ran against (a build or variant); runs with the same group and target are samples. */
   target?: string;

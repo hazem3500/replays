@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
 import { displayTitle } from '../display-title.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon } from 'lucide-react';
-import { type KeyboardEvent, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, type KeyboardEvent, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { cssVars } from '../lib/css-vars.ts';
@@ -48,6 +48,7 @@ import {
   recordedRuns,
   type RunMetric,
   runRowMetrics,
+  runSections,
 } from './runs.ts';
 import { groupRuns, isGrouped, runHeadline } from '../../shared/suite-groups.ts';
 import { GroupedRunList, deltaTone } from './GroupedRunList.tsx';
@@ -203,7 +204,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // why: retain every playable run for layout switching even when entry shows only the selected run.
   const baseline = suite?.baseline;
   const playable = colouredByTarget(recordedRuns(runs, detailed), runs, baseline);
-  // why: a grouped suite compares a run only with its own flow's other targets, never with every run of the suite.
+  // why: a run of a comparison group is compared only with its own flow's other targets, never with every run of the suite.
   const stageRuns = comparisonRuns(playable, runs, selected, baseline, detailed);
   const view = usePageView({ replay: bundle, suiteProfile: suite?.profile, recordings: 1 });
   const performanceFocused = isPerformanceFocused({
@@ -828,7 +829,7 @@ function RunStatusChip({ tone }: { tone: string }) {
   );
 }
 
-/** Phones: the run picker, as a labelled radio group in the menu the topbar title opens. */
+/** Phones: the run picker, as a labelled radio group in the menu the topbar title opens; a grouped suite's runs sit under their group's name. */
 function RunMenuItems({
   runs,
   detailed,
@@ -848,20 +849,30 @@ function RunMenuItems({
         Run {index + 1} of {playable.length}
       </DropdownMenuLabel>
       <DropdownMenuRadioGroup value={selected ?? ''} onValueChange={(value) => onSelect(String(value))}>
-        {runs.map((run) => (
-          <DropdownMenuRadioItem
-            key={run.id}
-            value={playableReplayId(run, detailed) ?? `missing-${run.id}`}
-            disabled={!playableReplayId(run, detailed)}
-            closeOnClick
-            className="run-picker-item"
-          >
-            <span className="run-seq">{sequenceLabel(run)}</span>
-            <span className="run-picker-label">{run.label}</span>
-            {isExpired(run, detailed) ? <span className="run-picker-expired">Expired</span> : null}
-            <span className={`status-dot tone-${statusTone(run, detailed)}`} aria-hidden="true" />
-          </DropdownMenuRadioItem>
-        ))}
+        {runSections(runs).map((section) => {
+          const items = section.runs.map((run) => (
+            <DropdownMenuRadioItem
+              key={run.id}
+              value={playableReplayId(run, detailed) ?? `missing-${run.id}`}
+              disabled={!playableReplayId(run, detailed)}
+              closeOnClick
+              className="run-picker-item"
+            >
+              <span className="run-seq">{sequenceLabel(run)}</span>
+              <span className="run-picker-label">{run.label}</span>
+              {isExpired(run, detailed) ? <span className="run-picker-expired">Expired</span> : null}
+              <span className={`status-dot tone-${statusTone(run, detailed)}`} aria-hidden="true" />
+            </DropdownMenuRadioItem>
+          ));
+          return section.name === undefined ? (
+            <Fragment key="runs">{items}</Fragment>
+          ) : (
+            <DropdownMenuGroup key={section.name} data-testid="run-picker-section">
+              <DropdownMenuLabel className="run-picker-section">{section.name}</DropdownMenuLabel>
+              {items}
+            </DropdownMenuGroup>
+          );
+        })}
       </DropdownMenuRadioGroup>
     </DropdownMenuGroup>
   );
