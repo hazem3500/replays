@@ -7,6 +7,7 @@ import {
   pointerUnderCaption,
   stepCaptionPlaces,
   type PointerTrack,
+  viewportChanges,
 } from '../src/client/caption-placement.ts';
 import { captionIndex } from '../src/client/step-caption.ts';
 
@@ -143,5 +144,59 @@ describe('caption placement across spans', () => {
     expect(pointerUnderCaption(pointer, 1500, { place: 'top', text: 'Keep selected', numbered: true })).toBe(false);
     expect(pointerUnderCaption(pointer, 2000, { place: 'bottom', text: 'Keep selected', numbered: true })).toBe(false);
     expect(pointerUnderCaption(pointer, 100, { place: 'bottom', text: 'Keep selected', numbered: true })).toBe(false);
+  });
+});
+
+describe('caption placement after the recording resizes', () => {
+  const phone = { width: 390, height: 844 };
+  const text = 'Keep selected';
+  const pill = captionBox('bottom', text, phone);
+  const UNDER_PHONE_PILL = { x: pill.x + pill.width / 2, y: pill.y + pill.height / 2 };
+  const resized = (points: Array<[number, { x: number; y: number }]>, presses: number[] = []): PointerTrack => ({
+    ...track(points, presses),
+    resizes: [{ t: 500, ...phone }],
+  });
+
+  it('reads viewport changes from rrweb meta and resize events on the replay clock', () => {
+    const events = [
+      { timestamp: 1000, type: 4, data: { width: 1440, height: 900 } },
+      { timestamp: 1200, type: 3, data: { source: 4, width: 390, height: 844 } },
+      { timestamp: 1300, type: 3, data: { source: 1, positions: [] } },
+      { timestamp: 1900, type: 4, data: { width: 800, height: 600 } },
+    ];
+    expect(viewportChanges(events)).toEqual([
+      { t: 200, width: 390, height: 844 },
+      { t: 900, width: 800, height: 600 },
+    ]);
+  });
+
+  it('moves to the top when the pointer rests under the phone-sized pill', () => {
+    const pointer = resized([
+      [0, AWAY],
+      [1200, UNDER_PHONE_PILL],
+      [2600, AWAY],
+    ]);
+    expect(stepCaptionPlaces(steps, pointer, 4000)[1]).toBe('top');
+  });
+
+  it('moves to the top when the step clicks under the phone-sized pill', () => {
+    const pointer = resized(
+      [
+        [0, AWAY],
+        [990, UNDER_PHONE_PILL],
+        [1050, AWAY],
+      ],
+      [1000],
+    );
+    expect(stepCaptionPlaces(steps, pointer, 4000)[1]).toBe('top');
+  });
+
+  it('fades while the pointer is under the phone-sized pill', () => {
+    const pointer = resized([
+      [0, AWAY],
+      [1200, UNDER_PHONE_PILL],
+    ]);
+    expect(pointerUnderCaption(pointer, 1500, { place: 'bottom', text, numbered: true })).toBe(true);
+    expect(pointerUnderCaption(track([[1200, UNDER_PHONE_PILL]]), 1500, { place: 'bottom', text, numbered: true })).toBe(false);
   });
 });

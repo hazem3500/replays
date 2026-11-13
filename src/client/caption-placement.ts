@@ -9,11 +9,17 @@ import { captionDisplayText, captionIndex, captionSpan, exportCaptionScale } fro
  */
 export type CaptionPlace = 'bottom' | 'top';
 
-/** The recorded pointer on the replay clock: positions (sorted by `t`), press times, and the recorded viewport. */
+type Size = { width: number; height: number };
+
+/**
+ * The recorded pointer on the replay clock: positions (sorted by `t`), press times, the opening viewport, and each
+ * later viewport change (sorted by `t`; a recording resized from desktop to phone places its captions on the phone frame).
+ */
 export interface PointerTrack {
   points: ReadonlyArray<{ t: number; x: number; y: number }>;
   presses: readonly number[];
-  viewport: { width: number; height: number };
+  viewport: Size;
+  resizes?: ReadonlyArray<{ t: number } & Size>;
 }
 
 export interface CaptionBox {
@@ -78,6 +84,48 @@ function lastAt(points: PointerTrack['points'], time: number) {
   return found;
 }
 
+const META = 4;
+const INCREMENTAL = 3;
+const VIEWPORT_RESIZE = 4;
+
+/** Every viewport change after the first event (rrweb meta and resize events), on the replay clock. */
+export function viewportChanges(events: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>) {
+  const first = events[0]?.timestamp ?? 0;
+  const resizes: Array<{ t: number } & Size> = [];
+  for (const event of events) {
+    if (event.timestamp <= first || !event.data || typeof event.data !== 'object') continue;
+    const data = event.data as { source?: unknown; width?: unknown; height?: unknown };
+    if (event.type !== META && !(event.type === INCREMENTAL && data.source === VIEWPORT_RESIZE)) continue;
+    const { width, height } = data;
+    if (typeof width === 'number' && typeof height === 'number' && width > 0 && height > 0)
+      resizes.push({ t: event.timestamp - first, width, height });
+  }
+  return resizes.sort((a, b) => a.t - b.t);
+}
+
+/** The viewport at `time`: the last change at or before it, else the opening one. */
+export function viewportAt(track: PointerTrack, time: number): Size {
+  let viewport = track.viewport;
+  for (const resize of track.resizes ?? []) {
+    if (resize.t > time) break;
+    viewport = resize;
+  }
+  return viewport;
+}
+
+/** The first viewport change after `time`, or Infinity. */
+function nextResize(track: PointerTrack, time: number) {
+  return track.resizes?.find((resize) => resize.t > time)?.t ?? Infinity;
+}
+
+type CaptionText = { text: string; numbered: boolean };
+
+/** The caption pill at `place` on the viewport active at `time`, and that viewport. */
+function pillAt(track: PointerTrack, time: number, place: CaptionPlace, caption: CaptionText) {
+  const viewport = viewportAt(track, time);
+  return { viewport, zone: captionBox(place, caption.text, viewport, caption.numbered) };
+}
+
 /** Where the pointer is at `time`: its last recorded position, held until the next; undefined before the first. */
 export function pointerAt(track: PointerTrack, time: number) {
   return track.points[lastAt(track.points, time)];
@@ -87,25 +135,23 @@ export function pointerAt(track: PointerTrack, time: number) {
  * How much of [from, to) the caption at `zone` covers, in ms: the time the pointer rests under it (ignoring a quick
  * pass-through), plus, for each press in the span, the rest of the span, since the clicked element stays on screen.
  */
-function coverMs(track: PointerTrack, zone: CaptionBox, from: number, to: number) {
-  const reach = grow(zone, POINTER_REACH_PX * exportCaptionScale(track.viewport.width));
+function coverMs(track: PointerTrack, place: CaptionPlace, caption: CaptionText, span: { from: number; to: number }) {
+  const { from, to } = span;
   let pointer = 0;
-  let index = lastAt(track.points, from);
   let at = from;
   while (at < to) {
-    const next = track.points[index + 1];
-    const until = Math.min(to, next ? Math.max(next.t, at) : to);
+    const index = lastAt(track.points, at);
+    const until = Math.min(to, track.points[index + 1]?.t ?? Infinity, nextResize(track, at));
     const point = track.points[index];
-    if (point && inside(reach, point)) pointer += until - at;
+    const { viewport, zone } = pillAt(track, at, place, caption);
+    if (point && inside(grow(zone, POINTER_REACH_PX * exportCaptionScale(viewport.width)), point)) pointer += until - at;
     at = until;
-    index++;
-    if (!next) break;
   }
   let targets = 0;
   for (const press of track.presses) {
     if (press < from - PRESS_LEAD_MS || press >= to) continue;
     const point = pointerAt(track, press);
-    if (point && inside(zone, point)) targets += to - Math.max(from, press);
+    if (point && inside(pillAt(track, press, place, caption).zone, point)) targets += to - Math.max(from, press);
   }
   return (pointer >= MIN_COVER_MS ? pointer : 0) + targets;
 }
@@ -115,10 +161,10 @@ function coverMs(track: PointerTrack, zone: CaptionBox, from: number, to: number
  * top would cover as much or more (the side covering less wins; a tie stays at the bottom).
  */
 export function placeCaption(track: PointerTrack, span: { from: number; to: number; text: string; numbered?: boolean }): CaptionPlace {
-  const numbered = span.numbered ?? true;
-  const bottom = coverMs(track, captionBox('bottom', span.text, track.viewport, numbered), span.from, span.to);
+  const caption = { text: span.text, numbered: span.numbered ?? true };
+  const bottom = coverMs(track, 'bottom', caption, span);
   if (bottom <= 0) return 'bottom';
-  const top = coverMs(track, captionBox('top', span.text, track.viewport, numbered), span.from, span.to);
+  const top = coverMs(track, 'top', caption, span);
   return top < bottom ? 'top' : 'bottom';
 }
 
@@ -158,6 +204,6 @@ export function pointerUnderCaption(
 ) {
   const point = pointerAt(track, time);
   if (!point) return false;
-  const reach = POINTER_REACH_PX * exportCaptionScale(track.viewport.width);
-  return inside(grow(captionBox(place, text, track.viewport, numbered), reach), point);
+  const { viewport, zone } = pillAt(track, time, place, { text, numbered });
+  return inside(grow(zone, POINTER_REACH_PX * exportCaptionScale(viewport.width)), point);
 }
