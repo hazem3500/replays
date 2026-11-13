@@ -492,6 +492,8 @@ svg.lucide.lucide { stroke-width: 2; }
   bottom: calc(var(--frame-bottom, 0px) + max(8px, var(--caption-inset)));
   padding-inline: var(--clear);
 }
+/* At the top of the frame nothing sits in its corners (the fullscreen button is bottom right), so no clearance. */
+.stage-wrap .step-caption[data-place="top"] { top: calc(var(--frame-y, 0px) + max(8px, var(--caption-inset))); bottom: auto; padding-inline: 0; }
 
 /* The replay's source (a pull request, a ticket) as a quiet link chip beside the title. */
 /* The replay's source beside the title: a quiet ghost link at the topbar controls' size (28 px, 6 px radius), no
@@ -650,7 +652,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .console-table th:nth-child(3), .console-table td:nth-child(3) { width: 180px; }
 .console-row code { display: block; overflow: hidden; color: var(--text); font-size: var(--text-xs); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
 /* While the scrubber is dragged its time bubble rises over the player's bottom edge: the caption steps up clear of it. */
-.player-region:has(.scrubber[data-scrubbing]) .step-caption { transform: translateY(-28px); }
+.player-region:has(.scrubber[data-scrubbing]) .step-caption:not([data-place="top"]) { transform: translateY(-28px); }
 .console-row.error td { background: var(--danger-tint); }
 .source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

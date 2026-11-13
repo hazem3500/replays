@@ -38,6 +38,10 @@ export class SharedPlayer implements Playback {
     return this.focused.wrapper;
   }
 
+  pointerTrack() {
+    return this.focused.pointerTrack();
+  }
+
   /** The recording the chrome describes; a change notifies viewport listeners (its picture changed). */
   readonly focus = (controller: ReplayController) => {
     if (controller === this.focused) return;

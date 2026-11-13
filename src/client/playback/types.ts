@@ -62,6 +62,7 @@ export type Playback = Pick<
   | 'subscribeSeek'
   | 'subscribeState'
   | 'subscribeViewport'
+  | 'pointerTrack'
 > & {
   /** False when the playback cannot fast-forward idle stretches (a shared clock: one ruler for every recording). */
   readonly canSkipInactive?: boolean;
