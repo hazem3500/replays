@@ -4,7 +4,7 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { cssVars } from '../lib/css-vars.ts';
 import { prefetchReplay } from '../queries.ts';
 import { shortNames } from '../compare/tiles.ts';
-import { formatMs, formatPercent, type groupRuns, type TargetSummary } from '../../shared/suite-groups.ts';
+import { formatMs, formatPercent, type groupRuns, type RunGroup, sectionCount, type TargetSummary } from '../../shared/suite-groups.ts';
 import type { ReviewSuiteIndexRun } from '../../shared/review-suite.ts';
 import { playableReplayId } from './runs.ts';
 
@@ -19,7 +19,7 @@ export interface GroupedListProps {
   colours: ReadonlyMap<string, number>;
   onSelect: (replayId: string | undefined) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  /** Renders an ungrouped run's row copy (the workspace's own row), so "Other runs" look like the flat list. */
+  /** Renders a run's row copy (the workspace's own row), so sections and "Other runs" look like the flat list. */
   renderOtherRow: (run: Run, name: string) => ReactNode;
   statusOf: (run: Run) => string;
 }
@@ -193,15 +193,17 @@ function TargetRow({ group, entry, first, props }: { group: string; entry: Targe
   );
 }
 
-function OtherRuns({ props }: { props: GroupedListProps }) {
-  const names = shortNames(props.groups.other.map((run) => run.label));
+/** Runs listed under a heading as plain rows: a group that only sections its runs, or the suite's ungrouped runs. */
+function RunSection({ name, runs, counted, props }: { name: string; runs: Run[]; counted: boolean; props: GroupedListProps }) {
+  const names = shortNames(runs.map((run) => run.label));
   return (
     <div role="listitem" className="suite-group">
       <h3 className="suite-group-head" data-testid="suite-group-head">
-        <span className="suite-group-name">Other runs</span>
+        <span className="suite-group-name">{name}</span>
+        {counted ? <span data-testid="suite-group-count">{sectionCount(runs)}</span> : null}
       </h3>
-      <div role="list" aria-label="Other runs">
-        {props.groups.other.map((run, index) => {
+      <div role="list" aria-label={name}>
+        {runs.map((run, index) => {
           const playable = playableReplayId(run, props.detailed);
           const current = playable !== undefined && playable === props.selected;
           return (
@@ -224,21 +226,35 @@ function OtherRuns({ props }: { props: GroupedListProps }) {
   );
 }
 
-/** A grouped suite's runs: per group one row per target (samples, median, change from the baseline) that opens to its samples. */
+/** A group whose runs compare: its heading with the targets, then one row per target. */
+function ComparisonGroup({ group, props }: { group: RunGroup<Run>; props: GroupedListProps }) {
+  return (
+    <div role="listitem" className="suite-group">
+      <GroupHeading name={group.name} targets={group.targets} />
+      <div role="list" aria-label={group.name}>
+        {group.targets.map((entry, index) => (
+          <TargetRow key={entry.target} group={group.name} entry={entry} first={index === 0} props={props} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A grouped suite's runs. A comparison group has one row per target (samples, median, change from the baseline) that
+ * opens to its samples; any other group is a section, its name and count over its runs' own rows.
+ */
 export function GroupedRunList(props: GroupedListProps) {
   return (
     <>
-      {props.groups.groups.map((group) => (
-        <div role="listitem" key={group.name} className="suite-group">
-          <GroupHeading name={group.name} targets={group.targets} />
-          <div role="list" aria-label={group.name}>
-            {group.targets.map((entry, index) => (
-              <TargetRow key={entry.target} group={group.name} entry={entry} first={index === 0} props={props} />
-            ))}
-          </div>
-        </div>
-      ))}
-      {props.groups.other.length ? <OtherRuns props={props} /> : null}
+      {props.groups.groups.map((group) =>
+        group.comparison ? (
+          <ComparisonGroup key={group.name} group={group} props={props} />
+        ) : (
+          <RunSection key={group.name} name={group.name} runs={group.runs} counted props={props} />
+        ),
+      )}
+      {props.groups.other.length ? <RunSection name="Other runs" runs={props.groups.other} counted={false} props={props} /> : null}
     </>
   );
 }

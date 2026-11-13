@@ -32,7 +32,7 @@ export interface SuitePlanRun {
   summary?: string;
   /** What to look at in the recording (src/shared/run-focus.ts): marker objects or `panel:pattern # note` strings. */
   focus?: FocusMarker[];
-  /** The flow this run exercises; runs in one group are comparable. */
+  /** The flow this run exercises: a section of the suite, compared by target when its runs name targets or a measure. */
   group?: string;
   /** What it ran against; runs with the same group and target are samples. */
   target?: string;

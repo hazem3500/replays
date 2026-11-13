@@ -120,7 +120,7 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 80,
-          "description": "Names the flow, e.g. \"Cold open\". Runs in one group are comparable; the viewer lists and compares a run only with its group."
+          "description": "Names the flow, e.g. \"Cold open\". On its own a group is a section: the viewer lists its runs under its name. When its runs name more than one target or any has a measure, the group is compared: the viewer shows each target's median and compares a run only with its group."
         },
         "target": {
           "type": "string",

@@ -23,6 +23,10 @@ export interface TargetSummary<T extends GroupableRun> {
 
 export interface RunGroup<T extends GroupableRun> {
   name: string;
+  /** Whether the group's runs are compared (see `comparesRuns`); otherwise the group is a plain section of runs. */
+  comparison: boolean;
+  /** The group's runs in sequence order. */
+  runs: T[];
   targets: TargetSummary<T>[];
 }
 
@@ -60,6 +64,16 @@ export function formatMs(ms: number): string {
   return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
 }
 
+/**
+ * Whether a group's runs are compared with each other rather than just listed under its name.
+ * invariant: a group compares when its runs name more than one target (a run without one counts as the target
+ * `NO_TARGET`) or any of them has a `measure` or `measureMs`. Only such a group gets per-target rows, medians, the
+ * baseline change, target colours and a Compare limited to its own targets; any other group is a plain section.
+ */
+export function comparesRuns(runs: readonly GroupableRun[]): boolean {
+  return new Set(runs.map(targetOf)).size > 1 || runs.some((run) => Boolean(run.measure) || run.measureMs !== undefined);
+}
+
 const byGroup = <T extends GroupableRun>(runs: readonly T[]) => runs.filter((run): run is T & { group: string } => run.group !== undefined);
 
 function summarise<T extends GroupableRun>(target: string, samples: T[], baseline: string | undefined): TargetSummary<T> {
@@ -76,7 +90,7 @@ function summarise<T extends GroupableRun>(target: string, samples: T[], baselin
 }
 
 /**
- * The runs grouped for a comparison: groups in plan order (the order their first run appears), each with its targets,
+ * The runs grouped: groups in plan order (the order their first run appears), each with its targets,
  * the baseline target first and the others in plan order. Each target carries its median and its change from the baseline.
  */
 export function groupRuns<T extends GroupableRun>(runs: readonly T[], baseline?: string): GroupedRuns<T> {
@@ -96,14 +110,23 @@ export function groupRuns<T extends GroupableRun>(runs: readonly T[], baseline?:
       const change = base === undefined || entry.baseline || entry.median === undefined ? undefined : percentChange(entry.median, base);
       return change === undefined ? entry : { ...entry, delta: change };
     });
-    return { name, targets: [...compared.filter((entry) => entry.baseline), ...compared.filter((entry) => !entry.baseline)] };
+    return {
+      name,
+      comparison: comparesRuns(inGroup),
+      runs: inGroup,
+      targets: [...compared.filter((entry) => entry.baseline), ...compared.filter((entry) => !entry.baseline)],
+    };
   });
   return { groups, other: ordered.filter((run) => run.group === undefined) };
 }
 
-/** The runs in the order the grouped sidebar shows them: group by group, target by target, then the ungrouped. */
+/**
+ * The runs in the order the grouped sidebar shows them: group by group (a comparison target by target, a section in
+ * sequence order), then the ungrouped.
+ */
 export function displayOrder<T extends GroupableRun>(grouped: GroupedRuns<T>): T[] {
-  return [...grouped.groups.flatMap((group) => group.targets.flatMap((entry) => entry.samples)), ...grouped.other];
+  const inOrder = (group: RunGroup<T>) => (group.comparison ? group.targets.flatMap((entry) => entry.samples) : group.runs);
+  return [...grouped.groups.flatMap(inOrder), ...grouped.other];
 }
 
 /** The sample whose time is the target's median (the lower middle for an even count); else its first sample with a recording. */
@@ -121,11 +144,12 @@ export interface GroupPeer<T extends GroupableRun> {
 
 /**
  * The recordings to compare `selected` with: the typical sample of each other target in its own group, baseline first.
- * Other samples of its own target and runs of other groups are never peers. Empty for a run without a group.
+ * Other samples of its own target and runs of other groups are never peers. Empty for a run without a group or in a
+ * group that is only a section.
  */
 export function groupPeers<T extends GroupableRun>(runs: readonly T[], selected: T, baseline?: string): GroupPeer<T>[] {
   const group = groupRuns(runs, baseline).groups.find((entry) => entry.name === selected.group);
-  if (!group) return [];
+  if (!group?.comparison) return [];
   return group.targets.flatMap((entry) => {
     if (entry.target === targetOf(selected)) return [];
     const run = typicalSample(entry);
@@ -150,7 +174,7 @@ const baselineNote = (own: TargetSummary<GroupableRun> | undefined, base: Target
     ? { baseline: { text: `${base.target} ${formatMs(base.median)} (${formatPercent(own.delta)})`, delta: own.delta } }
     : {};
 
-/** The one line a grouped run opens with; undefined without a group, a measure and its time. */
+/** The one line a compared run opens with; undefined without a group, a measure and its time. */
 export function runHeadline<T extends GroupableRun>(runs: readonly T[], run: T, baseline?: string): RunHeadline | undefined {
   if (run.group === undefined || !run.measure || run.measureMs === undefined) return undefined;
   const group = groupRuns(runs, baseline).groups.find((entry) => entry.name === run.group);
@@ -164,5 +188,11 @@ export function runHeadline<T extends GroupableRun>(runs: readonly T[], run: T, 
   };
 }
 
-/** Whether any run names a group (the suite then lists and compares by group). */
+/** "3 runs · 1 failed": a section's size and, when any failed, how many. */
+export function sectionCount(runs: ReadonlyArray<{ status: string }>): string {
+  const failed = runs.filter((run) => run.status === 'failed').length;
+  return `${runs.length} ${runs.length === 1 ? 'run' : 'runs'}${failed ? ` · ${failed} failed` : ''}`;
+}
+
+/** Whether any run names a group (the sidebar then lists the suite in sections, one per group). */
 export const isGrouped = (runs: readonly Pick<GroupableRun, 'group'>[]) => runs.some((run) => run.group !== undefined);

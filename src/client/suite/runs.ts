@@ -14,13 +14,35 @@ export function orderedRuns<T extends Sequenced>(runs: readonly T[]) {
   return runs.toSorted((a, b) => (a.position ?? a.sequence) - (b.position ?? b.sequence));
 }
 
-/** A grouped suite's runs, numbered in the order its sidebar lists them (group, target, sample); other suites keep their sequence. */
+/**
+ * A grouped suite's runs, numbered in the order its sidebar lists them (group, then target and sample for a comparison);
+ * other suites keep their sequence.
+ */
 export function positionedRuns<T extends Pick<ReviewSuiteIndexRun, 'sequence' | 'group' | 'target' | 'measure' | 'measureMs' | 'replayId'>>(
   runs: readonly T[],
   baseline: string | undefined,
 ): Array<T & { position?: number }> {
   if (!isGrouped(runs)) return runs.toSorted((a, b) => a.sequence - b.sequence);
   return displayOrder(groupRuns(runs, baseline)).map((run, position) => ({ ...run, position }));
+}
+
+/** A heading and the runs under it, as the phone run picker lists them; an ungrouped suite has one section without a name. */
+interface RunSection<T> {
+  name: string | undefined;
+  runs: T[];
+}
+
+/** The runs, already in sidebar order, cut into one section per group and then "Other runs" for the ungrouped. */
+export function runSections<T extends Pick<ReviewSuiteIndexRun, 'group'>>(runs: readonly T[]): RunSection<T>[] {
+  if (!isGrouped(runs)) return [{ name: undefined, runs: [...runs] }];
+  const sections: RunSection<T>[] = [];
+  for (const run of runs) {
+    const name = run.group ?? 'Other runs';
+    const last = sections.at(-1);
+    if (last?.name === name) last.runs.push(run);
+    else sections.push({ name, runs: [run] });
+  }
+  return sections;
 }
 
 /**
@@ -124,25 +146,33 @@ export function runRowMetrics(run: { replay?: { perf?: ReplayPerfSummary | undef
 }
 
 /**
- * In a grouped suite a run's colour is its target's (the baseline first), so "main" is the same colour in every group
- * and on every Compare stage; the sidebar swatch and the tile frame still read it from this one list.
+ * A run of a comparison group takes its target's colour (the baseline first), so "main" is the same colour in every
+ * compared group and on every Compare stage; other runs keep their own. The sidebar swatch and the tile frame still
+ * read it from this one list.
  */
 export function colouredByTarget(
   recorded: readonly RecordedRun[],
-  runs: ReadonlyArray<Pick<ReviewSuiteIndexRun, 'sequence' | 'replayId' | 'group' | 'target'>>,
+  runs: ReadonlyArray<Pick<ReviewSuiteIndexRun, 'sequence' | 'replayId' | 'group' | 'target' | 'measure' | 'measureMs'>>,
   baseline: string | undefined,
 ): RecordedRun[] {
-  if (!isGrouped(runs)) return [...recorded];
-  const targets = [...new Set(runs.toSorted((a, b) => a.sequence - b.sequence).map(targetOf))];
+  const compared = groupRuns(runs, baseline)
+    .groups.filter((group) => group.comparison)
+    .flatMap((group) => group.runs);
+  if (!compared.length) return [...recorded];
+  const targets = [...new Set(compared.map(targetOf))];
   const order = [...targets.filter((name) => name === baseline), ...targets.filter((name) => name !== baseline)];
-  const targetByReplay = new Map(runs.map((run) => [run.replayId, targetOf(run)]));
-  return recorded.map((run) => ({ ...run, colour: tileColour(Math.max(0, order.indexOf(targetByReplay.get(run.replayId) ?? ''))) }));
+  const targetByReplay = new Map(compared.map((run) => [run.replayId, targetOf(run)]));
+  return recorded.map((run) => {
+    const target = targetByReplay.get(run.replayId);
+    return target === undefined ? run : { ...run, colour: tileColour(Math.max(0, order.indexOf(target))) };
+  });
 }
 
 /**
- * What "Compare" shows for the run in view. An ungrouped suite shows every recorded run. In a grouped suite, a grouped
- * run is shown with the typical sample of each other target of its own group, named by target (the baseline marked);
- * an ungrouped run only with the other ungrouped runs. Runs of other groups are never offered.
+ * What "Compare" shows for the run in view. A suite without a comparison group (ungrouped, or only plain sections)
+ * shows every recorded run. Otherwise a run of a comparison group is shown with the typical sample of each other target
+ * of its own group, named by target (the baseline marked), and any other run (in a section or ungrouped) with the other
+ * runs outside comparison groups. Runs of another comparison group are never offered.
  */
 export function comparisonRuns(
   recorded: readonly RecordedRun[],
@@ -151,18 +181,19 @@ export function comparisonRuns(
   baseline: string | undefined,
   detailed: boolean,
 ) {
-  if (!isGrouped(runs)) return [...recorded];
+  const compared = groupRuns(runs, baseline).groups.filter((group) => group.comparison);
+  if (!compared.length) return [...recorded];
   const playable = runs.filter((run) => playableReplayId(run, detailed));
   const current = playable.find((run) => run.replayId === selected);
   if (!current) return [...recorded];
-  if (current.group === undefined) {
-    const loose = new Set(playable.filter((run) => run.group === undefined).map((run) => run.replayId));
-    return recorded.filter((run) => loose.has(run.replayId));
+  const group = compared.find((entry) => entry.name === current.group);
+  if (!group) {
+    const closed = new Set(compared.flatMap((entry) => entry.runs.map((run) => run.replayId)));
+    return recorded.filter((run) => !closed.has(run.replayId));
   }
   const peers = new Map(groupPeers(playable, current, baseline).map((peer) => [peer.target, peer.run]));
   const colours = new Map(recorded.map((run) => [run.replayId, run.colour]));
-  const group = groupRuns(runs, baseline).groups.find((entry) => entry.name === current.group);
-  return (group?.targets ?? []).flatMap((entry): RecordedRun[] => {
+  return group.targets.flatMap((entry): RecordedRun[] => {
     const run = entry.target === targetOf(current) ? current : peers.get(entry.target);
     const replayId = run?.replayId;
     if (!replayId) return [];
