@@ -1,3 +1,5 @@
+import { captionDisplayText, captionIndex, captionSpan, exportCaptionScale } from './step-caption.ts';
+
 /**
  * Where a caption sits on the recorded frame: at the bottom edge (the default) or the top. A caption moves to the
  * top when, while it is up, the pointer or what the step clicks sits under its bottom pill, so the caption never
@@ -5,8 +7,6 @@
  * the viewer (viewer/StepCaption.tsx, edit-caption.tsx) and exported videos (render/main.ts) agree and a caption
  * never jumps mid-way. Everything is in recorded-viewport px on the replay clock (ms from the first event).
  */
-import { captionDisplayText, captionIndex, captionSpan, exportCaptionScale } from './step-caption.ts';
-
 export type CaptionPlace = 'bottom' | 'top';
 
 /** The recorded pointer on the replay clock: positions (sorted by `t`), press times, and the recorded viewport. */
@@ -70,7 +70,7 @@ function lastAt(points: PointerTrack['points'], time: number) {
   let found = -1;
   while (low <= high) {
     const middle = (low + high) >> 1;
-    if (points[middle]!.t <= time) {
+    if ((points[middle]?.t ?? Infinity) <= time) {
       found = middle;
       low = middle + 1;
     } else high = middle - 1;
@@ -151,7 +151,11 @@ export function editCaptionPlaces(
 }
 
 /** The live viewer fades a caption while the pointer is under its pill right now; exports never do. */
-export function pointerUnderCaption(track: PointerTrack, time: number, place: CaptionPlace, text: string, numbered: boolean) {
+export function pointerUnderCaption(
+  track: PointerTrack,
+  time: number,
+  { place, text, numbered }: { place: CaptionPlace; text: string; numbered: boolean },
+) {
   const point = pointerAt(track, time);
   if (!point) return false;
   const reach = POINTER_REACH_PX * exportCaptionScale(track.viewport.width);

@@ -45,7 +45,7 @@ export function StepCaption({ recording }: { recording?: { steps: readonly Repla
   const text = active || editing ? captionDisplayText(step?.label ?? '') : undefined;
   const place = places[captionIndex] ?? 'bottom';
   const covered = usePlayhead((time) =>
-    text !== undefined && !editing ? pointerUnderCaption(pointer, time, place, text, number !== undefined) : false,
+    text !== undefined && !editing ? pointerUnderCaption(pointer, time, { place, text, numbered: number !== undefined }) : false,
   );
   const finish = (action: 'save' | 'cancel' | 'reset') => {
     if (!renaming) return;

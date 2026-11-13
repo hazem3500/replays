@@ -36,7 +36,6 @@ describe('caption placement', () => {
     expect(bottom.y + bottom.height).toBeCloseTo(900 - 18 * 1.6);
     expect(top.y).toBeCloseTo(18 * 1.6);
     expect(top.height).toBe(bottom.height);
-    // A long label wraps to two lines at most 76% of the frame wide.
     const long = captionBox('bottom', 'x'.repeat(90), viewport);
     expect(long.width).toBeCloseTo(0.76 * 1440);
     expect(long.height).toBeGreaterThan(bottom.height);
@@ -66,7 +65,7 @@ describe('caption placement', () => {
   });
 
   it('moves to the top when the step clicks a spot under the bottom pill', () => {
-    // The pointer leaves right after the click, but the clicked element stays under the caption.
+    // why: the pointer leaves right after the click, but the clicked element stays under the caption.
     const pointer = track(
       [
         [500, AWAY],
@@ -77,7 +76,9 @@ describe('caption placement', () => {
     );
     expect(stepCaptionPlaces(steps, pointer, 4000)).toEqual(['bottom', 'top', 'bottom']);
   });
+});
 
+describe('caption placement across spans', () => {
   it('picks the side covered less when both are, and keeps the bottom on a tie', () => {
     const span = { from: 1000, to: 3000, text: 'Keep selected' };
     const moreBottom = track([
@@ -105,7 +106,7 @@ describe('caption placement', () => {
       { at: 2000, kind: 'click', label: 'Next month' },
       { at: 3000, kind: 'click', label: 'Save' },
     ];
-    // Only the last of the three clicks lands under the caption: the shared caption is at the top throughout.
+    // why: only the last of the three clicks lands under the caption, yet the shared caption stays at the top throughout.
     const pointer = track(
       [
         [0, AWAY],
@@ -138,9 +139,9 @@ describe('caption placement', () => {
       [1200, BOTTOM],
       [1900, AWAY],
     ]);
-    expect(pointerUnderCaption(pointer, 1500, 'bottom', 'Keep selected', true)).toBe(true);
-    expect(pointerUnderCaption(pointer, 1500, 'top', 'Keep selected', true)).toBe(false);
-    expect(pointerUnderCaption(pointer, 2000, 'bottom', 'Keep selected', true)).toBe(false);
-    expect(pointerUnderCaption(pointer, 100, 'bottom', 'Keep selected', true)).toBe(false);
+    expect(pointerUnderCaption(pointer, 1500, { place: 'bottom', text: 'Keep selected', numbered: true })).toBe(true);
+    expect(pointerUnderCaption(pointer, 1500, { place: 'top', text: 'Keep selected', numbered: true })).toBe(false);
+    expect(pointerUnderCaption(pointer, 2000, { place: 'bottom', text: 'Keep selected', numbered: true })).toBe(false);
+    expect(pointerUnderCaption(pointer, 100, { place: 'bottom', text: 'Keep selected', numbered: true })).toBe(false);
   });
 });

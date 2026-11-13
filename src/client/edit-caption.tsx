@@ -20,6 +20,8 @@ export function EditCaption({ captions }: { captions: PlaybackEffects['captions'
   const index = usePlayhead((time) => editCaptionAt(captions, time)?.index ?? -1);
   const text = captions[index]?.text || undefined;
   const place = places[index] ?? 'bottom';
-  const covered = usePlayhead((time) => (text === undefined ? false : pointerUnderCaption(pointer, time, place, text, false)));
+  const covered = usePlayhead((time) =>
+    text === undefined ? false : pointerUnderCaption(pointer, time, { place, text, numbered: false }),
+  );
   return <LiveCaption text={text} place={place} covered={covered} testId="edit-caption" />;
 }
