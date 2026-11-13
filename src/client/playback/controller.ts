@@ -8,7 +8,7 @@ import { withDottedMasks } from '../../shared/mask-display.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import { NO_EFFECTS, type PlaybackEffects } from '../../shared/effects.ts';
 import { EffectsLayer } from '../effects-layer.ts';
-import type { PointerTrack } from '../caption-placement.ts';
+import { viewportChanges, type PointerTrack } from '../caption-placement.ts';
 import { cursorInput } from '../cursor-motion.ts';
 import { ReplayCursor } from '../replay-cursor.ts';
 import { firstPaintOffset, renderOffset, type SnapshotGroup, snapshotGroups } from '../snapshots.ts';
@@ -174,6 +174,7 @@ export class ReplayController {
       points: input.points.map((point) => ({ t: point.t - first, x: point.x, y: point.y })),
       presses: input.presses.map((press) => press - first),
       viewport: this.recordedViewport,
+      resizes: viewportChanges(this.events),
     };
     return this.pointer;
   }

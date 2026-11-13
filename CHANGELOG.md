@@ -5,6 +5,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Viewer: caption placement follows a recording that resizes, so after a desktop-to-phone resize a caption still moves to the top or fades when the pointer is under it on the phone-sized frame.
 - Viewer: a step caption no longer hides the pointer or the button the step clicks. When either sits where the caption would be at the bottom of the recording, that caption shows at the top instead, for as long as it is up, and it picks whichever edge covers less when both are busy. While the pointer passes under a caption, the caption fades back so you can see what is beneath it. Exported videos put each caption on the same edge as the viewer, without the fade.
 - Suites: a run's group no longer has to be a comparison. A group whose runs all ran against one target and measure nothing is now a plain section in the runs sidebar: its name, a count such as "3 runs · 1 failed", and its runs' usual rows, and Compare offers every run of the suite as in an ungrouped suite. A group whose runs name more than one target or a measure compares as before, and one suite can mix both. The phone run picker shows the group names too, and `suite show` lists a section group under its name and count.
 - Viewer: a suite run's summary now shows once, above its recording. The Context tab no longer repeats it as "This run".
