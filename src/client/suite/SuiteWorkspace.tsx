@@ -314,11 +314,13 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     if (!suite) return undefined;
     const subject = subjectLink(suite);
     const run = runs.find((item) => item.replayId === selected);
+    const runSummary = run?.summary;
     const runFocus = run?.focus;
     return {
       title: suite.title,
       href: suiteHref(id),
       ...(subject ? { subject } : {}),
+      ...(runSummary ? { runSummary } : {}),
       ...(runFocus?.length ? { runFocus } : {}),
     };
   }, [id, suite, runs, selected]);
@@ -333,13 +335,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const runTitle = run?.label;
   const headline = useMemo(() => {
     const line = run ? runHeadline(runs, run, baseline) : undefined;
-    const brief = run?.summary ? <RunBrief key={run.replayId} summary={run.summary} /> : null;
-    return line || brief ? (
-      <>
-        {line ? <RunHeadlineLine line={line} /> : null}
-        {brief}
-      </>
-    ) : undefined;
+    return line ? <RunHeadlineLine line={line} /> : undefined;
   }, [baseline, run, runs]);
   // The run title shown before this one: switching runs remounts the viewer, and its title morphs from this.
   const shownTitle = bundle && bundle.meta.id === selected ? runTitle : undefined;
@@ -789,11 +785,6 @@ function SidebarSummary({ summary }: { summary: string }) {
       testId="suite-summary"
     />
   );
-}
-
-/** What the selected run checked and found, above its recording: two lines until opened. */
-function RunBrief({ summary }: { summary: string }) {
-  return <ClippedSummary summary={summary} className="run-brief" label="About this run" textId="run-brief-text" testId="run-brief" />;
 }
 
 /** A performance-focused suite's comparison row: only what the run recorded. */
