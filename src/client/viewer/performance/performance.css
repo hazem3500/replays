@@ -98,6 +98,15 @@ button.pp-stat:hover { box-shadow: 0 0 0 4px var(--surface-hover); }
   .pp-vitals[data-details] > ul > li:has(> .pp-group-name) + li:has(> .pp-group-note) { margin-top: 0; }
 }
 @container performance (max-width: 559px) {
+  /* why: a phone-width headline wraps; the actions take their own compact row under it instead of squeezing it. */
+  .pp .pp-lead { flex-wrap: wrap; align-items: flex-start; row-gap: 2px; margin-top: 10px; margin-bottom: 12px; }
+  .pp .pp-lead-dot { margin-top: 6px; }
+  .pp .pp-lead p { flex: 1 1 calc(100% - 16px); }
+  .pp .pp-lead .pp-lead-jump { margin: 0 0 0 8px; }
+  .pp .pp-lead .pp-lead-jump + .pp-timeline-toggle, .pp .pp-lead p + .pp-timeline-toggle { margin-left: auto; }
+  .pp .pp-vitals:not([data-details]) > ul { row-gap: 4px; }
+  /* why: on its own line the note needs no divider, and it lines up with the stats above it. */
+  .pp .pp-vitals:not([data-details]) > ul > li:not(:has(> .pp-group-note)) + li:has(> .pp-group-note) { flex-basis: 100%; padding-left: 0; border-left: 0; }
   .pp-row:not(.pp-head) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "moment took" "why when"; row-gap: 2px; min-height: 48px; padding: 5px var(--pp-end) 5px var(--pp-edge); }
   /* invariant: the moment button covers both lines, so the whole row is one 48 px target; only the time seeks. */
   .pp-row:not(.pp-head) .pp-moment { grid-area: 1 / 1 / 3 / -1; align-self: stretch; margin: -5px calc(-1 * var(--pp-end)) -5px calc(-1 * var(--pp-edge)); }
@@ -127,7 +136,7 @@ button.pp-stat:hover { box-shadow: 0 0 0 4px var(--surface-hover); }
 .pp-inflight li .np-aside { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
 .pp-inflight .pp-link { min-width: 0; flex: 1 1 0; overflow: hidden; text-align: left; white-space: nowrap; }
 .pp-detail .np-detail-status { gap: 8px; color: var(--text); }
-.pp-lead { flex: none; display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 32px; margin-bottom: var(--pp-gap); padding: 0 var(--pp-end) 0 var(--pp-edge); color: var(--text); font-size: var(--text-sm); line-height: 20px; }
+.pp-lead { flex: none; display: flex; align-items: center; gap: 8px; box-sizing: border-box; min-height: 32px; margin: 6px 0 10px; padding: 0 var(--pp-end) 0 var(--pp-edge); color: var(--text); font-size: var(--text-sm); line-height: 20px; }
 .pp-lead p { margin: 0; min-width: 0; font-weight: 500; }
 .pp-lead-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--rating-good); }
 .pp-lead[data-tone="needs-work"] .pp-lead-dot { background: var(--rating-needs-work); }
