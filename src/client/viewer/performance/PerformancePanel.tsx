@@ -44,7 +44,8 @@ const STRINGS = {
   outside: 'Clear the time range to see every moment.',
 };
 
-const LEAD = 40;
+// The headline row (32 px) with 6 px above and 10 px below it (performance.css .pp-lead).
+const LEAD = 48;
 const AXIS = 24;
 const LANE = 24;
 const FPS = 72;
