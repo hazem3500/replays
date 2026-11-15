@@ -377,7 +377,7 @@ test('a grouped suite lists targets per group with medians and the change from t
   await expect(page.getByTestId('run-headline')).toContainText('main 2.7 s (−26%)');
 });
 
-test('a run with a summary says what it checked above the recording, clipped until opened', async ({ page }) => {
+test('a run summary shows in the Context tab, not above the recording', async ({ page }) => {
   const suite = uniqueId('suite');
   const one = `${suite}-one`;
   const two = `${suite}-two`;
@@ -393,15 +393,13 @@ test('a run with a summary says what it checked above the recording, clipped unt
     { id: 'brief-2', label: 'Desktop: run 2', status: 'passed', replayId: two },
   ]);
   await openReplay(page, `${server().origin}/s/${suite}/r/${one}`);
-  const brief = page.getByRole('region', { name: 'About this run' });
-  await expect(brief.locator('strong').first()).toHaveText('Checked:');
-  await expect(brief).toContainText('the over-fee warning on two invoice lines.');
-  const toggle = brief.getByRole('button', { name: 'Show more' });
-  await toggle.click();
-  await expect(brief.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true');
-  await expect(brief.getByText('the total is unchanged.')).toBeInViewport();
+  await expect(page.getByRole('region', { name: 'About this run' })).toHaveCount(0);
+  await page.getByTestId('context-tab').click();
+  const summary = page.getByTestId('context-run-summary');
+  await expect(summary).toContainText('the over-fee warning on two invoice lines.');
+  await expect(summary).toContainText('the total is unchanged.');
 
   await page.keyboard.press('j');
   await expect(page).toHaveURL(new RegExp(`/r/${two}$`));
-  await expect(page.getByRole('region', { name: 'About this run' })).toHaveCount(0);
+  await expect(page.getByTestId('context-run-summary')).toHaveCount(0);
 });
