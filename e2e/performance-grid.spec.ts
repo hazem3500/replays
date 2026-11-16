@@ -28,6 +28,19 @@ async function openPerformance(page: Page, id: string, options: { details?: bool
   await expect(page.getByTestId('performance-timeline')).toBeVisible();
 }
 
+test('at 390 px the jump and chart actions sit below the headline', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openPerformance(page, uniqueId('performance-phone-actions'));
+  const lead = page.getByTestId('performance-verdict');
+  const title = await boxOf(lead.locator('p'));
+  const jump = await boxOf(lead.locator('.pp-lead-jump'));
+  const chart = await boxOf(lead.locator('.pp-timeline-toggle'));
+  expect(jump.y).toBeGreaterThanOrEqual(title.y + title.height);
+  expect(chart.y).toBeGreaterThanOrEqual(title.y + title.height);
+  expect(Math.abs(jump.y - chart.y)).toBeLessThanOrEqual(2);
+  expect(title.width).toBeGreaterThan(300);
+});
+
 async function rowsInsidePanel(page: Page) {
   const region = await boxOf(page.locator('.inspector-panel:not([hidden])').first());
   return page
