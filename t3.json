@@ -1,0 +1,19 @@
+{
+  "$schema": "https://t3.codes/schema/t3.json",
+  "scripts": [
+    {
+      "name": "Setup",
+      "command": "oz-boat exec -- pnpm install",
+      "icon": "configure",
+      "runOnWorktreeCreate": true
+    },
+    {
+      "name": "Dev",
+      "command": "oz-boat exec --detach -- bash -lc 'fuser -k 3000/tcp 2>/dev/null; HOST=0.0.0.0 PORT=3000 pnpm dev' && oz-boat host 3000 && oz-boat forward 3000 --local 4114 --stop",
+      "icon": "play",
+      "previewUrl": "http://localhost:4114",
+      "autoOpenPreview": true,
+      "stopOnSettle": true
+    }
+  ]
+}
