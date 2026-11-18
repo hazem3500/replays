@@ -1,0 +1,1 @@
+import{a as e}from"./fetch-C7C36PXa.js";function t(){return e(`app-comments`)===`on`}export{t};
