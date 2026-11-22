@@ -1,4 +1,5 @@
 import type { ReplayBundle } from '../shared/replay.ts';
+import { isRecord } from '../shared/validate.ts';
 
 const DOM_CONTENT_LOADED = 0;
 const LOAD = 1;
@@ -64,7 +65,7 @@ export function snapshotGroups(events: ReplayBundle['events'], network: ReplayBu
 }
 
 function isAdoptedStyleSheet(event: ReplayBundle['events'][number] | undefined) {
-  return event?.type === INCREMENTAL_SNAPSHOT && (event.data as { source?: unknown } | null)?.source === ADOPTED_STYLE_SHEET;
+  return event?.type === INCREMENTAL_SNAPSHOT && isRecord(event.data) && event.data.source === ADOPTED_STYLE_SHEET;
 }
 
 // why: rrweb emits existing adopted sheets immediately after the full snapshot, outside its serialized DOM.
