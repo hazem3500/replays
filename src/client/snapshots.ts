@@ -1,9 +1,12 @@
 import type { ReplayBundle } from '../shared/replay.ts';
+import { isRecord } from '../shared/validate.ts';
 
 const DOM_CONTENT_LOADED = 0;
 const LOAD = 1;
 const FULL_SNAPSHOT = 2;
+const INCREMENTAL_SNAPSHOT = 3;
 const META = 4;
+const ADOPTED_STYLE_SHEET = 15;
 
 /**
  * One rendered document on the replay timeline. Times are offsets from the
@@ -14,6 +17,8 @@ export interface SnapshotGroup {
   start: number;
   /** Its full snapshot: the earliest frame of it the recording has. */
   snapshot: number;
+  /** End of the constructed stylesheet state emitted with this snapshot. */
+  ready?: number;
   href?: string;
 }
 
@@ -53,10 +58,21 @@ export function snapshotGroups(events: ReplayBundle['events'], network: ReplayBu
     }
     // Never before the previous document's own first frame.
     start = Math.max(start, previousSnapshot === Number.NEGATIVE_INFINITY ? 0 : previousSnapshot);
-    groups.push({ start, snapshot, ...(href ? { href } : {}) });
+    groups.push({ start, snapshot, ...snapshotReady(events, index, origin), ...(href ? { href } : {}) });
     previousSnapshot = snapshot;
   });
   return groups;
+}
+
+function isAdoptedStyleSheet(event: ReplayBundle['events'][number] | undefined) {
+  return event?.type === INCREMENTAL_SNAPSHOT && isRecord(event.data) && event.data.source === ADOPTED_STYLE_SHEET;
+}
+
+// why: rrweb emits existing adopted sheets immediately after the full snapshot, outside its serialized DOM.
+function snapshotReady(events: ReplayBundle['events'], index: number, origin: number): Pick<SnapshotGroup, 'ready'> {
+  let last = index;
+  while (isAdoptedStyleSheet(events[last + 1])) last += 1;
+  return last > index ? { ready: events[last]!.timestamp - origin } : {};
 }
 
 function sameDocument(a: string, b: string) {
@@ -88,7 +104,7 @@ export function groupAt(groups: readonly SnapshotGroup[], time: number) {
  */
 export function renderOffset(groups: readonly SnapshotGroup[], time: number) {
   const group = groupAt(groups, time);
-  return Math.max(time, group?.snapshot ?? 0) + 1;
+  return Math.max(time, group?.ready ?? group?.snapshot ?? 0) + 1;
 }
 
 /**

@@ -107,3 +107,26 @@ describe('first painted frame', () => {
     expect(firstPaintOffset(track(1900), groups.slice(0, 1), 1000)).toBe(999);
   });
 });
+
+describe('snapshot stylesheet restoration', () => {
+  it('includes attached constructed sheets at zero and after navigation without consuming later changes', () => {
+    const groups = snapshotGroups([
+      event(4, 1000),
+      event(2, 1027),
+      event(3, 1029, { source: 15, id: 1, styleIds: [1] }),
+      event(3, 1031, { source: 15, id: 2, styleIds: [2] }),
+      event(3, 1055, { source: 0 }),
+      event(3, 1100, { source: 15, id: 1, styleIds: [] }),
+      event(4, 2000),
+      event(2, 2027),
+      event(3, 2029, { source: 15, id: 3, styleIds: [3] }),
+      event(3, 2055, { source: 0 }),
+    ]);
+    expect(renderOffset(groups, 0)).toBe(32);
+    expect(renderOffset(groups, 28)).toBe(32);
+    expect(renderOffset(groups, 80)).toBe(81);
+    expect(renderOffset(groups, 1000)).toBe(1030);
+    expect(renderOffset(groups, 1100)).toBe(1101);
+    expect(renderOffset(groups, 0)).toBe(32);
+  });
+});
