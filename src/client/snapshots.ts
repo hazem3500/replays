@@ -3,7 +3,9 @@ import type { ReplayBundle } from '../shared/replay.ts';
 const DOM_CONTENT_LOADED = 0;
 const LOAD = 1;
 const FULL_SNAPSHOT = 2;
+const INCREMENTAL_SNAPSHOT = 3;
 const META = 4;
+const ADOPTED_STYLE_SHEET = 15;
 
 /**
  * One rendered document on the replay timeline. Times are offsets from the
@@ -55,23 +57,21 @@ export function snapshotGroups(events: ReplayBundle['events'], network: ReplayBu
     }
     // Never before the previous document's own first frame.
     start = Math.max(start, previousSnapshot === Number.NEGATIVE_INFINITY ? 0 : previousSnapshot);
-    const ready = snapshotReady(events, index, origin);
-    groups.push({ start, snapshot, ...(ready > snapshot ? { ready } : {}), ...(href ? { href } : {}) });
+    groups.push({ start, snapshot, ...snapshotReady(events, index, origin), ...(href ? { href } : {}) });
     previousSnapshot = snapshot;
   });
   return groups;
 }
 
-function snapshotReady(events: ReplayBundle['events'], index: number, origin: number) {
-  let ready = events[index]!.timestamp - origin;
-  // why: rrweb emits existing adopted sheets immediately after the full snapshot, outside its serialized DOM.
-  for (let cursor = index + 1; cursor < events.length; cursor += 1) {
-    const next = events[cursor]!;
-    const data = next.data;
-    if (next.type !== 3 || typeof data !== 'object' || data === null || !('source' in data) || data.source !== 15) break;
-    ready = Math.max(ready, next.timestamp - origin);
-  }
-  return ready;
+function isAdoptedStyleSheet(event: ReplayBundle['events'][number] | undefined) {
+  return event?.type === INCREMENTAL_SNAPSHOT && (event.data as { source?: unknown } | null)?.source === ADOPTED_STYLE_SHEET;
+}
+
+// why: rrweb emits existing adopted sheets immediately after the full snapshot, outside its serialized DOM.
+function snapshotReady(events: ReplayBundle['events'], index: number, origin: number): Pick<SnapshotGroup, 'ready'> {
+  let last = index;
+  while (isAdoptedStyleSheet(events[last + 1])) last += 1;
+  return last > index ? { ready: events[last]!.timestamp - origin } : {};
 }
 
 function sameDocument(a: string, b: string) {
