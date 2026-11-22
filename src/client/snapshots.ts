@@ -55,17 +55,23 @@ export function snapshotGroups(events: ReplayBundle['events'], network: ReplayBu
     }
     // Never before the previous document's own first frame.
     start = Math.max(start, previousSnapshot === Number.NEGATIVE_INFINITY ? 0 : previousSnapshot);
-    let ready = snapshot;
-    // why: rrweb emits existing adopted sheets immediately after the full snapshot, outside its serialized DOM.
-    for (let cursor = index + 1; cursor < events.length; cursor += 1) {
-      const next = events[cursor]!;
-      if (next.type !== 3 || (next.data as { source?: unknown } | undefined)?.source !== 15) break;
-      ready = Math.max(ready, next.timestamp - origin);
-    }
+    const ready = snapshotReady(events, index, origin);
     groups.push({ start, snapshot, ...(ready > snapshot ? { ready } : {}), ...(href ? { href } : {}) });
     previousSnapshot = snapshot;
   });
   return groups;
+}
+
+function snapshotReady(events: ReplayBundle['events'], index: number, origin: number) {
+  let ready = events[index]!.timestamp - origin;
+  // why: rrweb emits existing adopted sheets immediately after the full snapshot, outside its serialized DOM.
+  for (let cursor = index + 1; cursor < events.length; cursor += 1) {
+    const next = events[cursor]!;
+    const data = next.data;
+    if (next.type !== 3 || typeof data !== 'object' || data === null || !('source' in data) || data.source !== 15) break;
+    ready = Math.max(ready, next.timestamp - origin);
+  }
+  return ready;
 }
 
 function sameDocument(a: string, b: string) {
