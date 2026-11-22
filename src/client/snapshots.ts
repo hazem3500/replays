@@ -14,6 +14,8 @@ export interface SnapshotGroup {
   start: number;
   /** Its full snapshot: the earliest frame of it the recording has. */
   snapshot: number;
+  /** End of the constructed stylesheet state emitted with this snapshot. */
+  ready?: number;
   href?: string;
 }
 
@@ -53,7 +55,14 @@ export function snapshotGroups(events: ReplayBundle['events'], network: ReplayBu
     }
     // Never before the previous document's own first frame.
     start = Math.max(start, previousSnapshot === Number.NEGATIVE_INFINITY ? 0 : previousSnapshot);
-    groups.push({ start, snapshot, ...(href ? { href } : {}) });
+    let ready = snapshot;
+    // why: rrweb emits existing adopted sheets immediately after the full snapshot, outside its serialized DOM.
+    for (let cursor = index + 1; cursor < events.length; cursor += 1) {
+      const next = events[cursor]!;
+      if (next.type !== 3 || (next.data as { source?: unknown } | undefined)?.source !== 15) break;
+      ready = Math.max(ready, next.timestamp - origin);
+    }
+    groups.push({ start, snapshot, ...(ready > snapshot ? { ready } : {}), ...(href ? { href } : {}) });
     previousSnapshot = snapshot;
   });
   return groups;
@@ -88,7 +97,7 @@ export function groupAt(groups: readonly SnapshotGroup[], time: number) {
  */
 export function renderOffset(groups: readonly SnapshotGroup[], time: number) {
   const group = groupAt(groups, time);
-  return Math.max(time, group?.snapshot ?? 0) + 1;
+  return Math.max(time, group?.ready ?? group?.snapshot ?? 0) + 1;
 }
 
 /**

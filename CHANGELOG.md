@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Viewer: opening or seeking to a snapshot restores its constructed stylesheets before showing the page, preventing hidden elements from pushing the app down into a blank top band.
+
 - Viewer: the Performance tab's headline has room under the tab bar and above the stats. On a phone its Jump button and timeline toggle move to their own row under the headline instead of squeezing it, and "No interaction was slow enough to report" lines up with the stats above it.
 - Viewer: caption placement follows a recording that resizes, so after a desktop-to-phone resize a caption still moves to the top or fades when the pointer is under it on the phone-sized frame.
 - Viewer: a step caption no longer hides the pointer or the button the step clicks. When either sits where the caption would be at the bottom of the recording, that caption shows at the top instead, for as long as it is up, and it picks whichever edge covers less when both are busy. While the pointer passes under a caption, the caption fades back so you can see what is beneath it. Exported videos put each caption on the same edge as the viewer, without the fade.
