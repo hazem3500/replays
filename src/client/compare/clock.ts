@@ -42,6 +42,7 @@ interface Tile {
 export const LIVE_RECONCILE_MS = 250;
 export const LIVE_DRIFT_MS = 120;
 export const THUMB_INTERVAL_MS = 1000;
+export const THUMB_SCRUB_INTERVAL_MS = 200;
 
 const clamp = (value: number, max: number) => Math.max(0, Math.min(max, value));
 
@@ -75,6 +76,7 @@ export class SharedClock {
   private readonly seekListeners = new Set<() => void>();
   private readonly clock: FrameClock;
   private frame: number | undefined;
+  private scrubFrame: number | undefined;
   private anchorTime = 0;
   private anchorNow = 0;
   private time = 0;
@@ -189,7 +191,7 @@ export class SharedClock {
 
   readonly isScrubbing = () => this.scrubbing;
 
-  /** While a scrubber is dragged, live players render throttled and thumbnails wait for the drop. */
+  /** While a scrubber is dragged, live players render throttled and thumbnails follow at THUMB_SCRUB_INTERVAL_MS. */
   readonly beginScrub = () => {
     if (this.scrubbing) return;
     this.resumeAfterScrub = this.snapshot.status === 'playing';
@@ -204,6 +206,8 @@ export class SharedClock {
   readonly endScrub = () => {
     if (!this.scrubbing) return;
     this.scrubbing = false;
+    if (this.scrubFrame !== undefined) this.clock.cancel(this.scrubFrame);
+    this.scrubFrame = undefined;
     for (const tile of this.tiles.values()) {
       if (tile.scrubbing) tile.player.endScrub();
       tile.scrubbing = false;
@@ -276,16 +280,32 @@ export class SharedClock {
     else this.syncLive(tile.player, force);
   }
 
-  /** A thumbnail stays paused and is re-seeked at most once a second (never mid-scrub). */
+  /** A thumbnail stays paused and is re-seeked at most once a second, or every THUMB_SCRUB_INTERVAL_MS mid-scrub. */
   private syncThumb(id: string, force: boolean) {
     const tile = this.tiles.get(id);
-    const now = this.clock.now();
-    if (!tile || this.scrubbing || (!force && now - tile.syncedAt < THUMB_INTERVAL_MS)) return;
-    tile.syncedAt = now;
+    if (!tile) return;
     const { player } = tile;
     const target = clamp(this.time, player.duration);
+    const behind = Math.abs(player.getTime() - target) > 1;
+    const now = this.clock.now();
+    const interval = this.scrubbing ? THUMB_SCRUB_INTERVAL_MS : THUMB_INTERVAL_MS;
+    if ((this.scrubbing || !force) && now - tile.syncedAt < interval) {
+      // why: the pointer can rest mid-drag; the thumbnail still has to land on where it stopped.
+      if (this.scrubbing && behind) this.scheduleThumbCatchUp();
+      return;
+    }
+    tile.syncedAt = now;
     if (player.getState().status === 'playing') player.pause();
-    if (Math.abs(player.getTime() - target) > 1) player.seek(target);
+    if (behind) player.seek(target);
+  }
+
+  private scheduleThumbCatchUp() {
+    if (this.scrubFrame !== undefined) return;
+    this.scrubFrame = this.clock.request(() => {
+      this.scrubFrame = undefined;
+      if (!this.scrubbing) return;
+      for (const id of this.tiles.keys()) if (this.getFidelity(id) === 'thumb') this.syncThumb(id, false);
+    });
   }
 
   /** A live player plays while the clock does and its recording lasts, re-seeked when it drifts. */
