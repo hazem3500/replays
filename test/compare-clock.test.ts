@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SharedClock, THUMB_INTERVAL_MS } from '../src/client/compare/clock.ts';
+import { SharedClock, THUMB_INTERVAL_MS, THUMB_SCRUB_INTERVAL_MS } from '../src/client/compare/clock.ts';
 
 function fakeFrames() {
   let now = 0;
@@ -172,6 +172,30 @@ describe('SharedClock tiles', () => {
     clock.endScrub();
     expect(clock.getSnapshot().status).toBe('playing');
     expect(live?.time).toBe(4000);
+  });
+
+  it('moves thumbnails during a drag, throttled, and lands them where the pointer rests', () => {
+    const frames = fakeFrames();
+    const clock = new SharedClock(frames.clock);
+    const thumb = player(20_000);
+    clock.add('thumb', thumb);
+    clock.setFidelity('thumb', 'thumb');
+    frames.advance(THUMB_INTERVAL_MS);
+    clock.beginScrub();
+    clock.seek(1000);
+    expect(thumb.time).toBe(1000);
+    const seeks = thumb.seeks;
+    for (let index = 1; index <= 30; index++) {
+      clock.seek(1000 + index * 100);
+      frames.advance(16);
+    }
+    expect(thumb.seeks - seeks).toBeLessThanOrEqual(Math.ceil((30 * 16) / THUMB_SCRUB_INTERVAL_MS) + 1);
+    expect(thumb.seeks - seeks).toBeGreaterThan(0);
+    for (let index = 0; index < 20; index++) frames.advance(16);
+    expect(thumb.time).toBe(4000);
+    expect(frames.pending()).toBe(0);
+    clock.endScrub();
+    expect(thumb.time).toBe(4000);
   });
 
   it('restarts from the beginning when played after the end', () => {

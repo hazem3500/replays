@@ -5,6 +5,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Viewer: when runs are compared, the small tiles now follow the scrubber while you drag it, updating a few times a second, instead of only catching up when you let go.
 - Viewer: opening or seeking to a snapshot restores its constructed stylesheets before showing the page, preventing hidden elements from pushing the app down into a blank top band.
 
 - Viewer: the Performance tab's headline has room under the tab bar and above the stats. On a phone its Jump button and timeline toggle move to their own row under the headline instead of squeezing it, and "No interaction was slow enough to report" lines up with the stats above it.
