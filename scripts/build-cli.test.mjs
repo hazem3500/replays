@@ -34,10 +34,13 @@ async function buildCli() {
   }
 }
 
+let built;
+const cliBuilds = () => (built ??= buildCli());
+
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 
 test('the CLI bundles need only playwright-core and load no server or viewer module', async () => {
-  const builds = await buildCli();
+  const builds = await cliBuilds();
   for (const name of ['cli', 'edit']) {
     const undeclared = externalPackages(builds[name]).filter(
       (dependency) => !Object.hasOwn(manifest.dependencies, dependency) && !optional.has(dependency),
@@ -48,6 +51,16 @@ test('the CLI bundles need only playwright-core and load no server or viewer mod
       [],
       `${name}: server-only inputs`,
     );
+  }
+});
+
+test('the CLI bundles load playwright-core only when a command opens a browser', async () => {
+  const builds = await cliBuilds();
+  for (const name of ['cli', 'edit']) {
+    const eager = Object.values(builds[name].outputs)
+      .flatMap((output) => output.imports)
+      .filter((item) => item.path === 'playwright-core' && item.kind !== 'dynamic-import');
+    assert.deepEqual(eager, [], `${name}: playwright-core is imported at start-up`);
   }
 });
 

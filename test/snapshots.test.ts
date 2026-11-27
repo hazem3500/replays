@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { firstPaintOffset, groupAt, renderOffset, snapshotGroups } from '../src/client/snapshots.ts';
+import { firstPaintOffset, groupAt, renderOffset, snapshotGroups } from '../src/shared/snapshots.ts';
 import type { ReplayBundle } from '../src/shared/replay.ts';
 
 const event = (type: number, timestamp: number, data: Record<string, unknown> = {}) => ({ type, timestamp, data });
