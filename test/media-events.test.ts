@@ -3,6 +3,8 @@ import { Replayer } from 'rrweb';
 import { describe, expect, it } from 'vitest';
 
 import { withoutForeignMediaEvents } from '../src/client/playback/media-events.ts';
+import { rrwebEvents } from '../src/client/playback/rrweb-wire.ts';
+import { isRecord } from '../src/shared/validate.ts';
 
 const START = 1_000_000;
 const element = (id: number, tagName: string, childNodes: unknown[] = []) => ({ type: 2, id, tagName, attributes: {}, childNodes });
@@ -32,10 +34,9 @@ function recording() {
 
 describe('media interactions the player can replay', () => {
   it('drops those on elements that are not audio or video and keeps the rest', () => {
-    const media = withoutForeignMediaEvents(recording()).flatMap((event) => {
-      const data = event.data as { source?: number; id?: number } | undefined;
-      return event.type === 3 && data?.source === 7 ? [data.id] : [];
-    });
+    const media = withoutForeignMediaEvents(recording()).flatMap(({ type, data }) =>
+      type === 3 && isRecord(data) && data.source === 7 ? [data.id] : [],
+    );
     expect(media).toEqual([60]);
   });
 
@@ -56,7 +57,7 @@ describe('media interactions the player can replay', () => {
     const root = document.createElement('div');
     document.body.append(root);
     // why: jsdom's iframe fails rrweb's sandbox check, which only the unprotected-rebuild escape hatch skips.
-    const replayer = new Replayer(withoutForeignMediaEvents(recording()) as never, { root, mouseTail: false, UNSAFE_replayCanvas: true });
+    const replayer = new Replayer(rrwebEvents(withoutForeignMediaEvents(recording())), { root, mouseTail: false, UNSAFE_replayCanvas: true });
     replayer.pause(500);
     replayer.pause(1500);
     expect(replayer.iframe.contentDocument?.body.textContent).toBe('before after');

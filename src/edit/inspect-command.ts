@@ -43,7 +43,13 @@ function momentLines(term: Terminal, moment: InspectedMoment) {
   ];
 }
 
-function text(term: Terminal, session: Session, title: string, inspection: Inspection, edits: ReplayEdits | undefined) {
+interface Report {
+  title: string;
+  inspection: Inspection;
+  edits: ReplayEdits | undefined;
+}
+
+function text(term: Terminal, session: Session, { title, inspection, edits }: Report) {
   const { viewport } = inspection;
   return [
     `${term.bold(title)}  ${term.dim(`${session.client.id} · ${formatTime(inspection.duration)} · ${inspection.source}`)}`,
@@ -87,6 +93,6 @@ export async function inspect(session: Session, args: ParsedArgs): Promise<EditO
   const { client } = session;
   return {
     json: { success: true, id: client.id, link: client.link, title: bundle.meta.title, ...inspection, ...(edits ? { edits } : {}) },
-    text: (term) => text(term, session, bundle.meta.title, inspection, edits),
+    text: (term) => text(term, session, { title: bundle.meta.title, inspection, edits }),
   };
 }

@@ -117,12 +117,18 @@ function kindOf(event: Event) {
   return typeof source === 'number' ? (SOURCES[source] ?? `source ${source}`) : 'IncrementalSnapshot';
 }
 
-const bump = (counts: Counts, key: string, by = 1) => {
-  counts[key] = (counts[key] ?? 0) + by;
-};
+function countKinds(events: readonly Event[]): Counts {
+  const counts: Counts = {};
+  for (const event of events) {
+    const kind = kindOf(event);
+    counts[kind] = (counts[kind] ?? 0) + 1;
+  }
+  return counts;
+}
 
 const listOf = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 const idOf = (value: unknown) => (isRecord(value) && typeof value.id === 'number' ? value.id : undefined);
+const parentIdOf = (value: unknown) => (isRecord(value) && typeof value.parentId === 'number' ? value.parentId : undefined);
 
 /** Where a node lives: the top page, inside a shadow root, or inside an embedded frame's document. */
 export type NodePlace = 'page' | 'shadow' | 'frame';
@@ -148,60 +154,74 @@ class NodeTree {
     return this.nodes.get(id);
   }
 
-  /** Adds a serialized node and its children; returns the census of what was added. */
-  add(node: unknown, parent: number | undefined, census = emptyCensus()) {
+  /** Adds a serialized node and its children. */
+  add(node: unknown, parent: number | undefined) {
     const id = idOf(node);
-    if (!isRecord(node) || id === undefined) return census;
+    if (!isRecord(node) || id === undefined) return;
     const above = parent === undefined ? undefined : this.nodes.get(parent);
-    const framed = above?.place === 'frame' || (typeof node.rootId === 'number' && node.rootId !== this.top);
-    const place: NodePlace = framed ? 'frame' : above?.place === 'shadow' || node.isShadow === true ? 'shadow' : 'page';
-    this.nodes.set(id, { parent: parent ?? -1, tag: typeof node.tagName === 'string' ? node.tagName.toLowerCase() : '#node', place });
+    const tag = typeof node.tagName === 'string' ? node.tagName.toLowerCase() : '#node';
+    this.nodes.set(id, { parent: parent ?? -1, tag, place: this.placeOf(node, above) });
     if (parent !== undefined) {
       const siblings = this.children.get(parent) ?? new Set<number>();
       siblings.add(id);
       this.children.set(parent, siblings);
     }
-    count(node, census);
-    for (const child of listOf(node.childNodes)) this.add(child, id, census);
-    return census;
+    for (const child of listOf(node.childNodes)) this.add(child, id);
   }
 
   remove(id: number) {
     const parent = this.nodes.get(id)?.parent;
     if (parent !== undefined) this.children.get(parent)?.delete(id);
     const pending = [id];
-    while (pending.length) {
-      const next = pending.pop()!;
+    for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
       this.nodes.delete(next);
       pending.push(...(this.children.get(next) ?? []));
       this.children.delete(next);
     }
   }
+
+  private placeOf(node: Record<string, unknown>, above: NodeInfo | undefined): NodePlace {
+    if (above?.place === 'frame' || (typeof node.rootId === 'number' && node.rootId !== this.top)) return 'frame';
+    if (above?.place === 'shadow' || node.isShadow === true) return 'shadow';
+    return 'page';
+  }
 }
 
-const emptyCensus = (): DomCensus => ({
-  nodes: 0,
-  elements: 0,
-  shadowRoots: 0,
-  iframes: 0,
-  canvases: 0,
-  customElements: 0,
-  styles: 0,
-  stylesheetLinks: 0,
-});
-
-function count(node: Record<string, unknown>, census: DomCensus) {
-  census.nodes += 1;
-  if (node.type !== ELEMENT_NODE || typeof node.tagName !== 'string') return;
+/** The census keys one serialized node counts towards. */
+function censusKeys(node: Record<string, unknown>): Array<keyof DomCensus> {
+  if (node.type !== ELEMENT_NODE || typeof node.tagName !== 'string') return ['nodes'];
   const tag = node.tagName.toLowerCase();
-  census.elements += 1;
-  if (node.isShadowHost === true) census.shadowRoots += 1;
-  if (tag === 'iframe') census.iframes += 1;
-  if (tag === 'canvas') census.canvases += 1;
-  if (tag.includes('-')) census.customElements += 1;
-  if (tag === 'style') census.styles += 1;
   const attributes = isRecord(node.attributes) ? node.attributes : {};
-  if (tag === 'link' && attributes.rel === 'stylesheet') census.stylesheetLinks += 1;
+  const flags: Array<[keyof DomCensus, boolean]> = [
+    ['shadowRoots', node.isShadowHost === true],
+    ['iframes', tag === 'iframe'],
+    ['canvases', tag === 'canvas'],
+    ['customElements', tag.includes('-')],
+    ['styles', tag === 'style'],
+    ['stylesheetLinks', tag === 'link' && attributes.rel === 'stylesheet'],
+  ];
+  return ['nodes', 'elements', ...flags.filter(([, on]) => on).map(([key]) => key)];
+}
+
+function censusOf(root: unknown): DomCensus {
+  const census: DomCensus = {
+    nodes: 0,
+    elements: 0,
+    shadowRoots: 0,
+    iframes: 0,
+    canvases: 0,
+    customElements: 0,
+    styles: 0,
+    stylesheetLinks: 0,
+  };
+  const pending = [root];
+  while (pending.length) {
+    const node = pending.pop();
+    if (!isRecord(node) || idOf(node) === undefined) continue;
+    for (const key of censusKeys(node)) census[key] += 1;
+    pending.push(...listOf(node.childNodes));
+  }
+  return census;
 }
 
 const snapshotNode = (event: Event | undefined) => (isRecord(event?.data) ? event.data.node : undefined);
@@ -215,60 +235,97 @@ export interface ChangedNode {
   attributes: string[];
 }
 
-interface Applied {
-  mutations: InspectedMoment['applied']['mutations'];
-  byPlace: Record<NodePlace, number>;
-  missingNodes: number;
-  changed: Map<number, ChangedNode>;
-}
-
 const CHANGED_SHOWN = 8;
 
-function touch(tree: NodeTree, applied: Applied, id: number, attributes: readonly string[] = []) {
-  const info = tree.get(id);
-  if (!info) return;
-  applied.byPlace[info.place] += 1;
-  const entry = applied.changed.get(id) ?? { id, tag: info.tag, place: info.place, changes: 0, attributes: [] };
-  entry.changes += 1;
-  for (const name of attributes) if (!entry.attributes.includes(name)) entry.attributes.push(name);
-  applied.changed.set(id, entry);
+/** Plays snapshots and mutations onto a node tree the way rrweb would, counting changes that name nodes it does not have. */
+class MutationReplay {
+  tree = new NodeTree();
+  readonly mutations = { adds: 0, removes: 0, attributes: 0, texts: 0 };
+  readonly byPlace: Record<NodePlace, number> = { page: 0, shadow: 0, frame: 0 };
+  missingNodes = 0;
+  private readonly changed = new Map<number, ChangedNode>();
+
+  play(event: Event) {
+    if (event.type === FULL_SNAPSHOT) this.tree = new NodeTree(snapshotNode(event));
+    else if (event.type === INCREMENTAL && isRecord(event.data) && event.data.source === MUTATION) this.mutate(event.data);
+  }
+
+  mostChanged() {
+    return [...this.changed.values()].sort((a, b) => b.changes - a.changes).slice(0, CHANGED_SHOWN);
+  }
+
+  private mutate(data: Record<string, unknown>) {
+    for (const removal of listOf(data.removes)) this.removal(removal);
+    for (const addition of listOf(data.adds)) this.addition(addition);
+    for (const change of listOf(data.attributes)) this.attributeChange(change);
+    for (const change of listOf(data.texts)) this.textChange(change);
+  }
+
+  /** Whether the page has node `id`; counts it missing when not. */
+  private known(id: number | undefined): id is number {
+    const found = id !== undefined && this.tree.get(id) !== undefined;
+    if (!found) this.missingNodes += 1;
+    return found;
+  }
+
+  private removal(removal: unknown) {
+    this.mutations.removes += 1;
+    const id = idOf(removal);
+    if (!this.known(id)) return;
+    const parent = parentIdOf(removal);
+    if (parent !== undefined) this.touch(parent);
+    this.tree.remove(id);
+  }
+
+  private addition(addition: unknown) {
+    this.mutations.adds += 1;
+    const parent = parentIdOf(addition);
+    if (!this.known(parent)) return;
+    this.touch(parent);
+    this.tree.add(isRecord(addition) ? addition.node : undefined, parent);
+  }
+
+  private attributeChange(change: unknown) {
+    this.mutations.attributes += 1;
+    const id = idOf(change);
+    if (!this.known(id)) return;
+    this.touch(id, isRecord(change) && isRecord(change.attributes) ? Object.keys(change.attributes) : []);
+  }
+
+  private textChange(change: unknown) {
+    this.mutations.texts += 1;
+    const id = idOf(change);
+    if (!this.known(id)) return;
+    const parent = this.tree.get(id)?.parent;
+    if (parent !== undefined) this.touch(parent);
+  }
+
+  private touch(id: number, attributes: readonly string[] = []) {
+    const info = this.tree.get(id);
+    if (!info) return;
+    this.byPlace[info.place] += 1;
+    const entry = this.changed.get(id) ?? { id, tag: info.tag, place: info.place, changes: 0, attributes: [] };
+    entry.changes += 1;
+    for (const name of attributes) if (!entry.attributes.includes(name)) entry.attributes.push(name);
+    this.changed.set(id, entry);
+  }
 }
 
-/** Plays one mutation onto `tree` the way rrweb would, counting changes that name nodes it does not have. */
-function applyMutation(tree: NodeTree, data: Record<string, unknown>, applied: Applied) {
-  const { mutations } = applied;
-  for (const removal of listOf(data.removes)) {
-    mutations.removes += 1;
-    const id = idOf(removal);
-    const parent = isRecord(removal) && typeof removal.parentId === 'number' ? removal.parentId : undefined;
-    if (id === undefined || !tree.get(id)) applied.missingNodes += 1;
-    else {
-      if (parent !== undefined) touch(tree, applied, parent);
-      tree.remove(id);
-    }
+/** The index of the last Meta event at or before `baseline`, which rrweb rebuilds from; -1 when there is none. */
+function rebuildIndex(events: readonly Event[], baseline: number) {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+    if (event?.type === META && event.timestamp <= baseline) return index;
   }
-  for (const addition of listOf(data.adds)) {
-    mutations.adds += 1;
-    const parent = isRecord(addition) && typeof addition.parentId === 'number' ? addition.parentId : undefined;
-    if (parent === undefined || !tree.get(parent)) {
-      applied.missingNodes += 1;
-      continue;
-    }
-    touch(tree, applied, parent);
-    tree.add(isRecord(addition) ? addition.node : undefined, parent);
-  }
-  for (const change of listOf(data.attributes)) {
-    mutations.attributes += 1;
-    const id = idOf(change);
-    if (id === undefined || !tree.get(id)) applied.missingNodes += 1;
-    else touch(tree, applied, id, isRecord(change) && isRecord(change.attributes) ? Object.keys(change.attributes) : []);
-  }
-  for (const change of listOf(data.texts)) {
-    mutations.texts += 1;
-    const id = idOf(change);
-    if (id === undefined || !tree.get(id)) applied.missingNodes += 1;
-    else touch(tree, applied, tree.get(id)!.parent);
-  }
+  return -1;
+}
+
+function neighbours(events: readonly Event[], baseline: number, origin: number) {
+  const next = events.findIndex((event) => event.timestamp >= baseline);
+  const before = next === -1 ? events.at(-1) : events[next - 1];
+  const after = next === -1 ? undefined : events[next];
+  const describe = (event: Event) => ({ at: event.timestamp - origin, kind: kindOf(event) });
+  return { ...(before ? { previousEvent: describe(before) } : {}), ...(after ? { nextEvent: describe(after) } : {}) };
 }
 
 function moment(events: readonly Event[], groups: readonly SnapshotGroup[], time: number, firstPaint: number): InspectedMoment {
@@ -276,72 +333,36 @@ function moment(events: readonly Event[], groups: readonly SnapshotGroup[], time
   const offset = renderOffset(groups, time === 0 ? firstPaint : time);
   const baseline = origin + offset;
   const group = groupAt(groups, time);
-  let from = -1;
-  for (let index = events.length - 1; index >= 0; index -= 1)
-    if (events[index]!.type === META && events[index]!.timestamp <= baseline) {
-      from = index;
-      break;
-    }
-  const byKind: Counts = {};
-  const applied: Applied = {
-    mutations: { adds: 0, removes: 0, attributes: 0, texts: 0 },
-    byPlace: { page: 0, shadow: 0, frame: 0 },
-    missingNodes: 0,
-    changed: new Map(),
-  };
-  let tree = new NodeTree();
-  let total = 0;
-  for (let index = Math.max(0, from); index < events.length && events[index]!.timestamp < baseline; index += 1) {
-    const event = events[index]!;
-    total += 1;
-    bump(byKind, kindOf(event));
-    if (event.type === FULL_SNAPSHOT) tree = new NodeTree(snapshotNode(event));
-    else if (event.type === INCREMENTAL && isRecord(event.data) && event.data.source === MUTATION) applyMutation(tree, event.data, applied);
-  }
-  const nextIndex = events.findIndex((event) => event.timestamp >= baseline);
-  const before = nextIndex === -1 ? events.at(-1) : events[nextIndex - 1];
-  const after = nextIndex === -1 ? undefined : events[nextIndex];
-  const documentIndex = group ? groups.indexOf(group) : -1;
+  const from = rebuildIndex(events, baseline);
+  const start = Math.max(0, from);
+  const stop = events.findIndex((event, index) => index >= start && event.timestamp >= baseline);
+  const span = events.slice(start, stop === -1 ? events.length : stop);
+  const replay = new MutationReplay();
+  for (const event of span) replay.play(event);
+  const rebuild = events[from];
   return {
     time,
     renderOffset: offset,
-    document: documentIndex,
+    document: group ? groups.indexOf(group) : -1,
     ...(group?.href ? { href: group.href } : {}),
-    ...(from >= 0 ? { rebuildFrom: events[from]!.timestamp - origin } : {}),
-    applied: { events: total, byKind, mutations: applied.mutations, byPlace: applied.byPlace },
-    missingNodes: applied.missingNodes,
-    mostChanged: [...applied.changed.values()].sort((a, b) => b.changes - a.changes).slice(0, CHANGED_SHOWN),
-    ...(before ? { previousEvent: { at: before.timestamp - origin, kind: kindOf(before) } } : {}),
-    ...(after ? { nextEvent: { at: after.timestamp - origin, kind: kindOf(after) } } : {}),
+    ...(rebuild ? { rebuildFrom: rebuild.timestamp - origin } : {}),
+    applied: { events: span.length, byKind: countKinds(span), mutations: replay.mutations, byPlace: replay.byPlace },
+    missingNodes: replay.missingNodes,
+    mostChanged: replay.mostChanged(),
+    ...neighbours(events, baseline, origin),
   };
 }
 
 function mediaInteractions(events: readonly Event[], origin: number): InspectedMedia[] {
-  const media: InspectedMedia[] = [];
-  const ignored: Applied = {
-    mutations: { adds: 0, removes: 0, attributes: 0, texts: 0 },
-    byPlace: { page: 0, shadow: 0, frame: 0 },
-    missingNodes: 0,
-    changed: new Map(),
-  };
-  let tree = new NodeTree();
-  for (const event of events) {
-    if (!isRecord(event.data)) continue;
-    if (event.type === FULL_SNAPSHOT) tree = new NodeTree(event.data.node);
-    if (event.type !== INCREMENTAL) continue;
-    if (event.data.source === MUTATION) applyMutation(tree, event.data, ignored);
-    if (event.data.source !== MEDIA_INTERACTION || typeof event.data.id !== 'number') continue;
-    const node = tree.get(event.data.id);
+  const replay = new MutationReplay();
+  return events.flatMap((event) => {
+    replay.play(event);
+    const data = isRecord(event.data) ? event.data : {};
+    if (event.type !== INCREMENTAL || data.source !== MEDIA_INTERACTION || typeof data.id !== 'number') return [];
+    const node = replay.tree.get(data.id);
     const tag = node?.tag ?? 'unknown';
-    media.push({
-      at: event.timestamp - origin,
-      id: event.data.id,
-      tag,
-      ...(node ? { place: node.place } : {}),
-      playable: MEDIA_TAGS.has(tag),
-    });
-  }
-  return media;
+    return [{ at: event.timestamp - origin, id: data.id, tag, ...(node ? { place: node.place } : {}), playable: MEDIA_TAGS.has(tag) }];
+  });
 }
 
 function resizes(events: readonly Event[], origin: number) {
@@ -363,8 +384,6 @@ export function inspectReplay(bundle: ReplayBundle, times: readonly number[] = [
   const duration = bundleSpan(bundle);
   const groups = snapshotGroups(events, bundle.network);
   const firstPaint = firstPaintOffset(bundle.performance, groups, duration);
-  const byKind: Counts = {};
-  for (const event of events) bump(byKind, kindOf(event));
   const snapshots = events.filter((event) => event.type === FULL_SNAPSHOT);
   return {
     duration,
@@ -374,11 +393,11 @@ export function inspectReplay(bundle: ReplayBundle, times: readonly number[] = [
     source: bundle.meta.source ?? 'agent',
     ...(bundle.meta.formatVersion === undefined ? {} : { formatVersion: bundle.meta.formatVersion }),
     firstPaint,
-    events: { total: events.length, byKind },
+    events: { total: events.length, byKind: countKinds(events) },
     documents: groups.map((group, index) => ({
       index,
       ...group,
-      dom: new NodeTree().add(snapshotNode(snapshots[index]), undefined),
+      dom: censusOf(snapshotNode(snapshots[index])),
     })),
     metas: events.filter((event) => event.type === META).map((event) => event.timestamp - origin),
     resizes: resizes(events, origin),
