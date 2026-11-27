@@ -57,7 +57,11 @@ describe('media interactions the player can replay', () => {
     const root = document.createElement('div');
     document.body.append(root);
     // why: jsdom's iframe fails rrweb's sandbox check, which only the unprotected-rebuild escape hatch skips.
-    const replayer = new Replayer(rrwebEvents(withoutForeignMediaEvents(recording())), { root, mouseTail: false, UNSAFE_replayCanvas: true });
+    const replayer = new Replayer(rrwebEvents(withoutForeignMediaEvents(recording())), {
+      root,
+      mouseTail: false,
+      UNSAFE_replayCanvas: true,
+    });
     replayer.pause(500);
     replayer.pause(1500);
     expect(replayer.iframe.contentDocument?.body.textContent).toBe('before after');
