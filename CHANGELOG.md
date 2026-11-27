@@ -5,6 +5,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Viewer: pausing or seeking a recording whose page had a player component that fires its own play and pause events (for example a video player custom element) no longer fails. Before, every paused seek threw, so in a comparison the other recordings never moved to the clicked time until Play.
+- CLI: `replays edit <id> inspect [--at 1s,5.2s]` shows how the player sees a replay without downloading it: length, events by kind, documents and first paint, media interactions the player cannot replay, and for each `--at` time the offset a paused seek renders, the document on screen, what rrweb applies to get there (where those changes land, which elements change most, and any that name a missing node). `--json` gives the same for agents.
+- CLI: commands that never open a browser start several seconds faster on a busy machine, because the browser library now loads only for capture.
 - Viewer: when runs are compared, the small tiles now follow the scrubber while you drag it, updating a few times a second, instead of only catching up when you let go.
 - Viewer: opening or seeking to a snapshot restores its constructed stylesheets before showing the page, preventing hidden elements from pushing the app down into a blank top band.
 

@@ -8,6 +8,7 @@ import { EditClient } from './client.ts';
 import { EditError, usageError } from './errors.ts';
 import { cursor, cut, rename, region, speed, trim, zoom } from './edit-commands.ts';
 import { exportVideo } from './export-command.ts';
+import { inspect } from './inspect-command.ts';
 import { pull, push, show } from './read-commands.ts';
 import { type EditOutput, only, type Session } from './session.ts';
 import { caption, highlight } from './text-commands.ts';
@@ -58,6 +59,7 @@ const HANDLERS: Record<string, Handler> = {
     only(args, [], 'show');
     return show(session);
   },
+  inspect,
   pull,
   push,
   rename,

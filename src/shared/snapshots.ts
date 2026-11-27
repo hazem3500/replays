@@ -1,5 +1,5 @@
-import type { ReplayBundle } from '../shared/replay.ts';
-import { isRecord } from '../shared/validate.ts';
+import type { ReplayBundle } from './replay.ts';
+import { isRecord } from './validate.ts';
 
 const DOM_CONTENT_LOADED = 0;
 const LOAD = 1;

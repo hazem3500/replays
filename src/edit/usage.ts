@@ -7,6 +7,9 @@ link such as https://replays.example.com/r/<id>.
 
 Look and round-trip
   show [--json]                 the edit list, numbered per kind, and the numbered step list (number, time, label)
+  inspect [--at 1s,5.2s]        how the player sees the replay, without downloading it: duration, events by kind,
+                                documents and first paint; for each --at time the offset a paused seek renders, the
+                                document on screen and the events rrweb applies to get there (missing nodes included)
   pull [-o edits.json]          the stored edit list (to stdout without -o)
   push <edits.json> [--force] [--dry-run]
                                 replace the whole list; validated first, with a diff of what changes. Refused when the

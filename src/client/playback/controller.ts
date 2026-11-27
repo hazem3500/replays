@@ -2,6 +2,7 @@ import { Replayer } from 'rrweb';
 import { type PlayerState, type PlayHold, type Viewport, type Speed, type Listener } from './types.ts';
 import { TargetOutline } from './target-outline.ts';
 import { rrwebEvents } from './rrweb-wire.ts';
+import { withoutForeignMediaEvents } from './media-events.ts';
 import { settleAnimations } from './settle-animations.ts';
 
 import { withDottedMasks } from '../../shared/mask-display.ts';
@@ -11,7 +12,7 @@ import { EffectsLayer } from '../effects-layer.ts';
 import { viewportChanges, type PointerTrack } from '../caption-placement.ts';
 import { cursorInput } from '../cursor-motion.ts';
 import { ReplayCursor } from '../replay-cursor.ts';
-import { firstPaintOffset, renderOffset, type SnapshotGroup, snapshotGroups } from '../snapshots.ts';
+import { firstPaintOffset, renderOffset, type SnapshotGroup, snapshotGroups } from '../../shared/snapshots.ts';
 import { clampTime } from '../timeline.ts';
 import { type IdleGap, idleGaps, INACTIVE_SKIP_SPEED } from '../../shared/skip.ts';
 
@@ -92,7 +93,7 @@ export class ReplayController {
     if (this.replayer) throw new Error('A playback supports one mounted renderer');
     const ownsMarker = !root.hasAttribute('data-replays-playback');
     root.setAttribute('data-replays-playback', '');
-    const replayer = new Replayer(rrwebEvents(withDottedMasks(this.events)), {
+    const replayer = new Replayer(rrwebEvents(withoutForeignMediaEvents(withDottedMasks(this.events))), {
       root,
       speed: this.state.speed,
       skipInactive: false,

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 
-import { chromium, type Browser, type BrowserContext, type CDPSession, type Page } from 'playwright-core';
+import type { Browser, BrowserContext, CDPSession, Page } from 'playwright-core';
 
 import type { CdpLike } from '../session.ts';
 import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
@@ -43,6 +43,8 @@ export function cdpLike(session: CDPSession): CdpLike {
 export async function launchChromium(options: PlaywrightDriverOptions = {}, env: NodeJS.ProcessEnv = process.env) {
   const executablePath = options.executablePath ?? env.CHROME_PATH ?? env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ?? findSystemBrowser(env);
   if (!executablePath && !hasPlaywrightBrowser(env)) throw new Error(NO_BROWSER_MESSAGE);
+  // why: loading Playwright costs seconds, so only the commands that open a browser pay for it (`suite show` must not).
+  const { chromium } = await import('playwright-core');
   return chromium.launch({
     headless: options.headless ?? true,
     ...(executablePath ? { executablePath } : {}),
